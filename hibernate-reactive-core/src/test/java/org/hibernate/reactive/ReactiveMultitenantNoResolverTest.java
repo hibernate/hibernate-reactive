@@ -5,12 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
@@ -18,12 +15,17 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
@@ -31,6 +33,10 @@ import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TE
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Multitenancy without a {@link org.hibernate.context.spi.CurrentTenantIdentifierResolver}.
@@ -44,8 +50,8 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	// To check if we are using the right database we run native queries for PostgreSQL
-	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension
+	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
     @Override
     protected Configuration constructConfiguration() {
@@ -62,7 +68,7 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
     }
 
 	@Test
-	public void reactivePersistFindDelete(TestContext context) {
+	public void reactivePersistFindDelete(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -71,15 +77,15 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 							.persist( guineaPig )
 							.thenCompose( v -> session.flush() )
 							.thenAccept( v -> session.detach( guineaPig ) )
-							.thenAccept( v -> context.assertFalse( session.contains( guineaPig ) ) )
+							.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
 							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 							.thenAccept( actualPig -> {
 								assertThatPigsAreEqual( context, guineaPig, actualPig );
-								context.assertTrue( session.contains( actualPig ) );
-								context.assertFalse( session.contains( guineaPig ) );
-								context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+								assertTrue( session.contains( actualPig ) );
+								assertFalse( session.contains( guineaPig ) );
+								assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
 								session.detach( actualPig );
-								context.assertFalse( session.contains( actualPig ) );
+								assertFalse( session.contains( actualPig ) );
 							} )
 							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 							.thenCompose( session::remove )
@@ -89,115 +95,115 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithSessionWithTenant(TestContext context) {
+	public void testWithSessionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withSession( TENANT_1.name(), session -> selectCurrentDB( session )
-						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.thenCompose( unused -> getSessionFactory()
 						.withSession( TENANT_2.name(), session -> selectCurrentDB( session )
-								.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessSessionWithTenant(TestContext context) {
+	public void testWithStatelessSessionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withStatelessSession( TENANT_1.name(), session -> selectCurrentDB( session )
-						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.thenCompose( unused -> getSessionFactory()
 						.withStatelessSession( TENANT_2.name(), session -> selectCurrentDB( session )
-								.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithSessionWithTenantWithMutiny(TestContext context) {
+	public void testWithSessionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withSession( TENANT_1.name(), session -> selectCurrentDB( session )
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.call( () -> getMutinySessionFactory()
 						.withSession( TENANT_2.name(), session -> selectCurrentDB( session )
-								.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessSessionWithTenantWithMutiny(TestContext context) {
+	public void testWithStatelessSessionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withStatelessSession( TENANT_1.name(), session -> selectCurrentDB( session )
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.call( () -> getMutinySessionFactory()
 						.withStatelessSession( TENANT_2.name(), session -> selectCurrentDB( session )
-								.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithTransactionWithTenant(TestContext context) {
+	public void testWithTransactionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
-						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.thenCompose( unused -> getSessionFactory()
 						.withTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
-								.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithTransactionWithTenantWithMutiny(TestContext context) {
+	public void testWithTransactionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.chain( () -> getMutinySessionFactory()
 						.withTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
-								.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessTransactionWithTenant(TestContext context) {
+	public void testWithStatelessTransactionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withStatelessTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
-						.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.thenCompose( unused -> getSessionFactory()
 						.withStatelessTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
-								.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessTransactionWithTenantWithMutiny(TestContext context) {
+	public void testWithStatelessTransactionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withStatelessTransaction( TENANT_1.name(), (session, tx) -> selectCurrentDB( session )
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
 				.chain( unused -> getMutinySessionFactory()
 						.withStatelessTransaction( TENANT_2.name(), (session, tx) -> selectCurrentDB( session )
-								.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) ) ) )
+								.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
 		);
 	}
 
 	@Test
-	public void testOpenSessionWithTenant(TestContext context) {
+	public void testOpenSessionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory().openSession( TENANT_1.name() )
 				.thenCompose( t1Session -> selectCurrentDB( t1Session )
-				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+				.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) )
 				.thenCompose( v -> t1Session.close() ) )
 				.thenCompose( unused -> getSessionFactory().openSession( TENANT_2.name() ) )
 				.thenCompose( t2Session -> selectCurrentDB( t2Session )
-						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) )
 						.thenCompose( v -> t2Session.close() ) )
 		);
 	}
 
 	@Test
-	public void testOpenStatelessSessionWithTenant(TestContext context) {
+	public void testOpenStatelessSessionWithTenant(VertxTestContext context) {
 		test( context, getSessionFactory().openStatelessSession( TENANT_1.name() )
 				.thenCompose( t1Session -> selectCurrentDB( t1Session )
-				.thenAccept( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+				.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) )
 				.thenCompose( v -> t1Session.close() ) )
 				.thenCompose( unused -> getSessionFactory().openStatelessSession( TENANT_2.name() ) )
 				.thenCompose( t2Session -> selectCurrentDB( t2Session )
-						.thenAccept( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) )
 						.thenCompose( v -> t2Session.close() ) )
 		);
 	}
@@ -227,102 +233,102 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testOpenSessionWithTenantWithMutiny(TestContext context) {
+	public void testOpenSessionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.openSession( TENANT_1.name() )
 				.chain( t1Session -> t1Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) )
 						.chain( t1Session::close ) )
 				.chain( () -> getMutinySessionFactory().openSession( TENANT_2.name() ) )
 				.chain( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) )
 						.call( t2Session::close ) )
 		);
 	}
 
 	@Test
-	public void testOpenStatelessSessionWithTenantWithMutiny(TestContext context) {
+	public void testOpenStatelessSessionWithTenantWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.openStatelessSession( TENANT_1.name() )
 				.chain( t1Session -> t1Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> context.assertEquals( TENANT_1.getDbName(), result ) )
+						.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) )
 						.chain( t1Session::close ) )
 				.chain( () -> getMutinySessionFactory().openStatelessSession( TENANT_2.name() ) )
 				.chain( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> context.assertEquals( TENANT_2.getDbName(), result ) )
+						.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) )
 						.call( t2Session::close ) )
 		);
 	}
 
 	@Test
-	public void testOpenSessionThrowsExceptionWithoutTenant(TestContext context) {
+	public void testOpenSessionThrowsExceptionWithoutTenant(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getSessionFactory().withSession( this::selectCurrentDB ) )
 				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testWithSessionThrowsExceptionWithoutTenant(TestContext context) {
+	public void testWithSessionThrowsExceptionWithoutTenant(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getSessionFactory().withSession( this::selectCurrentDB ) )
 				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testWithTransactionThrowsExceptionWithoutTenant(TestContext context) {
+	public void testWithTransactionThrowsExceptionWithoutTenant(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getSessionFactory().withTransaction( this::selectCurrentDB ) )
 				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testWithStatelessTransactionThrowsExceptionWithoutTenant(TestContext context) {
+	public void testWithStatelessTransactionThrowsExceptionWithoutTenant(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getSessionFactory().withStatelessTransaction( this::selectCurrentDB ) )
 				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testOpenSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
+	public void testOpenSessionThrowsExceptionWithoutTenantWithMutiny(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, openMutinySession().invoke( this::selectCurrentDB ) )
 				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testWithSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
+	public void testWithSessionThrowsExceptionWithoutTenantWithMutiny(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withSession( this::selectCurrentDB ) )
 				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) ) );
 	}
 
 	@Test
-	public void testWithTransactionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
+	public void testWithTransactionThrowsExceptionWithoutTenantWithMutiny(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withTransaction( this::selectCurrentDB ) )
 				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessSessionThrowsExceptionWithoutTenant(TestContext context) {
+	public void testWithStatelessSessionThrowsExceptionWithoutTenant(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getSessionFactory().withStatelessTransaction( this::selectCurrentDB ) )
 				.thenAccept( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
 		);
 	}
 
 	@Test
-	public void testWithStatelessSessionThrowsExceptionWithoutTenantWithMutiny(TestContext context) {
+	public void testWithStatelessSessionThrowsExceptionWithoutTenantWithMutiny(VertxTestContext context) {
 		test( context, assertThrown( HibernateException.class, getMutinySessionFactory().withStatelessSession( this::selectCurrentDB ) )
 				.invoke( exception -> assertThat( exception.getMessage() ).contains( "no tenant identifier" ) )
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
-		context.assertNotNull( actual );
-		context.assertEquals( expected.getId(), actual.getId() );
-		context.assertEquals( expected.getName(), actual.getName() );
+	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+		assertNotNull( actual );
+		assertEquals( expected.getId(), actual.getId() );
+		assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity(name = "GuineaPig")

@@ -16,10 +16,10 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,6 +32,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test what happens when the query is cached but the result entries aren't.
@@ -66,7 +67,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoadFromSecondLevelCacheAndNamedQuery(TestContext context) {
+	public void testLoadFromSecondLevelCacheAndNamedQuery(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withSession( CachedQueryResultsTest::findAllWithNamedQuery )
 				// We need to close the session between the two findAll or the results will come from the
@@ -77,7 +78,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoadFromCachedQueryResultAndNamedQuery(TestContext context) {
+	public void testLoadFromCachedQueryResultAndNamedQuery(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withSession( s -> findAllWithNamedQuery( s ).chain( () -> findAllWithNamedQuery( s ) ) )
 				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
@@ -89,7 +90,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoadFromSecondLevelCacheAndRegularQuery(TestContext context) {
+	public void testLoadFromSecondLevelCacheAndRegularQuery(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withSession( CachedQueryResultsTest::findAllWithCacheableQuery )
 				// We need to close the session between the two findAll or the results will come from the
@@ -100,7 +101,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoadFromCachedQueryResultAndRegularQuery(TestContext context) {
+	public void testLoadFromCachedQueryResultAndRegularQuery(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withSession( s -> findAllWithCacheableQuery( s ).chain( () -> findAllWithCacheableQuery( s ) ) )
 				.invoke( list -> assertThat( list ).containsExactly( FRUITS ) )
@@ -108,11 +109,11 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testQueryPlanCacheHitsGenerateStatisticsFalse(TestContext context) {
+	public void testQueryPlanCacheHitsGenerateStatisticsFalse(VertxTestContext context) {
 		test( context, criteriaFindAll()
 				.call( CachedQueryResultsTest::criteriaFindAll )
 				.call( CachedQueryResultsTest::criteriaFindAll )
-				.invoke( () -> context.assertEquals( 0L, statistics().getQueryPlanCacheHitCount() ) )
+				.invoke( () -> assertEquals( 0L, statistics().getQueryPlanCacheHitCount() ) )
 		);
 	}
 

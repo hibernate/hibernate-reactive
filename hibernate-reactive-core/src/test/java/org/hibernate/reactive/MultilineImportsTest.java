@@ -8,6 +8,8 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -19,9 +21,9 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test importing a SQL script which is using the multi-line format
@@ -51,12 +53,12 @@ public class MultilineImportsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void verifyImportScriptHasRun(TestContext context) {
+	public void verifyImportScriptHasRun(VertxTestContext context) {
 		test(
 				context,
 				getSessionFactory()
 						.withSession( MultilineImportsTest::runQuery )
-						.thenAccept( list -> context.assertEquals( list.size(), 1) )
+						.thenAccept( list -> assertEquals( list.size(), 1) )
 		);
 	}
 

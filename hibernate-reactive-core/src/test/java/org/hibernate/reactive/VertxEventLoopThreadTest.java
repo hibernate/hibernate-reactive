@@ -8,15 +8,16 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.vertx.core.Context;
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Check that the {@link BaseReactiveTest} class is starting a Vert.x event loop
@@ -39,7 +40,7 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testThreadsWithCompletionStage(TestContext context) {
+	public void testThreadsWithCompletionStage(VertxTestContext context) {
 		final Thread currentThread = Thread.currentThread();
 		assertThat( Context.isOnEventLoopThread() )
 				.as( "This is not a Vert.x event loop thread " + currentThread )
@@ -49,12 +50,12 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 				.find( Boardgame.class, "Wingspan" )
 				.thenAccept( v -> {
 					Thread insideThread = Thread.currentThread();
-					context.assertEquals( currentThread, insideThread );
+					assertEquals( currentThread, insideThread );
 				} ) ) );
 	}
 
 	@Test
-	public void testThreadsWithMutiny(TestContext context) {
+	public void testThreadsWithMutiny(VertxTestContext context) {
 		Thread currentThread = Thread.currentThread();
 		assertThat( Context.isOnEventLoopThread() )
 				.as( "This is not a Vert.x event loop thread " + currentThread )
@@ -64,7 +65,7 @@ public class VertxEventLoopThreadTest extends BaseReactiveTest {
 				.find( Boardgame.class, "The Crew: the quest for planet nine" )
 				.invoke( v -> {
 					Thread insideThread = Thread.currentThread();
-					context.assertEquals( currentThread, insideThread );
+					assertEquals( currentThread, insideThread );
 				} ) ) );
 	}
 

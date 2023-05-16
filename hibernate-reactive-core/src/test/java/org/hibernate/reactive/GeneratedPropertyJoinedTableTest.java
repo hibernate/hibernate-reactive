@@ -14,12 +14,12 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -33,7 +33,10 @@ import jakarta.persistence.TemporalType;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test the @{@link Generated} annotation with {@link InheritanceType#JOINED}
@@ -41,8 +44,8 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.runOnlyFor;
 public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 	// It requires native queries, so it won't work for every db
-	@Rule
-	public DatabaseSelectionRule selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
+	@RegisterExtension
+	public DBSelectionExtension selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -58,7 +61,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithIdentity(TestContext context) {
+	public void testWithIdentity(VertxTestContext context) {
 		final GeneratedWithIdentity davide = new GeneratedWithIdentity( "Davide", "D'Alto" );
 
 		CurrentUser.INSTANCE.logIn( "dd-insert" );
@@ -66,14 +69,14 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 				// Generated during insert
 				.withTransaction( session -> session.persist( davide ) )
 				.invoke( v -> {
-					context.assertNotNull( davide.id );
-					context.assertEquals( "Davide", davide.firstname );
-					context.assertEquals( "D'Alto", davide.lastname );
-					context.assertEquals( "Davide D'Alto", davide.fullName );
-					context.assertNotNull( davide.createdAt );
-					context.assertEquals( "dd-insert", davide.createdBy );
-					context.assertEquals( "dd-insert", davide.updatedBy );
-					context.assertNull( davide.never );
+					assertNotNull( davide.id );
+					assertEquals( "Davide", davide.firstname );
+					assertEquals( "D'Alto", davide.lastname );
+					assertEquals( "Davide D'Alto", davide.fullName );
+					assertNotNull( davide.createdAt );
+					assertEquals( "dd-insert", davide.createdBy );
+					assertEquals( "dd-insert", davide.updatedBy );
+					assertNull( davide.never );
 					CurrentUser.INSTANCE.logOut();
 				} )
 				// Generated during update
@@ -84,13 +87,13 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 									CurrentUser.INSTANCE.logIn( "dd-update" );
 									result.lastname = "O'Tall";
 									return session.flush().invoke( afterUpdate -> {
-										context.assertEquals( "Davide", result.firstname );
-										context.assertEquals( "O'Tall", result.lastname );
-										context.assertEquals( "Davide O'Tall", result.fullName );
-										context.assertEquals( davide.createdAt, result.createdAt );
-										context.assertEquals( "dd-insert", result.createdBy );
-										context.assertEquals( "dd-update", result.updatedBy );
-										context.assertNull( result.never );
+										assertEquals( "Davide", result.firstname );
+										assertEquals( "O'Tall", result.lastname );
+										assertEquals( "Davide O'Tall", result.fullName );
+										assertEquals( davide.createdAt, result.createdAt );
+										assertEquals( "dd-insert", result.createdBy );
+										assertEquals( "dd-update", result.updatedBy );
+										assertNull( result.never );
 										CurrentUser.INSTANCE.logOut();
 									} );
 								} ) )
@@ -99,7 +102,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testRegularEntity(TestContext context) {
+	public void testRegularEntity(VertxTestContext context) {
 		final GeneratedRegular davide = new GeneratedRegular( "Davide", "D'Alto" );
 
 		CurrentUser.INSTANCE.logIn( "dd-insert" );
@@ -109,14 +112,14 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 						// Generated during insert
 						.withTransaction( session -> session.persist( davide ) )
 						.invoke( v -> {
-							context.assertNotNull( davide.id );
-							context.assertEquals( "Davide", davide.firstname );
-							context.assertEquals( "D'Alto", davide.lastname );
-							context.assertEquals( "Davide D'Alto", davide.fullName );
-							context.assertNotNull( davide.createdAt );
-							context.assertEquals( "dd-insert", davide.createdBy );
-							context.assertEquals( "dd-insert", davide.updatedBy );
-							context.assertNull( davide.never );
+							assertNotNull( davide.id );
+							assertEquals( "Davide", davide.firstname );
+							assertEquals( "D'Alto", davide.lastname );
+							assertEquals( "Davide D'Alto", davide.fullName );
+							assertNotNull( davide.createdAt );
+							assertEquals( "dd-insert", davide.createdBy );
+							assertEquals( "dd-insert", davide.updatedBy );
+							assertNull( davide.never );
 							CurrentUser.INSTANCE.logOut();
 						} )
 						// Generated during update
@@ -127,13 +130,13 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 											CurrentUser.INSTANCE.logIn( "dd-update" );
 											result.lastname = "O'Tall";
 											return session.flush().invoke( afterUpdate -> {
-												context.assertEquals( "Davide", result.firstname );
-												context.assertEquals( "O'Tall", result.lastname );
-												context.assertEquals( "Davide O'Tall", result.fullName );
-												context.assertEquals( davide.createdAt, result.createdAt );
-												context.assertEquals( "dd-insert", result.createdBy );
-												context.assertEquals( "dd-update", result.updatedBy );
-												context.assertNull( result.never );
+												assertEquals( "Davide", result.firstname );
+												assertEquals( "O'Tall", result.lastname );
+												assertEquals( "Davide O'Tall", result.fullName );
+												assertEquals( davide.createdAt, result.createdAt );
+												assertEquals( "dd-insert", result.createdBy );
+												assertEquals( "dd-update", result.updatedBy );
+												assertNull( result.never );
 												CurrentUser.INSTANCE.logOut();
 											} );
 										} ) ) )

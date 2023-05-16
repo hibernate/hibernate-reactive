@@ -5,15 +5,21 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -31,11 +37,10 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class EagerTest extends BaseReactiveTest {
@@ -61,7 +66,7 @@ public class EagerTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testEagerCollectionFetch(TestContext context) {
+	public void testEagerCollectionFetch(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -75,17 +80,17 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
-							context.assertTrue( Hibernate.isInitialized( node.getElements() ) );
-							context.assertEquals( 3, node.getElements().size() );
+							assertTrue( Hibernate.isInitialized( node.getElements() ) );
+							assertEquals( 3, node.getElements().size() );
 							for ( Element element : node.getElements() ) {
-								context.assertTrue( element.getNode() == node );
+								assertSame( element.getNode(), node );
 							}
 						} )
 		);
 	}
 
 	@Test
-	public void testEagerParentFetch(TestContext context) {
+	public void testEagerParentFetch(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -99,15 +104,15 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find( Element.class, basik.getElements().get(0).getId() ))
 						.thenAccept( element -> {
-							context.assertTrue( Hibernate.isInitialized( element.getNode() ) );
-							context.assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
-							context.assertEquals( 3, element.getNode().getElements().size() );
+							assertTrue( Hibernate.isInitialized( element.getNode() ) );
+							assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
+							assertEquals( 3, element.getNode().getElements().size() );
 						} )
 		);
 	}
 
 	@Test
-	public void testEagerParentFetchQuery(TestContext context) {
+	public void testEagerParentFetchQuery(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -122,16 +127,16 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.createQuery( "from Element", Element.class ).getResultList())
 						.thenAccept( elements -> {
 							for (Element element: elements) {
-								context.assertTrue( Hibernate.isInitialized( element.getNode() ) );
-								context.assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
-								context.assertEquals( 3, element.getNode().getElements().size() );
+								assertTrue( Hibernate.isInitialized( element.getNode() ) );
+								assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
+								assertEquals( 3, element.getNode().getElements().size() );
 							}
 						} )
 		);
 	}
 
 	@Test
-	public void testEagerFetchQuery(TestContext context) {
+	public void testEagerFetchQuery(VertxTestContext context) {
 
 		Node basik = new Node("Child");
 		basik.parent = new Node("Parent");
@@ -145,18 +150,18 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
-							context.assertEquals(list.size(), 2);
-							context.assertTrue( Hibernate.isInitialized( list.get(0).getElements() ) );
-							context.assertEquals(list.get(0).getElements().size(), 3);
-							context.assertEquals(list.get(1).getElements().size(), 0);
+							assertEquals(list.size(), 2);
+							assertTrue( Hibernate.isInitialized( list.get(0).getElements() ) );
+							assertEquals(list.get(0).getElements().size(), 3);
+							assertEquals(list.get(1).getElements().size(), 0);
 						})
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
 						.thenAccept(list -> {
-							context.assertEquals(list.size(), 3);
+							assertEquals(list.size(), 3);
 							Object[] tup = (Object[]) list.get(0);
-							context.assertTrue( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) );
-							context.assertEquals(((Node) tup[0]).getElements().size(), 3);
+							assertTrue( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) );
+							assertEquals(((Node) tup[0]).getElements().size(), 3);
 						})
 		);
 	}

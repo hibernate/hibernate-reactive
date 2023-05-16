@@ -19,9 +19,11 @@ import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
-import org.junit.Test;
 
-import io.vertx.ext.unit.TestContext;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 
 public class UriConfigTest extends BaseReactiveTest {
 
@@ -47,10 +49,10 @@ public class UriConfigTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUriConfig(TestContext context) {
+	public void testUriConfig(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withSession( s -> s.createNativeQuery( selectQuery(), String.class ).getSingleResult() )
-				.thenAccept( context::assertNotNull )
+				.thenAccept( Assertions::assertNotNull )
 		);
 	}
 

@@ -8,16 +8,19 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionException;
+
+import org.hibernate.cfg.Configuration;
+
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PersistenceException;
 
-import org.hibernate.cfg.Configuration;
-
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class StageExceptionsTest extends BaseReactiveTest {
@@ -35,7 +38,7 @@ public class StageExceptionsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDuplicateKeyException(TestContext context) {
+	public void testDuplicateKeyException(VertxTestContext context) {
 		final Class<PersistenceException> expectedException = PersistenceException.class;
 
 		test( context, openSession()
@@ -45,9 +48,9 @@ public class StageExceptionsTest extends BaseReactiveTest {
 						.thenCompose( v -> session.flush() )
 				)
 				.handle( (res, err) -> {
-					context.assertNotNull( err );
-					context.assertTrue( err.getClass().isAssignableFrom( CompletionException.class ) );
-					context.assertTrue(
+					assertNotNull( err );
+					assertTrue( err.getClass().isAssignableFrom( CompletionException.class ) );
+					assertTrue(
 							expectedException.isAssignableFrom( err.getCause().getClass() ),
 							"Expected " + expectedException.getName() + " but was " + err
 					);

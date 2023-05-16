@@ -14,14 +14,15 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -31,17 +32,19 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.provider.Settings.DIALECT;
 import static org.hibernate.reactive.provider.Settings.DRIVER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This test class verifies that data can be persisted and queried on the same database
  * using both JPA/hibernate and reactive session factories.
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	// DB2: The CompletionStage test throw java.lang.IllegalStateException: Needed to have 6 in buffer...
 	// Cockroach: We need to change the URL schema we normally use for testing
-	@Rule
-	public DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2, COCKROACHDB );
+	@RegisterExtension
+	public DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2, COCKROACHDB );
 
 	private SessionFactory ormFactory;
 
@@ -50,7 +53,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		return List.of( Flour.class );
 	}
 
-	@Before
+	@BeforeEach
 	public void prepareOrmFactory() {
 		Configuration configuration = constructConfiguration();
 		configuration.setProperty( DRIVER, dbType().getJdbcDriver() );
@@ -63,13 +66,15 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		ormFactory = configuration.buildSessionFactory( registry );
 	}
 
-	@After
+	@AfterAll
 	public void closeOrmFactory() {
-		ormFactory.close();
+		if( ormFactory != null ) {
+			ormFactory.close();
+		}
 	}
 
 	@Test
-	public void testORMWithStageSession(TestContext context) {
+	public void testORMWithStageSession(VertxTestContext context) {
 		final Flour almond = new Flour( 1, "Almond", "made from ground almonds.", "Gluten free" );
 
 		try (Session session = ormFactory.openSession()) {
@@ -81,12 +86,12 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		// Check database with Stage session and verify 'almond' flour exists
 		test( context, openSession()
 				.thenCompose( stageSession -> stageSession.find( Flour.class, almond.id ) )
-				.thenAccept( entityFound -> context.assertEquals( almond, entityFound ) )
+				.thenAccept( entityFound -> assertEquals( almond, entityFound ) )
 		);
 	}
 
 	@Test
-	public void testORMWitMutinySession(TestContext context) {
+	public void testORMWitMutinySession(VertxTestContext context) {
 		final Flour rose = new Flour( 2, "Rose", "made from ground rose pedals.", "Full fragrance" );
 
 		try (Session ormSession = ormFactory.openSession()) {
@@ -98,7 +103,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		// Check database with Mutiny session and verify 'rose' flour exists
 		test( context, openMutinySession()
 				.chain( session -> session.find( Flour.class, rose.id ) )
-				.invoke( foundRose -> context.assertEquals( rose, foundRose ) )
+				.invoke( foundRose -> assertEquals( rose, foundRose ) )
 		);
 	}
 

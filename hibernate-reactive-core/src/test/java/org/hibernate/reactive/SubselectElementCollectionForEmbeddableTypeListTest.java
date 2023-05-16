@@ -5,23 +5,28 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
@@ -46,32 +51,37 @@ import java.util.Objects;
  */
 public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseReactiveTest {
 
+	Person p1;
+	Person p2;
+	Person p3;
+
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Person.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		List<Phone> phones1 = new ArrayList<>();
-		phones1.add( new Phone( "999-999-9999" ) );
-		phones1.add( new Phone( "111-111-1111" ) );
-		Person p1 = new Person( 777777, "Claude", phones1 );
-		List<Phone> phones2 = new ArrayList<>();
-		phones2.add( new Phone( "999-999-9999" ) );
-		phones2.add( new Phone( "111-111-1111" ) );
-		Person p2 = new Person( 888888, "Solene", phones2 );
-		List<Phone> phones3 = new ArrayList<>();
-		phones3.add( new Phone( "999-999-9999" ) );
-		phones3.add( new Phone( "111-111-1111" ) );
-		Person p3 = new Person( 999999, "Claude", phones3 );
+	public Uni<?> populateDbMutiny() {
+		if( p1 == null ) {
+			List<Phone> phones1 = new ArrayList<>();
+			phones1.add( new Phone( "999-999-9999" ) );
+			phones1.add( new Phone( "111-111-1111" ) );
+			p1 = new Person( 777777, "Claude", phones1 );
+			List<Phone> phones2 = new ArrayList<>();
+			phones2.add( new Phone( "999-999-9999" ) );
+			phones2.add( new Phone( "111-111-1111" ) );
+			p2 = new Person( 888888, "Solene", phones2 );
+			List<Phone> phones3 = new ArrayList<>();
+			phones3.add( new Phone( "999-999-9999" ) );
+			phones3.add( new Phone( "111-111-1111" ) );
+			p3 = new Person( 999999, "Claude", phones3 );
+		}
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( session -> session.persistAll( p1, p2, p3 ) ) );
+		return getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( p1, p2, p3 ).call(session::flush) );
 	}
 
 	@Test
-	public void persistWithMutinyAPI(TestContext context) {
+	public void persistWithMutinyAPI(VertxTestContext context) {
 		List<Phone> phones = new ArrayList<>();
 		phones.add( new Phone( "888" ) );
 		phones.add( new Phone( "555" ) );
@@ -79,11 +89,12 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 
 		test (
 				context,
-				getMutinySessionFactory()
-						.withTransaction( session -> session.persist( johnny ) )
+				populateDbMutiny()
+						.call( () -> getMutinySessionFactory()
+						.withTransaction( session -> session.persist( johnny ) ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( session -> session.find( Person.class, johnny.getId() )
-										.invoke( result -> context.assertFalse( Hibernate.isInitialized( result.phones ) ) )
+										.invoke( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) )
 										.chain ( result -> session.fetch(result.phones) )
 										.invoke( found -> assertPhones( context, found, "888", "555" ) )
 								)
@@ -98,43 +109,45 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 	}
 
 	@Test
-	public void joinFetch(TestContext context) {
+	public void joinFetch(VertxTestContext context) {
 		test (
 				context,
-				getMutinySessionFactory()
+				populateDbMutiny()
+						.call( () -> getMutinySessionFactory()
 						.withTransaction( session -> session.createQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
 								.getResultList()
-								.invoke( all -> context.assertEquals( 2, all.size() ) )
+								.invoke( all -> assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> {
-									context.assertTrue( Hibernate.isInitialized(result.phones) );
+									assertTrue( Hibernate.isInitialized(result.phones) );
 									assertPhones( context, result.phones, "111-111-1111", "999-999-9999" );
 								} ) )
-						)
+						) )
 		);
 	}
 
 	@Test
-	public void noJoinFetch(TestContext context) {
+	public void noJoinFetch(VertxTestContext context) {
 		test (
 				context,
-				getMutinySessionFactory()
+				populateDbMutiny()
+						.call( () -> getMutinySessionFactory()
 						.withTransaction( session -> session.createQuery("from Person p where p.name='Claude'", Person.class)
 								.getResultList()
-								.invoke( all -> context.assertEquals( 2, all.size() ) )
-								.invoke( all -> all.forEach( result -> context.assertFalse( Hibernate.isInitialized( result.phones ) ) ) )
+								.invoke( all -> assertEquals( 2, all.size() ) )
+								.invoke( all -> all.forEach( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) ) )
 								.chain ( all -> session.fetch( all.get(0).phones ) )
 								.invoke( phones -> {
-									context.assertTrue( Hibernate.isInitialized(phones) );
+									assertTrue( Hibernate.isInitialized(phones) );
 									assertPhones( context, phones, "111-111-1111", "999-999-9999" );
 								} )
-						)
+						) )
 		);
 	}
 
-	private static void assertPhones(TestContext context, List<Phone> list, String... phones) {
-		context.assertEquals( phones.length, list.size() );
+	private static void assertPhones(VertxTestContext context, List<Phone> list, String... phones) {
+		assertEquals( phones.length, list.size() );
 		for ( String phone : phones ) {
-			context.assertTrue( phonesContainNumber( list, phone ) );
+			assertTrue( phonesContainNumber( list, phone ) );
 		}
 	}
 

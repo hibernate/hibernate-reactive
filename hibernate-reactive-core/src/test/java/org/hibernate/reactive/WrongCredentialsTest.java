@@ -5,18 +5,20 @@
  */
 package org.hibernate.reactive;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.provider.Settings;
-
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.service.spi.ServiceException;
 
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Check that the right exception is thrown when there is an error with the credentials.
@@ -38,21 +40,18 @@ public class WrongCredentialsTest extends BaseReactiveTest {
 	}
 
 	@Override
-	public void before(TestContext context) {
+	public void before(VertxTestContext context) {
 		// We need to postpone the creation of the factory so that we can check the exception
 	}
 
 	@Test
-	public void testWithTransaction(TestContext context) {
-		test( context, setupSessionFactory( this::constructConfiguration )
-				.handle( (v, e) -> e )
+	public void testWithTransaction(VertxTestContext context) {
+		test( context, assertThrown( ServiceException.class, setupSessionFactory( this::constructConfiguration ) )
 				.thenAccept( WrongCredentialsTest::assertException )
 		);
 	}
 
-
 	private static void assertException(Throwable throwable) {
-		assertThat( throwable ).as( "We were expecting an exception" ).isNotNull();
 		assertThat( throwable.getMessage().toLowerCase() )
 				.containsAnyOf(
 						"password authentication failed",

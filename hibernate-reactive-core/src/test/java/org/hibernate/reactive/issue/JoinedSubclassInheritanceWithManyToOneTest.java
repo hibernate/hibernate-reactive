@@ -12,9 +12,9 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.BaseReactiveTest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -46,7 +46,7 @@ public class JoinedSubclassInheritanceWithManyToOneTest extends BaseReactiveTest
 	 * Test for issue <a href="https://github.com/hibernate/hibernate-reactive/issues/1598">hibernate-reactive#1598</a>
 	 */
 	@Test
-	public void testSubclassListAll(TestContext context) {
+	public void testSubclassListAll(VertxTestContext context) {
 		ClothingItem clothingItem = new ClothingItem();
 		clothingItem.name = "Clothing item";
 

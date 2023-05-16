@@ -7,6 +7,8 @@ package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
@@ -23,23 +25,23 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( ORACLE );
+	@RegisterExtension
+	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( ORACLE );
 
 	public static class IndividuallySchemaUpdateOracleTestBase extends SchemaUpdateOracleTestBase {
 
@@ -68,9 +70,9 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Before
+	@BeforeEach
 	@Override
-	public void before(TestContext context) {
+	public void before(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "create" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -79,9 +81,9 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
-	@After
+	@AfterEach
 	@Override
-	public void after(TestContext context) {
+	public void after(VertxTestContext context) {
 		final Configuration dropHbm2ddlConf = constructConfiguration( "drop" );
 		dropHbm2ddlConf.addAnnotatedClass( ASimpleNext.class );
 		dropHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -93,7 +95,7 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testValidationSucceed(TestContext context) {
+	public void testValidationSucceed(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -102,7 +104,7 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUpdate(TestContext context) {
+	public void testUpdate(VertxTestContext context) {
 		final String indexDefinitionQuery =
 				"select index_type, uniqueness, constraint_index from user_indexes " +
 						"where table_owner = 'HREACT' " +
@@ -140,16 +142,16 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 								.thenCompose( s -> s
 										.find( ASimpleNext.class, aSimple.id )
 										.thenAccept( result -> {
-											context.assertNotNull( result );
-											context.assertEquals( aSimple.aValue, result.aValue );
-											context.assertEquals( aSimple.aStringValue, result.aStringValue );
-											context.assertEquals( aSimple.data, result.data );
-											context.assertNotNull( result.aOther );
-											context.assertEquals( aOther.id1, result.aOther.id1 );
-											context.assertEquals( aOther.id2, result.aOther.id2 );
-											context.assertEquals( aOther.anotherString, result.aOther.anotherString );
-											context.assertNotNull( result.aAnother );
-											context.assertEquals( aAnother.description, result.aAnother.description );
+											assertNotNull( result );
+											assertEquals( aSimple.aValue, result.aValue );
+											assertEquals( aSimple.aStringValue, result.aStringValue );
+											assertEquals( aSimple.data, result.data );
+											assertNotNull( result.aOther );
+											assertEquals( aOther.id1, result.aOther.id1 );
+											assertEquals( aOther.id2, result.aOther.id2 );
+											assertEquals( aOther.anotherString, result.aOther.anotherString );
+											assertNotNull( result.aAnother );
+											assertEquals( aAnother.description, result.aAnother.description );
 										} )
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASIMPLE" )
@@ -157,9 +159,9 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result -> {
 													final Object[] resultArray = (Object[]) result;
-													context.assertEquals( "FUNCTION-BASED NORMAL", resultArray[0] );
-													context.assertEquals( "NONUNIQUE", resultArray[1] );
-													context.assertEquals( "NO", resultArray[2] );
+													assertEquals( "FUNCTION-BASED NORMAL", resultArray[0] );
+													assertEquals( "NONUNIQUE", resultArray[1] );
+													assertEquals( "NO", resultArray[2] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
@@ -168,9 +170,9 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result -> {
 													final Object[] resultArray = (Object[]) result;
-													context.assertEquals( "NORMAL", resultArray[0] );
-													context.assertEquals( "UNIQUE", resultArray[1] );
-													context.assertEquals( "YES", resultArray[2] );
+													assertEquals( "NORMAL", resultArray[0] );
+													assertEquals( "UNIQUE", resultArray[1] );
+													assertEquals( "YES", resultArray[2] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
@@ -179,9 +181,9 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result -> {
 													final Object[] resultArray = (Object[]) result;
-													context.assertEquals( "FUNCTION-BASED NORMAL", resultArray[0] );
-													context.assertEquals( "NONUNIQUE", resultArray[1] );
-													context.assertEquals( "NO", resultArray[2] );
+													assertEquals( "FUNCTION-BASED NORMAL", resultArray[0] );
+													assertEquals( "NONUNIQUE", resultArray[1] );
+													assertEquals( "NO", resultArray[2] );
 												} )
 										)
 										// check foreign keys
@@ -189,11 +191,11 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 												.setParameter( 1, "ASIMPLE" )
 												.getResultList()
 												.thenAccept( list -> {
-																 context.assertEquals(
+																 assertEquals(
 																		 "FK_ASIMPLE_AOTHER",
 																		 list.get( 0 )
 																 );
-																 context.assertEquals(
+																 assertEquals(
 																		 "FK_ASIMPLE_AANOTHER",
 																		 list.get( 1 )
 																 );

@@ -13,14 +13,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,14 +35,19 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 /**
  * Tests the utility methods in {@link org.hibernate.reactive.util.impl.CompletionStages}
  */
-@RunWith(VertxUnitRunner.class)
+@ExtendWith(VertxExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CompletionStagesTest {
 
 	private final Object[] entries = { "a", "b", "c", "d", "e" };
 	private final List<Object> looped = new ArrayList<>();
 
+	@BeforeEach
+	private void clearLooped() {
+		looped.clear();
+	}
 	@Test
-	public void testTotalWithIntegers(TestContext context) {
+	public void testTotalWithIntegers(VertxTestContext context) {
 		int startInt = 0;
 		int endInt = entries.length;
 		int expectedTotal = IntStream.range( startInt, endInt ).sum();
@@ -53,7 +61,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testTotalWithIterator(TestContext context) {
+	public void testTotalWithIterator(VertxTestContext context) {
 		int increment = 3;
 
 		test( context, total( iterator( entries ), entry -> voidFuture()
@@ -67,7 +75,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testTotalWithArray(TestContext context) {
+	public void testTotalWithArray(VertxTestContext context) {
 		int increment = 2;
 
 		test( context, total( entries, entry -> voidFuture()
@@ -81,19 +89,19 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnArrayIndex(TestContext context) {
+	public void testLoopOnArrayIndex(VertxTestContext context) {
 		test( context, loop( 0, entries.length, index -> completedFuture( looped.add( entries[index] ) ) )
 				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
 	}
 
 	@Test
-	public void testLoopOnArray(TestContext context) {
+	public void testLoopOnArray(VertxTestContext context) {
 		test( context, loop( entries, entry -> completedFuture( looped.add( entry ) ) )
 				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
 	}
 
 	@Test
-	public void testLoopOnArrayWithFilter(TestContext context) {
+	public void testLoopOnArrayWithFilter(VertxTestContext context) {
 		test( context, loop(
 				entries,
 				index -> entries[index].equals( "a" ),
@@ -108,7 +116,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnIteratorWithIndex(TestContext context) {
+	public void testLoopOnIteratorWithIndex(VertxTestContext context) {
 		test( context, loop( iterator( entries ), (entry, index) -> {
 			assertThat( entry ).isEqualTo( entries[index] );
 			return completedFuture( looped.add( entry ) );
@@ -116,13 +124,13 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnIterable(TestContext context) {
+	public void testLoopOnIterable(VertxTestContext context) {
 		test( context, loop( asList( entries ), entry -> completedFuture( looped.add( entry ) ) )
 				.thenAccept( v -> assertThat( looped ).containsExactly( entries ) ) );
 	}
 
 	@Test
-	public void testLoopOnIteratorWithFilter(TestContext context) {
+	public void testLoopOnIteratorWithFilter(VertxTestContext context) {
 		test( context, loop(
 				iterator( entries ),
 				(entry, index) -> entry.equals( "a" ),
@@ -137,7 +145,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnArrayIndexWithFilter(TestContext context) {
+	public void testLoopOnArrayIndexWithFilter(VertxTestContext context) {
 		test( context, loop(
 				entries,
 				index -> entries[index].equals( "a" ),
@@ -152,7 +160,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnQueueWithFilter(TestContext context) {
+	public void testLoopOnQueueWithFilter(VertxTestContext context) {
 		final Queue<Object> queue = new LinkedList<>( asList( entries ) );
 		test( context, loop(
 				queue,
@@ -161,7 +169,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnSetWithFilter(TestContext context) {
+	public void testLoopOnSetWithFilter(VertxTestContext context) {
 		test( context, loop(
 				new LinkedHashSet<>( asList( entries ) ),
 				entry -> entry.equals( "c" ),
@@ -170,7 +178,7 @@ public class CompletionStagesTest {
 	}
 
 	@Test
-	public void testLoopOnCollectionWithFilter(TestContext context) {
+	public void testLoopOnCollectionWithFilter(VertxTestContext context) {
 		final Collection<Object> list = asList( entries );
 		test( context, loop(
 				list,
@@ -183,14 +191,14 @@ public class CompletionStagesTest {
 		return asList( entries ).iterator();
 	}
 
-	private static void test(TestContext context, CompletionStage<?> cs) {
-		Async async = context.async();
-		cs.whenComplete( (res, err) -> {
+	@Timeout(value = 60, timeUnit = TimeUnit.SECONDS)
+	protected static void test(VertxTestContext context, CompletionStage<?> work) {
+		work.whenComplete( (res, err) -> {
 			if ( err != null ) {
-				context.fail( err );
+				context.failNow( err );
 			}
 			else {
-				async.complete();
+				context.completeNow();
 			}
 		} );
 	}

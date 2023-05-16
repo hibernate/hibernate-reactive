@@ -10,15 +10,16 @@ import java.util.List;
 
 import org.hibernate.cfg.Configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test non ASCII Chars
@@ -43,7 +44,7 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testStringTypeWithUnicode(TestContext context) {
+	public void testStringTypeWithUnicode(VertxTestContext context) {
 		final String expected = "﷽ 雲  (͡° ͜ʖ ͡ °) Č";
 		Object original = new UnicodeString( expected );
 
@@ -51,7 +52,7 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 				.withTransaction( s -> s.persist( original ) )
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.createQuery( "select unicodeString from UnicodeString" ).getSingleResultOrNull() ) )
-				.thenAccept( found -> context.assertEquals( expected, found ) )
+				.thenAccept( found -> assertEquals( expected, found ) )
 		);
 	}
 

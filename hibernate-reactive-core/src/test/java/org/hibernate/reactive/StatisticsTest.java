@@ -10,16 +10,17 @@ import org.hibernate.stat.EntityStatistics;
 import org.hibernate.stat.QueryStatistics;
 import org.hibernate.stat.Statistics;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class StatisticsTest extends BaseReactiveTest {
@@ -32,13 +33,13 @@ public class StatisticsTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@After
-	public void cleanDB(TestContext context) {
+	@AfterEach
+	public void cleanDB() {
 		getSessionFactory().close();
 	}
 
 	@Test
-	public void testMutinyStatistics(TestContext context) {
+	public void testMutinyStatistics(VertxTestContext context) {
 		Statistics statistics = getMutinySessionFactory().getStatistics();
 		test(
 				context,
@@ -50,51 +51,51 @@ public class StatisticsTest extends BaseReactiveTest {
 								.withTransaction( s -> s.find( Named.class, 1 ).chain( s::remove ) )
 						)
 						.invoke( v -> {
-							context.assertEquals( 3L, statistics.getEntityInsertCount() );
-							context.assertEquals( 1L, statistics.getEntityLoadCount() );
-							context.assertEquals( 1L, statistics.getEntityDeleteCount() );
+							assertEquals( 3L, statistics.getEntityInsertCount() );
+							assertEquals( 1L, statistics.getEntityLoadCount() );
+							assertEquals( 1L, statistics.getEntityDeleteCount() );
 
-							context.assertEquals( 2L, statistics.getFlushCount() );
-							context.assertEquals( 2L, statistics.getSessionOpenCount() );
-							context.assertEquals( 2L, statistics.getSessionCloseCount() );
-//                            context.assertEquals( 2L, statistics.getTransactionCount() );
-//                            context.assertEquals( 2L, statistics.getConnectCount() );
-//                            context.assertEquals( 5L, statistics.getPrepareStatementCount() );
+							assertEquals( 2L, statistics.getFlushCount() );
+							assertEquals( 2L, statistics.getSessionOpenCount() );
+							assertEquals( 2L, statistics.getSessionCloseCount() );
+//                            assertEquals( 2L, statistics.getTransactionCount() );
+//                            assertEquals( 2L, statistics.getConnectCount() );
+//                            assertEquals( 5L, statistics.getPrepareStatementCount() );
 
 							EntityStatistics entityStatistics = statistics.getEntityStatistics( Named.class.getName() );
-							context.assertEquals( 3L, entityStatistics.getInsertCount() );
-							context.assertEquals( 1L, entityStatistics.getLoadCount() );
-							context.assertEquals( 1L, entityStatistics.getDeleteCount() );
+							assertEquals( 3L, entityStatistics.getInsertCount() );
+							assertEquals( 1L, entityStatistics.getLoadCount() );
+							assertEquals( 1L, entityStatistics.getDeleteCount() );
 
-							context.assertEquals( 0, statistics.getQueries().length );
+							assertEquals( 0, statistics.getQueries().length );
 						} )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( s -> s.createQuery( "from Named" ).getResultList() ) )
 						.invoke( v -> {
-							context.assertEquals( 3L, statistics.getEntityInsertCount() );
-							context.assertEquals( 3L, statistics.getEntityLoadCount() );
-							context.assertEquals( 1L, statistics.getEntityDeleteCount() );
-							context.assertEquals( 1L, statistics.getQueryExecutionCount() );
+							assertEquals( 3L, statistics.getEntityInsertCount() );
+							assertEquals( 3L, statistics.getEntityLoadCount() );
+							assertEquals( 1L, statistics.getEntityDeleteCount() );
+							assertEquals( 1L, statistics.getQueryExecutionCount() );
 
-							context.assertEquals( 1, statistics.getQueries().length );
+							assertEquals( 1, statistics.getQueries().length );
 
 							QueryStatistics queryStatistics = statistics.getQueryStatistics( "from Named" );
-							context.assertEquals( 1L, queryStatistics.getExecutionCount() );
-							context.assertEquals( 2L, queryStatistics.getExecutionRowCount() );
-//                            context.assertNotEquals( 0L, queryStatistics.getExecutionMaxTime() );
+							assertEquals( 1L, queryStatistics.getExecutionCount() );
+							assertEquals( 2L, queryStatistics.getExecutionRowCount() );
+//                            assertNotEquals( 0L, queryStatistics.getExecutionMaxTime() );
 
-							context.assertEquals( 3L, statistics.getFlushCount() );
-							context.assertEquals( 3L, statistics.getSessionOpenCount() );
-							context.assertEquals( 3L, statistics.getSessionCloseCount() );
-//                            context.assertEquals( 3L, statistics.getTransactionCount() );
-//                            context.assertEquals( 3L, statistics.getConnectCount() );
-//                            context.assertEquals( 6L, statistics.getPrepareStatementCount() );
+							assertEquals( 3L, statistics.getFlushCount() );
+							assertEquals( 3L, statistics.getSessionOpenCount() );
+							assertEquals( 3L, statistics.getSessionCloseCount() );
+//                            assertEquals( 3L, statistics.getTransactionCount() );
+//                            assertEquals( 3L, statistics.getConnectCount() );
+//                            assertEquals( 6L, statistics.getPrepareStatementCount() );
 						} )
 		);
 	}
 
 	@Test
-	public void testStageStatistics(TestContext context) {
+	public void testStageStatistics(VertxTestContext context) {
 		Statistics statistics = getSessionFactory().getStatistics();
 		test(
 				context,
@@ -104,46 +105,46 @@ public class StatisticsTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( s -> s.find( Named.class, 1 ).thenCompose( s::remove ) ) )
 						.thenAccept( v -> {
-							context.assertEquals( 3L, statistics.getEntityInsertCount() );
-							context.assertEquals( 1L, statistics.getEntityLoadCount() );
-							context.assertEquals( 1L, statistics.getEntityDeleteCount() );
+							assertEquals( 3L, statistics.getEntityInsertCount() );
+							assertEquals( 1L, statistics.getEntityLoadCount() );
+							assertEquals( 1L, statistics.getEntityDeleteCount() );
 
-							context.assertEquals( 2L, statistics.getFlushCount() );
-							context.assertEquals( 2L, statistics.getSessionOpenCount() );
-							context.assertEquals( 2L, statistics.getSessionCloseCount() );
-//                            context.assertEquals( 2L, statistics.getTransactionCount() );
-//                            context.assertEquals( 2L, statistics.getConnectCount() );
-//                            context.assertEquals( 5L, statistics.getPrepareStatementCount() );
+							assertEquals( 2L, statistics.getFlushCount() );
+							assertEquals( 2L, statistics.getSessionOpenCount() );
+							assertEquals( 2L, statistics.getSessionCloseCount() );
+//                            assertEquals( 2L, statistics.getTransactionCount() );
+//                            assertEquals( 2L, statistics.getConnectCount() );
+//                            assertEquals( 5L, statistics.getPrepareStatementCount() );
 
 							EntityStatistics entityStatistics = statistics.getEntityStatistics( Named.class.getName() );
-							context.assertEquals( 3L, entityStatistics.getInsertCount() );
-							context.assertEquals( 1L, entityStatistics.getLoadCount() );
-							context.assertEquals( 1L, entityStatistics.getDeleteCount() );
+							assertEquals( 3L, entityStatistics.getInsertCount() );
+							assertEquals( 1L, entityStatistics.getLoadCount() );
+							assertEquals( 1L, entityStatistics.getDeleteCount() );
 
-							context.assertEquals( 0, statistics.getQueries().length );
+							assertEquals( 0, statistics.getQueries().length );
 						} )
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( s -> s
 										.createQuery( "from Named" ).getResultList() ) )
 						.thenAccept( v -> {
-							context.assertEquals( 3L, statistics.getEntityInsertCount() );
-							context.assertEquals( 3L, statistics.getEntityLoadCount() );
-							context.assertEquals( 1L, statistics.getEntityDeleteCount() );
-							context.assertEquals( 1L, statistics.getQueryExecutionCount() );
+							assertEquals( 3L, statistics.getEntityInsertCount() );
+							assertEquals( 3L, statistics.getEntityLoadCount() );
+							assertEquals( 1L, statistics.getEntityDeleteCount() );
+							assertEquals( 1L, statistics.getQueryExecutionCount() );
 
-							context.assertEquals( 1, statistics.getQueries().length );
+							assertEquals( 1, statistics.getQueries().length );
 
 							QueryStatistics queryStatistics = statistics.getQueryStatistics( "from Named" );
-							context.assertEquals( 1L, queryStatistics.getExecutionCount() );
-							context.assertEquals( 2L, queryStatistics.getExecutionRowCount() );
-//                            context.assertNotEquals( 0L, queryStatistics.getExecutionMaxTime() );
+							assertEquals( 1L, queryStatistics.getExecutionCount() );
+							assertEquals( 2L, queryStatistics.getExecutionRowCount() );
+//                            assertNotEquals( 0L, queryStatistics.getExecutionMaxTime() );
 
-							context.assertEquals( 3L, statistics.getFlushCount() );
-							context.assertEquals( 3L, statistics.getSessionOpenCount() );
-							context.assertEquals( 3L, statistics.getSessionCloseCount() );
-//                            context.assertEquals( 3L, statistics.getTransactionCount() );
-//                            context.assertEquals( 3L, statistics.getConnectCount() );
-//                            context.assertEquals( 6L, statistics.getPrepareStatementCount() );
+							assertEquals( 3L, statistics.getFlushCount() );
+							assertEquals( 3L, statistics.getSessionOpenCount() );
+							assertEquals( 3L, statistics.getSessionCloseCount() );
+//                            assertEquals( 3L, statistics.getTransactionCount() );
+//                            assertEquals( 3L, statistics.getConnectCount() );
+//                            assertEquals( 6L, statistics.getPrepareStatementCount() );
 						} )
 		);
 	}

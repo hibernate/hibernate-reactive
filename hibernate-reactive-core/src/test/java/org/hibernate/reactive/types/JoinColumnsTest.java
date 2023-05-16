@@ -12,6 +12,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 
+import org.hibernate.TransientPropertyValueException;
+import org.hibernate.reactive.BaseReactiveTest;
+
+import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,13 +31,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-import org.hibernate.TransientPropertyValueException;
-import org.hibernate.reactive.BaseReactiveTest;
-
-import org.junit.Test;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class JoinColumnsTest extends BaseReactiveTest {
 
@@ -40,7 +42,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithStages(TestContext context) {
+	public void testWithStages(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -63,14 +65,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 				.thenCompose( ignore -> getSessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
-								.thenAccept( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
+								.thenAccept( entity -> assertEquals( sampleJoinEntity.name, entity.name ) )
 						)
 				)
 		);
 	}
 
 	@Test
-	public void testWithMutiny(TestContext context) {
+	public void testWithMutiny(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -93,14 +95,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 				.call( () -> getMutinySessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
-								.invoke( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
+								.invoke( entity -> assertEquals( sampleJoinEntity.name, entity.name ) )
 						)
 				)
 		);
 	}
 
 	@Test
-	public void testDetachedReferenceWithStages(TestContext context) {
+	public void testDetachedReferenceWithStages(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -121,14 +123,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 				.thenCompose( ignore -> getSessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
-								.thenAccept( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
+								.thenAccept( entity -> assertEquals( sampleJoinEntity.name, entity.name ) )
 						)
 				)
 		);
 	}
 
 	@Test
-	public void testDetachedReferenceWithMutiny(TestContext context) {
+	public void testDetachedReferenceWithMutiny(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -149,14 +151,14 @@ public class JoinColumnsTest extends BaseReactiveTest {
 				.call( () -> getMutinySessionFactory()
 						.withTransaction( (session, tx) -> session
 								.find( SampleJoinEntity.class, sampleJoinEntity.id )
-								.invoke( entity -> context.assertEquals( sampleJoinEntity.name, entity.name ) )
+								.invoke( entity -> assertEquals( sampleJoinEntity.name, entity.name ) )
 						)
 				)
 		);
 	}
 
 	@Test
-	public void testTransientReferenceExceptionWithStages(TestContext context) {
+	public void testTransientReferenceExceptionWithStages(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -172,17 +174,17 @@ public class JoinColumnsTest extends BaseReactiveTest {
 							return session.persist( sampleJoinEntity );
 						} )
 				.handle( (session, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( CompletionException.class, throwable.getClass() );
-					context.assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
-					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
+					assertNotNull( throwable );
+					assertEquals( CompletionException.class, throwable.getClass() );
+					assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
+					assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
 					return null;
 				} )
 		);
 	}
 
 	@Test
-	public void testTransientReferenceExceptionWithMutiny(TestContext context) {
+	public void testTransientReferenceExceptionWithMutiny(VertxTestContext context) {
 		final SampleEntity sampleEntity = new SampleEntity();
 		sampleEntity.name = "Entity name";
 		sampleEntity.firstKeyId = 1L;
@@ -197,11 +199,11 @@ public class JoinColumnsTest extends BaseReactiveTest {
 					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
 					return session.persist( sampleJoinEntity );
 				} )
-				.onItem().invoke( v -> context.fail( "Expected exception not thrown" ) )
+				.onItem().invoke( v -> context.failNow( "Expected exception not thrown" ) )
 				.onFailure().recoverWithUni( throwable -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( IllegalStateException.class, throwable.getClass() );
-					context.assertEquals( TransientPropertyValueException.class, throwable.getCause().getClass() );
+					assertNotNull( throwable );
+					assertEquals( IllegalStateException.class, throwable.getClass() );
+					assertEquals( TransientPropertyValueException.class, throwable.getCause().getClass() );
 					return Uni.createFrom().nullItem();
 				} )
 		);

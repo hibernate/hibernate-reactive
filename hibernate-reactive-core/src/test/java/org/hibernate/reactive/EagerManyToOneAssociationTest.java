@@ -8,10 +8,12 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -20,7 +22,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
@@ -29,7 +35,7 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void persistOneBook(TestContext context) {
+	public void persistOneBook(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
 
@@ -43,21 +49,21 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( author, optionalAuthor );
-							context.assertEquals( book, optionalAuthor.getBook()  );
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertEquals( book, optionalAuthor.getBook()  );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, book.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( book, optionalBook );
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
 						})
 		);
 	}
 
 	@Test
-	public void persistTwoAuthors(TestContext context) {
+	public void persistTwoAuthors(VertxTestContext context) {
 		final Book goodOmens = new Book( 72433, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21421, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2111, "Terry Pratchett", goodOmens );
@@ -74,15 +80,15 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, neilGaiman.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( neilGaiman, optionalAuthor );
-							context.assertEquals( goodOmens, optionalAuthor.getBook()  );
+							assertNotNull( optionalAuthor );
+							assertEquals( neilGaiman, optionalAuthor );
+							assertEquals( goodOmens, optionalAuthor.getBook()  );
 						} )
 		);
 	}
 
 	@Test
-	public void manyToOneIsNull(TestContext context) {
+	public void manyToOneIsNull(VertxTestContext context) {
 		final Author author = new Author( 5, "Charlie Mackesy", null );
 
 		test(
@@ -92,9 +98,9 @@ public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Author.class, author.getId() ) )
 						.thenAccept( optionalAuthor -> {
-							context.assertNotNull( optionalAuthor );
-							context.assertEquals( author, optionalAuthor );
-							context.assertNull( author.book, "Book must be null");
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertNull( author.book, "Book must be null");
 						} )
 		);
 	}

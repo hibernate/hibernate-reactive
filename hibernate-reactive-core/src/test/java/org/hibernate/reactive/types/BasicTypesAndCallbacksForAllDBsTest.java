@@ -29,13 +29,14 @@ import java.util.function.Consumer;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -64,67 +65,72 @@ import jakarta.persistence.Version;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
  */
 public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	//Db2: testUUIDType throws NoStackTraceThrowable: parameter of type BufferImpl cannot be coerced to ByteBuf
-	@Rule
-	public final DatabaseSelectionRule skip = DatabaseSelectionRule.skipTestsFor( DB2 );
+	@RegisterExtension
+	public final DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2 );
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
 		return Set.of( Basic.class );
 	}
 
-	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {
+	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
 		test( context, getSessionFactory()
 				.withTransaction( (s, t) -> s.persist( original ) )
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.find( Basic.class, original.id )
 						.thenAccept( found -> {
-							context.assertNotNull( found );
+							assertNotNull( found );
 							consumer.accept( found );
 						} ) ) )
 		);
 	}
 
 	@Test
-	public void testStringType(TestContext context) {
+	public void testStringType(VertxTestContext context) {
 		String string = "Hello world!";
 		Basic basic = new Basic();
 		basic.string = string;
 
-		testField( context, basic, found -> context.assertEquals( string, found.string ) );
+		testField( context, basic, found -> assertEquals( string, found.string ) );
 	}
 
 	@Test
-	public void testIntegerType(TestContext context) {
+	public void testIntegerType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.primitiveInt = Integer.MIN_VALUE;
 		basic.fieldInteger = Integer.MAX_VALUE;
 
 		testField( context, basic, found -> {
-			context.assertEquals( Integer.MIN_VALUE, found.primitiveInt );
-			context.assertEquals( Integer.MAX_VALUE, found.fieldInteger );
+			assertEquals( Integer.MIN_VALUE, found.primitiveInt );
+			assertEquals( Integer.MAX_VALUE, found.fieldInteger );
 		} );
 	}
 
 	@Test
-	public void testLongType(TestContext context) {
+	public void testLongType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.primitiveLong = Long.MIN_VALUE;
 		basic.fieldLong = Long.MAX_VALUE;
 
 		testField( context, basic, found -> {
-			context.assertEquals( Long.MIN_VALUE, found.primitiveLong );
-			context.assertEquals( Long.MAX_VALUE, found.fieldLong );
+			assertEquals( Long.MIN_VALUE, found.primitiveLong );
+			assertEquals( Long.MAX_VALUE, found.fieldLong );
 		} );
 	}
 
 	@Test
-	public void testFloatType(TestContext context) {
+	public void testFloatType(VertxTestContext context) {
 		float primitiveFloat = 10.02f;
 		Float fieldFloat = 12.562f;
 
@@ -133,13 +139,13 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.fieldFloat = 12.562f;
 
 		testField( context, basic, found -> {
-			context.assertEquals( primitiveFloat, found.primitiveFloat );
-			context.assertEquals( fieldFloat, found.fieldFloat );
+			assertEquals( primitiveFloat, found.primitiveFloat );
+			assertEquals( fieldFloat, found.fieldFloat );
 		} );
 	}
 
 	@Test
-	public void testDoubleType(TestContext context) {
+	public void testDoubleType(VertxTestContext context) {
 		double primitiveDouble = 10.02d;
 		Double fieldDouble = 16.2d;
 
@@ -148,13 +154,13 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.fieldDouble = fieldDouble;
 
 		testField( context, basic, found -> {
-			context.assertEquals( primitiveDouble, found.primitiveDouble );
-			context.assertEquals( fieldDouble, found.fieldDouble );
+			assertEquals( primitiveDouble, found.primitiveDouble );
+			assertEquals( fieldDouble, found.fieldDouble );
 		} );
 	}
 
 	@Test
-	public void testBooleanType(TestContext context) {
+	public void testBooleanType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.primitiveBoolean = true;
 		basic.fieldBoolean = Boolean.FALSE;
@@ -163,16 +169,16 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.booleanNumeric = Boolean.FALSE;
 
 		testField( context, basic, found -> {
-			context.assertEquals( true, found.primitiveBoolean );
-			context.assertEquals( Boolean.FALSE, found.fieldBoolean );
-			context.assertEquals( Boolean.FALSE, found.booleanTrueFalse );
-			context.assertEquals( Boolean.FALSE, found.booleanYesNo );
-			context.assertEquals( Boolean.FALSE, found.booleanNumeric );
+			assertEquals( true, found.primitiveBoolean );
+			assertEquals( Boolean.FALSE, found.fieldBoolean );
+			assertEquals( Boolean.FALSE, found.booleanTrueFalse );
+			assertEquals( Boolean.FALSE, found.booleanYesNo );
+			assertEquals( Boolean.FALSE, found.booleanNumeric );
 		} );
 	}
 
 	@Test
-	public void testBytesType(TestContext context) {
+	public void testBytesType(VertxTestContext context) {
 		byte primitiveByte = 'D';
 		byte[] primitiveBytes = "This too shall pass".getBytes();
 		Byte fieldByte = Byte.valueOf( "4" );
@@ -183,53 +189,53 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.fieldByte = fieldByte;
 
 		testField( context, basic, found -> {
-			context.assertEquals( primitiveByte, found.primitiveByte );
-			context.assertTrue( Objects.deepEquals( primitiveBytes, found.primitiveBytes ) );
-			context.assertEquals( fieldByte, found.fieldByte );
+			assertEquals( primitiveByte, found.primitiveByte );
+			assertTrue( Objects.deepEquals( primitiveBytes, found.primitiveBytes ) );
+			assertEquals( fieldByte, found.fieldByte );
 		} );
 	}
 
 	@Test
-	public void testURL(TestContext context) throws Exception {
+	public void testURL(VertxTestContext context) throws Exception {
 		URL url = new URL( "http://example.com/" );
 		Basic basic = new Basic();
 		basic.url = url;
 
-		testField( context, basic, found -> context.assertEquals( url, found.url ) );
+		testField( context, basic, found -> assertEquals( url, found.url ) );
 	}
 
 	@Test
-	public void testDateType(TestContext context) {
+	public void testDateType(VertxTestContext context) {
 		Date date = new Date( 2000, Calendar.JANUARY, 1 );
 		Basic basic = new Basic();
 		basic.date = date;
 
-		testField( context, basic, found -> context.assertEquals( date, found.date ) );
+		testField( context, basic, found -> assertEquals( date, found.date ) );
 	}
 
 	@Test
-	public void testDateAsTimestampType(TestContext context) {
+	public void testDateAsTimestampType(VertxTestContext context) {
 		Date date = new Date();
 		Basic basic = new Basic();
 		basic.dateAsTimestamp = date;
 
 		testField( context, basic, found -> {
-			context.assertTrue( found.dateAsTimestamp instanceof Timestamp );
-			context.assertEquals( date, found.dateAsTimestamp );
+			assertTrue( found.dateAsTimestamp instanceof Timestamp );
+			assertEquals( date, found.dateAsTimestamp );
 		} );
 	}
 
 	@Test
-	public void testTimeZoneType(TestContext context) {
+	public void testTimeZoneType(VertxTestContext context) {
 		TimeZone timeZone = TimeZone.getTimeZone( "America/Los_Angeles" );
 		Basic basic = new Basic();
 		basic.timeZone = timeZone;
 
-		testField( context, basic, found -> context.assertEquals( basic.timeZone, found.timeZone ) );
+		testField( context, basic, found -> assertEquals( basic.timeZone, found.timeZone ) );
 	}
 
 	@Test
-	public void testCalendarAsDateType(TestContext context) {
+	public void testCalendarAsDateType(VertxTestContext context) {
 		Calendar calendar = GregorianCalendar.getInstance();
 		calendar.set( Calendar.DAY_OF_MONTH,  15);
 		calendar.set( Calendar.MONTH,  7);
@@ -244,14 +250,14 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		basic.calendarAsDate = calendar;
 
 		testField( context, basic, found -> {
-			context.assertEquals( expectedDay, found.calendarAsDate.get( Calendar.DAY_OF_MONTH ) );
-			context.assertEquals( expectedMonth, found.calendarAsDate.get( Calendar.MONTH ) );
-			context.assertEquals( expectedYear, found.calendarAsDate.get( Calendar.YEAR ) );
+			assertEquals( expectedDay, found.calendarAsDate.get( Calendar.DAY_OF_MONTH ) );
+			assertEquals( expectedMonth, found.calendarAsDate.get( Calendar.MONTH ) );
+			assertEquals( expectedYear, found.calendarAsDate.get( Calendar.YEAR ) );
 		} );
 	}
 
 	@Test
-	public void testCalendarAsTimestampType(TestContext context) {
+	public void testCalendarAsTimestampType(VertxTestContext context) {
 		Calendar calendar = GregorianCalendar.getInstance();
 		calendar.set( Calendar.DAY_OF_MONTH, 15 );
 		calendar.set( Calendar.MONTH, 7 );
@@ -262,7 +268,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		testField( context, basic, found -> {
 			String actual = format( found.calendarAsTimestamp );
-			context.assertEquals( expected, actual );
+			assertEquals( expected, actual );
 		} );
 	}
 
@@ -272,16 +278,16 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLocalDateType(TestContext context) {
+	public void testLocalDateType(VertxTestContext context) {
 		LocalDate now = LocalDate.now();
 		Basic basic = new Basic();
 		basic.localDate = now;
 
-		testField( context, basic, found -> context.assertEquals( now, found.localDate ) );
+		testField( context, basic, found -> assertEquals( now, found.localDate ) );
 	}
 
 	@Test
-	public void testLocalDateTimeType(TestContext context) {
+	public void testLocalDateTimeType(VertxTestContext context) {
 		// @Temporal(TemporalType.TIMESTAMP) is stored to the mills by Hibernate
 		LocalDateTime now = LocalDateTime.now()
 				// required for JDK 15+
@@ -289,105 +295,105 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		Basic basic = new Basic();
 		basic.localDateTime = now;
 
-		testField( context, basic, found -> context.assertEquals( now, found.localDateTime ) );
+		testField( context, basic, found -> assertEquals( now, found.localDateTime ) );
 	}
 
 	@Test
-	public void testEnumType(TestContext context) {
+	public void testEnumType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.cover = Cover.HARDER;
 		basic.coverAsOrdinal = Cover.HARD;
 		basic.coverAsString = Cover.SOFT;
 
 		testField( context, basic, found -> {
-			context.assertEquals( Cover.HARDER, found.cover );
-			context.assertEquals( Cover.HARD, found.coverAsOrdinal );
-			context.assertEquals( Cover.SOFT, found.coverAsString );
+			assertEquals( Cover.HARDER, found.cover );
+			assertEquals( Cover.HARD, found.coverAsOrdinal );
+			assertEquals( Cover.SOFT, found.coverAsString );
 		} );
 	}
 
 	@Test
-	public void testEmbeddableType(TestContext context) {
+	public void testEmbeddableType(VertxTestContext context) {
 		Embed embed = new Embed( "one", "two" );
 		Basic basic = new Basic();
 		basic.embed = embed;
 
 		testField( context, basic, found -> {
-			context.assertEquals( embed, found.embed );
+			assertEquals( embed, found.embed );
 		} );
 	}
 
 	@Test
-	public void testBigIntegerWithConverterType(TestContext context) {
+	public void testBigIntegerWithConverterType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.bigIntegerAsString = BigInteger.TEN;
 
 		testField( context, basic, found -> {
-			context.assertEquals( BigInteger.TEN.floatValue(), found.bigIntegerAsString.floatValue() );
+			assertEquals( BigInteger.TEN.floatValue(), found.bigIntegerAsString.floatValue() );
 		} );
 	}
 
 	@Test
-	public void testBigDecimalWithUserType(TestContext context) {
+	public void testBigDecimalWithUserType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.bigDecimalAsString = BigDecimal.TEN;
 
 		testField( context, basic, found -> {
-			context.assertEquals( BigInteger.TEN.floatValue(), found.bigDecimalAsString.floatValue() );
+			assertEquals( BigInteger.TEN.floatValue(), found.bigDecimalAsString.floatValue() );
 		} );
 	}
 
 	@Test
-	public void testSerializableType(TestContext context) {
+	public void testSerializableType(VertxTestContext context) {
 		String[] thing = { "hello", "world" };
 
 		Basic basic = new Basic();
 		basic.thing = thing;
 
 		testField( context, basic, found -> {
-			context.assertTrue( found.thing instanceof String[] );
-			context.assertTrue( Objects.deepEquals( thing, found.thing ) );
+			assertTrue( found.thing instanceof String[] );
+			assertTrue( Objects.deepEquals( thing, found.thing ) );
 		} );
 	}
 
 	@Test
-	public void testUUIDType(TestContext context) {
+	public void testUUIDType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.uuid = UUID.fromString( "123e4567-e89b-42d3-a456-556642440000" );
 
-		testField( context, basic, found -> context.assertEquals( basic.uuid, found.uuid ) );
+		testField( context, basic, found -> assertEquals( basic.uuid, found.uuid ) );
 	}
 
 	@Test
-	public void testDecimalType(TestContext context) {
+	public void testDecimalType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.bigDecimal = new BigDecimal( "12.12" );
 
-		testField( context, basic, found -> context.assertEquals( basic.bigDecimal.floatValue(), found.bigDecimal.floatValue() ) );
+		testField( context, basic, found -> assertEquals( basic.bigDecimal.floatValue(), found.bigDecimal.floatValue() ) );
 	}
 
 	@Test
-	public void testBigIntegerType(TestContext context) {
+	public void testBigIntegerType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.bigInteger = BigInteger.valueOf( 123L);
 
-		testField( context, basic, found -> context.assertEquals( basic.bigInteger, found.bigInteger ) );
+		testField( context, basic, found -> assertEquals( basic.bigInteger, found.bigInteger ) );
 	}
 
 	@Test
-	@Ignore // Fail for MSSQL because the value changes before it's saved on the db. This also fails for ORM
-	public void testLocalTimeType(TestContext context) {
+	@Disabled // Fail for MSSQL because the value changes before it's saved on the db. This also fails for ORM
+	public void testLocalTimeType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.localTime = LocalTime.now();
 
-		testField( context, basic, found -> context.assertEquals(
+		testField( context, basic, found -> assertEquals(
 				basic.localTime.truncatedTo( ChronoUnit.MINUTES ),
 				found.localTime.truncatedTo( ChronoUnit.MINUTES )
 		) );
 	}
 
 	@Test
-	public void testDateAsTimeType(TestContext context) {
+	public void testDateAsTimeType(VertxTestContext context) {
 		Date date = new Date();
 
 		Basic basic = new Basic();
@@ -395,35 +401,35 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		testField( context, basic, found -> {
 			SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
-			context.assertTrue( found.dateAsTime instanceof Time);
-			context.assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
+			assertTrue( found.dateAsTime instanceof Time);
+			assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
 		} );
 	}
 
 	@Test
-	public void testDuration(TestContext context) {
+	public void testDuration(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.duration = Duration.ofMillis( 1894657L );
 
 		testField( context, basic, found -> {
-			context.assertNotNull( found.duration );
-			context.assertEquals( basic.duration, found.duration );
+			assertNotNull( found.duration );
+			assertEquals( basic.duration, found.duration );
 		} );
 	}
 
 	@Test
-	public void testInstant(TestContext context) {
+	public void testInstant(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.instant = Instant.now();
 
 		testField( context, basic, found -> {
-			context.assertNotNull( found.instant );
+			assertNotNull( found.instant );
 			assertWithTruncationThat( found.instant ).isEqualTo( basic.instant );
 		} );
 	}
 
 	@Test
-	public void testCallbacksAndVersioning(TestContext context) {
+	public void testCallbacksAndVersioning(VertxTestContext context) {
 		Basic parent = new Basic( "Parent" );
 		Basic basik = new Basic( "Hello World" );
 		basik.cover = Cover.HARD;
@@ -433,20 +439,20 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose( s -> s.persist( basik.parent ).thenCompose( v -> s.persist( basik ) )
-								.thenAccept( v -> context.assertTrue( basik.prePersisted && !basik.postPersisted ) )
-								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted ) )
+								.thenAccept( v -> assertTrue( basik.prePersisted && !basik.postPersisted ) )
+								.thenAccept( v -> assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted ) )
 								.thenCompose( v -> s.flush() )
-								.thenAccept( v -> context.assertTrue( basik.prePersisted && basik.postPersisted ) )
-								.thenAccept( v -> context.assertTrue( basik.parent.prePersisted && basik.parent.postPersisted ) )
+								.thenAccept( v -> assertTrue( basik.prePersisted && basik.postPersisted ) )
+								.thenAccept( v -> assertTrue( basik.parent.prePersisted && basik.parent.postPersisted ) )
 						)
 						.thenCompose( v -> openSession()
 								.thenCompose( s2 -> s2.find( Basic.class, basik.getId() )
 										.thenCompose( basic -> {
-											context.assertNotNull( basic );
-											context.assertTrue( basic.loaded );
-											context.assertEquals( basic.string, basik.string );
-											context.assertEquals( basic.cover, basik.cover );
-											context.assertEquals( basic.version, 0 );
+											assertNotNull( basic );
+											assertTrue( basic.loaded );
+											assertEquals( basic.string, basik.string );
+											assertEquals( basic.cover, basik.cover );
+											assertEquals( basic.version, 0 );
 
 											basic.string = "Goodbye";
 											basic.cover = Cover.SOFT;
@@ -454,30 +460,30 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 											return s2.persist( basic.parent )
 													.thenCompose( vv -> s2.flush() )
 													.thenAccept( vv -> {
-														context.assertNotNull( basic );
-														context.assertTrue( basic.postUpdated && basic.preUpdated );
-														context.assertFalse( basic.postPersisted && basic.prePersisted );
-														context.assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
-														context.assertEquals( basic.version, 1 );
+														assertNotNull( basic );
+														assertTrue( basic.postUpdated && basic.preUpdated );
+														assertFalse( basic.postPersisted && basic.prePersisted );
+														assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
+														assertEquals( basic.version, 1 );
 													} );
 										} )
 								) )
 						.thenCompose( v -> openSession()
 								.thenCompose( s3 -> s3.find( Basic.class, basik.getId() )
 										.thenCompose( basic -> {
-											context.assertFalse( basic.postUpdated && basic.preUpdated );
-											context.assertFalse( basic.postPersisted && basic.prePersisted );
-											context.assertEquals( basic.version, 1 );
-											context.assertEquals( basic.string, "Goodbye" );
+											assertFalse( basic.postUpdated && basic.preUpdated );
+											assertFalse( basic.postPersisted && basic.prePersisted );
+											assertEquals( basic.version, 1 );
+											assertEquals( basic.string, "Goodbye" );
 											return s3.remove( basic )
-													.thenAccept( vv -> context.assertTrue( !basic.postRemoved && basic.preRemoved ) )
+													.thenAccept( vv -> assertTrue( !basic.postRemoved && basic.preRemoved ) )
 													.thenCompose( vv -> s3.flush() )
-													.thenAccept( vv -> context.assertTrue( basic.postRemoved && basic.preRemoved ) );
+													.thenAccept( vv -> assertTrue( basic.postRemoved && basic.preRemoved ) );
 										} )
 								) )
 						.thenCompose( v -> openSession()
 								.thenCompose( s4 -> s4.find( Basic.class, basik.getId() ) )
-								.thenAccept( context::assertNull ) )
+								.thenAccept( Assertions::assertNull ) )
 		);
 	}
 
@@ -589,7 +595,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		@Convert(converter = BigIntegerAsString.class)
 		BigInteger bigIntegerAsString;
 
-		@Type(org.hibernate.reactive.types.BigDecimalAsString.class)
+		@Type(BigDecimalAsString.class)
 		BigDecimal bigDecimalAsString;
 
 		Cover cover;

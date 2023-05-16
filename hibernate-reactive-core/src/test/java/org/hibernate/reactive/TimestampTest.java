@@ -5,21 +5,25 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import org.junit.Test;
-
-import jakarta.persistence.Basic;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TimestampTest extends BaseReactiveTest {
 
@@ -29,30 +33,30 @@ public class TimestampTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Record record = new Record();
 		record.text = "initial text";
 		test( context, getMutinySessionFactory()
 				.withSession( session -> session.persist( record )
 						.chain( session::flush )
-						.invoke( () -> context.assertEquals(
+						.invoke( () -> assertEquals(
 								record.created.truncatedTo( ChronoUnit.HOURS ),
 								record.updated.truncatedTo( ChronoUnit.HOURS )
 						) )
 						.invoke( () -> record.text = "edited text" )
 						.chain( session::flush )
-						.invoke( () -> assertInstants( context, record ) ) )
+						.invoke( () -> assertInstants( record ) ) )
 				.chain( () -> getMutinySessionFactory().withSession( session -> session
 						.find( Record.class, record.id ) ) )
-				.invoke( r -> assertInstants( context, record ) )
+				.invoke( r -> assertInstants( record ) )
 		);
 	}
 
-	private static void assertInstants(TestContext ctx, Record r) {
-		ctx.assertNotNull( r.created );
-		ctx.assertNotNull( r.updated );
+	private static void assertInstants(Record r) {
+		assertNotNull( r.created );
+		assertNotNull( r.updated );
 		// Sometimes, when the test suite is fast enough, they might be the same
-		ctx.assertTrue(
+		assertTrue(
 				r.updated.compareTo( r.created ) >= 0,
 				"Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]"
 		);

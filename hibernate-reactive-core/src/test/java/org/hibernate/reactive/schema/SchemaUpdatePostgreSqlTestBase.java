@@ -7,6 +7,8 @@ package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
@@ -23,18 +25,19 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 
 public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 
@@ -65,12 +68,12 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension
+	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
-	@Before
+	@BeforeEach
 	@Override
-	public void before(TestContext context) {
+	public void before(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "create" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -79,9 +82,9 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
-	@After
+	@AfterEach
 	@Override
-	public void after(TestContext context) {
+	public void after(VertxTestContext context) {
 		final Configuration dropHbm2ddlConf = constructConfiguration( "drop" );
 		dropHbm2ddlConf.addAnnotatedClass( ASimpleNext.class );
 		dropHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -93,7 +96,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testValidationSucceed(TestContext context) {
+	public void testValidationSucceed(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -102,7 +105,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUpdate(TestContext context) {
+	public void testUpdate(VertxTestContext context) {
 		final String indexDefinitionQuery =
 				"select indexdef from pg_indexes where schemaname = 'public' and tablename = ? order by indexname";
 
@@ -140,34 +143,34 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 								.thenCompose( s -> s
 										.find( ASimpleNext.class, aSimple.id )
 										.thenAccept( result -> {
-											context.assertNotNull( result );
-											context.assertEquals( aSimple.aValue, result.aValue );
-											context.assertEquals( aSimple.aStringValue, result.aStringValue );
-											context.assertEquals( aSimple.data, result.data );
-											context.assertNotNull( result.aOther );
-											context.assertEquals( aOther.id1, result.aOther.id1 );
-											context.assertEquals( aOther.id2, result.aOther.id2 );
-											context.assertEquals( aOther.anotherString, result.aOther.anotherString );
-											context.assertNotNull( result.aAnother );
-											context.assertEquals( aAnother.description, result.aAnother.description );
+											assertNotNull( result );
+											assertEquals( aSimple.aValue, result.aValue );
+											assertEquals( aSimple.aStringValue, result.aStringValue );
+											assertEquals( aSimple.data, result.data );
+											assertNotNull( result.aOther );
+											assertEquals( aOther.id1, result.aOther.id1 );
+											assertEquals( aOther.id2, result.aOther.id2 );
+											assertEquals( aOther.anotherString, result.aOther.anotherString );
+											assertNotNull( result.aAnother );
+											assertEquals( aAnother.description, result.aAnother.description );
 										} )
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery, String.class )
 												.setParameter( 1, "asimple" )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals(
+													assertEquals(
 															"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id)",
 															list.get( 0 )
 													);
-													context.assertEquals(
+													assertEquals(
 															"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue, astringvalue DESC)",
 															list.get( 1 )
 													);
-													context.assertEquals(
+													assertEquals(
 															"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data)",
 															list.get( 2 )
 													);
-													context.assertEquals(
+													assertEquals(
 															"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue)",
 															list.get( 3 )
 													);
@@ -177,7 +180,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.setParameter( 1, "aother" )
 												.getSingleResult()
 												.thenAccept( result ->
-																	 context.assertEquals(
+																	 assertEquals(
 																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1, id2)",
 																			 result
 																	 )
@@ -187,7 +190,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 												.setParameter( 1, "aanother" )
 												.getSingleResult()
 												.thenAccept( result ->
-																	 context.assertEquals(
+																	 assertEquals(
 																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id)",
 																			 result
 																	 )
@@ -202,7 +205,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 															  .setParameter( 2, "asimple" )
 															  .getSingleResult()
 															  .thenAccept( result ->
-																				   context.assertEquals(
+																				   assertEquals(
 																						   "FOREIGN KEY (id1, id2) REFERENCES aother(id1, id2)",
 																						   result
 																				   )
@@ -216,7 +219,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 															  .setParameter( 2, "asimple" )
 															  .getSingleResult()
 															  .thenAccept( result ->
-																				   context.assertEquals(
+																				   assertEquals(
 																						   "FOREIGN KEY (aanother_id) REFERENCES aanother(id)",
 																						   result
 																				   )

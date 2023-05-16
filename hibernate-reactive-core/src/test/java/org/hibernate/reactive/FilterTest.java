@@ -15,9 +15,9 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -35,6 +35,8 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class FilterTest extends BaseReactiveTest {
@@ -60,7 +62,7 @@ public class FilterTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFilter(TestContext context) {
+	public void testFilter(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
@@ -80,8 +82,8 @@ public class FilterTest extends BaseReactiveTest {
 											.getResultList();
 								} ) )
 						.thenAccept( list -> {
-							context.assertEquals( list.size(), 2 );
-							context.assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
+							assertEquals( list.size(), 2 );
+							assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
 						} )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
@@ -89,12 +91,12 @@ public class FilterTest extends BaseReactiveTest {
 									return s.createQuery( "select distinct n, e from Node n join n.elements e" )
 											.getResultList();
 								} ) )
-						.thenAccept( list -> context.assertEquals( list.size(), 2 ) )
+						.thenAccept( list -> assertEquals( list.size(), 2 ) )
 		);
 	}
 
 	@Test
-	public void testFilterWithParameter(TestContext context) {
+	public void testFilterWithParameter(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.region = "oceania";
@@ -120,8 +122,8 @@ public class FilterTest extends BaseReactiveTest {
 											.getResultList();
 								} ) )
 						.thenAccept( list -> {
-							context.assertEquals( list.size(), 2 );
-							context.assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
+							assertEquals( list.size(), 2 );
+							assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
 						} )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
@@ -129,12 +131,12 @@ public class FilterTest extends BaseReactiveTest {
 									return s.createQuery( "select distinct n, e from Node n join n.elements e" )
 											.getResultList();
 								} ) )
-						.thenAccept( list -> context.assertEquals( list.size(), 2 ) )
+						.thenAccept( list -> assertEquals( list.size(), 2 ) )
 		);
 	}
 
 	@Test
-	public void testFilterCollectionFetch(TestContext context) {
+	public void testFilterCollectionFetch(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -153,12 +155,12 @@ public class FilterTest extends BaseReactiveTest {
 									return s.find( Node.class, basik.getId() )
 											.thenCompose( node -> s.fetch( node.elements ) );
 								} ) )
-						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
+						.thenAccept( list -> assertEquals( 2, list.size() ) )
 		);
 	}
 
 	@Test
-	public void testFilterCollectionFetchWithParameter(TestContext context) {
+	public void testFilterCollectionFetchWithParameter(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.region = "oceania";
@@ -181,7 +183,7 @@ public class FilterTest extends BaseReactiveTest {
 									return s.find( Node.class, basik.getId() )
 											.thenCompose( node -> s.fetch( node.elements ) );
 								} ) )
-						.thenAccept( list -> context.assertEquals( 2, list.size() ) )
+						.thenAccept( list -> assertEquals( 2, list.size() ) )
 		);
 	}
 

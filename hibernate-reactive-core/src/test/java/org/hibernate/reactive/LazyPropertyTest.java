@@ -14,9 +14,9 @@ import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterc
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -29,6 +29,9 @@ import jakarta.persistence.metamodel.Attribute;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static java.util.Collections.singleton;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Lazy properties only work when the related bytecode enhancement is enabled.
@@ -43,7 +46,7 @@ public class LazyPropertyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyProperty(TestContext context) {
+	public void testLazyProperty(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -62,11 +65,11 @@ public class LazyPropertyTest extends BaseReactiveTest {
 						.withSession( session -> session
 								.find( Book.class, book1.id )
 								.thenCompose( book -> {
-									context.assertFalse( Hibernate.isPropertyInitialized( book, "isbn" ) );
+									assertFalse( Hibernate.isPropertyInitialized( book, "isbn" ) );
 									return session.fetch( book, Book_isbn )
 											.thenAccept( isbn -> {
-												context.assertNotNull( isbn );
-												context.assertTrue( Hibernate.isPropertyInitialized( book, "isbn" ) );
+												assertNotNull( isbn );
+												assertTrue( Hibernate.isPropertyInitialized( book, "isbn" ) );
 											} );
 								} )
 						)

@@ -11,20 +11,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-
-import org.junit.Before;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests @{@link ElementCollection} on a {@link java.util.Map} of basic types.
+ * Tests @{@link ElementCollection} on a {@link Map} of basic types.
  * <p>
  * Example:
  * {@code
@@ -36,6 +42,7 @@ import io.vertx.ext.unit.TestContext;
  * </p>,
  *
  */
+@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest {
 
 	private Person thePerson;
@@ -45,19 +52,22 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 		return List.of( Person.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		thePerson = new Person( 7242000, "Claude" );
-		thePerson.getPhones().put( "aaaa", "999-999-9999" );
-		thePerson.getPhones().put( "bbbb", "111-111-1111" );
-		thePerson.getPhones().put( "cccc", "123-456-7890" );
+	private Person getPerson() {
+		if( thePerson == null ) {
+			thePerson = new Person( 7242000, "Claude" );
+			thePerson.getPhones().put( "aaaa", "999-999-9999" );
+			thePerson.getPhones().put( "bbbb", "111-111-1111" );
+			thePerson.getPhones().put( "cccc", "123-456-7890" );
+		}
+		return thePerson;
+	}
 
-		test( context, openMutinySession().chain( session -> session
-				.persist( thePerson ).call( session::flush ) ) );
+	private CompletionStage<Void> populateDb() {
+		return getSessionFactory().withTransaction( s -> s.persist(  getPerson() ) );
 	}
 
 	@Test
-	public void persistWithMutinyAPI(TestContext context) {
+	public void persistWithMutinyAPI(VertxTestContext context) {
 		Map<String, String> phones = new HashMap<>();
 		phones.put( "aaaa", "888" );
 		phones.put( "bbbb", "555" );
@@ -74,21 +84,23 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void findEntityWithElementCollectionWithStageAPI(TestContext context) {
-		test( context, openSession()
-				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+	public void findEntityWithElementCollectionWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) ) )
 				.thenAccept( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) )
 		);
 	}
 
 	@Test
-	public void addOneElementWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void addOneElementWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
 						.thenAccept( foundPerson -> foundPerson.getPhones().put( "dddd", "000" ) )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "111-111-1111", "123-456-7890", "000" ) )
@@ -96,13 +108,14 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removeOneElementWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void removeOneElementWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
 						.thenAccept( foundPerson -> foundPerson.getPhones().remove( "bbbb" ) )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
@@ -110,32 +123,34 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void clearCollectionOfElementsWithStageAPI(TestContext context){
-		test( context, openSession()
+	public void clearCollectionOfElementsWithStageAPI(VertxTestContext context){
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.getPhones().clear();
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
+				.thenAccept( changedPerson -> assertTrue( changedPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void removeAndAddElementWithStageAPI(TestContext context){
-		test( context, openSession()
+	public void removeAndAddElementWithStageAPI(VertxTestContext context){
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertNotNull( foundPerson );
+							assertNotNull( foundPerson );
 							foundPerson.getPhones().remove( "bbbb" );
 							foundPerson.getPhones().put( "dddd", "000" );
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "123-456-7890", "000" ) )
@@ -143,17 +158,18 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setNewElementCollectionWithStageAPI(TestContext context){
-		test( context, openSession()
+	public void setNewElementCollectionWithStageAPI(VertxTestContext context){
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertNotNull( foundPerson );
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertNotNull( foundPerson );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.setPhones( new HashMap<>() );
 							foundPerson.getPhones().put( "aaaa", "555" );
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "555" ) )
@@ -161,32 +177,34 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removePersonWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void removePersonWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.thenCompose( session::remove )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( context::assertNull )
+				.thenAccept( Assertions::assertNull )
 				// Check with native query that the table is empty
 				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
-				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
+				.thenAccept( resultList -> assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void persistAnotherPersonWithStageAPI(TestContext context) {
+	public void persistAnotherPersonWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty" );
 		secondPerson.getPhones().put( "aaaa", "222-222-2222" );
 		secondPerson.getPhones().put( "bbbb", "333-333-3333" );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				// Check new person collection
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
@@ -199,34 +217,36 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void persistCollectionOfNullsWithStageAPI(TestContext context) {
+	public void persistCollectionOfNullsWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty" );
 		secondPerson.getPhones().put( "xxx", null );
 		secondPerson.getPhones().put( "yyy", null );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				// Check new person collection
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				// Null values don't get persisted
-				.thenAccept( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
+				.thenAccept( foundPerson -> assertTrue( foundPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void persistCollectionWithNullsWithStageAPI(TestContext context) {
+	public void persistCollectionWithNullsWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty" );
 		secondPerson.getPhones().put( "xxx", null );
 		secondPerson.getPhones().put( "ggg", "567" );
 		secondPerson.getPhones().put( "yyy", null );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				// Check new person collection
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
@@ -236,15 +256,16 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setCollectionToNullWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void setCollectionToNullWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( found -> {
-							context.assertFalse( found.getPhones().isEmpty() );
+							assertFalse( found.getPhones().isEmpty() );
 							found.setPhones( null );
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( foundPerson -> assertPhones( context, foundPerson ) )
@@ -262,11 +283,11 @@ public class EagerElementCollectionForBasicTypeMapTest extends BaseReactiveTest 
 				.getResultList() );
 	}
 
-	private static void assertPhones(TestContext context, Person person, String... phones) {
-		context.assertNotNull( person );
-		context.assertEquals( phones.length, person.getPhones().size() );
+	private static void assertPhones(VertxTestContext context, Person person, String... phones) {
+		assertNotNull( person );
+		assertEquals( phones.length, person.getPhones().size() );
 		for ( String number : phones) {
-			context.assertTrue( phonesContainNumber( person, number) );
+			assertTrue( phonesContainNumber( person, number) );
 		}
 	}
 

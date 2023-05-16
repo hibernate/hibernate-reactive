@@ -5,33 +5,36 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class CustomSqlTest extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL, COCKROACHDB );
+	@RegisterExtension
+	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL, COCKROACHDB );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -39,7 +42,7 @@ public class CustomSqlTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Record record = new Record();
 		record.text = "initial text";
 		test(
@@ -53,10 +56,10 @@ public class CustomSqlTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withSession( session -> session.find( Record.class, record.id )
 										.invoke( (result) -> {
-											context.assertNotNull( result );
-											context.assertEquals( "edited text", result.text );
-											context.assertNotNull( result.updated );
-											context.assertNull( result.deleted );
+											assertNotNull( result );
+											assertEquals( "edited text", result.text );
+											assertNotNull( result.updated );
+											assertNull( result.deleted );
 										} )
 										.chain( session::remove )
 										.chain( session::flush )
@@ -64,10 +67,10 @@ public class CustomSqlTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withSession( session -> session.find( Record.class, record.id )
 										.invoke( (result) -> {
-											context.assertNotNull( result );
-											context.assertEquals( "edited text", result.text );
-											context.assertNotNull( result.updated );
-											context.assertNotNull( result.deleted );
+											assertNotNull( result );
+											assertEquals( "edited text", result.text );
+											assertNotNull( result.updated );
+											assertNotNull( result.deleted );
 										} )
 								) )
 		);

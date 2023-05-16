@@ -11,7 +11,7 @@ import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

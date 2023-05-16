@@ -10,15 +10,14 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -27,6 +26,8 @@ import jakarta.persistence.Table;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test schema validation at startup for all the supported types:
@@ -57,8 +58,8 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		}
 	}
 
-	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
+	@RegisterExtension
+	public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( DB2 );
 
 	protected Configuration constructConfiguration(String action) {
 		Configuration configuration = super.constructConfiguration();
@@ -67,9 +68,9 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Before
+	@BeforeEach
 	@Override
-	public void before(TestContext context) {
+	public void before(VertxTestContext context) {
 		Configuration createConf = constructConfiguration( "create" );
 		createConf.addAnnotatedClass( BasicTypesTestEntity.class );
 
@@ -84,16 +85,15 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		);
 	}
 
-	@After
 	@Override
-	public void after(TestContext context) {
+	public void after(VertxTestContext context) {
 		super.after( context );
 		closeFactory( context );
 	}
 
 	// When we have created the table, the validation should pass
 	@Test
-	public void testValidationSucceeds(TestContext context) {
+	public void testValidationSucceeds(VertxTestContext context) {
 		Configuration validateConf = constructConfiguration( "validate" );
 		validateConf.addAnnotatedClass( BasicTypesTestEntity.class );
 
@@ -105,7 +105,7 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
 	// Validation should fail if a table is missing
 	@Test
-	public void testValidationFails(TestContext context) {
+	public void testValidationFails(VertxTestContext context) {
 		Configuration validateConf = constructConfiguration( "validate" );
 		validateConf.addAnnotatedClass( BasicTypesTestEntity.class );
 		// The table mapping this entity shouldn't be in the db
@@ -114,9 +114,9 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		final String errorMessage = "Schema-validation: missing table [" + Extra.TABLE_NAME + "]";
 		test( context, setupSessionFactory( validateConf )
 				.handle( (unused, throwable) -> {
-					context.assertNotNull( throwable );
-					context.assertEquals( throwable.getClass(), SchemaManagementException.class );
-					context.assertEquals( throwable.getMessage(), errorMessage );
+					assertNotNull( throwable );
+					assertEquals( throwable.getClass(), SchemaManagementException.class );
+					assertEquals( throwable.getMessage(), errorMessage );
 					return null;
 				} )
 		);

@@ -7,6 +7,8 @@ package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
@@ -23,14 +25,15 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
@@ -66,12 +69,12 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Rule
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.runOnlyFor( MARIA );
+	@RegisterExtension
+	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( MARIA );
 
-	@Before
+	@BeforeEach
 	@Override
-	public void before(TestContext context) {
+	public void before(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "create" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -80,9 +83,9 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 				.thenCompose( v -> factoryManager.stop() ) );
 	}
 
-	@After
+	@AfterEach
 	@Override
-	public void after(TestContext context) {
+	public void after(VertxTestContext context) {
 		final Configuration dropHbm2ddlConf = constructConfiguration( "drop" );
 		dropHbm2ddlConf.addAnnotatedClass( ASimpleNext.class );
 		dropHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -95,7 +98,7 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 
 
 	@Test
-	public void testValidationSucceed(TestContext context) {
+	public void testValidationSucceed(VertxTestContext context) {
 		Configuration createHbm2ddlConf = constructConfiguration( "validate" );
 		createHbm2ddlConf.addAnnotatedClass( ASimpleFirst.class );
 		createHbm2ddlConf.addAnnotatedClass( AOther.class );
@@ -104,7 +107,7 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUpdate(TestContext context) {
+	public void testUpdate(VertxTestContext context) {
 
 		// NOTE: MariaDB returns 'A' for ascending columns sorted in ascending order
 		//       for the collation column using this query:
@@ -161,16 +164,16 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 								.thenCompose( s -> s
 										.find( ASimpleNext.class, aSimple.id )
 										.thenAccept( result -> {
-											context.assertNotNull( result );
-											context.assertEquals( aSimple.aValue, result.aValue );
-											context.assertEquals( aSimple.aStringValue, result.aStringValue );
-											context.assertEquals( aSimple.data, result.data );
-											context.assertNotNull( result.aOther );
-											context.assertEquals( aOther.id1, result.aOther.id1 );
-											context.assertEquals( aOther.id2, result.aOther.id2 );
-											context.assertEquals( aOther.anotherString, result.aOther.anotherString );
-											context.assertNotNull( result.aAnother );
-											context.assertEquals( aAnother.description, result.aAnother.description );
+											assertNotNull( result );
+											assertEquals( aSimple.aValue, result.aValue );
+											assertEquals( aSimple.aStringValue, result.aStringValue );
+											assertEquals( aSimple.data, result.data );
+											assertNotNull( result.aOther );
+											assertEquals( aOther.id1, result.aOther.id1 );
+											assertEquals( aOther.id2, result.aOther.id2 );
+											assertEquals( aOther.anotherString, result.aOther.anotherString );
+											assertNotNull( result.aAnother );
+											assertEquals( aAnother.description, result.aAnother.description );
 										} )
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -179,8 +182,8 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result -> {
 													final Object[] resultArray = (Object[]) result;
-													context.assertEquals( "id", resultArray[0] );
-													//context.assertEquals( "A", resultArray[1] );
+													assertEquals( "id", resultArray[0] );
+													//assertEquals( "A", resultArray[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -188,11 +191,11 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, 1 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 2, list.size() );
-													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
-													context.assertEquals( "aStringValue", ( (Object[]) list.get( 1 ) )[0] );
-													//context.assertEquals( "D", ( (Object[]) list.get( 1 ) )[1] );
+													assertEquals( 2, list.size() );
+													assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( "aStringValue", ( (Object[]) list.get( 1 ) )[0] );
+													//assertEquals( "D", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -200,11 +203,11 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, 1 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 2, list.size() );
-													context.assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
-													//context.assertEquals( "D", ( (Object[]) list.get( 0 ) )[1] );
-													context.assertEquals( "data", ( (Object[]) list.get( 1 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+													assertEquals( 2, list.size() );
+													assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													//assertEquals( "D", ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( "data", ( (Object[]) list.get( 1 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "ASimple" )
@@ -212,9 +215,9 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, 0 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 1, list.size() );
-													context.assertEquals( "aStringValue", ( (Object[]) list.get( 0 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( 1, list.size() );
+													assertEquals( "aStringValue", ( (Object[]) list.get( 0 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "AOther" )
@@ -222,11 +225,11 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, 0 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 2, list.size() );
-													context.assertEquals( "id1", ( (Object[]) list.get( 0 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
-													context.assertEquals( "id2", ( (Object[]) list.get( 1 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
+													assertEquals( 2, list.size() );
+													assertEquals( "id1", ( (Object[]) list.get( 0 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( "id2", ( (Object[]) list.get( 1 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										).thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
 												.setParameter( 1, "AAnother" )
@@ -234,9 +237,9 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, 0 )
 												.getResultList()
 												.thenAccept( list -> {
-													context.assertEquals( 1, list.size() );
-													context.assertEquals( "id", ( (Object[]) list.get( 0 ) )[0] );
-													//context.assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( 1, list.size() );
+													assertEquals( "id", ( (Object[]) list.get( 0 ) )[0] );
+													//assertEquals( "A", ( (Object[]) list.get( 0 ) )[1] );
 												} )
 										// check foreign keys
 										).thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
@@ -245,11 +248,11 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, "AOther" )
 												.getResultList()
 												.thenAccept( results -> {
-													context.assertEquals( 2, results.size() );
-													context.assertEquals( "id1", ( (Object[]) results.get( 0 ) )[0] );
-													context.assertEquals( "id1", ( (Object[]) results.get( 0 ) )[1] );
-													context.assertEquals( "id2", ( (Object[]) results.get( 1 ) )[0] );
-													context.assertEquals( "id2", ( (Object[]) results.get( 1 ) )[1] );
+													assertEquals( 2, results.size() );
+													assertEquals( "id1", ( (Object[]) results.get( 0 ) )[0] );
+													assertEquals( "id1", ( (Object[]) results.get( 0 ) )[1] );
+													assertEquals( "id2", ( (Object[]) results.get( 1 ) )[0] );
+													assertEquals( "id2", ( (Object[]) results.get( 1 ) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )
@@ -258,8 +261,8 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 												.setParameter( 3, "AAnother" )
 												.getSingleResult()
 												.thenAccept( result -> {
-													context.assertEquals( "aAnother_id", ( (Object[]) result )[0] );
-													context.assertEquals( "id", ( (Object[]) result )[1] );
+													assertEquals( "aAnother_id", ( (Object[]) result )[0] );
+													assertEquals( "id", ( (Object[]) result )[1] );
 												} )
 										)
 						) )

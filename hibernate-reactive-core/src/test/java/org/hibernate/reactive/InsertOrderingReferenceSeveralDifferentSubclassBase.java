@@ -7,6 +7,17 @@ package org.hibernate.reactive;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.testing.SqlStatementTracker;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorValue;
@@ -20,19 +31,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-import org.hibernate.reactive.testing.SqlStatementTracker;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test ORDER_INSERTS property value during batching.
@@ -42,8 +43,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
  */
 public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension
+	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
 	public static class OrderedTest extends InsertOrderingReferenceSeveralDifferentSubclassBase {
 
@@ -125,7 +126,7 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 	}
 
 	@Test
-	public void testSubclassReferenceChain(TestContext context) {
+	public void testSubclassReferenceChain(VertxTestContext context) {
 		UnrelatedEntity unrelatedEntity1 = new UnrelatedEntity();
 		SubclassZero subclassZero = new SubclassZero( "SubclassZero" );
 		SubclassOne subclassOne = new SubclassOne( "SubclassOne" );
@@ -146,8 +147,8 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 				.chain( () -> getMutinySessionFactory()
 						.withSession( s -> s.find( SubclassOne.class, subclassOne.id ) ) )
 				.invoke( result -> {
-					context.assertEquals( subclassOne.name, result.name );
-					assertThat( sqlTracker.getLoggedQueries() ).containsExactly( getExpectedNativeQueries() );
+					assertEquals( subclassOne.name, result.name );
+					assertArrayEquals( sqlTracker.getLoggedQueries().toArray(), getExpectedNativeQueries() );
 				} )
 
 		);

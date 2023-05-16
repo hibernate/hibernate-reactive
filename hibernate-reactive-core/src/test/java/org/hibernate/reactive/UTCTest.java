@@ -23,9 +23,9 @@ import java.util.function.Function;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -51,7 +51,7 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDate(TestContext context) {
+	public void testDate(VertxTestContext context) {
 		thing.date = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ).getTime();
 		testField(
 				context,
@@ -62,7 +62,7 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCalendar(TestContext context) {
+	public void testCalendar(VertxTestContext context) {
 		thing.calendar = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
 		testField(
 				context,
@@ -73,25 +73,25 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLocalDate(TestContext context) {
+	public void testLocalDate(VertxTestContext context) {
 		thing.localDate = LocalDate.now();
 		testField( context, "localDate", Thing::getLocalDate );
 	}
 
 	@Test
-	public void testLocalTime(TestContext context) {
+	public void testLocalTime(VertxTestContext context) {
 		thing.localTime = LocalTime.MAX.truncatedTo( ChronoUnit.SECONDS );
 		testField( context, "localTime", Thing::getLocalTime );
 	}
 
 	@Test
-	public void testLocalDateTime(TestContext context) {
+	public void testLocalDateTime(VertxTestContext context) {
 		thing.localDateTime = LocalDateTime.now().truncatedTo( ChronoUnit.MILLIS );
 		testField( context, "localDateTime", Thing::getLocalDateTime );
 	}
 
 	@Test
-	public void testOffsetDateTime(TestContext context) {
+	public void testOffsetDateTime(VertxTestContext context) {
 		final ZoneOffset zoneOffset = ZoneOffset.ofHours( 5 );
 		LocalDateTime dateTime = LocalDateTime.of( 2021, 3, 25, 12, 30 );
 		thing.offsetDateTime = OffsetDateTime.of( dateTime, zoneOffset );
@@ -107,7 +107,7 @@ public class UTCTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testZonedDateTime(TestContext context) {
+	public void testZonedDateTime(VertxTestContext context) {
 		final ZoneOffset zoneOffset = ZoneOffset.ofHours( 7 );
 		thing.zonedDateTime = ZonedDateTime.now( zoneOffset ).truncatedTo( ChronoUnit.MILLIS );
 		testField(
@@ -119,11 +119,11 @@ public class UTCTest extends BaseReactiveTest {
 		);
 	}
 
-	private void testField(TestContext context, String columnName, Function<Thing, Object> getFieldValue) {
+	private void testField(VertxTestContext context, String columnName, Function<Thing, Object> getFieldValue) {
 		testField( context, columnName, getFieldValue, entity -> assertThat( getFieldValue.apply( entity ) ).isEqualTo( getFieldValue.apply( thing ) ) );
 	}
 
-	private void testField(TestContext context, String columnName, Function<Thing, ?> fieldValue, Consumer<Thing> assertion) {
+	private void testField(VertxTestContext context, String columnName, Function<Thing, ?> fieldValue, Consumer<Thing> assertion) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persist( thing ) )
 				.chain( () -> getMutinySessionFactory()

@@ -8,17 +8,18 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-
-import org.junit.Before;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HQLUpdateQueryTest extends BaseReactiveTest {
 
@@ -31,56 +32,55 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		return List.of( Flour.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		test( context, openSession()
+	public CompletionStage<Void> populateDb() {
+		return openSession()
 				.thenCompose( s -> s.persist( spelt )
 				.thenCompose( v -> s.persist( rye ) )
 				.thenCompose( v -> s.persist( almond ) )
 				.thenCompose( v -> s.flush() )
-		) );
-	}
-
-	@Test
-	public void testUpdateQuery(TestContext context) {
-		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
-		test(
-				context,
-				openSession()
-						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = '" + updatedDescription + "' WHERE id = " + rye.getId()  ) )
-						.thenCompose( qr -> {
-							context.assertNotNull( qr );
-							return qr.executeUpdate();
-						} )
-						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
-						.thenAccept( result -> context.assertEquals( updatedDescription, result.getDescription() ) )
 		);
 	}
 
 	@Test
-	public void testUpdateQueryWithParameters(TestContext context) {
+	public void testUpdateQuery(VertxTestContext context) {
 		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
 		test(
 				context,
-				openSession()
+				populateDb().thenCompose( vd -> openSession()
+						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = '" + updatedDescription + "' WHERE id = " + rye.getId()  ) ) )
+						.thenCompose( qr -> {
+							assertNotNull( qr );
+							return qr.executeUpdate();
+						} )
+						.thenAccept( resultCount -> assertEquals( 1, resultCount ))
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
+						.thenAccept( result -> assertEquals( updatedDescription, result.getDescription() ) )
+		);
+	}
+
+	@Test
+	public void testUpdateQueryWithParameters(VertxTestContext context) {
+		String updatedDescription =  "Most rye breads use a mix of rye and wheat flours";
+		test(
+				context,
+				populateDb().thenCompose( vd -> openSession()
 						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = :updatedDescription WHERE id = :id" )
 								.setParameter("updatedDescription", updatedDescription)
-								.setParameter("id", rye.getId()) )
+								.setParameter("id", rye.getId()) ) )
 						.thenCompose( qr -> {
-							context.assertNotNull( qr );
+							assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
-						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ))
+						.thenAccept( resultCount -> assertEquals( 1, resultCount ))
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
-						.thenAccept( result -> context.assertEquals( updatedDescription, result.getDescription() ) )
+						.thenAccept( result -> assertEquals( updatedDescription, result.getDescription() ) )
 		);
 	}
 
 	@Test
-	public void testInsertQuery(TestContext context) {
+	public void testInsertQuery(VertxTestContext context) {
 		Flour chestnut = new Flour( 777, "Chestnut", "The original ingredient for polenta", "gluten-free" );
 		StringBuilder insertQueryBuilder = new StringBuilder( "insert into Flour(id, name, description, type) select " );
 		insertQueryBuilder.append( chestnut.getId() ).append( ", " );
@@ -90,17 +90,17 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		insertQueryBuilder.append( " from Flour where id = " ).append( rye.getId() );
 		test(
 				context,
-				openSession()
-						.thenApply( s -> s.createQuery( insertQueryBuilder.toString() ) )
+				populateDb().thenCompose( vd -> openSession()
+						.thenApply( s -> s.createQuery( insertQueryBuilder.toString() ) ) )
 						.thenCompose( qr -> {
-							context.assertNotNull( qr );
+							assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
-						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ) )
+						.thenAccept( resultCount -> assertEquals( 1, resultCount ) )
 						// Check if it's really been inserted
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, chestnut.getId() ) )
-						.thenAccept( result -> context.assertEquals( chestnut, result ) )
+						.thenAccept( result -> assertEquals( chestnut, result ) )
 						// Cleanup db
 						.thenCompose( v -> openSession() )
 						.thenAccept( s -> s.remove( chestnut ) )
@@ -108,19 +108,19 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testDeleteQuery(TestContext context) {
+	public void testDeleteQuery(VertxTestContext context) {
 		test(
 				context,
-				openSession()
-						.thenApply( s -> s.createQuery( "DELETE FROM Flour WHERE id = " + rye.getId() ) )
+				populateDb().thenCompose( vd -> openSession()
+						.thenApply( s -> s.createQuery( "DELETE FROM Flour WHERE id = " + rye.getId() ) ) )
 						.thenCompose( qr -> {
-							context.assertNotNull( qr );
+							assertNotNull( qr );
 							return qr.executeUpdate();
 						} )
-						.thenAccept( resultCount -> context.assertEquals( 1, resultCount ) )
+						.thenAccept( resultCount -> assertEquals( 1, resultCount ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Flour.class, rye.getId() ) )
-						.thenAccept( context::assertNull )
+						.thenAccept( Assertions::assertNull )
 		);
 	}
 

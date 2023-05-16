@@ -17,45 +17,53 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class LongLobTest extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule selectionRule = DatabaseSelectionRule.runOnlyFor( MYSQL );
+	@RegisterExtension
+	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( MYSQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Basic.class );
 	}
 
+	// Test is failing with PG when the session factory set-up uses
+	// PostgeSQLDatabase
+	// 	public String getJdbcUrl() {
+	//		return buildJdbcUrlWithCredentials( address() );
+	//	}
+
 	@Test
-	public void testLongLobType(TestContext context) {
+	public void testLongLobType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.longLob = Long.MAX_VALUE;
 
-		testField( context, basic, found -> context.assertEquals( Long.MAX_VALUE, found.longLob ) );
+		testField( context, basic, found -> assertEquals( Long.MAX_VALUE, found.longLob ) );
 	}
 
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
-	private void testField(TestContext context, Basic original, Consumer<Basic> consumer) {
+	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
 		test(
 				context,
 				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Basic.class, original.id )
 								.thenAccept( found -> {
-									context.assertNotNull( found );
-									context.assertEquals( original, found );
+									assertNotNull( found );
+									assertEquals( original, found );
 									consumer.accept( found );
 								} ) )
 		);

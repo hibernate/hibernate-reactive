@@ -10,6 +10,11 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
@@ -24,12 +29,6 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 
-
-import org.junit.Before;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
@@ -41,22 +40,21 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		return List.of( Campaign.class, ExecutionDate.class, Schedule.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
+	private Uni<Void> populateDb() {
 		theCampaign = new Campaign();
 		theCampaign.setSchedule( new ExecutionDate(OffsetDateTime.now(), "ALPHA") );
-
-		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) ) );
+		return getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) );
 	}
 
 	@Test
-	public void testUpdateScheduleChange(TestContext context) {
-		test( context, getMutinySessionFactory()
+	public void testUpdateScheduleChange(VertxTestContext context) {
+		test( context, populateDb()
+				.call( () -> getMutinySessionFactory()
 				.withSession( session -> session
 						.find( Campaign.class, theCampaign.getId() )
 						.invoke( foundCampaign -> foundCampaign
 								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Campaign.class, theCampaign.getId() ) )
 				.invoke( updatedCampaign -> assertThat( updatedCampaign.getSchedule().getCodeName() )
@@ -65,13 +63,14 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUpdateWithMultipleScheduleChanges(TestContext context) {
-		test( context, getMutinySessionFactory()
+	public void testUpdateWithMultipleScheduleChanges(VertxTestContext context) {
+		test( context, populateDb()
+				.call( () -> getMutinySessionFactory()
 				.withSession( session -> session
 						.find( Campaign.class, theCampaign.getId() )
 						.invoke( foundCampaign -> foundCampaign
 								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.call( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.find( Campaign.class, theCampaign.getId() )

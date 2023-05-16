@@ -9,6 +9,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.testing.DBSelectionExtension;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -16,20 +25,12 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
-
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class SequenceGeneratorTest extends BaseReactiveTest {
@@ -40,7 +41,7 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSequenceGenerator(TestContext context) {
+	public void testSequenceGenerator(VertxTestContext context) {
 		SequenceId b = new SequenceId();
 		b.string = "Hello World";
 
@@ -50,20 +51,20 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 				.thenCompose( s2 -> s2
 						.find( SequenceId.class, b.getId() )
 						.thenAccept( bb -> {
-							context.assertNotNull( bb );
-							context.assertEquals( bb.id, 5 );
-							context.assertEquals( bb.string, b.string );
-							context.assertEquals( bb.version, 0 );
+							assertNotNull( bb );
+							assertEquals( bb.id, 5 );
+							assertEquals( bb.string, b.string );
+							assertEquals( bb.version, 0 );
 							bb.string = "Goodbye";
 						} )
 						.thenCompose( vv -> s2.flush() )
 						.thenCompose( vv -> s2.find( SequenceId.class, b.getId() ) )
-						.thenAccept( bt -> context.assertEquals( bt.version, 1 ) ) )
+						.thenAccept( bt -> assertEquals( bt.version, 1 ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					context.assertEquals( bb.version, 1 );
-					context.assertEquals( bb.string, "Goodbye" );
+					assertEquals( bb.version, 1 );
+					assertEquals( bb.string, "Goodbye" );
 				} )
 		);
 	}
@@ -72,8 +73,8 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 
 		// COCKROACHDB: we don't have permission to create schema in the CI!
 		// MYSQL: See https://github.com/hibernate/hibernate-reactive/issues/1525
-		@Rule
-		public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( COCKROACHDB, MYSQL );
+		@RegisterExtension
+		public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( COCKROACHDB, MYSQL );
 
 		@Override
 		protected Configuration constructConfiguration() {

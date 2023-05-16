@@ -27,9 +27,9 @@ import org.hibernate.type.TrueFalseConverter;
 import org.hibernate.type.YesNoConverter;
 import org.hibernate.type.descriptor.java.DataHelper;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
@@ -45,7 +45,7 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 		return List.of( BasicTypesTestEntity.class );
 	}
 
-	private void testDatatype(TestContext context, String columnName, Class<?> type) {
+	private void testDatatype(VertxTestContext context, String columnName, Class<?> type) {
 		test( context, openSession()
 				.thenCompose( s -> s
 						.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ), String.class )
@@ -67,148 +67,148 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testBigDecimal(TestContext context) {
+	public void testBigDecimal(VertxTestContext context) {
 		testDatatype( context, "bigDecimal", BigDecimal.class );
 	}
 
 	@Test
-	public void testStringType(TestContext context) {
+	public void testStringType(VertxTestContext context) {
 		testDatatype( context, "aString", String.class );
 	}
 
 	@Test
-	public void testIntegerFieldType(TestContext context) {
+	public void testIntegerFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldInteger", Integer.class );
 	}
 
 	@Test
-	public void testIntegerPrimitiveType(TestContext context) {
+	public void testIntegerPrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveInt", int.class );
 	}
 
 	@Test
-	public void testBigIntegerType(TestContext context) {
+	public void testBigIntegerType(VertxTestContext context) {
 		testDatatype( context, "bigInteger", BigInteger.class );
 	}
 
 	@Test
-	public void testLongFieldType(TestContext context) {
+	public void testLongFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldLong", Long.class );
 	}
 
 	@Test
-	public void testLongPrimitiveType(TestContext context) {
+	public void testLongPrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveLong", long.class );
 	}
 
 	@Test
-	public void testFloatFieldType(TestContext context) {
+	public void testFloatFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldFloat", Float.class );
 	}
 
 	@Test
-	public void testFloatPrimitiveType(TestContext context) {
+	public void testFloatPrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveFloat", float.class );
 	}
 
 
 	@Test
-	public void testDoubleFieldType(TestContext context) {
+	public void testDoubleFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldDouble", Double.class );
 	}
 
 	@Test
-	public void testDoublePrimitiveType(TestContext context) {
+	public void testDoublePrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveDouble", double.class );
 	}
 
 	@Test
-	public void testBooleanPrimitiveType(TestContext context) {
+	public void testBooleanPrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveBoolean", boolean.class );
 	}
 
 	@Test
-	public void testBooleanFieldType(TestContext context) {
+	public void testBooleanFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldBoolean", Boolean.class );
 	}
 
 	@Test
-	public void testBooleanTrueFalseType(TestContext context) {
+	public void testBooleanTrueFalseType(VertxTestContext context) {
 		testDatatype( context, "booleanTrueFalse", TrueFalseConverter.class );
 	}
 
 	@Test
-	public void testBooleanYesNoType(TestContext context) {
+	public void testBooleanYesNoType(VertxTestContext context) {
 		testDatatype( context, "booleanYesNo", YesNoConverter.class );
 	}
 
 	@Test
-	public void testBooleanNumericType(TestContext context) {
+	public void testBooleanNumericType(VertxTestContext context) {
 		testDatatype( context, "booleanNumeric", NumericBooleanConverter.class );
 	}
 
 	@Test
-	public void testBytePrimitiveType(TestContext context) {
+	public void testBytePrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveByte", byte.class );
 	}
 
 	@Test
-	public void testBytesPrimitiveType(TestContext context) {
+	public void testBytesPrimitiveType(VertxTestContext context) {
 		testDatatype( context, "primitiveBytes", byte[].class );
 	}
 
 	@Test
-	public void testByteFieldType(TestContext context) {
+	public void testByteFieldType(VertxTestContext context) {
 		testDatatype( context, "fieldByte", Byte.class );
 	}
 
 	@Test
-	public void testUrlType(TestContext context) {
+	public void testUrlType(VertxTestContext context) {
 		testDatatype( context, "url", URL.class );
 	}
 
 	@Test
-	public void testDateType(TestContext context) {
+	public void testDateType(VertxTestContext context) {
 		testDatatype( context, "someDate", Date.class );
 	}
 
 	@Test
-	public void testDateAsTimeType(TestContext context) {
+	public void testDateAsTimeType(VertxTestContext context) {
 		testDatatype( context, "dateAsTime", Time.class );
 	}
 
 	@Test
-	public void testDateAsTimestampType(TestContext context) {
+	public void testDateAsTimestampType(VertxTestContext context) {
 		testDatatype( context, "dateAsTimestamp", Timestamp.class );
 	}
 
 	@Test
-	public void testTimeZoneType(TestContext context) {
+	public void testTimeZoneType(VertxTestContext context) {
 		testDatatype( context, "timeZone", TimeZone.class );
 	}
 
 	@Test
-	public void testCalendarAsDateType(TestContext context) {
+	public void testCalendarAsDateType(VertxTestContext context) {
 		testDatatype( context, "calendarAsDate", Date.class );
 	}
 
 	@Test
-	public void testCalendarAsTimestampType(TestContext context) {
+	public void testCalendarAsTimestampType(VertxTestContext context) {
 		testDatatype( context, "calendarAsTimestamp", Timestamp.class );
 	}
 
 	@Test
-	public void testLocalDateType(TestContext context) {
+	public void testLocalDateType(VertxTestContext context) {
 		testDatatype( context, "localdayte", LocalDate.class );
 	}
 
 	@Test
-	public void testLocalDateTimeType(TestContext context) {
+	public void testLocalDateTimeType(VertxTestContext context) {
 		testDatatype( context, "alocalDT", LocalDateTime.class );
 	}
 
 	@Test
-	public void testSerializableType(TestContext context) {
+	public void testSerializableType(VertxTestContext context) {
 		testDatatype( context, "serializable", Serializable.class );
 	}
 }

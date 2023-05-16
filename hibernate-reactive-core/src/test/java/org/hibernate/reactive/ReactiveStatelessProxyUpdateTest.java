@@ -13,10 +13,10 @@ import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,8 +27,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test the stateless update of a proxy.
@@ -54,7 +55,7 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUnfetchedEntityException(TestContext context) {
+	public void testUnfetchedEntityException(VertxTestContext context) {
 		Game lol = new Game( "League of Legends" );
 		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
 		ck.setGame( lol );
@@ -73,12 +74,12 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 							return s.update( game );
 						} )
 				) )
-				.invoke( exception -> assertThat( exception.getMessage() ).contains( "HR000072" ) )
+				.invoke( exception -> assertTrue( exception.getMessage().contains( "HR000072" ) ) )
 		);
 	}
 
 	@Test
-	public void testLazyInitializationException(TestContext context) {
+	public void testLazyInitializationException(VertxTestContext context) {
 		Game lol = new Game( "League of Legends" );
 		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
 		ck.setGame( lol );
@@ -93,7 +94,7 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 							Game game = charFound.getGame();
 							// LazyInitializationException here because we haven't fetched the entity
 							game.setGameTitle( "League of Legends V2" );
-							context.fail( "We were expecting a LazyInitializationException" );
+							context.failNow( "We were expecting a LazyInitializationException" );
 							return null;
 						} )
 				)
@@ -101,7 +102,7 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUpdateWithInitializedProxyInLoop(TestContext context) {
+	public void testUpdateWithInitializedProxyInLoop(VertxTestContext context) {
 		test( context, loop( 0, UPDATES_NUM, i -> {
 			Game lol = new Game( "League of Legends" );
 			GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
@@ -124,7 +125,7 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 					)
 					.call( () -> getMutinySessionFactory().withSession( session -> session
 							.find( Game.class, lol.getId() )
-							.invoke( result -> context.assertEquals( "League of Legends V2", result.getGameTitle() ) ) )
+							.invoke( result -> assertEquals( "League of Legends V2", result.getGameTitle() ) ) )
 					);
 		} ) );
 	}

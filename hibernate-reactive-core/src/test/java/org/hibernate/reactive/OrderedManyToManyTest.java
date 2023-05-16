@@ -5,11 +5,11 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.Hibernate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
@@ -22,6 +22,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class OrderedManyToManyTest extends BaseReactiveTest {
 
 	@Override
@@ -30,7 +34,7 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -43,9 +47,9 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 						.withTransaction( (session, transaction) -> session.persistAll( book1, book2, author ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -54,8 +58,8 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 																  Author.class
 														  )
 														  .getSingleResult()
-														  .invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
-														  .invoke( a -> context.assertEquals( 2, a.books.size() ) )
+														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
+														  .invoke( a -> assertEquals( 2, a.books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -68,8 +72,8 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 1, books.size() );
-											context.assertEquals( book2.title, books.get( 0 ).title );
+											assertEquals( 1, books.size() );
+											assertEquals( book2.title, books.get( 0 ).title );
 										} )
 								)
 						)
@@ -81,9 +85,9 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -96,8 +100,8 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 1, books.size() );
-											context.assertEquals( book2.title, books.get( 0 ).title );
+											assertEquals( 1, books.size() );
+											assertEquals( book2.title, books.get( 0 ).title );
 										} )
 								)
 						)
@@ -109,9 +113,9 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -122,9 +126,9 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 						)
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertEquals( 2, books.size() ) )
+										.invoke( books -> assertEquals( 2, books.size() ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -135,7 +139,7 @@ public class OrderedManyToManyTest extends BaseReactiveTest {
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
 										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> context.assertTrue( books.isEmpty() ) )
+										.invoke( books -> assertTrue( books.isEmpty() ) )
 								)
 						)
 		);

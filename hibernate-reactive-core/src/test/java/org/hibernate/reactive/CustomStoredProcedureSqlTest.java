@@ -8,17 +8,18 @@ package org.hibernate.reactive;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,11 +28,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 
 public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 
-	@Rule
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension
+	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
 	private SimpleRecord theRecord;
 
@@ -77,60 +82,61 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 		return List.of( SimpleRecord.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
+	public CompletionStage<Void> populateDb() {
 		theRecord = new SimpleRecord();
 		theRecord.text = INITIAL_TEXT;
 
-		test( context, openSession()
+		return openSession()
 				.thenCompose( s -> s
 						.createNativeQuery( INSERT_SP_SQL ).executeUpdate()
 						.thenCompose( v -> s.createNativeQuery( UPDATE_SP_SQL ).executeUpdate() )
 						.thenCompose( v -> s.createNativeQuery( DELETE_SP_SQL ).executeUpdate() )
 						.thenCompose( v -> s.persist( theRecord ) )
 						.thenCompose( v -> s.flush() )
-				)
-		);
+				);
 	}
 
 	@Test
-	public void testInsertStoredProcedure(TestContext context) {
-		test( context, openSession().thenCompose( session -> session
+	public void testInsertStoredProcedure(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession().thenCompose( session -> session
 				.find( SimpleRecord.class, theRecord.id )
-				.thenAccept( context::assertNotNull ) )
+				.thenAccept( Assertions::assertNotNull ) ) )
 		);
 	}
 
 	@Test
-	public void testUpdateStoredProcedure(TestContext context) {
-		test( context, openSession()
+	public void testUpdateStoredProcedure(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( SimpleRecord.class, theRecord.id )
 						.thenAccept( foundRecord -> foundRecord.text = UPDATED_TEXT )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( SimpleRecord.class, theRecord.id ) )
 				.thenAccept( foundRecord -> {
-					context.assertEquals( UPDATED_TEXT, foundRecord.text );
-					context.assertNotNull( foundRecord.updated );
-					context.assertNull( foundRecord.deleted );
+					assertEquals( UPDATED_TEXT, foundRecord.text );
+					assertNotNull( foundRecord.updated );
+					assertNull( foundRecord.deleted );
 				} )
 		);
 	}
 
 	@Test
-	public void testDeleteStoredProcedure(TestContext context) {
-		test( context, openSession()
+	public void testDeleteStoredProcedure(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( SimpleRecord.class, theRecord.id )
 						.thenCompose( session::remove )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( SimpleRecord.class, theRecord.id ) )
 				.thenAccept( foundRecord -> {
-					context.assertEquals( INITIAL_TEXT, foundRecord.text );
-					context.assertNotNull( foundRecord.updated );
-					context.assertNotNull( foundRecord.deleted );
+					assertEquals( INITIAL_TEXT, foundRecord.text );
+					assertNotNull( foundRecord.updated );
+					assertNotNull( foundRecord.deleted );
 				} )
 		);
 	}
