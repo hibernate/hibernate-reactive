@@ -8,16 +8,18 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -36,8 +38,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
  */
 public class FetchedAssociationTest extends BaseReactiveTest {
 
-	@Rule // We use native queries, they might be different for other DBs
-	public DatabaseSelectionRule rule = DatabaseSelectionRule.runOnlyFor( POSTGRESQL );
+	@RegisterExtension // We use native queries, they might be different for other DBs
+	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
 	private SqlStatementTracker sqlTracker;
 
@@ -53,6 +55,12 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 		return configuration;
 	}
 
+	@Override
+	public CompletionStage<Void> cleanDb() {
+		getSessionFactory().close();
+		return CompletionStages.voidFuture();
+	}
+
 	private static boolean isSelectOrInsertQuery(String s) {
 		return s.toLowerCase().startsWith( "select" )
 				|| s.toLowerCase().startsWith( "insert" );
@@ -64,7 +72,7 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testWithMutiny(TestContext context) {
+	public void testWithMutiny(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> {
 					final Parent parent = new Parent();

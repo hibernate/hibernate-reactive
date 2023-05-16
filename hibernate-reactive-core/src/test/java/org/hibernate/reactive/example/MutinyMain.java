@@ -5,12 +5,12 @@
  */
 package org.hibernate.reactive.example;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ public class MutinyMain extends BaseReactiveTest {
     }
 
     @Test
-    public void testWithInsert(TestContext context) {
+    public void testWithInsert(VertxTestContext context) {
         out.println( "== Mutiny API Example ==" );
 
         // obtain a factory for reactive sessions based on the
@@ -98,7 +98,7 @@ public class MutinyMain extends BaseReactiveTest {
     }
 
     @Test
-    public void test(TestContext context) {
+    public void test(VertxTestContext context) {
         out.println( "== Mutiny API Example ==" );
 
         // obtain a factory for reactive sessions based on the
@@ -154,12 +154,12 @@ public class MutinyMain extends BaseReactiveTest {
 								.setParameter( t, "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 1, books.size() );
+							assertEquals( 1, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
-								context.assertEquals( "Snow Crash", book.title );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
+								assertEquals( "Snow Crash", book.title );
 							} );
 						} )
 

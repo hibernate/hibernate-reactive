@@ -11,9 +11,9 @@ import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.impl.SqlClientConnection;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BatchSizeTest extends BaseReactiveTest {
 
 	@Test
-	public void testSetBatchSize(TestContext context) {
+	public void testSetBatchSize(VertxTestContext context) {
 		test( context, openSession()
 				.thenAccept( session -> {
 					assertThat( ( (StageSessionImpl) session ).getReactiveConnection() ).isInstanceOf( SqlClientConnection.class );
@@ -35,7 +35,7 @@ public class BatchSizeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSetBatchSizeMutiny(TestContext context) {
+	public void testSetBatchSizeMutiny(VertxTestContext context) {
 		test( context, openMutinySession()
 				.invoke( session -> {
 					assertThat( ( (MutinySessionImpl) session ).getReactiveConnection() ).isInstanceOf( SqlClientConnection.class );

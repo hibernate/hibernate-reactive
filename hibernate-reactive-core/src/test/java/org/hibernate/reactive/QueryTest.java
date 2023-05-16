@@ -12,9 +12,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.ColumnResult;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,11 +39,16 @@ import jakarta.persistence.criteria.Root;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.QueryTest.Author.*;
 import static org.hibernate.reactive.QueryTest.Author.AUTHOR_TABLE;
+import static org.hibernate.reactive.QueryTest.Author.HQL_NAMED_QUERY;
+import static org.hibernate.reactive.QueryTest.Author.SQL_NAMED_QUERY;
 import static org.hibernate.reactive.QueryTest.Book.BOOK_TABLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueryTest extends BaseReactiveTest {
 
@@ -52,7 +58,7 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCriteriaEntityQuery(TestContext context) {
+	public void testCriteriaEntityQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -84,11 +90,11 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery( query ).getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 3, books.size() );
+							assertEquals( 3, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
 							} );
 						} )
 						.thenCompose( v -> openSession() )
@@ -99,7 +105,7 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCriteriaEntityQueryWithParam(TestContext context) {
+	public void testCriteriaEntityQueryWithParam(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -137,12 +143,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( t, "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 1, books.size() );
+							assertEquals( 1, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
-								context.assertEquals( "Snow Crash", book.title );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
+								assertEquals( "Snow Crash", book.title );
 							} );
 						} )
 
@@ -158,7 +164,7 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCriteriaEntityQueryWithNamedParam(TestContext context) {
+	public void testCriteriaEntityQueryWithNamedParam(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -196,12 +202,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "title", "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 1, books.size() );
+							assertEquals( 1, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
-								context.assertEquals( "Snow Crash", book.title );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
+								assertEquals( "Snow Crash", book.title );
 							} );
 						} )
 
@@ -217,7 +223,7 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCriteriaProjectionQuery(TestContext context) {
+	public void testCriteriaProjectionQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -244,17 +250,17 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery( query ).getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 2, books.size() );
+							assertEquals( 2, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.get( "t" ) );
-								context.assertNotNull( book.get( "n" ) );
+								assertNotNull( book.get( "t" ) );
+								assertNotNull( book.get( "n" ) );
 							} );
 						} )
 		);
 	}
 
 	@Test
-	public void testNativeEntityQuery(TestContext context) {
+	public void testNativeEntityQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -276,18 +282,18 @@ public class QueryTest extends BaseReactiveTest {
 								Book.class
 						).getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 3, books.size() );
+							assertEquals( 3, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
 							} );
 						} )
 		);
 	}
 
 	@Test
-	public void testNativeEntityQueryWithParam(TestContext context) {
+	public void testNativeEntityQueryWithParam(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -311,12 +317,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 1, books.size() );
+							assertEquals( 1, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
-								context.assertEquals( "Snow Crash", book.title );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
+								assertEquals( "Snow Crash", book.title );
 							} );
 						} )
 
@@ -326,12 +332,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> context.assertEquals( 1, count ) )
+						.thenAccept( count -> assertEquals( 1, count ) )
 		);
 	}
 
 	@Test
-	public void testNativeEntityQueryWithNamedParam(TestContext context) {
+	public void testNativeEntityQueryWithNamedParam(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -355,12 +361,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "title", "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 1, books.size() );
+							assertEquals( 1, books.size() );
 							books.forEach( book -> {
-								context.assertNotNull( book.id );
-								context.assertNotNull( book.title );
-								context.assertNotNull( book.isbn );
-								context.assertEquals( "Snow Crash", book.title );
+								assertNotNull( book.id );
+								assertNotNull( book.title );
+								assertNotNull( book.isbn );
+								assertEquals( "Snow Crash", book.title );
 							} );
 						} )
 
@@ -370,12 +376,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "newtitle", "XXX" )
 								.setParameter( "title", "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> context.assertEquals( 1, count ) )
+						.thenAccept( count -> assertEquals( 1, count ) )
 		);
 	}
 
 	@Test
-	public void testNativeProjectionQuery(TestContext context) {
+	public void testNativeProjectionQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -396,12 +402,12 @@ public class QueryTest extends BaseReactiveTest {
 						session.getResultSetMapping( Object[].class, "title,author" )
 				).getResultList() )
 				.thenAccept( books -> {
-					context.assertEquals( 3, books.size() );
+					assertEquals( 3, books.size() );
 					books.forEach( tuple -> {
-						context.assertTrue( tuple instanceof Object[] );
-						context.assertEquals( 2, tuple.length );
-						context.assertTrue( tuple[0] instanceof String );
-						context.assertTrue( tuple[1] instanceof String );
+						assertTrue( tuple instanceof Object[] );
+						assertEquals( 2, tuple.length );
+						assertTrue( tuple[0] instanceof String );
+						assertTrue( tuple[1] instanceof String );
 					} );
 				} )
 				.thenCompose( v -> openSession() )
@@ -415,49 +421,49 @@ public class QueryTest extends BaseReactiveTest {
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
-									context.assertEquals( 3, tuple.length );
-									context.assertTrue( tuple[0] instanceof String );
+									assertEquals( 3, tuple.length );
+									assertTrue( tuple[0] instanceof String );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE )
 								.getResultList()
-								.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) )
+								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) )
 						)
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE, String.class )
 								.getResultList()
-								.thenAccept( list -> context.assertTrue( list.get( 0 ) instanceof String ) ) )
+								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = (Object[]) list.get( 0 );
-									context.assertEquals( 3, tuple.length );
-									context.assertTrue( tuple[0] instanceof String );
+									assertEquals( 3, tuple.length );
+									assertTrue( tuple[0] instanceof String );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Object[].class )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
-									context.assertEquals( 3, tuple.length );
-									context.assertTrue( tuple[0] instanceof String );
+									assertEquals( 3, tuple.length );
+									assertTrue( tuple[0] instanceof String );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Tuple.class )
 								.getResultList()
 								.thenAccept( list -> {
 									Tuple tuple = list.get( 0 );
-									context.assertEquals( 3, tuple.toArray().length );
-									context.assertTrue( tuple.get( 0 ) instanceof String );
-									context.assertTrue( tuple.get( "isbn" ) instanceof String );
+									assertEquals( 3, tuple.toArray().length );
+									assertTrue( tuple.get( 0 ) instanceof String );
+									assertTrue( tuple.get( "isbn" ) instanceof String );
 								} ) )
 				)
 		);
 	}
 
 	@Test
-	public void testNamedHqlProjectionQuery(TestContext context) {
+	public void testNamedHqlProjectionQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -477,12 +483,12 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createNamedQuery( HQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 3, books.size() );
+							assertEquals( 3, books.size() );
 							books.forEach( tuple -> {
-								context.assertTrue( tuple instanceof Object[] );
-								context.assertEquals( 2, tuple.length );
-								context.assertTrue( tuple[0] instanceof String );
-								context.assertTrue( tuple[1] instanceof String );
+								assertTrue( tuple instanceof Object[] );
+								assertEquals( 2, tuple.length );
+								assertTrue( tuple[0] instanceof String );
+								assertTrue( tuple[1] instanceof String );
 							} );
 						} )
 
@@ -491,12 +497,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> context.assertEquals( 1, count ) )
+						.thenAccept( count -> assertEquals( 1, count ) )
 		);
 	}
 
 	@Test
-	public void testNamedNativeProjectionQuery(TestContext context) {
+	public void testNamedNativeProjectionQuery(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
@@ -516,19 +522,19 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createNamedQuery( SQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
-							context.assertEquals( 3, books.size() );
+							assertEquals( 3, books.size() );
 							books.forEach( tuple -> {
-								context.assertTrue( tuple instanceof Object[] );
-								context.assertEquals( 2, tuple.length );
-								context.assertTrue( tuple[0] instanceof String );
-								context.assertTrue( tuple[1] instanceof String );
+								assertTrue( tuple instanceof Object[] );
+								assertEquals( 2, tuple.length );
+								assertTrue( tuple[0] instanceof String );
+								assertTrue( tuple[1] instanceof String );
 							} );
 						} )
 		);
 	}
 
 	@Test
-	public void testScalarQuery(TestContext context) {
+	public void testScalarQuery(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s.createNativeQuery( selectCurrentTimestampQuery() ).getSingleResult() )
 				.thenAccept( r -> assertThat( r ).isInstanceOfAny( Timestamp.class, OffsetDateTime.class, LocalDateTime.class ) )
@@ -547,31 +553,31 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSingleResultQueryNull(TestContext context) {
+	public void testSingleResultQueryNull(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s.createQuery( "from Book" ).getSingleResultOrNull() )
-				.thenAccept( context::assertNull )
+				.thenAccept( Assertions::assertNull )
 		);
 	}
 
 	@Test
-	public void testSingleResultQueryException(TestContext context) {
+	public void testSingleResultQueryException(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s.createQuery( "from Book" ).getSingleResult() )
 				.whenComplete( (r, x) -> {
-					context.assertNull( r );
-					context.assertNotNull( x );
+					assertNull( r );
+					assertNotNull( x );
 
 				} )
 				.handle( (r, x) -> {
-					context.assertTrue( x.getCause() instanceof NoResultException );
+					assertTrue( x.getCause() instanceof NoResultException );
 					return null;
 				} )
 		);
 	}
 
 	@Test
-	public void testSingleResultNonUniqueException(TestContext context) {
+	public void testSingleResultNonUniqueException(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		test( context, openSession()
@@ -585,7 +591,7 @@ public class QueryTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSingleResultOrNullNonUniqueException(TestContext context) {
+	public void testSingleResultOrNullNonUniqueException(VertxTestContext context) {
 		Author author1 = new Author( "Iain M. Banks" );
 		Author author2 = new Author( "Neal Stephenson" );
 		test( context, openSession()

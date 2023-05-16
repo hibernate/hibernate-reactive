@@ -17,9 +17,9 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,6 +37,10 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
@@ -61,7 +65,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testEagerCollectionFetch(TestContext context) {
+	public void testEagerCollectionFetch(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -76,17 +80,17 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Node.class, basik.getId() ) )
 						.thenAccept( node -> {
-							context.assertTrue( Hibernate.isInitialized( node.elements ) );
-							context.assertEquals( 3, node.elements.size() );
+							assertTrue( Hibernate.isInitialized( node.elements ) );
+							assertEquals( 3, node.elements.size() );
 							for ( Element element : node.elements ) {
-								context.assertTrue( element.node == node );
+								assertSame( element.node, node );
 							}
 						} )
 		);
 	}
 
 	@Test
-	public void testEagerParentFetch(TestContext context) {
+	public void testEagerParentFetch(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -101,15 +105,15 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Element.class, basik.elements.get( 0 ).id ) )
 						.thenAccept( element -> {
-							context.assertTrue( Hibernate.isInitialized( element.node ) );
-							context.assertTrue( Hibernate.isInitialized( element.node.elements ) );
-							context.assertEquals( 3, element.node.elements.size() );
+							assertTrue( Hibernate.isInitialized( element.node ) );
+							assertTrue( Hibernate.isInitialized( element.node.elements ) );
+							assertEquals( 3, element.node.elements.size() );
 						} )
 		);
 	}
 
 	@Test
-	public void testEagerFetchQuery(TestContext context) {
+	public void testEagerFetchQuery(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -124,19 +128,19 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery( "from Node order by id", Node.class ).getResultList() )
 						.thenAccept( list -> {
-							context.assertEquals( list.size(), 2 );
-							context.assertTrue( Hibernate.isInitialized( list.get( 0 ).elements ) );
-							context.assertEquals( list.get( 0 ).elements.size(), 3 );
-							context.assertEquals( list.get( 1 ).elements.size(), 0 );
+							assertEquals( list.size(), 2 );
+							assertTrue( Hibernate.isInitialized( list.get( 0 ).elements ) );
+							assertEquals( list.get( 0 ).elements.size(), 3 );
+							assertEquals( list.get( 1 ).elements.size(), 0 );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.createQuery(
 								"select distinct n, e from Node n join n.elements e order by n.id" ).getResultList() )
 						.thenAccept( list -> {
-							context.assertEquals( list.size(), 3 );
+							assertEquals( list.size(), 3 );
 							Object[] tup = (Object[]) list.get( 0 );
-							context.assertTrue( Hibernate.isInitialized( ( (Node) tup[0] ).elements ) );
-							context.assertEquals( ( (Node) tup[0] ).elements.size(), 3 );
+							assertTrue( Hibernate.isInitialized( ( (Node) tup[0] ).elements ) );
+							assertEquals( ( (Node) tup[0] ).elements.size(), 3 );
 						} )
 		);
 	}

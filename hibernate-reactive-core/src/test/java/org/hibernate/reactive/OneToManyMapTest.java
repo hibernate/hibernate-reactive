@@ -12,15 +12,19 @@ import java.util.Map;
 
 import org.hibernate.Hibernate;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OneToManyMapTest extends BaseReactiveTest {
 
@@ -30,7 +34,7 @@ public class OneToManyMapTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Book book1 = new Book( "Feersum Endjinn" );
 		Book book2 = new Book( "Use of Weapons" );
 		Author author = new Author( "Iain M Banks" );
@@ -43,12 +47,12 @@ public class OneToManyMapTest extends BaseReactiveTest {
 						.withTransaction( (session, transaction) -> session.persistAll( book1, book2, author ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> context.assertFalse( Hibernate.isInitialized( a.books ) ) )
+										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
 										.chain( a -> session.fetch( a.books ) )
 										.invoke( books -> {
-											context.assertEquals( 2, books.size() );
-											context.assertEquals( book1.title, books.get( "a" ).title );
-											context.assertEquals( book2.title, books.get( "b" ).title );
+											assertEquals( 2, books.size() );
+											assertEquals( book1.title, books.get( "a" ).title );
+											assertEquals( book2.title, books.get( "b" ).title );
 										} )
 								)
 						)
@@ -58,11 +62,11 @@ public class OneToManyMapTest extends BaseReactiveTest {
 																  Author.class
 														  )
 														  .getSingleResult()
-														  .invoke( a -> context.assertTrue( Hibernate.isInitialized( a.books ) ) )
+														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
 														  .invoke( a -> {
-															  context.assertEquals( 2, a.books.size() );
-															  context.assertEquals( book1.title, a.books.get( "a" ).title );
-															  context.assertEquals( book2.title, a.books.get( "b" ).title );
+															  assertEquals( 2, a.books.size() );
+															  assertEquals( book1.title, a.books.get( "a" ).title );
+															  assertEquals( book2.title, a.books.get( "b" ).title );
 														  } )
 								)
 						)

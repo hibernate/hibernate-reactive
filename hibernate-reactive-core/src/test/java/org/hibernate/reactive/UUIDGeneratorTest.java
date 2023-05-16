@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,12 +24,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class UUIDGeneratorTest extends BaseReactiveTest {
 
-	@Rule // Storing UUID doesn't work with DB2
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( DB2 );
+	@RegisterExtension // Storing UUID doesn't work with DB2
+	public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -37,7 +39,7 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testUUIDGenerator(TestContext context) {
+	public void testUUIDGenerator(VertxTestContext context) {
 		TableId b = new TableId();
 		b.string = "Hello World";
 
@@ -48,23 +50,23 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 				.thenCompose( s2 ->
 					s2.find( TableId.class, b.getId() )
 						.thenAccept( bb -> {
-							context.assertNotNull( bb );
-							context.assertNotNull( bb.id );
-							context.assertEquals( bb.string, b.string );
-							context.assertEquals( bb.version, 0 );
+							assertNotNull( bb );
+							assertNotNull( bb.id );
+							assertEquals( bb.string, b.string );
+							assertEquals( bb.version, 0 );
 
 							bb.string = "Goodbye";
 						})
 						.thenCompose(vv -> s2.flush())
 						.thenCompose(vv -> s2.find( TableId.class, b.getId() ))
 						.thenAccept( bt -> {
-							context.assertEquals( bt.version, 1 );
+							assertEquals( bt.version, 1 );
 						}))
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					context.assertEquals(bb.version, 1);
-					context.assertEquals( bb.string, "Goodbye");
+					assertEquals(bb.version, 1);
+					assertEquals( bb.string, "Goodbye");
 				})
 		);
 	}

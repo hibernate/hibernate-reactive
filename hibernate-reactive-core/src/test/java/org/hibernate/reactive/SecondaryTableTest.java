@@ -10,12 +10,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -27,14 +27,18 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class SecondaryTableTest extends BaseReactiveTest {
 
 	//Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block
-	@Rule
-	public final DatabaseSelectionRule skip = skipTestsFor( DB2 );
+	@RegisterExtension
+	public final DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -42,7 +46,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testRootClassViaAssociation(TestContext context) {
+	public void testRootClassViaAssociation(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false );
 		final Author author = new Author( "Charlie Mackesy", book );
 
@@ -56,16 +60,16 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
-							context.assertNotNull( auth );
-							context.assertEquals( author, auth );
-							context.assertEquals( book.getTitle(), auth.getBook().getTitle() );
-							context.assertFalse( book.isForbidden() );
+							assertNotNull( auth );
+							assertEquals( author, auth );
+							assertEquals( book.getTitle(), auth.getBook().getTitle() );
+							assertFalse( book.isForbidden() );
 						} )
 		);
 	}
 
 	@Test
-	public void testSubclassViaAssociation(TestContext context) {
+	public void testSubclassViaAssociation(VertxTestContext context) {
 		final Book book = new Book( 6, "Necronomicon", new Date(), true );
 		final Author author = new Author( "Abdul Alhazred", book );
 
@@ -78,16 +82,16 @@ public class SecondaryTableTest extends BaseReactiveTest {
 								.thenCompose( v -> s.find( Author.class, author.getId() ) )
 						)
 						.thenAccept( auth -> {
-							context.assertNotNull( auth );
-							context.assertEquals( author, auth );
-							context.assertEquals( book.getTitle(), auth.getBook().getTitle() );
-							context.assertTrue( book.isForbidden() );
+							assertNotNull( auth );
+							assertEquals( author, auth );
+							assertEquals( book.getTitle(), auth.getBook().getTitle() );
+							assertTrue( book.isForbidden() );
 						} )
 		);
 	}
 
 	@Test
-	public void testRootClassViaFind(TestContext context) {
+	public void testRootClassViaFind(VertxTestContext context) {
 
 		final Book novel = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date(), false );
 		final Author author = new Author( "Charlie Mackesy", novel );
@@ -102,15 +106,15 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 6 ) )
 						.thenAccept( book -> {
-							context.assertNotNull( book );
-							context.assertFalse( book.isForbidden() );
-							context.assertEquals( book.getTitle(), "The Boy, The Mole, The Fox and The Horse" );
+							assertNotNull( book );
+							assertFalse( book.isForbidden() );
+							assertEquals( book.getTitle(), "The Boy, The Mole, The Fox and The Horse" );
 						} )
 		);
 	}
 
 	@Test
-	public void testSubclassViaFind(TestContext context) {
+	public void testSubclassViaFind(VertxTestContext context) {
 		final Book spells = new Book( 6, "Necronomicon", new Date(), true );
 		final Author author = new Author( "Abdul Alhazred", spells );
 
@@ -124,9 +128,9 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 6 ) )
 						.thenAccept( book -> {
-							context.assertNotNull( book );
-							context.assertTrue( book.isForbidden() );
-							context.assertEquals( book.getTitle(), "Necronomicon" );
+							assertNotNull( book );
+							assertTrue( book.isForbidden() );
+							assertEquals( book.getTitle(), "Necronomicon" );
 						} )
 		);
 	}

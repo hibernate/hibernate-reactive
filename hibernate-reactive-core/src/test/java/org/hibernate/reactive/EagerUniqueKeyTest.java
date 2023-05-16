@@ -5,14 +5,14 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -27,6 +27,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * @see LazyUniqueKeyTest
  */
@@ -38,7 +41,7 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFindJoin(TestContext context) {
+	public void testFindJoin(VertxTestContext context) {
 		Foo foo = new Foo( new Bar( "unique" ) );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( foo )
@@ -46,15 +49,15 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 						.thenAccept( v -> session.clear() )
 						.thenCompose( v -> session.find( Foo.class, foo.id ) )
 						.thenAccept( result -> {
-							context.assertTrue( Hibernate.isInitialized( result.getBar() ) );
-							context.assertEquals( "unique", result.getBar().getKey() );
+							assertTrue( Hibernate.isInitialized( result.getBar() ) );
+							assertEquals( "unique", result.getBar().getKey() );
 						} )
 				) );
 	}
 
 
 	@Test
-	public void testMergeDetached(TestContext context) {
+	public void testMergeDetached(VertxTestContext context) {
 		Bar bar = new Bar( "unique2" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
@@ -62,13 +65,13 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 						.withTransaction( session -> session.merge( new Foo( bar ) ) ) )
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session -> session.fetch( result.getBar() )
-								.thenAccept( b -> context.assertEquals( "unique2", b.getKey() ) )
+								.thenAccept( b -> assertEquals( "unique2", b.getKey() ) )
 						) ) );
 	}
 
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1504
+	@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
-	public void testMergeReference(TestContext context) {
+	public void testMergeReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
@@ -76,13 +79,13 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 						.withTransaction( session -> session
 								.merge( new Foo( session.getReference( Bar.class, bar.getId() ) ) ) ) )
 				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() )
-						.thenAccept( b -> context.assertEquals( "unique3", b.getKey() ) )
+						.thenAccept( b -> assertEquals( "unique3", b.getKey() ) )
 				) )
 		);
 	}
 
 	@Test
-	public void testPersistWithReference(TestContext context) {
+	public void testPersistWithReference(VertxTestContext context) {
 		Bar bar = new Bar( "uniquePersist" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
@@ -92,7 +95,7 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 							return session.persist( foo ).thenApply( v -> foo );
 						} ) )
 				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() ) ) )
-				.thenAccept( b -> context.assertEquals( "uniquePersist", b.getKey() ) )
+				.thenAccept( b -> assertEquals( "uniquePersist", b.getKey() ) )
 		);
 	}
 

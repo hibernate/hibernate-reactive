@@ -6,14 +6,18 @@
 package org.hibernate.reactive;
 
 
-import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Checks the # of cache hits when the configuration property Settings.GENERATE_STATISTICS is set to TRUE
@@ -35,11 +39,11 @@ public class CachedQueryResultsGenerateStatisticsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testQueryPlanCacheHitsWithGenerateStatisticsTrue(TestContext context) {
+	public void testQueryPlanCacheHitsWithGenerateStatisticsTrue(VertxTestContext context) {
 		test( context, CachedQueryResultsGenerateStatisticsTest.createFindAllWithNamedQuery()
 				.call( CachedQueryResultsGenerateStatisticsTest::createFindAllWithNamedQuery)
 				.call( CachedQueryResultsGenerateStatisticsTest::createFindAllWithNamedQuery)
-				.invoke( () -> context.assertEquals( 3L, CachedQueryResultsTest.statistics().getQueryPlanCacheHitCount() ) )
+				.invoke( () -> assertEquals( 3L, CachedQueryResultsTest.statistics().getQueryPlanCacheHitCount() ) )
 		);
 	}
 

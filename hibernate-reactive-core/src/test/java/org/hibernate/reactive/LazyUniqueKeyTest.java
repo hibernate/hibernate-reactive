@@ -5,16 +5,19 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.ext.unit.TestContext;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,12 +26,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.List;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @see EagerUniqueKeyTest
@@ -36,8 +37,8 @@ import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
 public class LazyUniqueKeyTest extends BaseReactiveTest {
 
 	// Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block here
-	@Rule
-	public DatabaseSelectionRule skip = skipTestsFor( DB2 );
+	@RegisterExtension
+	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -45,7 +46,7 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testFindSelect(TestContext context) {
+	public void testFindSelect(VertxTestContext context) {
 		Foo foo = new Foo( new Bar( "unique" ) );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session
@@ -54,16 +55,16 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 						.thenAccept( v -> session.clear() )
 						.thenCompose( v -> session.find( Foo.class, foo.id ) )
 //                        .thenApply( result -> {
-//                            context.assertFalse( Hibernate.isInitialized(result.bar) );
+//                            assertFalse( Hibernate.isInitialized(result.bar) );
 //                            return result;
 //                        } )
 						.thenCompose( result -> session.fetch( result.bar ) )
-						.thenAccept( bar -> context.assertEquals( "unique", bar.key ) ) )
+						.thenAccept( bar -> assertEquals( "unique", bar.key ) ) )
 		);
 	}
 
 	@Test
-	public void testMergeDetached(TestContext context) {
+	public void testMergeDetached(VertxTestContext context) {
 		Bar bar = new Bar( "unique2" );
 		test( context, getSessionFactory()
 				.withTransaction( (session, tx) -> session.persist( bar ) )
@@ -71,13 +72,13 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 						.withTransaction( session -> session.merge( new Foo( bar ) ) ) )
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session -> session.fetch( result.bar )
-								.thenAccept( b -> context.assertEquals( "unique2", b.key ) )
+								.thenAccept( b -> assertEquals( "unique2", b.key ) )
 				) ) );
 	}
 
-	@Ignore // see https://github.com/hibernate/hibernate-reactive/issues/1504
+	@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
-	public void testMergeReference(TestContext context) {
+	public void testMergeReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
@@ -86,12 +87,12 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				)
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session-> session.fetch( result.bar )
-						.thenAccept( b -> context.assertEquals( "unique3", b.key ) )
+						.thenAccept( b -> assertEquals( "unique3", b.key ) )
 				) ) );
 	}
 
 	@Test
-	public void testPersistReference(TestContext context) {
+	public void testPersistReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
@@ -103,7 +104,7 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				)
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session-> session.fetch( result.bar )
-								.thenAccept( b -> context.assertEquals( "unique3", b.getKey() ) )
+								.thenAccept( b -> assertEquals( "unique3", b.getKey() ) )
 						) ) );
 	}
 

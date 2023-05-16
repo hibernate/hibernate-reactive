@@ -9,10 +9,11 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-import io.vertx.ext.unit.TestContext;
+import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,6 +22,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ManyToOneMergeTest extends BaseReactiveTest {
 
 	@Override
@@ -28,8 +32,7 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 		return List.of( AcademicYearDetailsDBO.class, CampusDBO.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
+	private Uni<Void> populateDb() {
 		CampusDBO campusDBO2 = new CampusDBO();
 		campusDBO2.setId( 42 );
 		campusDBO2.setCampusName( "Kuchl" );
@@ -44,14 +47,14 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 		academicYearDetailsDBO.setCreatedUsersId( 12 );
 		academicYearDetailsDBO.setRecordStatus( 'F' );
 		academicYearDetailsDBO.setModifiedUsersId( 66 );
-		test( context, getMutinySessionFactory().withTransaction( session -> session.persistAll(
-				campusDBO, campusDBO2, academicYearDetailsDBO
-		) ) );
+		return getMutinySessionFactory().withTransaction( (s, t) -> s.persistAll(
+				campusDBO, campusDBO2, academicYearDetailsDBO ) );
 	}
 
 	@Test
-	public void test(TestContext context) {
-		test( context, getMutinySessionFactory().withSession( session -> session
+	public void test(VertxTestContext context) {
+		test( context, populateDb()
+				.call( () -> getMutinySessionFactory().withSession( session -> session
 						.createQuery( "select dbo from AcademicYearDetailsDBO dbo", AcademicYearDetailsDBO.class )
 						.getSingleResult() )
 				.invoke( dbo -> dbo.setRecordStatus( 'A' ) )
@@ -61,12 +64,12 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 				} ) )
 				.chain( merged -> getMutinySessionFactory()
 						.withTransaction( session -> session.fetch( merged.getCampusDBO() ) ) )
-				.invoke( fetched -> context.assertEquals( "Kuchl", fetched.getCampusName() ) )
+				.invoke( fetched -> assertEquals( "Kuchl", fetched.getCampusName() ) ) )
 		);
 	}
 
 	@Test
-	public void testTransient(TestContext context) {
+	public void testTransient(VertxTestContext context) {
 		CampusDBO campusDBO = new CampusDBO();
 		campusDBO.setId( 77 );
 		campusDBO.setCampusName( "Qualunquelandia" );
@@ -78,13 +81,14 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 		dbo.setRecordStatus( 'A' );
 		dbo.setModifiedUsersId( 66 );
 
-		test( context, getMutinySessionFactory().withTransaction( session -> {
+		test( context, populateDb()
+				.call( () -> getMutinySessionFactory().withTransaction( session -> {
 						  dbo.setCampusDBO( session.getReference( CampusDBO.class, 42 ) );
 						  return session.merge( dbo );
 					  } )
 					  .chain( merged -> getMutinySessionFactory()
 							  .withTransaction( session -> session.fetch( merged.getCampusDBO() ) ) )
-					  .invoke( fetched -> context.assertEquals( "Kuchl", fetched.getCampusName() ) )
+					  .invoke( fetched -> assertEquals( "Kuchl", fetched.getCampusName() ) ) )
 		);
 	}
 

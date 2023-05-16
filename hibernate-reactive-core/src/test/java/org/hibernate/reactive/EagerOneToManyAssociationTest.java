@@ -5,20 +5,29 @@
  */
 package org.hibernate.reactive;
 
-import org.junit.After;
-import org.junit.Test;
-
-import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 
 	@Override
@@ -26,15 +35,8 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 		return List.of( Author.class, Book.class );
 	}
 
-	@After
-	public void cleanDb(TestContext context) {
-		test( context, getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Author" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Book" ).executeUpdate() ) ) );
-	}
-
 	@Test
-	public void findBookWithAuthors(TestContext context) {
+	public void findBookWithAuthors(VertxTestContext context) {
 		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
@@ -53,16 +55,16 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( 2, optionalBook.getAuthors().size() );
-							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
-							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
+							assertNotNull( optionalBook );
+							assertEquals( 2, optionalBook.getAuthors().size() );
+							assertTrue( optionalBook.getAuthors().contains( neilGaiman )  );
+							assertTrue( optionalBook.getAuthors().contains( terryPratchett )  );
 						} )
 		);
 	}
 
 	@Test
-	public void getBookWithAuthors(TestContext context) {
+	public void getBookWithAuthors(VertxTestContext context) {
 		final Book goodOmens = new Book( 7242353, "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
 		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
@@ -75,10 +77,10 @@ public class EagerOneToManyAssociationTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withStatelessSession( session -> session
 						.get( Book.class, goodOmens.getId() )
 						.thenAccept( optionalBook -> {
-							context.assertNotNull( optionalBook );
-							context.assertEquals( 2, optionalBook.getAuthors().size() );
-							context.assertTrue( optionalBook.getAuthors().contains( neilGaiman ) );
-							context.assertTrue( optionalBook.getAuthors().contains( terryPratchett ) );
+							assertNotNull( optionalBook );
+							assertEquals( 2, optionalBook.getAuthors().size() );
+							assertTrue( optionalBook.getAuthors().contains( neilGaiman ) );
+							assertTrue( optionalBook.getAuthors().contains( terryPratchett ) );
 						} )
 				) )
 		);

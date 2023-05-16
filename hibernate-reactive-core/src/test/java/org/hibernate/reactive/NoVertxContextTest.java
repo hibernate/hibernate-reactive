@@ -20,10 +20,9 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
 
@@ -48,8 +47,8 @@ public class NoVertxContextTest {
 
 	private static SessionFactory sessionFactory;
 
-	@BeforeClass
-	public static void setupSessionFactory() {
+	@BeforeEach
+	public void setupSessionFactory() {
 		Configuration configuration = new Configuration();
 		configuration.addAnnotatedClass( GameCharacter.class );
 		BaseReactiveTest.setDefaultProperties( configuration );
@@ -59,19 +58,19 @@ public class NoVertxContextTest {
 		sessionFactory = configuration.buildSessionFactory( registry );
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void closeSessionFactory() {
 		sessionFactory.close();
 	}
 
-	@After
-	public void deleteEntries() {
-		mutinyFactory()
-				.withTransaction( session -> session
-				.createQuery( "delete from " + GameCharacter.ENTITY_NAME )
-				.executeUpdate() )
-				.await().indefinitely();
-	}
+	// TODO:  REMOVE or add call to delete ??
+//	public void deleteEntries() {
+//		mutinyFactory()
+//				.withTransaction( session -> session
+//				.createQuery( "delete from " + GameCharacter.ENTITY_NAME )
+//				.executeUpdate() )
+//				.await().indefinitely();
+//	}
 
 	public Stage.SessionFactory stageFactory() {
 		return sessionFactory.unwrap( Stage.SessionFactory.class );

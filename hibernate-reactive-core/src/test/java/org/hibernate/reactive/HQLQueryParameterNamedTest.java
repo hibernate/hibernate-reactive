@@ -8,16 +8,21 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.reactive.stage.Stage;
+
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import org.hibernate.reactive.stage.Stage;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import io.vertx.ext.unit.TestContext;
 
 /**
  * Tests queries using named parameters like ":name",
@@ -34,142 +39,140 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 		return List.of( Flour.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		test( context, getMutinySessionFactory()
-				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond ) ) );
+	public CompletionStage<Void> populateDb() {
+		return openSession().thenCompose( s -> s.persist( spelt, rye, almond).thenCompose( v -> s.flush() ) );
 	}
 
 	@Test
-	public void testAutoFlushOnSingleResult(TestContext context) {
+	public void testAutoFlushOnSingleResult(VertxTestContext context) {
 		Flour semolina = new Flour(678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test( context, getSessionFactory()
+		test( context, populateDb().thenCompose( vd -> getSessionFactory()
 				.withSession( s -> s
 						.persist( semolina )
 						.thenCompose( v -> s.createQuery( "from Flour where id = :id" )
 								.setParameter( "id", semolina.getId() )
 								.getSingleResult()
 						)
-						.thenAccept( found -> context.assertEquals( semolina, found ) )
-				)
+						.thenAccept( found -> assertEquals( semolina, found ) )
+				) )
 		);
 	}
 
 	@Test
-	public void testSelectScalarValues(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSelectScalarValues(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = :id" )
 						  .setParameter( "id", rye.getId() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( found -> context.assertEquals( "Prova", found ) )
+			  } ) ).thenAccept( found -> assertEquals( "Prova", found ) )
 		);
 	}
 
 	@Test
-	public void testSelectWithMultipleScalarValues(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSelectWithMultipleScalarValues(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = :id" )
 						  .setParameter( "id", rye.getId() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( found -> {
-				  context.assertTrue( found instanceof Object[] );
-				  context.assertEquals( "Prova", ( (Object[]) found )[0] );
-				  context.assertEquals( rye.getId(), ( (Object[]) found )[1] );
+			  } ) ).thenAccept( found -> {
+				  assertTrue( found instanceof Object[] );
+				  assertEquals( "Prova", ( (Object[]) found )[0] );
+				  assertEquals( rye.getId(), ( (Object[]) found )[1] );
 			  } )
 		);
 	}
 
 	@Test
-	public void testSingleResultQueryOnId(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSingleResultQueryOnId(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE id = :id" )
 						  .setParameter( "id", 1 );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> context.assertEquals( spelt, flour ) )
+			  } ) ).thenAccept( flour -> assertEquals( spelt, flour ) )
 		);
 	}
 
 	@Test
-	public void testSingleResultQueryOnName(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSingleResultQueryOnName(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = :name" )
 						  .setParameter( "name", "Almond" );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> context.assertEquals( almond, flour ) )
+			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
-	public void testSingleResultMultipleParameters(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSingleResultMultipleParameters(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = :name and description = :desc" )
 						  .setParameter( "name", almond.getName() )
 						  .setParameter( "desc", almond.getDescription() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> context.assertEquals( almond, flour ) )
+			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
-	public void testSingleResultMultipleParametersReversed(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSingleResultMultipleParametersReversed(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = :name and description = :desc" )
 						  .setParameter( "desc", almond.getDescription() )
 						  .setParameter( "name", almond.getName() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> context.assertEquals( almond, flour ) )
+			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
-	public void testSingleResultMultipleParametersReused(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testSingleResultMultipleParametersReused(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = :name or cast(:name as string) is null" )
 						  .setParameter( "name", almond.getName() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> context.assertEquals( almond, flour ) )
+			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
-	public void testPlaceHolderInString(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testPlaceHolderInString(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "select ':', ':name', f FROM Flour f WHERE f.name = :name" )
 						  .setParameter( "name", almond.getName() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( result -> {
-				  context.assertEquals( Object[].class, result.getClass() );
+			  } ) ).thenAccept( result -> {
+				  assertEquals( Object[].class, result.getClass() );
 				  final Object[] objects = (Object[]) result;
-				  context.assertEquals( 3, objects.length );
-				  context.assertEquals( ":", objects[0] );
-				  context.assertEquals( ":name", objects[1] );
-				  context.assertEquals( almond, objects[2] );
+				  assertEquals( 3, objects.length );
+				  assertEquals( ":", objects[0] );
+				  assertEquals( ":name", objects[1] );
+				  assertEquals( almond, objects[2] );
 			  } )
 		);
 	}
 
 	@Test
-	public void testPlaceHolderAndSingleQuoteInString(TestContext context) {
-		test( context, getSessionFactory().withSession( s -> {
+	public void testPlaceHolderAndSingleQuoteInString(VertxTestContext context) {
+		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "select ''':', ''':name''', f FROM Flour f WHERE f.name = :name" )
 						  .setParameter( "name", almond.getName() );
-				  context.assertNotNull( qr );
+				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ).thenAccept( result -> {
-				  context.assertEquals( Object[].class, result.getClass() );
+			  } ) ).thenAccept( result -> {
+				  assertEquals( Object[].class, result.getClass() );
 				  final Object[] objects = (Object[]) result;
-				  context.assertEquals( 3, objects.length );
-				  context.assertEquals( "':", objects[0] );
-				  context.assertEquals( "':name'", objects[1] );
-				  context.assertEquals( almond, objects[2] );
+				  assertEquals( 3, objects.length );
+				  assertEquals( "':", objects[0] );
+				  assertEquals( "':name'", objects[1] );
+				  assertEquals( almond, objects[2] );
 			  } )
 		);
 	}

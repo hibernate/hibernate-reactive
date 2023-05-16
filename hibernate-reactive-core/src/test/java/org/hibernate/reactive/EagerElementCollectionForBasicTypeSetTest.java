@@ -12,22 +12,28 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.unit.TestContext;
-import org.assertj.core.api.Assertions;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests @{@link ElementCollection} on a {@link java.util.Set} of basic types.
+ * Tests @{@link ElementCollection} on a {@link Set} of basic types.
  * <p>
  * Example:
  * {@code
@@ -41,6 +47,7 @@ import org.assertj.core.api.Assertions;
  * @see EagerElementCollectionForBasicTypeListTest
  * @see EagerElementCollectionForEmbeddableTypeListTest
  */
+@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest {
 
 	private Person thePerson;
@@ -50,22 +57,31 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 		return List.of( Person.class );
 	}
 
-	@Before
-	public void populateDb(TestContext context) {
-		Set<String> phones = new HashSet<>( Arrays.asList( "999-999-9999", "111-111-1111", "123-456-7890" ) );
-		thePerson = new Person( 7242000, "Claude", phones );
+	private Person getPerson() {
+		if( thePerson == null ) {
+			Set<String> phones = new HashSet<>( Arrays.asList( "999-999-9999", "111-111-1111", "123-456-7890" ) );
+			thePerson = new Person( 7242000, "Claude", phones );
+		}
+		return thePerson;
+	}
 
-		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( thePerson ) ) );
+	private Uni<Void> populateDbMutiny() {
+		return getMutinySessionFactory().withTransaction( (s, t) -> s.persist( getPerson() ) );
+	}
+
+	private CompletionStage<Void> populateDb() {
+		return getSessionFactory().withTransaction( s -> s.persist(  getPerson() ) );
 	}
 
 	@Test
-	public void persistWithMutinyAPI(TestContext context) {
+	public void persistWithMutinyAPI(VertxTestContext context) {
 		Person johnny = new Person( 999, "Johnny English", Arrays.asList( "888", "555" ) );
 
-		test( context, openMutinySession()
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.persist( johnny )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, johnny.getId() ) )
 				.invoke( found -> assertPhones( context, found, "888", "555" ) )
@@ -73,30 +89,33 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void findEntityWithElementCollectionWithStageAPI(TestContext context) {
-		test( context, openSession()
-				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
+	public void findEntityWithElementCollectionWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) ) )
 				.thenAccept( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) )
 		);
 	}
 
 	@Test
-	public void findEntityWithElementCollectionWithMutinyAPI(TestContext context) {
-		test( context, openMutinySession()
+	public void findEntityWithElementCollectionWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
-				.invoke( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) )
+				.invoke( found -> assertPhones( context, found, "999-999-9999", "111-111-1111", "123-456-7890" ) ) )
 		);
 	}
 
 
 	@Test
-	public void addOneElementWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void addOneElementWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
 						.thenAccept( foundPerson -> foundPerson.getPhones().add( "000" ) )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "111-111-1111", "123-456-7890", "000" ) )
@@ -104,13 +123,14 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void addOneElementWithMutinyAPI(TestContext context) {
-		test( context, openMutinySession()
+	public void addOneElementWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
 						.invoke( foundPerson -> foundPerson.getPhones().add( "000" ) )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "111-111-1111", "123-456-7890", "000" ) )
@@ -118,13 +138,14 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removeOneElementWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void removeOneElementWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
 						.thenAccept( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
@@ -132,12 +153,13 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removeOneElementWithMutinyAPI(TestContext context) {
-		test( context, getMutinySessionFactory()
+	public void removeOneElementWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session
 						.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
-						.invoke( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) ) )
+						.invoke( foundPerson -> foundPerson.getPhones().remove( "111-111-1111" ) ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( updatedPerson -> assertPhones( context, updatedPerson, "999-999-9999", "123-456-7890" ) )
@@ -145,45 +167,48 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void clearCollectionOfElementsWithStageAPI(TestContext context){
-		test( context, getSessionFactory()
+	public void clearCollectionOfElementsWithStageAPI(VertxTestContext context){
+		test( context, populateDb()
+				.thenCompose( vd -> getSessionFactory()
 				.withTransaction( (session, transaction) -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.getPhones().clear();
-						} ) )
+						} ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
+				.thenAccept( changedPerson -> assertTrue( changedPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void clearCollectionOfElementsWithMutinyAPI(TestContext context) {
-		test( context, getMutinySessionFactory()
+	public void clearCollectionOfElementsWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.getPhones().clear();
-						} ) )
+						} ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
-				.invoke( changedPerson -> context.assertTrue( changedPerson.getPhones().isEmpty() ) )
+				.invoke( changedPerson -> assertTrue( changedPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void removeAndAddElementWithStageAPI(TestContext context) {
-		test( context, getSessionFactory()
+	public void removeAndAddElementWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> getSessionFactory()
 				.withTransaction( (session, transaction) -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertNotNull( foundPerson );
+							assertNotNull( foundPerson );
 							foundPerson.getPhones().remove( "111-111-1111" );
 							foundPerson.getPhones().add( "000" );
-						} ) )
+						} ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "999-999-9999", "123-456-7890", "000" ) )
@@ -191,15 +216,16 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removeAndAddElementWithMutinyAPI(TestContext context){
-		test ( context, getMutinySessionFactory()
+	public void removeAndAddElementWithMutinyAPI(VertxTestContext context){
+		test ( context, populateDbMutiny()
+				.call( () -> getMutinySessionFactory()
 				.withTransaction( (session, transaction) -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
-							context.assertNotNull( foundPerson );
+							assertNotNull( foundPerson );
 							foundPerson.getPhones().remove( "111-111-1111" );
 							foundPerson.getPhones().add( "000" );
-						} ) )
+						} ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( person -> assertPhones( context, person, "999-999-9999", "123-456-7890", "000" ) )
@@ -207,16 +233,17 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setNewElementCollectionWithStageAPI(TestContext context){
-		test( context, openSession()
+	public void setNewElementCollectionWithStageAPI(VertxTestContext context){
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
-							context.assertNotNull( foundPerson );
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertNotNull( foundPerson );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.setPhones( new HashSet<>( List.of( "555" ) ) );
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "555" ) )
@@ -224,15 +251,16 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setNewElementCollectionWithMutinyAPI(TestContext context) {
-		test( context, getMutinySessionFactory()
+	public void setNewElementCollectionWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( foundPerson -> {
-							context.assertNotNull( foundPerson );
-							context.assertFalse( foundPerson.getPhones().isEmpty() );
+							assertNotNull( foundPerson );
+							assertFalse( foundPerson.getPhones().isEmpty() );
 							foundPerson.setPhones( new HashSet<>( List.of( "555" ) ) );
-						} ) )
+						} ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( changedPerson -> assertPhones( context, changedPerson, "555" ) )
@@ -240,46 +268,49 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void removePersonWithStageAPI(TestContext context) {
-		test( context, getSessionFactory()
+	public void removePersonWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> getSessionFactory()
 				.withTransaction( (session, tx) -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
-						.thenCompose( session::remove ) )
+						.thenCompose( session::remove ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
-				.thenAccept( context::assertNull )
+				.thenAccept( Assertions::assertNull )
 				// Check with native query that the table is empty
 				.thenCompose( v -> selectFromPhonesWithStage( thePerson ) )
-				.thenAccept( resultList -> context.assertTrue( resultList.isEmpty() ) )
+				.thenAccept( resultList -> assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void removePersonWithMutinyAPI(TestContext context) {
-		test( context, openMutinySession()
+	public void removePersonWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.call( session::remove )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
-				.invoke( context::assertNull )
+				.invoke( Assertions::assertNull )
 				// Check with native query that the table is empty
 				.chain( () -> selectFromPhonesWithMutiny( thePerson ) )
-				.invoke( resultList -> context.assertTrue( resultList.isEmpty() ) )
+				.invoke( resultList -> assertTrue( resultList.isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void persistAnotherPersonWithStageAPI(TestContext context) {
+	public void persistAnotherPersonWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( "222-222-2222", "333-333-3333" ) );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "222-222-2222", "333-333-3333" ) )
@@ -291,13 +322,14 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void persistAnotherPersonWithMutinyAPI(TestContext context) {
+	public void persistAnotherPersonWithMutinyAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( "222-222-2222", "333-333-3333" ) );
 
-		test( context, openMutinySession()
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.persist( secondPerson )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				// Check new person collection
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
@@ -310,45 +342,48 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void persistCollectionOfNullsWithStageAPI(TestContext context) {
+	public void persistCollectionOfNullsWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, null ) );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				// Check new person collection
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				// Null values don't get persisted
-				.thenAccept( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
+				.thenAccept( foundPerson -> assertTrue( foundPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void persistCollectionOfNullsWithMutinyAPI(TestContext context) {
+	public void persistCollectionOfNullsWithMutinyAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, null ) );
 
-		test( context, openMutinySession()
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.persist( secondPerson )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				// Check new person collection
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
 				// Null values don't get persisted
-				.invoke( foundPerson -> context.assertTrue( foundPerson.getPhones().isEmpty() ) )
+				.invoke( foundPerson -> assertTrue( foundPerson.getPhones().isEmpty() ) )
 		);
 	}
 
 	@Test
-	public void persistCollectionWithNullsWithStageAPI(TestContext context) {
+	public void persistCollectionWithNullsWithStageAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, "567", null ) );
 
-		test( context, openSession()
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session
 						.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				// Check new person collection
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
@@ -358,13 +393,14 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void persistCollectionWithNullsWithMutinyAPI(TestContext context) {
+	public void persistCollectionWithNullsWithMutinyAPI(VertxTestContext context) {
 		Person secondPerson = new Person( 9910000, "Kitty", Arrays.asList( null, "567", null ) );
 
-		test( context, openMutinySession()
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.persist( secondPerson )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				// Check new person collection
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, secondPerson.getId() ) )
@@ -374,14 +410,15 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setCollectionToNullWithStageAPI(TestContext context) {
-		test( context, openSession()
+	public void setCollectionToNullWithStageAPI(VertxTestContext context) {
+		test( context, populateDb()
+				.thenCompose( vd -> openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( found -> {
-							context.assertFalse( found.getPhones().isEmpty() );
+							assertFalse( found.getPhones().isEmpty() );
 							found.setPhones( null );
 						} )
-						.thenCompose( v -> session.flush() ) )
+						.thenCompose( v -> session.flush() ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( foundPerson -> assertPhones( context, foundPerson ) )
@@ -389,15 +426,16 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	}
 
 	@Test
-	public void setCollectionToNullWithMutinyAPI(TestContext context) {
-		test( context, openMutinySession()
+	public void setCollectionToNullWithMutinyAPI(VertxTestContext context) {
+		test( context, populateDbMutiny()
+				.call( () -> openMutinySession()
 				.chain( session -> session
 						.find( Person.class, thePerson.getId() )
 						.invoke( found -> {
-							context.assertFalse( found.getPhones().isEmpty() );
+							assertFalse( found.getPhones().isEmpty() );
 							found.setPhones( null );
 						} )
-						.call( session::flush ) )
+						.call( session::flush ) ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Person.class, thePerson.getId() ) )
 				.invoke( foundPerson -> assertPhones( context, foundPerson ) )
@@ -430,8 +468,8 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 	 * Utility method to check the content of the collection of elements.
 	 * It sorts the expected and actual phones before comparing.
 	 */
-	private static void assertPhones(TestContext context, Person person, String... expectedPhones) {
-		context.assertNotNull( person );
+	private static void assertPhones(VertxTestContext context, Person person, String... expectedPhones) {
+		assertNotNull( person );
 		String[] sortedExpected = Arrays.stream( expectedPhones ).sorted()
 				.sorted( String.CASE_INSENSITIVE_ORDER )
 				.collect( Collectors.toList() )
@@ -439,7 +477,7 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 		List<String> sortedActual = person.getPhones().stream()
 				.sorted( String.CASE_INSENSITIVE_ORDER )
 				.collect( Collectors.toList() );
-		Assertions.assertThat( sortedActual )
+		org.assertj.core.api.Assertions.assertThat( sortedActual )
 				.containsExactly( sortedExpected );
 	}
 

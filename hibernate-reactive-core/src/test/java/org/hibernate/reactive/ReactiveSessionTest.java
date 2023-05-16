@@ -9,14 +9,25 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
+import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.LockModeType;
@@ -25,8 +36,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.persistence.metamodel.EntityType;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class ReactiveSessionTest extends BaseReactiveTest {
 
 	@Override
@@ -48,8 +58,15 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				);
 	}
 
+	@Override
+	public CompletionStage<Void> cleanDb() {
+		return getSessionFactory()
+				.withTransaction( s -> s.createQuery( "delete from GuineaPig" ).executeUpdate()
+						.thenCompose( CompletionStages::voidFuture ) );
+	}
+
 	@Test
-	public void reactiveFind(TestContext context) {
+	public void reactiveFind(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -57,19 +74,19 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.thenAccept( actualPig -> {
-									assertThatPigsAreEqual( context, expectedPig, actualPig );
-									context.assertTrue( session.contains( actualPig ) );
-									context.assertFalse( session.contains( expectedPig ) );
-									context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+									assertThatPigsAreEqual( expectedPig, actualPig );
+									assertTrue( session.contains( actualPig ) );
+									assertFalse( session.contains( expectedPig ) );
+									assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
 									session.detach( actualPig );
-									context.assertFalse( session.contains( actualPig ) );
+									assertFalse( session.contains( actualPig ) );
 								} )
 						)
 		);
 	}
 
 	@Test
-	public void sessionClear(TestContext context) {
+	public void sessionClear(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 81, "Perry" );
 		test(
 				context,
@@ -82,35 +99,35 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> session.createQuery( "FROM GuineaPig", GuineaPig.class )
 								// By not using .find() we check that there is only one entity in the db with getSingleResult()
 								.getSingleResult() )
-						.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+						.thenAccept( result -> assertThatPigsAreEqual( guineaPig, result ) )
 				)
 		);
 	}
 
 	@Test
-	public void reactiveWithTransactionSession(TestContext context) {
+	public void reactiveWithTransactionSession(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( guineaPig ) )
 				.thenCompose( v -> getSessionFactory()
 						.withSession( session -> session.find( GuineaPig.class, guineaPig.getId() ) ) )
-				.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+				.thenAccept( result -> assertThatPigsAreEqual( guineaPig, result ) )
 		);
 	}
 
 	@Test
-	public void reactiveWithTransactionStatelessSession(TestContext context) {
+	public void reactiveWithTransactionStatelessSession(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
 		test( context, getSessionFactory()
 				.withStatelessTransaction( session -> session.insert( guineaPig ) )
 				.thenCompose( v -> getSessionFactory()
 						.withSession( session -> session.find( GuineaPig.class, guineaPig.getId() ) ) )
-				.thenAccept( result -> assertThatPigsAreEqual( context, guineaPig, result ) )
+				.thenAccept( result -> assertThatPigsAreEqual( guineaPig, result ) )
 		);
 	}
 
 	@Test
-	public void reactivePersistFindDelete(TestContext context) {
+	public void reactivePersistFindDelete(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -118,15 +135,15 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.persist( guineaPig )
 						.thenCompose( v -> session.flush() )
 						.thenAccept( v -> session.detach( guineaPig ) )
-						.thenAccept( v -> context.assertFalse( session.contains( guineaPig ) ) )
+						.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, guineaPig, actualPig );
-							context.assertTrue( session.contains( actualPig ) );
-							context.assertFalse( session.contains( guineaPig ) );
-							context.assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+							assertThatPigsAreEqual( guineaPig, actualPig );
+							assertTrue( session.contains( actualPig ) );
+							assertFalse( session.contains( guineaPig ) );
+							assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
 							session.detach( actualPig );
-							context.assertFalse( session.contains( actualPig ) );
+							assertFalse( session.contains( actualPig ) );
 						} )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenCompose( session::remove )
@@ -135,22 +152,22 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFindWithLock(TestContext context) {
+	public void reactiveFindWithLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 
 		test( context, populateDB().thenCompose( v -> getSessionFactory()
 				.withTransaction( (session, tx) -> session
 						.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
 						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, expectedPig, actualPig );
-							context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+							assertThatPigsAreEqual( expectedPig, actualPig );
+							assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
 						} )
 				) )
 		);
 	}
 
 	@Test
-	public void reactiveFindRefreshWithLock(TestContext context) {
+	public void reactiveFindRefreshWithLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test( context, populateDB()
 				.thenCompose( v -> getSessionFactory()
@@ -159,8 +176,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( pig -> session
 										.refresh( pig, LockMode.PESSIMISTIC_WRITE )
 										.thenAccept( vv -> {
-											assertThatPigsAreEqual( context, expectedPig, pig );
-											context.assertEquals( session.getLockMode( pig ), LockMode.PESSIMISTIC_WRITE );
+											assertThatPigsAreEqual( expectedPig, pig );
+											assertEquals( session.getLockMode( pig ), LockMode.PESSIMISTIC_WRITE );
 										} )
 								)
 						) )
@@ -168,7 +185,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFindReadOnlyRefreshWithLock(TestContext context) {
+	public void reactiveFindReadOnlyRefreshWithLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -181,8 +198,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									return session.flush()
 											.thenCompose( v -> session.refresh( pig ) )
 											.thenAccept( v -> {
-												context.assertEquals( expectedPig.name, pig.name );
-												context.assertEquals( true, session.isReadOnly( pig ) );
+												assertEquals( expectedPig.name, pig.name );
+												assertTrue( session.isReadOnly( pig ) );
 											} );
 								} )
 						)
@@ -194,8 +211,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									return session.flush()
 											.thenCompose( v -> session.refresh( pig ) )
 											.thenAccept( v -> {
-												context.assertEquals( "XXXX", pig.name );
-												context.assertEquals( false, session.isReadOnly( pig ) );
+												assertEquals( "XXXX", pig.name );
+												assertFalse( session.isReadOnly( pig ) );
 											} );
 								} )
 						)
@@ -203,7 +220,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFindThenUpgradeLock(TestContext context) {
+	public void reactiveFindThenUpgradeLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test( context, populateDB()
 				.thenCompose( unused -> getSessionFactory()
@@ -212,8 +229,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( pig -> session
 										.lock( pig, LockMode.PESSIMISTIC_READ )
 										.thenAccept( v -> {
-											assertThatPigsAreEqual( context, expectedPig, pig );
-											context.assertEquals(
+											assertThatPigsAreEqual( expectedPig, pig );
+											assertEquals(
 													session.getLockMode( pig ),
 													LockMode.PESSIMISTIC_READ
 											);
@@ -225,7 +242,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFindThenWriteLock(TestContext context) {
+	public void reactiveFindThenWriteLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test( context, populateDB().thenCompose( v -> getSessionFactory()
 				.withTransaction( (session, tx) -> session
@@ -233,9 +250,9 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( pig -> session
 								.lock( pig, LockMode.PESSIMISTIC_WRITE )
 								.thenAccept( vv -> {
-									assertThatPigsAreEqual( context, expectedPig, pig );
-									context.assertEquals( session.getLockMode( pig ), LockMode.PESSIMISTIC_WRITE );
-									context.assertEquals( pig.version, 0 );
+									assertThatPigsAreEqual( expectedPig, pig );
+									assertEquals( session.getLockMode( pig ), LockMode.PESSIMISTIC_WRITE );
+									assertEquals( pig.version, 0 );
 								} )
 						)
 				) )
@@ -243,7 +260,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveFindThenForceLock(TestContext context) {
+	public void reactiveFindThenForceLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -253,38 +270,38 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( pig -> session.lock( pig, LockMode.PESSIMISTIC_FORCE_INCREMENT )
 										.thenApply( v -> pig ) )
 								.thenAccept( actualPig -> {
-									assertThatPigsAreEqual( context, expectedPig, actualPig );
-									context.assertEquals(
+									assertThatPigsAreEqual( expectedPig, actualPig );
+									assertEquals(
 											session.getLockMode( actualPig ),
 											LockMode.PESSIMISTIC_FORCE_INCREMENT
 									);
-									context.assertEquals( actualPig.version, 1 );
+									assertEquals( actualPig.version, 1 );
 								} )
 								.thenCompose( v -> session.createQuery( "select version from GuineaPig" )
 										.getSingleResult() )
-								.thenAccept( version -> context.assertEquals( 1, version ) )
+								.thenAccept( version -> assertEquals( 1, version ) )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() )
 								.thenCompose( pig -> session.lock( pig, LockMode.PESSIMISTIC_FORCE_INCREMENT )
 										.thenApply( v -> pig ) )
 								.thenAccept( actualPig -> {
-									assertThatPigsAreEqual( context, expectedPig, actualPig );
-									context.assertEquals(
+									assertThatPigsAreEqual( expectedPig, actualPig );
+									assertEquals(
 											session.getLockMode( actualPig ),
 											LockMode.PESSIMISTIC_FORCE_INCREMENT
 									);
-									context.assertEquals( actualPig.version, 2 );
+									assertEquals( actualPig.version, 2 );
 								} )
 								.thenCompose( v -> session.createQuery( "select version from GuineaPig" )
 										.getSingleResult() )
-								.thenAccept( version -> context.assertEquals( 2, version ) )
+								.thenAccept( version -> assertEquals( 2, version ) )
 						)
 		);
 	}
 
 	@Test
-	public void reactiveFindWithPessimisticIncrementLock(TestContext context) {
+	public void reactiveFindWithPessimisticIncrementLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -295,21 +312,21 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										expectedPig.getId(),
 										LockMode.PESSIMISTIC_FORCE_INCREMENT )
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals(
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals(
 													session.getLockMode( actualPig ),
 													LockMode.PESSIMISTIC_FORCE_INCREMENT ); // grrr, lame
-											context.assertEquals( 1, actualPig.version );
+											assertEquals( 1, actualPig.version );
 										} ) )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 1, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveFindWithOptimisticIncrementLock(TestContext context) {
+	public void reactiveFindWithOptimisticIncrementLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -321,23 +338,23 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 															  LockMode.OPTIMISTIC_FORCE_INCREMENT
 													  )
 													  .thenAccept( actualPig -> {
-														  assertThatPigsAreEqual( context, expectedPig, actualPig );
-														  context.assertEquals(
+														  assertThatPigsAreEqual( expectedPig, actualPig );
+														  assertEquals(
 																  session.getLockMode( actualPig ),
 																  LockMode.OPTIMISTIC_FORCE_INCREMENT
 														  );
-														  context.assertEquals( 0, actualPig.version );
+														  assertEquals( 0, actualPig.version );
 													  } )
 									  )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 1, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveLockWithOptimisticIncrement(TestContext context) {
+	public void reactiveLockWithOptimisticIncrement(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -349,24 +366,24 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 																					LockMode.OPTIMISTIC_FORCE_INCREMENT
 																			)
 																			.thenAccept( vv -> {
-																				assertThatPigsAreEqual( context, expectedPig, actualPig );
-																				context.assertEquals(
+																				assertThatPigsAreEqual( expectedPig, actualPig );
+																				assertEquals(
 																						session.getLockMode( actualPig ),
 																						LockMode.OPTIMISTIC_FORCE_INCREMENT
 																				);
-																				context.assertEquals( 0, actualPig.version );
+																				assertEquals( 0, actualPig.version );
 																			} )
 													  )
 									  )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 1, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveLockWithIncrement(TestContext context) {
+	public void reactiveLockWithIncrement(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -378,24 +395,24 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 																					LockMode.PESSIMISTIC_FORCE_INCREMENT
 																			)
 																			.thenAccept( vv -> {
-																				assertThatPigsAreEqual( context, expectedPig, actualPig );
-																				context.assertEquals(
+																				assertThatPigsAreEqual( expectedPig, actualPig );
+																				assertEquals(
 																						session.getLockMode( actualPig ),
 																						LockMode.PESSIMISTIC_FORCE_INCREMENT
 																				);
-																				context.assertEquals( 1, actualPig.version );
+																				assertEquals( 1, actualPig.version );
 																			} )
 													  )
 									  )
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 1, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 1, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveFindWithOptimisticVerifyLock(TestContext context) {
+	public void reactiveFindWithOptimisticVerifyLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -404,17 +421,17 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.withTransaction( (session, transaction) -> session
 										.find( GuineaPig.class, expectedPig.getId(), LockMode.OPTIMISTIC )
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
-											context.assertEquals( 0, actualPig.version );
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
+											assertEquals( 0, actualPig.version );
 										} ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) ) );
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) ) );
 	}
 
 	@Test
-	public void reactiveLockWithOptimisticVerify(TestContext context) {
+	public void reactiveLockWithOptimisticVerify(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -423,18 +440,18 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.find( GuineaPig.class, expectedPig.getId() )
 								.thenCompose( actualPig -> session.lock( actualPig, LockMode.OPTIMISTIC )
 										.thenAccept( vv -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
-											context.assertEquals( 0, actualPig.version );
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals( session.getLockMode( actualPig ), LockMode.OPTIMISTIC );
+											assertEquals( 0, actualPig.version );
 										} ) ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveFindWithPessimisticRead(TestContext context) {
+	public void reactiveFindWithPessimisticRead(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -444,18 +461,18 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										// does a select ... for share
 										.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_READ )
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
-											context.assertEquals( 0, actualPig.version );
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+											assertEquals( 0, actualPig.version );
 										} ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveLockWithPessimisticRead(TestContext context) {
+	public void reactiveLockWithPessimisticRead(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -466,18 +483,18 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										.find( GuineaPig.class, expectedPig.getId() )
 										.thenCompose( actualPig -> session.lock( actualPig, LockMode.PESSIMISTIC_READ )
 												.thenAccept( vv -> {
-													assertThatPigsAreEqual( context, expectedPig, actualPig );
-													context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
-													context.assertEquals( 0, actualPig.version );
+													assertThatPigsAreEqual( expectedPig, actualPig );
+													assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_READ );
+													assertEquals( 0, actualPig.version );
 												} ) ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveFindWithPessimisticWrite(TestContext context) {
+	public void reactiveFindWithPessimisticWrite(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -487,18 +504,18 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										// does a select ... for update
 										.find( GuineaPig.class, expectedPig.getId(), LockMode.PESSIMISTIC_WRITE )
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
-											context.assertEquals( 0, actualPig.version );
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals( session.getLockMode( actualPig ), LockMode.PESSIMISTIC_WRITE );
+											assertEquals( 0, actualPig.version );
 										} ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveLockWithPessimisticWrite(TestContext context) {
+	public void reactiveLockWithPessimisticWrite(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -509,20 +526,20 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										.find( GuineaPig.class, expectedPig.getId() )
 										.thenCompose( actualPig -> session.lock( actualPig, LockMode.PESSIMISTIC_WRITE )
 												.thenAccept( vv -> {
-													assertThatPigsAreEqual( context, expectedPig, actualPig );
-													context.assertEquals(
+													assertThatPigsAreEqual( expectedPig, actualPig );
+													assertEquals(
 															session.getLockMode( actualPig ),
 															LockMode.PESSIMISTIC_WRITE );
-													context.assertEquals( 0, actualPig.version );
+													assertEquals( 0, actualPig.version );
 												} ) ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, expectedPig.getId() ) )
-						.thenAccept( actualPig -> context.assertEquals( 0, actualPig.version ) )
+						.thenAccept( actualPig -> assertEquals( 0, actualPig.version ) )
 		);
 	}
 
 	@Test
-	public void reactiveQueryWithLock(TestContext context) {
+	public void reactiveQueryWithLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test(
 				context,
@@ -533,8 +550,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										.setLockMode( LockModeType.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals(
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals(
 													session.getLockMode( actualPig ),
 													LockMode.PESSIMISTIC_WRITE );
 										} ) ) )
@@ -542,7 +559,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactiveQueryWithAliasedLock(TestContext context) {
+	public void reactiveQueryWithAliasedLock(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
 		test( context, populateDB()
 				.thenCompose(
@@ -551,8 +568,8 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 										.setLockMode( "pig", LockMode.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.thenAccept( actualPig -> {
-											assertThatPigsAreEqual( context, expectedPig, actualPig );
-											context.assertEquals(
+											assertThatPigsAreEqual( expectedPig, actualPig );
+											assertEquals(
 													session.getLockMode( actualPig ),
 													LockMode.PESSIMISTIC_WRITE
 											);
@@ -563,7 +580,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void reactivePersist(TestContext context) {
+	public void reactivePersist(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -572,12 +589,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( v -> s.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 10 ) )
-						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+						.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
 		);
 	}
 
 	@Test
-	public void reactivePersistInTx(TestContext context) {
+	public void reactivePersistInTx(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -585,12 +602,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.withTransaction( t -> s.persist( new GuineaPig( 10, "Tulip" ) ))
 								.thenCompose( v -> s.close() ) )
 						.thenCompose( vv -> selectNameFromId( 10 ) )
-						.thenAccept( selectRes -> context.assertEquals( "Tulip", selectRes ) )
+						.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
 		);
 	}
 
 	@Test
-	public void reactiveRollbackTx(TestContext context) {
+	public void reactiveRollbackTx(VertxTestContext context) {
 		test(
 				context,
 				openSession()
@@ -606,12 +623,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						)
 						.handle( (v, e) -> null )
 						.thenCompose( vv -> selectNameFromId( 10 ) )
-						.thenAccept( context::assertNull )
+						.thenAccept( Assertions::assertNull)
 		);
 	}
 
 	@Test
-	public void reactiveMarkedRollbackTx(TestContext context) {
+	public void reactiveMarkedRollbackTx(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
 						.withTransaction( t -> s
@@ -622,30 +639,33 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> s.close() )
 				)
 				.thenCompose( vv -> selectNameFromId( 10 ) )
-				.thenAccept( context::assertNull )
+				.thenAccept( Assertions::assertNull )
 		);
 	}
 
 	@Test
-	public void reactiveRemoveTransientEntity(TestContext context) {
+	public void reactiveRemoveTransientEntity(VertxTestContext context) {
 		test(
 				context,
 				populateDB()
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( context::assertNotNull )
+						.thenAccept( Assertions::assertNotNull )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( context::assertNull )
-						.handle( (r, e) -> context.assertNotNull( e ) )
+						.thenAccept( Assertions::assertNull )
+						.handle( (r, e) -> {
+								Assertions.assertInstanceOf( HibernateException.class, e.getCause() );
+								return CompletionStages.voidFuture();
+						} )
 		);
 	}
 
 	@Test
-	public void reactiveRemoveManagedEntity(TestContext context) {
+	public void reactiveRemoveManagedEntity(VertxTestContext context) {
 		test(
 				context,
 				populateDB()
@@ -655,12 +675,12 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 													  .thenCompose( session::remove )
 													  .thenCompose( v -> session.flush() )
 													  .thenCompose( v -> selectNameFromId( 5 ) )
-													  .thenAccept( context::assertNull ) )
+													  .thenAccept( Assertions::assertNull ) )
 		);
 	}
 
 	@Test
-	public void reactiveUpdate(TestContext context) {
+	public void reactiveUpdate(VertxTestContext context) {
 		final String NEW_NAME = "Tina";
 		test(
 				context,
@@ -668,21 +688,21 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, 5 )
 								.thenAccept( pig -> {
-									context.assertNotNull( pig );
+									assertNotNull( pig );
 									// Checking we are actually changing the name
-									context.assertNotEquals( pig.getName(), NEW_NAME );
+									Assertions.assertNotEquals( pig.getName(), NEW_NAME );
 									pig.setName( NEW_NAME );
 								} )
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> session.close() )
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( name -> context.assertEquals( NEW_NAME, name ) )
+						.thenAccept( name -> assertEquals( NEW_NAME, name ) )
 		);
 	}
 
 	@Test
-	public void reactiveUpdateVersion(TestContext context) {
+	public void reactiveUpdateVersion(VertxTestContext context) {
 		final String NEW_NAME = "Tina";
 		test(
 				context,
@@ -690,10 +710,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.find( GuineaPig.class, 5 )
 								.thenAccept( pig -> {
-									context.assertNotNull( pig );
+									assertNotNull( pig );
 									// Checking we are actually changing the name
-									context.assertNotEquals( pig.getName(), NEW_NAME );
-									context.assertEquals( pig.version, 0 );
+									Assertions.assertNotEquals( pig.getName(), NEW_NAME );
+									assertEquals( pig.version, 0 );
 									pig.setName( NEW_NAME );
 									pig.version = 10; //ignored by Hibernate
 								} )
@@ -702,23 +722,23 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( GuineaPig.class, 5 )
-								.thenAccept( pig -> context.assertEquals( pig.version, 1 ) ) )
+								.thenAccept( pig -> assertEquals( pig.version, 1 ) ) )
 		);
 	}
 
 	@Test
-	public void reactiveClose(TestContext context) {
+	public void reactiveClose(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( session -> {
-					context.assertTrue( session.isOpen() );
+					assertTrue( session.isOpen() );
 					return session.close()
-							.thenAccept( v -> context.assertFalse( session.isOpen() ) );
+							.thenAccept( v -> assertFalse( session.isOpen() ) );
 				} )
 		);
 	}
 
 	@Test
-	public void testSessionWithNativeAffectedEntities(TestContext context) {
+	public void testSessionWithNativeAffectedEntities(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( 3, "Rorshach" );
 		AffectedEntities affectsPigs = new AffectedEntities( GuineaPig.class );
 		test(
@@ -729,48 +749,51 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.setParameter( "n", pig.name )
 								.getResultList() )
 						.thenAccept( list -> {
-							context.assertFalse( list.isEmpty() );
-							context.assertEquals( 1, list.size() );
-							assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+							assertFalse( list.isEmpty() );
+							assertEquals( 1, list.size() );
+							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
 						.thenCompose( v -> s.find( GuineaPig.class, pig.id ) )
 						.thenAccept( p -> {
-							assertThatPigsAreEqual( context, pig, p );
+							assertThatPigsAreEqual( pig, p );
 							p.name = "X";
 						} )
 						.thenCompose( v -> s.createNativeQuery( "update pig set name='Y' where name='X'", affectsPigs ).executeUpdate() )
-						.thenAccept( rows -> context.assertEquals( 1, rows ) )
+						.thenAccept( rows -> assertEquals( 1, rows ) )
 						.thenCompose( v -> s.refresh( pig ) )
-						.thenAccept( v -> context.assertEquals( pig.name, "Y" ) )
+						.thenAccept( v -> assertEquals( pig.name, "Y" ) )
 						.thenAccept( v -> pig.name = "Z" )
 						.thenCompose( v -> s.createNativeQuery( "delete from pig where name='Z'", affectsPigs ).executeUpdate() )
-						.thenAccept( rows -> context.assertEquals( 1, rows ) )
+						.thenAccept( rows -> assertEquals( 1, rows ) )
 						.thenCompose( v -> s.createNativeQuery( "select id from pig", affectsPigs ).getResultList() )
-						.thenAccept( list -> context.assertTrue( list.isEmpty() ) ) )
+						.thenAccept( list -> assertTrue( list.isEmpty() ) ) )
 		);
 	}
 
 	@Test
-	public void testMetamodel(TestContext context) {
-		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity( GuineaPig.class );
-		context.assertNotNull( pig );
-		context.assertEquals( 3, pig.getAttributes().size() );
-		context.assertEquals( "GuineaPig", pig.getName() );
+	public void testMetamodel(VertxTestContext context) {
+		test( context, getSessionFactory().withSession( session -> {
+			EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity( GuineaPig.class );
+			Assertions.assertNotNull( pig );
+			assertEquals( 3, pig.getAttributes().size() );
+			assertEquals( "GuineaPig", pig.getName() );
+			return CompletionStages.voidFuture();
+		} ) );
 	}
 
 	@Test
-	public void testTransactionPropagation(TestContext context) {
+	public void testTransactionPropagation(VertxTestContext context) {
 		test( context, getSessionFactory().withTransaction(
 				(session, transaction) -> session.createQuery( "from GuineaPig" ).getResultList()
 						.thenCompose( list -> {
-							context.assertNotNull( session.currentTransaction() );
-							context.assertFalse( session.currentTransaction().isMarkedForRollback() );
+							assertNotNull( session.currentTransaction() );
+							assertFalse( session.currentTransaction().isMarkedForRollback() );
 							session.currentTransaction().markForRollback();
-							context.assertTrue( session.currentTransaction().isMarkedForRollback() );
-							context.assertTrue( transaction.isMarkedForRollback() );
+							assertTrue( session.currentTransaction().isMarkedForRollback() );
+							assertTrue( transaction.isMarkedForRollback() );
 							return session.withTransaction( t -> {
-								context.assertEquals( t, transaction );
-								context.assertTrue( t.isMarkedForRollback() );
+								assertEquals( t, transaction );
+								assertTrue( t.isMarkedForRollback() );
 								return session.createQuery( "from GuineaPig" ).getResultList();
 							} );
 						} )
@@ -778,20 +801,20 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSessionPropagation(TestContext context) {
+	public void testSessionPropagation(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( session -> {
-			context.assertEquals( false, session.isDefaultReadOnly() );
+			assertFalse( session.isDefaultReadOnly() );
 			session.setDefaultReadOnly( true );
 			return session.createQuery( "from GuineaPig" ).getResultList()
 					.thenCompose( list -> getSessionFactory().withSession( s -> {
-						context.assertEquals( true, s.isDefaultReadOnly() );
+						assertTrue( s.isDefaultReadOnly() );
 						return s.createQuery( "from GuineaPig" ).getResultList();
 					} ) );
 		} ) );
 	}
 
 	@Test
-	public void testDupeException(TestContext context) {
+	public void testDupeException(VertxTestContext context) {
 		test(
 				context,
 				getSessionFactory()
@@ -799,58 +822,58 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( (s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						).handle( (i, t) -> {
-							context.assertNotNull( t );
-							context.assertTrue( t instanceof CompletionException );
-							context.assertTrue( t.getCause() instanceof PersistenceException );
+							Assertions.assertNotNull( t );
+							assertTrue( t instanceof CompletionException );
+							assertTrue( t.getCause() instanceof PersistenceException );
 							return null;
 						} )
 		);
 	}
 
 	@Test
-	public void testExceptionInWithSession(TestContext context) {
+	public void testExceptionInWithSession(VertxTestContext context) {
 		final Stage.Session[] savedSession = new Stage.Session[1];
 		test( context, getSessionFactory().withSession( session -> {
-			context.assertTrue( session.isOpen() );
+			assertTrue( session.isOpen() );
 			savedSession[0] = session;
 			throw new RuntimeException( "No Panic: This is just a test" );
 		} ).handle( (o, t) -> {
-			context.assertNotNull( t );
-			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			assertNotNull( t );
+			assertFalse( savedSession[0].isOpen(), "Session should be closed" );
 			return null;
 		} ) );
 	}
 
 	@Test
-	public void testExceptionInWithTransaction(TestContext context) {
+	public void testExceptionInWithTransaction(VertxTestContext context) {
 		final Stage.Session[] savedSession = new Stage.Session[1];
 		test( context, getSessionFactory().withTransaction( (session, tx) -> {
-			context.assertTrue( session.isOpen() );
+			assertTrue( session.isOpen() );
 			savedSession[0] = session;
 			throw new RuntimeException( "No Panic: This is just a test" );
 		} ).handle( (o, t) -> {
-			context.assertNotNull( t );
-			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			assertNotNull( t );
+			assertFalse( savedSession[0].isOpen(), "Session should be closed" );
 			return null;
 		} ) );
 	}
 
 	@Test
-	public void testExceptionInWithStatelessSession(TestContext context) {
+	public void testExceptionInWithStatelessSession(VertxTestContext context) {
 		final Stage.StatelessSession[] savedSession = new Stage.StatelessSession[1];
 		test( context, getSessionFactory().withStatelessSession( session -> {
-			context.assertTrue( session.isOpen() );
+			assertTrue( session.isOpen() );
 			savedSession[0] = session;
 			throw new RuntimeException( "No Panic: This is just a test" );
 		} ).handle( (o, t) -> {
-			context.assertNotNull( t );
-			context.assertFalse( savedSession[0].isOpen(), "Session should be closed" );
+			assertNotNull( t );
+			assertFalse( savedSession[0].isOpen(), "Session should be closed" );
 			return null;
 		} ) );
 	}
 
 	@Test
-	public void testCreateSelectionQueryMultiple(TestContext context) {
+	public void testCreateSelectionQueryMultiple(VertxTestContext context) {
 		final GuineaPig aloiPig = new GuineaPig( 10, "Aloi" );
 		final GuineaPig bloiPig = new GuineaPig( 11, "Bloi" );
 
@@ -870,7 +893,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCreateSelectionQuerySingle(TestContext context) {
+	public void testCreateSelectionQuerySingle(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 10, "Aloi" );
 		test( context, openSession()
 				.thenCompose( s -> s
@@ -878,32 +901,32 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResult()
-								.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) ) )
+								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, actualPig ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig" )
 								.getSingleResult()
-								.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, (GuineaPig) actualPig ) ) )
+								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, (GuineaPig) actualPig ) ) )
 				)
 		);
 	}
 
 	@Test
-	public void testCreateSelectionQueryNull(TestContext context) {
+	public void testCreateSelectionQueryNull(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
 						.getSingleResultOrNull()
-						.thenAccept( context::assertNull ) )
+						.thenAccept( Assertions::assertNull ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.createSelectionQuery( "from GuineaPig" )
 						.getSingleResultOrNull()
-						.thenAccept( context::assertNull ) )
+						.thenAccept( Assertions::assertNull ) )
 		);
 	}
 
-	private void assertThatPigsAreEqual(TestContext context, GuineaPig expected, GuineaPig actual) {
-		context.assertNotNull( actual );
-		context.assertEquals( expected.getId(), actual.getId() );
-		context.assertEquals( expected.getName(), actual.getName() );
+	private void assertThatPigsAreEqual(GuineaPig expected, GuineaPig actual) {
+		assertNotNull( actual );
+		assertEquals( expected.getId(), actual.getId() );
+		assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity(name = "GuineaPig")

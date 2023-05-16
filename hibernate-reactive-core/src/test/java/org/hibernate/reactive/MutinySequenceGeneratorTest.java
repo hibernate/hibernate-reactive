@@ -9,14 +9,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Version;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
@@ -26,7 +29,7 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSequenceGenerator(TestContext context) {
+	public void testSequenceGenerator(VertxTestContext context) {
 
 		SequenceId b = new SequenceId();
 		b.string = "Hello World";
@@ -37,10 +40,10 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 						.call( () -> getMutinySessionFactory().withSession(
 								s2 -> s2.find( SequenceId.class, b.getId() )
 										.map( bb -> {
-											context.assertNotNull( bb );
-											context.assertEquals( bb.id, 5 );
-											context.assertEquals( bb.string, b.string );
-											context.assertEquals( bb.version, 0 );
+											assertNotNull( bb );
+											assertEquals( bb.id, 5 );
+											assertEquals( bb.string, b.string );
+											assertEquals( bb.version, 0 );
 
 											bb.string = "Goodbye";
 											return null;
@@ -48,15 +51,15 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 										.call( s2::flush )
 										.chain( () -> s2.find( SequenceId.class, b.getId() ) )
 										.map( bt -> {
-											context.assertEquals( bt.version, 1 );
+											assertEquals( bt.version, 1 );
 											return null;
 										} )
 						) )
 						.call( () -> getMutinySessionFactory().withSession(
 								s3 -> s3.find( SequenceId.class, b.getId() )
 										.map( bb -> {
-											context.assertEquals( bb.version, 1 );
-											context.assertEquals( bb.string, "Goodbye" );
+											assertEquals( bb.version, 1 );
+											assertEquals( bb.string, "Goodbye" );
 											return null;
 										} )
 						) )

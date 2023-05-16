@@ -16,9 +16,12 @@ import jakarta.persistence.Table;
 
 import org.hibernate.reactive.BaseReactiveTest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test an issue with Vert.x SQL client 3.9.2:
@@ -35,7 +38,7 @@ public class SerializableExceptionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSerialization(TestContext context) {
+	public void testSerialization(VertxTestContext context) {
 		Serializable expected =  new String[] { "Hello", "World!" };
 		Basic nullField = new Basic( "Fergus" );
 		Basic notNullField = new Basic( "Merida", expected );
@@ -48,8 +51,8 @@ public class SerializableExceptionTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Basic.class, notNullField.getId() ) )
 						.thenAccept( found -> {
-							context.assertNotNull( found );
-							context.assertTrue( Objects.deepEquals( expected, found.thing ) );
+							assertNotNull( found );
+							assertTrue( Objects.deepEquals( expected, found.thing ) );
 						} )
 
 		);

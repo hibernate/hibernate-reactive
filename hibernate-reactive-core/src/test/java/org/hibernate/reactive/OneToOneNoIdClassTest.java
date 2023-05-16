@@ -10,12 +10,15 @@ import java.util.Objects;
 
 import org.hibernate.cfg.Configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class OneToOneNoIdClassTest extends BaseReactiveTest {
@@ -29,7 +32,7 @@ public class OneToOneNoIdClassTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLoad(TestContext context) {
+	public void testLoad(VertxTestContext context) {
 		final OtherEntity otherEntity = new OtherEntity( 1, "Other Entity" );
 		final AnEntity anEntity = new AnEntity( otherEntity, "An Entity" );
 
@@ -43,9 +46,9 @@ public class OneToOneNoIdClassTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( AnEntity.class, 1 )
 								.thenAccept( optionalAnEntity -> {
-									context.assertNotNull( optionalAnEntity );
-									context.assertEquals( anEntity, optionalAnEntity );
-									context.assertEquals( otherEntity, optionalAnEntity.otherEntity );
+									assertNotNull( optionalAnEntity );
+									assertEquals( anEntity, optionalAnEntity );
+									assertEquals( otherEntity, optionalAnEntity.otherEntity );
 								})
 						)
 		);

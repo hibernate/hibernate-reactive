@@ -19,15 +19,17 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CustomGeneratorTest extends BaseReactiveTest {
 
@@ -37,7 +39,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testSequenceGenerator(TestContext context) {
+	public void testSequenceGenerator(VertxTestContext context) {
 
 		CustomId b = new CustomId();
 		b.string = "Hello World";
@@ -49,23 +51,23 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 				.thenCompose( s2 ->
 					s2.find( CustomId.class, b.getId() )
 						.thenAccept( bb -> {
-							context.assertNotNull( bb );
-							context.assertEquals( bb.id, 1100 );
-							context.assertEquals( bb.string, b.string );
-							context.assertEquals( bb.version, 0 );
+							assertNotNull( bb );
+							assertEquals( bb.id, 1100 );
+							assertEquals( bb.string, b.string );
+							assertEquals( bb.version, 0 );
 
 							bb.string = "Goodbye";
 						})
 						.thenCompose(vv -> s2.flush())
 						.thenCompose(vv -> s2.find( CustomId.class, b.getId() ))
 						.thenAccept( bt -> {
-							context.assertEquals( bt.version, 1 );
+							assertEquals( bt.version, 1 );
 						}))
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					context.assertEquals(bb.version, 1);
-					context.assertEquals(bb.string, "Goodbye");
+					assertEquals(bb.version, 1);
+					assertEquals(bb.string, "Goodbye");
 				})
 		);
 	}

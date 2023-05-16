@@ -5,15 +5,19 @@
  */
 package org.hibernate.reactive.dynamic;
 
-import io.vertx.ext.unit.TestContext;
+import io.vertx.junit5.VertxTestContext;
+
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.tuple.DynamicMapInstantiator;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class DynamicEntityTest extends BaseReactiveTest {
@@ -24,7 +28,7 @@ public class DynamicEntityTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(TestContext context) {
+	public void test(VertxTestContext context) {
 		Map<String, String> book = new HashMap<>();
 		book.put("ISBN", "9781932394153");
 		book.put("title", "Hibernate in Action");
@@ -37,7 +41,7 @@ public class DynamicEntityTest extends BaseReactiveTest {
 						.withTransaction( session -> session.persist( book ) )
 						.chain( v -> getMutinySessionFactory()
 								.withSession( session -> session.createQuery("from Book", Map.class).getSingleResult() )
-								.invoke( map -> context.assertEquals( "Christian Bauer and Gavin King", map.get("author") ) ) )
+								.invoke( map -> assertEquals( "Christian Bauer and Gavin King", map.get("author") ) ) )
 		);
 	}
 
