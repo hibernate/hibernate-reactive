@@ -18,13 +18,23 @@ import jakarta.persistence.Id;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import io.vertx.ext.unit.TestContext;
 
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DatabaseSelectionRule.skipTestsFor;
+
 
 public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
+
+	// Db2: Throws java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block here but need to find a non-blocking solution
+	@Rule
+    public final DatabaseSelectionRule skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
