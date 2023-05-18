@@ -1,3 +1,7 @@
+plugins {
+    id "org.hibernate.orm" version "${hibernateOrmGradlePluginVersion}"
+}
+
 description = 'Hibernate Reactive Session Example'
 
 dependencies {
@@ -21,44 +25,8 @@ dependencies {
     runtimeOnly 'com.ongres.scram:client:2.1'
 }
 
-// All of the remaining configuration is only necessary to enable
-// the Hibernate bytecode enhancer and field-level lazy fetching.
-// (This is very optional!)
-
-buildscript {
-    repositories {
-        // Example: ./gradlew build -PenableMavenLocalRepo
-        if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
-            // Useful for local development, it should be disabled otherwise
-            mavenLocal()
-        }
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
-        mavenCentral()
-
-        // Example: ./gradlew build -PenableJBossSnapshotsRep
-        if ( project.hasProperty( 'enableJBossSnapshotsRep' ) ) {
-            // Used only for testing with the latest Hibernate ORM snapshots.
-            maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
-        }
-    }
-    dependencies {
-        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmGradlePluginVersion}"
-    }
-}
-
-
 // Hibernate Gradle plugin to enable bytecode enhancements
-apply plugin: 'org.hibernate.orm'
-
-hibernate {
-    enhancement {
-        lazyInitialization(true)
-        dirtyTracking(true)
-        associationManagement(false)
-    }
-}
+hibernate { enhancement }
 
 // The following rules define a task to run
 // the different API available.
@@ -79,7 +47,7 @@ dbs.each { db ->
                 group = "Execution"
                 description = "Run ${mainClass} on ${db}"
                 classpath = sourceSets.main.runtimeClasspath
-                main = "org.hibernate.reactive.example.session.${mainClass}"
+                mainClass = "org.hibernate.reactive.example.session.${mainClass}"
                 // The persistence unit name defined in resources/META-INF/persistence.xml
                 args db.toLowerCase() + '-example'
             }
