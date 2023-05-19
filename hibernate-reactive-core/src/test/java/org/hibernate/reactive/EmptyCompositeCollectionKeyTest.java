@@ -18,7 +18,6 @@ import jakarta.persistence.Id;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.testing.DatabaseSelectionRule;
 
 import org.junit.Rule;
