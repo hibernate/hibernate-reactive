@@ -15,12 +15,10 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.vertx.VertxInstance;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,7 +36,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**

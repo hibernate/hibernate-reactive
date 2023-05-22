@@ -24,13 +24,11 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.testing.DatabaseSelectionRule;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,7 +46,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 
 /**
  * This is a multi-threaded stress test, intentionally consuming some time.
