@@ -86,9 +86,6 @@ public class MultithreadedIdentityGenerationTest {
 	private static Vertx vertx;
 	private static SessionFactory sessionFactory;
 
-	@Rule // Currently failing for unrelated reasons on SQL Server https://github.com/hibernate/hibernate-reactive/issues/1609
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( SQLSERVER );
-
 	@BeforeClass
 	public static void setupSessionFactory() {
 		final VertxOptions vertxOptions = new VertxOptions();

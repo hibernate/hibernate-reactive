@@ -67,9 +67,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 @RunWith(VertxUnitRunner.class)
 public class MultithreadedInsertionTest {
 
-	@Rule // Currently failing for unrelated reasons on SQL Server https://github.com/hibernate/hibernate-reactive/issues/1609
-	public DatabaseSelectionRule dbRule = DatabaseSelectionRule.skipTestsFor( SQLSERVER );
-
 	/**
 	 * The number of threads should be higher than the default size of the connection pool so that
 	 * this test is also effective in detecting problems with resource starvation.
