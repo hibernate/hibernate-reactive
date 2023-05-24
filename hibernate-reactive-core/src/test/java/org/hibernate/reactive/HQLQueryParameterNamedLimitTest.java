@@ -8,10 +8,10 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.testing.DBSelectionExtension;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,10 +20,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 
 /**
  * Tests queries using named parameters like ":name",
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 
-	// Db2: java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.Long
+	// Db2:java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0.
 	@RegisterExtension
 	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
@@ -44,36 +44,36 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 		return List.of( Flour.class );
 	}
 
-	public CompletionStage<Void> populateDb() {
-		return getSessionFactory().withTransaction( s -> s.persist( spelt, rye, almond ) );
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( spelt, rye, almond ) )
+		);
 	}
 
 	@Test
 	public void testNoResults(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-							  s.createQuery( "from Flour where id = :id" ).setMaxResults( 0 )
-									  .setParameter( "id", rye.getId() )
-									  .getResultList()
-									  .thenAccept( list -> assertEquals( 0, list.size() ) )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour where id = :id" )
+						.setMaxResults( 0 )
+						.setParameter( "id", rye.getId() )
+						.getResultList()
+						.thenAccept( list -> assertThat( list ).isEmpty() )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultNoResults(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour" )
-										.setMaxResults( 0 )
-										.setFirstResult( 1 )
-										.getResultList()
-										.thenAccept( list -> assertEquals( 0, list.size() ) )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour" )
+						.setMaxResults( 0 )
+						.setFirstResult( 1 )
+						.getResultList()
+						.thenAccept( list -> assertThat( list ).isEmpty() )
+				)
 		);
 	}
 
@@ -82,66 +82,56 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void testFirstResultWithoutOrderBy(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s -> s.createQuery( "from Flour where id > :id" )
-								.setParameter( "id", 1 )
-								.setMaxResults( 1 )
-								.setFirstResult( 1 )
-								.getResultList()
-								.thenAccept( list -> assertEquals( 1, list.size() ) )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s.createQuery( "from Flour where id > :id" )
+						.setParameter( "id", 1 )
+						.setMaxResults( 1 )
+						.setFirstResult( 1 )
+						.getResultList()
+						.thenAccept( list -> assertThat( list ).hasSize( 1 ) )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultSingleResult(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour where name != :name order by id" )
-										.setParameter( "name", spelt.getName() )
-										.setFirstResult( 1 )
-										.getSingleResult()
-										.thenAccept( result -> assertEquals( almond, result ) )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour where name != :name order by id" )
+						.setParameter( "name", spelt.getName() )
+						.setFirstResult( 1 )
+						.getSingleResult()
+						.thenAccept( result -> assertEquals( almond, result ) )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultMultipleResults(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour order by id" )
-										.setFirstResult( 1 )
-										.getResultList()
-										.thenAccept( results -> {
-											assertEquals( 2, results.size() );
-											assertEquals( rye, results.get( 0 ) );
-											assertEquals( almond, results.get( 1 ) );
-										} )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour order by id" )
+						.setFirstResult( 1 )
+						.getResultList()
+						.thenAccept( results -> {
+							assertEquals( 2, results.size() );
+							assertEquals( rye, results.get( 0 ) );
+							assertEquals( almond, results.get( 1 ) );
+						} )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultMaxResultsSingleResult(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour order by id" )
-										.setFirstResult( 1 )
-										.setMaxResults( 1 )
-										.getSingleResult()
-										.thenAccept( result -> {
-											assertEquals( rye, result );
-										} )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour order by id" )
+						.setFirstResult( 1 )
+						.setMaxResults( 1 )
+						.getSingleResult()
+						.thenAccept( result -> assertEquals( rye, result ) )
+				)
 		);
 	}
 
@@ -150,20 +140,18 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void testFirstResultZeroAndMaxResults(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-											  s.createQuery( "from Flour where name = :name order by id" )
-													  .setParameter( "name", almond.getName() )
-													  .setFirstResult( 0 )
-													  .setMaxResults( 10 )
-													  .getResultList()
-													  .thenAccept( results -> {
-														  assertEquals( 1, results.size() );
-														  assertEquals( almond, results.get( 0 ) );
-													  } )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour where name = :name order by id" )
+						.setParameter( "name", almond.getName() )
+						.setFirstResult( 0 )
+						.setMaxResults( 10 )
+						.getResultList()
+						.thenAccept( results -> {
+							assertEquals( 1, results.size() );
+							assertEquals( almond, results.get( 0 ) );
+						} )
+				)
 		);
 	}
 
@@ -173,58 +161,41 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void testFirstResultZeroAndMaxResultsWithoutOrder(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-											  s.createQuery( "from Flour where name = :name" )
-													  .setParameter( "name", almond.getName() )
-													  .setFirstResult( 0 )
-													  .setMaxResults( 10 )
-													  .getResultList()
-													  .thenAccept( results -> {
-														  assertEquals( 1, results.size() );
-														  assertEquals( almond, results.get( 0 ) );
-													  } )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour where name = :name" )
+						.setParameter( "name", almond.getName() )
+						.setFirstResult( 0 )
+						.setMaxResults( 10 )
+						.getResultList()
+						.thenAccept( results -> assertThat( results ).containsExactly( almond ) )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultMaxResultsMultipleResults(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour order by id" )
-										.setFirstResult( 1 )
-										.setMaxResults( 2 )
-										.getResultList()
-										.thenAccept( results -> {
-											assertEquals( 2, results.size() );
-											assertEquals( rye, results.get( 0 ) );
-											assertEquals( almond, results.get( 1 ) );
-										} )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour order by id" )
+						.setFirstResult( 1 )
+						.setMaxResults( 2 )
+						.getResultList()
+						.thenAccept( results -> assertThat( results ).containsExactly( rye, almond ) )
+				)
 		);
 	}
 
 	@Test
 	public void testFirstResultMaxResultsExtra(VertxTestContext context) {
-		test(
-				context,
-				populateDb().thenCompose( vd -> openSession()
-						.thenCompose( s ->
-								s.createQuery( "from Flour order by id" )
-										.setFirstResult( 1 )
-										.setMaxResults( 3 )
-										.getResultList()
-										.thenAccept( results -> {
-											assertEquals( 2, results.size() );
-											assertEquals( rye, results.get( 0 ) );
-											assertEquals( almond, results.get( 1 ) );
-										} )
-						) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createQuery( "from Flour order by id" )
+						.setFirstResult( 1 )
+						.setMaxResults( 3 )
+						.getResultList()
+						.thenAccept( results -> assertThat( results ).containsExactly( rye, almond ) )
+				)
 		);
 	}
 

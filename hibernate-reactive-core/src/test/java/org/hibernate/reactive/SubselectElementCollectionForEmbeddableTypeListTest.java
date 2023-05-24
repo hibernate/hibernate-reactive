@@ -14,9 +14,9 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -51,33 +51,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseReactiveTest {
 
-	Person p1;
-	Person p2;
-	Person p3;
-
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Person.class );
 	}
 
-	public Uni<?> populateDbMutiny() {
-		if( p1 == null ) {
-			List<Phone> phones1 = new ArrayList<>();
-			phones1.add( new Phone( "999-999-9999" ) );
-			phones1.add( new Phone( "111-111-1111" ) );
-			p1 = new Person( 777777, "Claude", phones1 );
-			List<Phone> phones2 = new ArrayList<>();
-			phones2.add( new Phone( "999-999-9999" ) );
-			phones2.add( new Phone( "111-111-1111" ) );
-			p2 = new Person( 888888, "Solene", phones2 );
-			List<Phone> phones3 = new ArrayList<>();
-			phones3.add( new Phone( "999-999-9999" ) );
-			phones3.add( new Phone( "111-111-1111" ) );
-			p3 = new Person( 999999, "Claude", phones3 );
-		}
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
+		List<Phone> phones1 = new ArrayList<>();
+		phones1.add( new Phone( "999-999-9999" ) );
+		phones1.add( new Phone( "111-111-1111" ) );
+		Person p1 = new Person( 777777, "Claude", phones1 );
+		List<Phone> phones2 = new ArrayList<>();
+		phones2.add( new Phone( "999-999-9999" ) );
+		phones2.add( new Phone( "111-111-1111" ) );
+		Person p2 = new Person( 888888, "Solene", phones2 );
+		List<Phone> phones3 = new ArrayList<>();
+		phones3.add( new Phone( "999-999-9999" ) );
+		phones3.add( new Phone( "111-111-1111" ) );
+		Person p3 = new Person( 999999, "Claude", phones3 );
 
-		return getMutinySessionFactory()
-				.withTransaction( session -> session.persistAll( p1, p2, p3 ).call(session::flush) );
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( p1, p2, p3 ) ) );
 	}
 
 	@Test
@@ -89,14 +84,13 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 
 		test (
 				context,
-				populateDbMutiny()
-						.call( () -> getMutinySessionFactory()
-						.withTransaction( session -> session.persist( johnny ) ) )
+				getMutinySessionFactory()
+						.withTransaction( session -> session.persist( johnny ) )
 						.chain( () -> getMutinySessionFactory()
 								.withTransaction( session -> session.find( Person.class, johnny.getId() )
 										.invoke( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) )
 										.chain ( result -> session.fetch(result.phones) )
-										.invoke( found -> assertPhones( context, found, "888", "555" ) )
+										.invoke( found -> assertPhones( found, "888", "555" ) )
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
@@ -112,16 +106,15 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 	public void joinFetch(VertxTestContext context) {
 		test (
 				context,
-				populateDbMutiny()
-						.call( () -> getMutinySessionFactory()
+				getMutinySessionFactory()
 						.withTransaction( session -> session.createQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> {
-									assertTrue( Hibernate.isInitialized(result.phones) );
-									assertPhones( context, result.phones, "111-111-1111", "999-999-9999" );
+									assertTrue( Hibernate.isInitialized( result.phones ) );
+									assertPhones( result.phones, "111-111-1111", "999-999-9999" );
 								} ) )
-						) )
+						)
 		);
 	}
 
@@ -129,22 +122,21 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 	public void noJoinFetch(VertxTestContext context) {
 		test (
 				context,
-				populateDbMutiny()
-						.call( () -> getMutinySessionFactory()
+				getMutinySessionFactory()
 						.withTransaction( session -> session.createQuery("from Person p where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) ) )
 								.chain ( all -> session.fetch( all.get(0).phones ) )
 								.invoke( phones -> {
-									assertTrue( Hibernate.isInitialized(phones) );
-									assertPhones( context, phones, "111-111-1111", "999-999-9999" );
+									assertTrue( Hibernate.isInitialized( phones ) );
+									assertPhones( phones, "111-111-1111", "999-999-9999" );
 								} )
-						) )
+						)
 		);
 	}
 
-	private static void assertPhones(VertxTestContext context, List<Phone> list, String... phones) {
+	private static void assertPhones( List<Phone> list, String... phones) {
 		assertEquals( phones.length, list.size() );
 		for ( String phone : phones ) {
 			assertTrue( phonesContainNumber( list, phone ) );

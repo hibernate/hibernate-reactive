@@ -47,11 +47,11 @@ public class ReferenceTest extends BaseReactiveTest {
 				.withTransaction( s -> loop( entities, entityClass -> s
 						.createQuery( "from " + entityName( entityClass ), entityClass )
 						.getResultList()
-						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
+						.thenCompose( list -> loop( list, s::remove ) ) ) );
 	}
 
 	private String entityName(Class<?> entityClass) {
-		if (Author.class.equals( entityClass ) ) {
+		if ( Author.class.equals( entityClass ) ) {
 			return "Writer";
 		}
 		return "Tome";
@@ -59,35 +59,35 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testDetachedEntityReference(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens).thenCompose(v -> s.flush()) )
+						.thenCompose( s -> s.persist( goodOmens ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> {
-							Book book = s.getReference(Book.class, goodOmens.getId());
-							assertFalse( Hibernate.isInitialized(book) );
-							return s.persist( new Author("Neil Gaiman", book) )
+						.thenCompose( s -> {
+							Book book = s.getReference( Book.class, goodOmens.getId() );
+							assertFalse( Hibernate.isInitialized( book ) );
+							return s.persist( new Author( "Neil Gaiman", book ) )
 									.thenCompose( v -> s.flush() );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
-							Book book = s.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(book) );
-							return s.persist( new Author("Terry Pratchett", book) )
+							Book book = s.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( book ) );
+							return s.persist( new Author( "Terry Pratchett", book ) )
 									.thenCompose( v -> s.flush() );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> {
-							Book book = s.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(book) );
-							return Stage.fetch(book).thenCompose( v -> Stage.fetch( book.getAuthors() ) );
+							Book book = s.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( book ) );
+							return Stage.fetch( book ).thenCompose( v -> Stage.fetch( book.getAuthors() ) );
 						} )
 						.thenAccept( optionalAssociation -> {
-							assertTrue( Hibernate.isInitialized(optionalAssociation) );
-							assertNotNull(optionalAssociation);
+							assertTrue( Hibernate.isInitialized( optionalAssociation ) );
+							assertNotNull( optionalAssociation );
 							assertEquals( 2, optionalAssociation.size() );
 						} )
 		);
@@ -95,42 +95,42 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testDetachedProxyReference(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens).thenCompose(v -> s.flush()) )
+						.thenCompose( s -> s.persist( goodOmens ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
-							Book reference = sess.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(reference) );
+							Book reference = sess.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( reference ) );
 							return openSession()
-									.thenCompose(s -> {
-										Book book = s.getReference(Book.class, reference.getId());
-										assertFalse( Hibernate.isInitialized(book) );
-										assertFalse( Hibernate.isInitialized(reference) );
-										return s.persist( new Author("Neil Gaiman", book) )
+									.thenCompose( s -> {
+										Book book = s.getReference( Book.class, reference.getId() );
+										assertFalse( Hibernate.isInitialized( book ) );
+										assertFalse( Hibernate.isInitialized( reference ) );
+										return s.persist( new Author( "Neil Gaiman", book ) )
 												.thenCompose( v -> s.flush() );
 									} )
 									.thenCompose( v -> openSession() )
 									.thenCompose( s -> {
-										Book book = s.getReference(reference);
-										assertFalse( Hibernate.isInitialized(book) );
-										assertFalse( Hibernate.isInitialized(reference) );
-										return s.persist( new Author("Terry Pratchett", book) )
+										Book book = s.getReference( reference );
+										assertFalse( Hibernate.isInitialized( book ) );
+										assertFalse( Hibernate.isInitialized( reference ) );
+										return s.persist( new Author( "Terry Pratchett", book ) )
 												.thenCompose( v -> s.flush() );
 									} )
 									.thenCompose( v -> openSession() )
 									.thenCompose( s -> {
-										Book book = s.getReference(reference);
-										assertFalse( Hibernate.isInitialized(book) );
-										assertFalse( Hibernate.isInitialized(reference) );
-										return Stage.fetch(book).thenCompose( v -> Stage.fetch( book.getAuthors() ) );
+										Book book = s.getReference( reference );
+										assertFalse( Hibernate.isInitialized( book ) );
+										assertFalse( Hibernate.isInitialized( reference ) );
+										return Stage.fetch( book ).thenCompose( v -> Stage.fetch( book.getAuthors() ) );
 									} )
 									.thenAccept( optionalAssociation -> {
-										assertTrue( Hibernate.isInitialized(optionalAssociation) );
-										assertNotNull(optionalAssociation);
+										assertTrue( Hibernate.isInitialized( optionalAssociation ) );
+										assertNotNull( optionalAssociation );
 										assertEquals( 2, optionalAssociation.size() );
 									} );
 						} )
@@ -139,18 +139,18 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testRemoveDetachedProxy(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( goodOmens ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
-							Book reference = sess.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(reference) );
+							Book reference = sess.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( reference ) );
 							return openSession()
-									.thenCompose( s -> s.remove( s.getReference(reference) )
+									.thenCompose( s -> s.remove( s.getReference( reference ) )
 											.thenCompose( v -> s.flush() ) );
 						} )
 						.thenCompose( v -> openSession() )
@@ -161,7 +161,7 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testRemoveWithTransaction(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persist( goodOmens ) )
@@ -178,24 +178,24 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testLockDetachedProxy(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( goodOmens ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
-							Book reference = sess.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(reference) );
-							return openSession()
-									.thenCompose( s -> s.lock( s.getReference(reference), LockMode.PESSIMISTIC_FORCE_INCREMENT )
-											.thenCompose( v -> s.flush() ) );
+							Book reference = sess.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( reference ) );
+							return openSession().thenCompose( s -> s
+									.lock( s.getReference( reference ), LockMode.PESSIMISTIC_FORCE_INCREMENT )
+									.thenCompose( v -> s.flush() ) );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( book -> {
-							assertNotNull(book);
+							assertNotNull( book );
 							assertEquals( 2, book.version );
 						} )
 		);
@@ -203,41 +203,42 @@ public class ReferenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testRefreshDetachedProxy(VertxTestContext context) {
-		final Book goodOmens = new Book("Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch");
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
 
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist(goodOmens).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( goodOmens ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> {
-							Book reference = sess.getReference(goodOmens);
-							assertFalse( Hibernate.isInitialized(reference) );
+							Book reference = sess.getReference( goodOmens );
+							assertFalse( Hibernate.isInitialized( reference ) );
 							return openSession()
-									.thenCompose( s -> s.refresh( s.getReference(reference) )
-											.thenAccept( v -> assertTrue( Hibernate.isInitialized( s.getReference(reference) ) ) )
+									.thenCompose( s -> s.refresh( s.getReference( reference ) )
+											.thenAccept( v -> assertTrue( Hibernate.isInitialized( s.getReference( reference ) ) ) )
 											.thenCompose( v -> s.flush() ) );
 						} )
 						.thenCompose( v -> openSession() )
 						.thenCompose( sess -> sess.find( Book.class, goodOmens.getId() ) )
 						.thenAccept( book -> {
-							assertNotNull(book);
+							assertNotNull( book );
 							assertEquals( 1, book.version );
 						} )
 		);
 	}
 
-	@Entity(name =  "Tome")
+	@Entity(name = "Tome")
 	@Table(name = "TBook")
 	public static class Book {
 
-		@Id @GeneratedValue
+		@Id
+		@GeneratedValue
 		private Integer id;
 		@Version
 		private Integer version = 1;
 		private String title;
 
-		@OneToMany(fetch = FetchType.LAZY, mappedBy="book")
+		@OneToMany(fetch = FetchType.LAZY, mappedBy = "book")
 		private List<Author> authors = new ArrayList<>();
 
 		public Book() {
@@ -293,7 +294,8 @@ public class ReferenceTest extends BaseReactiveTest {
 	@Table(name = "TAuthor")
 	public static class Author {
 
-		@Id @GeneratedValue
+		@Id
+		@GeneratedValue
 		private Integer id;
 		private String name;
 

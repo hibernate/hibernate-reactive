@@ -8,11 +8,9 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -31,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Override
@@ -50,11 +47,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 				.thenAccept( list -> {
 					assertFalse( list.isEmpty() );
 					assertEquals( 1, list.size() );
-					assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
 				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
 				.thenCompose( p -> {
-					assertThatPigsAreEqual( context, pig, p );
+					assertThatPigsAreEqual( pig, p );
 					p.name = "X";
 					return ss.update( p );
 				} )
@@ -80,11 +77,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 				.thenAccept( list -> {
 					assertFalse( list.isEmpty() );
 					assertEquals( 1, list.size() );
-					assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
 				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
 				.thenCompose( p -> {
-					assertThatPigsAreEqual( context, pig, p );
+					assertThatPigsAreEqual( pig, p );
 					p.name = "X";
 					return ss.update( p );
 				} )
@@ -111,11 +108,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenAccept( list -> {
 							assertFalse( list.isEmpty() );
 							assertEquals( 1, list.size() );
-							assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
 						.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
 						.thenCompose( p -> {
-							assertThatPigsAreEqual( context, pig, p );
+							assertThatPigsAreEqual( pig, p );
 							p.name = "X";
 							return ss.update( p );
 						} )
@@ -159,7 +156,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenAccept( list -> {
 							assertFalse( list.isEmpty() );
 							assertEquals( 1, list.size() );
-							assertThatPigsAreEqual( context, pig, list.get( 0 ) );
+							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
 						.thenCompose( v -> ss.createQuery( update ).executeUpdate() )
 						.thenAccept( rows -> assertEquals( 1, rows ) )
@@ -199,7 +196,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		) );
 	}
 
-	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
 		assertNotNull( actual );
 		assertEquals( expected.getId(), actual.getId() );
 		assertEquals( expected.getName(), actual.getName() );

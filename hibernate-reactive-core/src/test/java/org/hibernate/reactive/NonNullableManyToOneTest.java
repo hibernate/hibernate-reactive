@@ -8,13 +8,10 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
-import org.hibernate.reactive.util.impl.CompletionStages;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -33,7 +30,8 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 		return List.of( Painting.class, Artist.class, Dealer.class );
 	}
 
-	public Uni<?> populateDBMutiny() {
+	@BeforeEach
+	public void populateDB(VertxTestContext context) {
 		Artist artist = new Artist( "Grand Master Painter" );
 		artist.id = 1L;
 		Dealer dealer = new Dealer( "Dealer" );
@@ -43,23 +41,13 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 		artist.addPainting( painting );
 		dealer.addPainting( painting );
 
-		return getMutinySessionFactory()
-				.withTransaction( s -> s.persistAll( painting, artist, dealer ) );
-	}
-
-	@Override
-	public CompletionStage<Void> cleanDb() {
-		return getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Painting" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Artist" ).executeUpdate() )
-						.thenCompose( v -> s.createQuery( "delete from Dealer" ).executeUpdate() ) )
-				.thenCompose( CompletionStages::voidFuture );
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persistAll( painting, artist, dealer ) ) );
 	}
 
 	@Test
 	public void testNonNullableSuccess(VertxTestContext context) {
-		test( context, populateDBMutiny()
-				.call( () -> getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session
 						.createQuery( "from Artist", Artist.class )
 						.getSingleResult().chain( a -> session.fetch( a.getPaintings() ) )
@@ -67,7 +55,7 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 							assertNotNull( paintings );
 							assertEquals( 1, paintings.size() );
 							assertEquals( "Mona Lisa", paintings.get( 0 ).getName() );
-						} ) ) )
+						} ) )
 				.chain( () -> getMutinySessionFactory()
 						.withTransaction( s1 -> s1
 								.createQuery( "from Dealer", Dealer.class )

@@ -65,7 +65,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 600, timeUnit = TimeUnit.SECONDS)
+@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 public abstract class BaseReactiveTest {
 	/**
 	 * Configure Vertx JUnit5 test context
@@ -75,7 +75,7 @@ public abstract class BaseReactiveTest {
 
 	private static VertxOptions vertxOptions() {
 		return new VertxOptions()
-				.setBlockedThreadCheckInterval( 5 )
+				.setBlockedThreadCheckInterval( 10 )
 				.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
 	}
 
@@ -194,7 +194,6 @@ public abstract class BaseReactiveTest {
 	 * Set up the session factory but create the configuration only if necessary.
 	 *
 	 * @param confSupplier supplies the configuration for the factory
-	 *
 	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
 	 */
 	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {

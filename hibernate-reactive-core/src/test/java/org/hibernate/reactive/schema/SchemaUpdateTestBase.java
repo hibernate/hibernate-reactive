@@ -12,8 +12,9 @@ import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.DBSelectionExtension;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,6 +23,7 @@ import io.vertx.junit5.VertxTestContext;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
@@ -52,7 +54,7 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 	}
 
 	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( DB2 );
+	public DBSelectionExtension dbRule = skipTestsFor( DB2 );
 
 	protected Configuration constructConfiguration(String action) {
 		Configuration configuration = super.constructConfiguration();
@@ -61,15 +63,18 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		return configuration;
 	}
 
+	@BeforeEach
 	@Override
 	public void before(VertxTestContext context) {
 		// For these tests we create the factory when we need it
+		context.completeNow();
 	}
 
+	@AfterEach
 	@Override
-	public CompletionStage<Void> cleanDb() {
-		getSessionFactory().close();
-		return CompletionStages.voidFuture();
+	public void after(VertxTestContext context) {
+		super.after( context );
+		closeFactory( context );
 	}
 
 	/**

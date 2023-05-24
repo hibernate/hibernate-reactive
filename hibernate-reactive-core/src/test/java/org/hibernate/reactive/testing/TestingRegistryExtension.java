@@ -27,29 +27,29 @@ import org.hibernate.service.spi.ServiceBinding;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 
-import org.junit.jupiter.api.extension.Extension;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.vertx.core.Vertx;
-import io.vertx.junit5.RunTestOnContext;
 
-public class TestingRegistryExtension extends ExternalResource implements Extension {
+public class TestingRegistryExtension implements BeforeEachCallback, AfterEachCallback {
 
 	private Vertx vertx;
 	private Registry registry;
 
 	@Override
-	protected void after() {
+	public void beforeEach(ExtensionContext context) {
+		this.vertx = Vertx.vertx();
+		this.registry = new Registry( vertx );
+	}
+
+	@Override
+	public void afterEach(ExtensionContext context) {
 		if ( vertx != null ) {
 			vertx.close();
 		}
-		this.vertx = null;
 		this.registry = null;
-	}
-
-	public void initialize(RunTestOnContext testOnContext) {
-		this.vertx = testOnContext.vertx();
-		this.registry = new Registry( vertx );
 	}
 
 	public ServiceRegistryImplementor getServiceRegistry() {
@@ -162,7 +162,7 @@ public class TestingRegistryExtension extends ExternalResource implements Extens
 
 		@Override
 		public <T extends Service> T fromRegistryOrChildren(Class<T> serviceRole) {
-			throw new UnsupportedOperationException("I don't think we need this for our tests");
+			throw new UnsupportedOperationException( "I don't think we need this for our tests" );
 		}
 	}
 }

@@ -12,9 +12,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.criteria.CriteriaQuery;
-
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -37,6 +34,8 @@ import io.vertx.core.VertxOptions;
 import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.criteria.CriteriaQuery;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -49,7 +48,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 600, timeUnit = TimeUnit.SECONDS)
+@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public abstract class BaseReactiveIT {
 
 	// These properties are in DatabaseConfiguration in core
@@ -159,10 +158,10 @@ public abstract class BaseReactiveIT {
 	}
 
 	protected void addEntities(Configuration configuration) {
-		for ( Class<?> entity: annotatedEntities() ) {
+		for ( Class<?> entity : annotatedEntities() ) {
 			configuration.addAnnotatedClass( entity );
 		}
-		for ( String mapping: mappings() ) {
+		for ( String mapping : mappings() ) {
 			configuration.addResource( mapping );
 		}
 	}
@@ -201,9 +200,10 @@ public abstract class BaseReactiveIT {
 	 * Set up the session factory but create the configuration only if necessary.
 	 *
 	 * @param confSupplier supplies the configuration for the factory
+	 *
 	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
 	 */
-	protected static CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
+	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		testOnContext.vertx()
 				.executeBlocking(
@@ -223,7 +223,7 @@ public abstract class BaseReactiveIT {
 		return future;
 	}
 
-	private static void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier ) {
+	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier) {
 		try {
 			ormSessionFactory = createHibernateSessionFactory( confSupplier.get() );
 			p.complete();
@@ -233,7 +233,7 @@ public abstract class BaseReactiveIT {
 		}
 	}
 
-	private static SessionFactory createHibernateSessionFactory(Configuration configuration) {
+	private SessionFactory createHibernateSessionFactory(Configuration configuration) {
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 		addServices( builder );
@@ -242,9 +242,10 @@ public abstract class BaseReactiveIT {
 		return configuration.buildSessionFactory( registry );
 	}
 
-	protected static void addServices(StandardServiceRegistryBuilder builder) {}
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+	}
 
-	protected static void configureServices(StandardServiceRegistry registry) {
+	protected void configureServices(StandardServiceRegistry registry) {
 	}
 
 	@AfterEach

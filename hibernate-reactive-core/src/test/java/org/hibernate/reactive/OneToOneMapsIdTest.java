@@ -18,8 +18,6 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
-;
-
 public class OneToOneMapsIdTest extends BaseReactiveTest {
 
 	@Override

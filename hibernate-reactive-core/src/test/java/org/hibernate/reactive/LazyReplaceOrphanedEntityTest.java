@@ -11,9 +11,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -40,21 +40,22 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		return List.of( Campaign.class, ExecutionDate.class, Schedule.class );
 	}
 
-	private Uni<Void> populateDb() {
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
 		theCampaign = new Campaign();
 		theCampaign.setSchedule( new ExecutionDate(OffsetDateTime.now(), "ALPHA") );
-		return getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) );
+
+		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) ) );
 	}
 
 	@Test
 	public void testUpdateScheduleChange(VertxTestContext context) {
-		test( context, populateDb()
-				.call( () -> getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withSession( session -> session
 						.find( Campaign.class, theCampaign.getId() )
 						.invoke( foundCampaign -> foundCampaign
 								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
-						.call( session::flush ) ) )
+						.call( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( Campaign.class, theCampaign.getId() ) )
 				.invoke( updatedCampaign -> assertThat( updatedCampaign.getSchedule().getCodeName() )
@@ -64,13 +65,12 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
 	@Test
 	public void testUpdateWithMultipleScheduleChanges(VertxTestContext context) {
-		test( context, populateDb()
-				.call( () -> getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withSession( session -> session
 						.find( Campaign.class, theCampaign.getId() )
 						.invoke( foundCampaign -> foundCampaign
 								.setSchedule( new ExecutionDate( OffsetDateTime.now(), "BETA" ) ) )
-						.call( session::flush ) ) )
+						.call( session::flush ) )
 				.call( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.find( Campaign.class, theCampaign.getId() )

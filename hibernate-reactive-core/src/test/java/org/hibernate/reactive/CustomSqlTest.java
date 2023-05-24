@@ -27,6 +27,7 @@ import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class CustomSqlTest extends BaseReactiveTest {
 
 	@RegisterExtension
-	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL, COCKROACHDB );
+	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL, COCKROACHDB );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

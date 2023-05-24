@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,10 +36,9 @@ public class CompositeIdTest extends BaseReactiveTest {
 
 	private CompletionStage<Void> populateDB() {
 		return getSessionFactory()
-				.withSession(
-						session -> session.persist( new GuineaPig(5, "Aloi", 100) )
-							.thenCompose( v -> session.flush() )
-				 );
+				.withTransaction( session -> session
+						.persist( new GuineaPig( 5, "Aloi", 100 ) )
+				);
 	}
 
 	private CompletionStage<String> selectNameFromId(Integer id) {
@@ -122,12 +120,10 @@ public class CompositeIdTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> selectNameFromId( 5 ) )
 						.thenAccept( Assertions::assertNull )
-						.handle((r, e) -> {
-							Object exception = e;
-							Assertions.assertNotNull( exception );
-							return CompletionStages.voidFuture();
-						} ) //NotNull( e ) )
-//						.handle((r, e) -> Assertions.assertTrue( e != null))
+						.handle( (r, e) -> {
+							assertNotNull( e );
+							return r;
+						} )
 		);
 	}
 

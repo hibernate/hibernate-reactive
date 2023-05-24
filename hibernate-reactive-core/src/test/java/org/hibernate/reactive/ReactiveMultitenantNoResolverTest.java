@@ -32,6 +32,7 @@ import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DE
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +52,7 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	// To check if we are using the right database we run native queries for PostgreSQL
 	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( POSTGRESQL );
+	public DBSelectionExtension selectionRule = runOnlyFor( POSTGRESQL );
 
     @Override
     protected Configuration constructConfiguration() {
@@ -80,7 +81,7 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 							.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
 							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 							.thenAccept( actualPig -> {
-								assertThatPigsAreEqual( context, guineaPig, actualPig );
+								assertThatPigsAreEqual( guineaPig, actualPig );
 								assertTrue( session.contains( actualPig ) );
 								assertFalse( session.contains( guineaPig ) );
 								assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
@@ -325,7 +326,7 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 		);
 	}
 
-	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
 		assertNotNull( actual );
 		assertEquals( expected.getId(), actual.getId() );
 		assertEquals( expected.getName(), actual.getName() );

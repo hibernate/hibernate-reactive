@@ -6,13 +6,12 @@
 package org.hibernate.reactive;
 
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.Cache;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.VertxTestContext;
@@ -40,10 +39,10 @@ public class CacheTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	@Override
-	public CompletionStage<Void> cleanDb() {
+	@AfterEach
+	public void cleanDB() {
+		// We clean the cache after each test this way
 		getSessionFactory().close();
-		return CompletionStages.voidFuture();
 	}
 
 	@Test

@@ -21,13 +21,11 @@ import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.core.VertxOptions;
 import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
@@ -41,34 +39,23 @@ import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.reactive.BaseReactiveTest.test;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getJdbcUrl;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 3600, timeUnit = TimeUnit.SECONDS)
+@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class ReactiveConnectionPoolTest {
 
 	@RegisterExtension
-	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
+	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	@RegisterExtension
 	public TestingRegistryExtension registryExtension = new TestingRegistryExtension();
 
 	@RegisterExtension
-	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions() );
-
-	private static VertxOptions vertxOptions() {
-		return new VertxOptions()
-				.setBlockedThreadCheckInterval( 5 )
-				.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
-	}
-
-	@BeforeEach
-	protected void initServices() {
-		registryExtension.initialize( testOnContext );
-	}
+	public RunTestOnContext testOnContext = new RunTestOnContext();
 
 	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
 		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();
@@ -80,7 +67,6 @@ public class ReactiveConnectionPoolTest {
 				return new SqlStatementLogger();
 			}
 		} );
-
 		DefaultSqlClientPool reactivePool = new DefaultSqlClientPool();
 		reactivePool.injectServices( registryExtension.getServiceRegistry() );
 		reactivePool.configure( config );
@@ -90,7 +76,7 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithJdbcUrl(VertxTestContext context) {
-		Map<String,Object> config = new HashMap<>();
+		Map<String, Object> config = new HashMap<>();
 		config.put( URL, getJdbcUrl() );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		test( context, verifyConnectivity( reactivePool ) );
@@ -98,7 +84,7 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithCredentials(VertxTestContext context) {
-		// Set up URL with invalid credentials so we can ensure that
+		// Set up URL with invalid credentials, so we can ensure that
 		// explicit USER and PASS settings take precedence over credentials in the URL
 		String url = getJdbcUrl();
 		url = url.replace( "user=" + DatabaseConfiguration.USERNAME, "user=bogus" );
@@ -106,7 +92,7 @@ public class ReactiveConnectionPoolTest {
 
 		// Correct user/password are supplied explicitly in the config map and
 		// should override the credentials in the URL
-		Map<String,Object> config = new HashMap<>();
+		Map<String, Object> config = new HashMap<>();
 		config.put( URL, url );
 		config.put( USER, DatabaseConfiguration.USERNAME );
 		config.put( PASS, DatabaseConfiguration.PASSWORD );
@@ -116,7 +102,7 @@ public class ReactiveConnectionPoolTest {
 
 	@Test
 	public void configureWithWrongCredentials(VertxTestContext context) {
-		Map<String,Object> config = new HashMap<>();
+		Map<String, Object> config = new HashMap<>();
 		config.put( URL, getJdbcUrl() );
 		config.put( USER, "bogus" );
 		config.put( PASS, "bogus" );
@@ -129,10 +115,8 @@ public class ReactiveConnectionPoolTest {
 	private static CompletionStage<Void> verifyConnectivity(ReactiveConnectionPool reactivePool) {
 		return reactivePool.getConnection().thenCompose(
 				connection -> connection.select( "SELECT 1" )
-						.thenAccept( result -> {
-							assertNotNull( result );
-							assertEquals( 1, result.size() );
-							assertEquals( 1, result.next()[0] );
-						} ) );
+						.thenAccept( result -> assertThat( result ).hasNext()
+								.satisfies( iterator -> assertEquals( 1, result.next()[0] ) )
+						) );
 	}
 }

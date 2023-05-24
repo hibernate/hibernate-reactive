@@ -44,55 +44,62 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		CustomId b = new CustomId();
 		b.string = "Hello World";
 
-		test( context,
+		test(
+				context,
 				openSession()
-				.thenCompose(s -> s.persist(b).thenCompose(v -> s.flush()))
-				.thenCompose( v -> openSession() )
-				.thenCompose( s2 ->
-					s2.find( CustomId.class, b.getId() )
-						.thenAccept( bb -> {
-							assertNotNull( bb );
-							assertEquals( bb.id, 1100 );
-							assertEquals( bb.string, b.string );
-							assertEquals( bb.version, 0 );
+						.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s2 -> s2
+								.find( CustomId.class, b.getId() )
+								.thenAccept( bb -> {
+									assertNotNull( bb );
+									assertEquals( bb.id, 1100 );
+									assertEquals( bb.string, b.string );
+									assertEquals( bb.version, 0 );
 
-							bb.string = "Goodbye";
-						})
-						.thenCompose(vv -> s2.flush())
-						.thenCompose(vv -> s2.find( CustomId.class, b.getId() ))
-						.thenAccept( bt -> {
-							assertEquals( bt.version, 1 );
-						}))
-				.thenCompose( v -> openSession() )
-				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
-				.thenAccept( bb -> {
-					assertEquals(bb.version, 1);
-					assertEquals(bb.string, "Goodbye");
-				})
+									bb.string = "Goodbye";
+								} )
+								.thenCompose( vv -> s2.flush() )
+								.thenCompose( vv -> s2.find( CustomId.class, b.getId() ) )
+								.thenAccept( bt -> {
+									assertEquals( bt.version, 1 );
+								} ) )
+						.thenCompose( v -> openSession() )
+						.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
+						.thenAccept( bb -> {
+							assertEquals( bb.version, 1 );
+							assertEquals( bb.string, "Goodbye" );
+						} )
 		);
 	}
 
 	public static class Thousands implements ReactiveIdentifierGenerator<Integer>, Configurable {
 		int current = 0;
+
 		@Override
 		public CompletionStage<Integer> generate(ReactiveConnectionSupplier session, Object entity) {
 			current += 1000;
-			return completedFuture(current);
+			return completedFuture( current );
 		}
+
 		@Override
 		public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
-			current = Integer.parseInt( params.getProperty("offset", "0") );
+			current = Integer.parseInt( params.getProperty( "offset", "0" ) );
 		}
 	}
 
 	@Entity
-	@GenericGenerator(name="thousands",
-			strategy="org.hibernate.reactive.CustomGeneratorTest$Thousands",
-			parameters = @Parameter(name = "offset", value = "100"))
+	@GenericGenerator(
+			name = "thousands",
+			strategy = "org.hibernate.reactive.CustomGeneratorTest$Thousands",
+			parameters = @Parameter(name = "offset", value = "100")
+	)
 	public static class CustomId {
-		@Id @GeneratedValue(generator = "thousands")
+		@Id
+		@GeneratedValue(generator = "thousands")
 		Integer id;
-		@Version Integer version;
+		@Version
+		Integer version;
 		String string;
 
 		public CustomId() {
@@ -133,12 +140,12 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 				return false;
 			}
 			CustomId customId = (CustomId) o;
-			return Objects.equals(string, customId.string);
+			return Objects.equals( string, customId.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }

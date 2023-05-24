@@ -39,9 +39,9 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-
 public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
+	// This is the default chosen by MSSQL
 	private static final String DEFAULT_CATALOG_NAME = "master";
 
 	/**
@@ -67,11 +67,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
 			return configuration;
-		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
 		}
 	}
 
@@ -99,11 +94,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 			configuration.setProperty( Settings.DEFAULT_CATALOG, DEFAULT_CATALOG_NAME );
 			return configuration;
 		}
-
-		@Override
-		public String addCatalog(String name) {
-			return DEFAULT_CATALOG_NAME + "." + name;
-		}
 	}
 
 	protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -116,10 +106,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	@RegisterExtension
 	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( SQLSERVER );
 
-	public String addCatalog(String name) {
-		return name;
-	}
-
 	@BeforeEach
 	@Override
 	public void before(VertxTestContext context) {
@@ -129,7 +115,7 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
 		test( context, dropSequenceIfExists( createHbm2ddlConf )
 				.thenCompose( ignore -> setupSessionFactory( createHbm2ddlConf )
-				.thenCompose( v -> factoryManager.stop() ) ) );
+						.thenCompose( v -> factoryManager.stop() ) ) );
 	}
 
 	// See HHH-14835: Vert.x throws an exception when the catalog is specified.
@@ -174,10 +160,10 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	public void testUpdate(VertxTestContext context) {
 		final String indexDefinitionQuery =
 				"select COL_NAME(ic.object_id, ic.column_id), ic.is_descending_key " +
-					"from sys.indexes i inner join sys.index_columns ic " +
-					"on ic.object_id = i.object_id and ic.index_id = i.index_id " +
-					"where OBJECT_NAME(i.object_id) = ? and i.name = ? and i.is_unique = ? " +
-					"order by ic.key_ordinal";
+						"from sys.indexes i inner join sys.index_columns ic " +
+						"on ic.object_id = i.object_id and ic.index_id = i.index_id " +
+						"where OBJECT_NAME(i.object_id) = ? and i.name = ? and i.is_unique = ? " +
+						"order by ic.key_ordinal";
 
 		final String foreignKeyDefinitionQuery =
 				"select COL_NAME( parent_object_id, parent_column_id ) as col_name, " +
@@ -235,10 +221,10 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													assertEquals( 2, list.size() );
-													assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
-													assertEquals( false, ( (Object[]) list.get(0) )[1] );
-													assertEquals( "aStringValue", ( (Object[]) list.get(1) )[0] );
-													assertEquals( true, ( (Object[]) list.get(1) )[1] );
+													assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													assertEquals( false, ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( "aStringValue", ( (Object[]) list.get( 1 ) )[0] );
+													assertEquals( true, ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
@@ -248,10 +234,10 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													assertEquals( 2, list.size() );
-													assertEquals( "aValue", ( (Object[]) list.get(0) )[0] );
-													assertEquals( true, ( (Object[]) list.get(0) )[1] );
-													assertEquals( "data", ( (Object[]) list.get(1) )[0] );
-													assertEquals( false, ( (Object[]) list.get(1) )[1] );
+													assertEquals( "aValue", ( (Object[]) list.get( 0 ) )[0] );
+													assertEquals( true, ( (Object[]) list.get( 0 ) )[1] );
+													assertEquals( "data", ( (Object[]) list.get( 1 ) )[0] );
+													assertEquals( false, ( (Object[]) list.get( 1 ) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery )
@@ -261,8 +247,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 												.getResultList()
 												.thenAccept( list -> {
 													assertEquals( 1, list.size() );
-													assertEquals( "aStringValue", ( (Object[]) list.get(0) )[0] );
-													assertEquals( false, ( (Object[]) list.get(0) )[1] );
+													assertEquals( "aStringValue", ( (Object[]) list.get( 0 ) )[0] );
+													assertEquals( false, ( (Object[]) list.get( 0 ) )[1] );
 												} )
 										)
 										.thenCompose( v -> s.createNativeQuery( foreignKeyDefinitionQuery )

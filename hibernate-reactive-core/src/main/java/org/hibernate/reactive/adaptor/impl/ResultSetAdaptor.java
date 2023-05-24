@@ -42,7 +42,7 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 
 /**
- * An adaptor that allows Hibenate core code which expects a JDBC
+ * An adaptor that allows Hibernate core code which expects a JDBC
  * {@code ResultSet} to read values from Vert.x's {@code RowSet}.
  */
 public class ResultSetAdaptor implements ResultSet {

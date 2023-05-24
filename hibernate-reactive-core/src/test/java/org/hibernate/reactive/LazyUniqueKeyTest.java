@@ -55,7 +55,7 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 						.thenAccept( v -> session.clear() )
 						.thenCompose( v -> session.find( Foo.class, foo.id ) )
 //                        .thenApply( result -> {
-//                            assertFalse( Hibernate.isInitialized(result.bar) );
+//                            assertFalse( Hibernate.isInitialized( result.bar) );
 //                            return result;
 //                        } )
 						.thenCompose( result -> session.fetch( result.bar ) )

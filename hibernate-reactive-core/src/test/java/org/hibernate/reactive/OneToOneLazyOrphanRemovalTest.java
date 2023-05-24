@@ -9,9 +9,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -27,20 +27,21 @@ public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
 		return List.of( Car.class, PaintColor.class, Engine.class );
 	}
 
-	private Uni<Void> populateDbMutiny() {
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
 		final PaintColor color = new PaintColor( 1, "Red" );
 		final Engine engine = new Engine( 1, 275 );
 		final Car car = new Car( 1, engine, color );
-		return getMutinySessionFactory().withTransaction( (s, t) -> s.persistAll( color, engine, car ) );
+		test( context, getSessionFactory()
+				.withTransaction( (session, tx) -> session.persist( color, engine, car ) ) );
 	}
 
 	@Test
 	public void testUnidirectionalOneToOneOrphanRemoval(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session
 						.find( Car.class, 1 )
-						.invoke( car -> car.setEngine( null ) ) ) )
+						.invoke( car -> car.setEngine( null ) ) )
 				.call( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.find( Car.class, 1 )
@@ -53,14 +54,13 @@ public class OneToOneLazyOrphanRemovalTest extends BaseReactiveTest {
 
 	@Test
 	public void testBidirectionalOneToOneOrphanRemoval(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session
 						.find( Car.class, 1 )
 						.invoke( car -> {
 							car.getPaintColor().setCar( null );
 							car.setPaintColor( null );
-						} ) ) )
+						} ) )
 				.call( () -> getMutinySessionFactory()
 						.withSession( session -> session
 								.find( Car.class, 1 )

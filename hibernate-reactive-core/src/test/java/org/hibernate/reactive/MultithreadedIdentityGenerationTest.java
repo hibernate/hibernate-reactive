@@ -63,7 +63,7 @@ import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
+@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 public class MultithreadedIdentityGenerationTest {
 
 	/* The number of threads should be higher than the default size of the connection pool so that
@@ -130,7 +130,6 @@ public class MultithreadedIdentityGenerationTest {
 	}
 
 	@Test
-//	@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 	public void testIdentityGenerator(VertxTestContext context) {
 		final ReactiveGeneratorWrapper idGenerator = getIdGenerator();
 		Assertions.assertNotNull( idGenerator );

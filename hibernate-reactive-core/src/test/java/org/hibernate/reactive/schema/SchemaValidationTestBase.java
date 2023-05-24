@@ -13,6 +13,7 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -85,6 +86,7 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		);
 	}
 
+	@AfterEach
 	@Override
 	public void after(VertxTestContext context) {
 		super.after( context );

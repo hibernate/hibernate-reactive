@@ -9,12 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
 
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DBSelectionExtension;
@@ -23,26 +17,27 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class LongLobTest extends BaseReactiveTest {
 
 	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( MYSQL );
+	public DBSelectionExtension selectionRule = runOnlyFor( MYSQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Basic.class );
 	}
-
-	// Test is failing with PG when the session factory set-up uses
-	// PostgeSQLDatabase
-	// 	public String getJdbcUrl() {
-	//		return buildJdbcUrlWithCredentials( address() );
-	//	}
 
 	@Test
 	public void testLongLobType(VertxTestContext context) {

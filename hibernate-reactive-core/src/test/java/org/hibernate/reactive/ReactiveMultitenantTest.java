@@ -71,7 +71,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
 						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
 						.thenAccept( actualPig -> {
-							assertThatPigsAreEqual( context, guineaPig, actualPig );
+							assertThatPigsAreEqual( guineaPig, actualPig );
 							assertTrue( session.contains( actualPig ) );
 							assertFalse( session.contains( guineaPig ) );
 							assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
@@ -137,7 +137,7 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 		);
 	}
 
-	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
+	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
 		assertNotNull( actual );
 		assertEquals( expected.getId(), actual.getId() );
 		assertEquals( expected.getName(), actual.getName() );
