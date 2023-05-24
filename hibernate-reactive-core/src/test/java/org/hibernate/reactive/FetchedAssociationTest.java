@@ -8,13 +8,11 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,6 +30,7 @@ import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 
 /**
  * Test that's not necessary to do a fetch when we want to add a new element to an association.
@@ -39,7 +38,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POS
 public class FetchedAssociationTest extends BaseReactiveTest {
 
 	@RegisterExtension // We use native queries, they might be different for other DBs
-	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
+	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	private SqlStatementTracker sqlTracker;
 
@@ -53,12 +52,6 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 		Configuration configuration = super.constructConfiguration();
 		sqlTracker = new SqlStatementTracker( FetchedAssociationTest::isSelectOrInsertQuery, configuration.getProperties() );
 		return configuration;
-	}
-
-	@Override
-	public CompletionStage<Void> cleanDb() {
-		getSessionFactory().close();
-		return CompletionStages.voidFuture();
 	}
 
 	private static boolean isSelectOrInsertQuery(String s) {

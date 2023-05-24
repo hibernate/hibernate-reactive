@@ -31,6 +31,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class StringToJsonTypeTest extends BaseReactiveTest {
 
 	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.skipTestsFor( DB2, SQLSERVER, MARIA, ORACLE );
+	public DBSelectionExtension selectionRule = skipTestsFor( DB2, SQLSERVER, MARIA, ORACLE );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

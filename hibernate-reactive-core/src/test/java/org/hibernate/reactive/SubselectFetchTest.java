@@ -9,12 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -50,12 +49,11 @@ public class SubselectFetchTest extends BaseReactiveTest {
 		return List.of( Element.class, Node.class );
 	}
 
-	@Override
-	public CompletionStage<Void> cleanDb() {
-		return getSessionFactory()
+	@AfterEach
+	public void cleanDb(VertxTestContext context) {
+		test( context, getSessionFactory()
 				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) )
-				.thenCompose( CompletionStages::voidFuture );
+						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
 	}
 
 	@Test

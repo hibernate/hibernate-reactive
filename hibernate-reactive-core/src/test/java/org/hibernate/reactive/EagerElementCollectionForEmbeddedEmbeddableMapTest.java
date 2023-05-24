@@ -11,12 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -30,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReactiveTest {
 
 	private Person thePerson;
@@ -40,18 +38,14 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		return List.of( Person.class );
 	}
 
-	private Person getPerson() {
-		if( thePerson == null ) {
-			thePerson = new Person( 7242000, "Claude", new Phone( MOBILE, "000") );
-			thePerson.addAlternatePhone( "aaaa", HOME, "111" );
-			thePerson.addAlternatePhone( "bbbb", WORK, "222" );
-			thePerson.addAlternatePhone( "cccc", HOME, "333" );
-		}
-		return thePerson;
-	}
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
+		thePerson = new Person( 7242000, "Claude", new Phone( MOBILE, "000") );
+		thePerson.addAlternatePhone( "aaaa", HOME, "111" );
+		thePerson.addAlternatePhone( "bbbb", WORK, "222" );
+		thePerson.addAlternatePhone( "cccc", HOME, "333" );
 
-	private CompletionStage<Void> populateDb() {
-		return getSessionFactory().withTransaction( s -> s.persist(  getPerson() ) );
+		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( thePerson ) ) );
 	}
 
 	@Test
@@ -72,22 +66,20 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void findEntityWithElementCollectionWithStageAPI(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
-				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) ) )
+		test( context, openSession()
+				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( found -> assertPhones( context, found, "000", "111", "222", "333" ) )
 		);
 	}
 
 	@Test
 	public void addOneElementWithStageAPI(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session
 						.find( Person.class, thePerson.getId() )
 						// add one element to the collection
 						.thenAccept( foundPerson -> foundPerson.addAlternatePhone( "dddd", WORK, "444" ) )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000","111", "222", "333", "444" ) )
@@ -96,12 +88,11 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void removeOneElementWithStageAPI(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						// Remove one element from the collection
 						.thenAccept( foundPerson -> foundPerson.removeAlternativePhone( "cccc" ) )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( updatedPerson -> assertPhones( context, updatedPerson, "000", "111", "222" ) )
@@ -110,14 +101,13 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void clearCollectionOfElementsWithStageAPI(VertxTestContext context){
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							assertFalse( foundPerson.getAlternativePhones().isEmpty() );
 							foundPerson.getAlternativePhones().clear();
 						} )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertTrue( changedPerson.getAlternativePhones().isEmpty() ) )
@@ -126,15 +116,14 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void removeAndAddElementWithStageAPI(VertxTestContext context){
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							assertNotNull( foundPerson );
 							foundPerson.removeAlternativePhone( "cccc" );
 							foundPerson.addAlternatePhone( "dddd", MOBILE, "444" );
 						} )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "111", "222", "444" ) )
@@ -143,8 +132,7 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void setNewElementCollectionWithStageAPI(VertxTestContext context){
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( foundPerson -> {
 							assertNotNull( foundPerson );
@@ -152,7 +140,7 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 							foundPerson.getPhone().setAlternativePhones( new HashMap<>() );
 							foundPerson.addAlternatePhone( "aaaa", WORK, "555" );
 						} )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( changedPerson -> assertPhones( context, changedPerson, "000", "555" ) )
@@ -161,12 +149,11 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void removePersonWithStageAPI(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						// remove thePerson entity and flush
 						.thenCompose( session::remove )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( Assertions::assertNull )
@@ -182,10 +169,9 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.addAlternatePhone( "aaaa", HOME, "666" );
 		secondPerson.addAlternatePhone( "bbbb", WORK, "777" );
 
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "123", "666", "777" ) )
@@ -202,10 +188,9 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.getAlternativePhones().put( "xxx", null );
 		secondPerson.getAlternativePhones().put( "yyy", null );
 
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				// Null values don't get persisted
@@ -220,10 +205,9 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 		secondPerson.getAlternativePhones().put("ggg", new AlternativePhone(MOBILE, "567" ));
 		secondPerson.getAlternativePhones().put( "yyy", null );
 
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.persist( secondPerson )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, secondPerson.getId() ) )
 				// Null values don't get persisted
@@ -233,14 +217,13 @@ public class EagerElementCollectionForEmbeddedEmbeddableMapTest extends BaseReac
 
 	@Test
 	public void setCollectionToNullWithStageAPI(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() )
 						.thenAccept( found -> {
 							assertFalse( found.getAlternativePhones().isEmpty() );
 							found.getPhone().setAlternativePhones( null );
 						} )
-						.thenCompose( v -> session.flush() ) ) )
+						.thenCompose( v -> session.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( Person.class, thePerson.getId() ) )
 				.thenAccept( foundPerson -> assertPhones( context, foundPerson, "000" ) )

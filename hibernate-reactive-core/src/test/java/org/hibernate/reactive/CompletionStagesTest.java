@@ -13,15 +13,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
@@ -36,16 +33,12 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Tests the utility methods in {@link org.hibernate.reactive.util.impl.CompletionStages}
  */
 @ExtendWith(VertxExtension.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class CompletionStagesTest {
 
 	private final Object[] entries = { "a", "b", "c", "d", "e" };
 	private final List<Object> looped = new ArrayList<>();
 
-	@BeforeEach
-	private void clearLooped() {
-		looped.clear();
-	}
 	@Test
 	public void testTotalWithIntegers(VertxTestContext context) {
 		int startInt = 0;
@@ -191,7 +184,6 @@ public class CompletionStagesTest {
 		return asList( entries ).iterator();
 	}
 
-	@Timeout(value = 60, timeUnit = TimeUnit.SECONDS)
 	protected static void test(VertxTestContext context, CompletionStage<?> work) {
 		work.whenComplete( (res, err) -> {
 			if ( err != null ) {

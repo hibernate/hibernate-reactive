@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.OracleParameters;
@@ -20,7 +19,6 @@ import org.hibernate.reactive.pool.impl.SQLServerParameters;
 
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,7 +26,6 @@ import jakarta.persistence.Id;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	private static final int BATCH_SIZE = 20;

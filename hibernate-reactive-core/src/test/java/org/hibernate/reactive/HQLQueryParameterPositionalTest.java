@@ -8,10 +8,10 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.stage.Stage;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.VertxTestContext;
@@ -23,11 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 /**
  * Tests queries using positional parameters like "?1, ?2, ...",
  * as defined by the JPA specification.
- *
+ * <p>
  * Note that ORM treats such parameters as "named", not "positional";
  * that should be considered an internal implementation detail.
  */
@@ -42,41 +41,43 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		return List.of( Flour.class );
 	}
 
-	public CompletionStage<Void> populateDb() {
-		return getSessionFactory().withTransaction( s -> s.persist( spelt, rye, almond ) );
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond ) ) );
 	}
 
 	@Test
 	public void testAutoFlushOnSingleResult(VertxTestContext context) {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> s
+		test( context, getSessionFactory().withSession( s -> s
 				.persist( semolina )
 				.thenCompose( v -> s.createQuery( "from Flour where id = ?1" )
 						.setParameter( 1, semolina.getId() )
 						.getSingleResult() )
 				.thenAccept( found -> assertEquals( semolina, found ) )
-		) ) );
+		) );
 	}
 
 	@Test
 	public void testSelectScalarValues(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = ?1" )
 						  .setParameter( 1, rye.getId() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( found -> assertEquals( "Prova", found ) )
+			  } ).thenAccept( found -> assertEquals( "Prova", found ) )
 		);
 	}
 
 	@Test
 	public void testSelectWithMultipleScalarValues(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = ?1" )
 						  .setParameter( 1, rye.getId() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( found -> {
+			  } ).thenAccept( found -> {
 				  assertTrue( found instanceof Object[] );
 				  assertEquals( "Prova", ( (Object[]) found )[0] );
 				  assertEquals( rye.getId(), ( (Object[]) found )[1] );
@@ -86,67 +87,67 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 
 	@Test
 	public void testSingleResultQueryOnId(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
-			Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE id = ?1" ).setParameter( 1, 1);
-				assertNotNull( qr );
-				return qr.getSingleResult();
-			} ) ).thenAccept( flour -> assertEquals( spelt, flour ) )
+		test( context, getSessionFactory().withSession( s -> {
+				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE id = ?1" ).setParameter( 1, 1);
+				  assertNotNull( qr );
+				  return qr.getSingleResult();
+			  } ).thenAccept( flour -> assertEquals( spelt, flour ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultQueryOnName(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = ?1" ).setParameter( 1, "Almond" );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParameters(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = ?1 and description = ?2" )
 						  .setParameter( 1, almond.getName() )
 						  .setParameter( 2, almond.getDescription() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParametersReversed(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = ?2 and description = ?1" )
 						  .setParameter( 2, almond.getName() )
 						  .setParameter( 1, almond.getDescription() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParametersReused(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "FROM Flour WHERE name = ?1 or cast(?1 as string) is null" )
 						  .setParameter( 1, almond.getName() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
 	}
 
 	@Test
 	public void testPlaceHolderInString(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "select '?', '?1', f FROM Flour f WHERE f.name = ?1" )
 						  .setParameter( 1, almond.getName() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( result -> {
+			  } ).thenAccept( result -> {
 				  assertEquals( Object[].class, result.getClass() );
 				  final Object[] objects = (Object[]) result;
 				  assertEquals( 3, objects.length );
@@ -159,12 +160,12 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 
 	@Test
 	public void testPlaceHolderAndSingleQuoteInString(VertxTestContext context) {
-		test( context, populateDb().thenCompose( vd -> getSessionFactory().withSession( s -> {
+		test( context, getSessionFactory().withSession( s -> {
 				  Stage.Query<Object> qr = s.createQuery( "select '''?', '''?1''', f FROM Flour f WHERE f.name = ?1" )
 						  .setParameter( 1, almond.getName() );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
-			  } ) ).thenAccept( result -> {
+			  } ).thenAccept( result -> {
 				  assertEquals( Object[].class, result.getClass() );
 				  final Object[] objects = (Object[]) result;
 				  assertEquals( 3, objects.length );

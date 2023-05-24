@@ -17,7 +17,8 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.descriptor.java.StringJavaType;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
@@ -47,14 +48,11 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 		return List.of( FamousPerson.class );
 	}
 
-	private CompletionStage<Void> populateDb() {
-		return getSessionFactory().withTransaction( s -> s.persist( margaret, nellie, hedy, rebeccaActress, rebeccaSinger ) );
-	}
-
-	private Uni<?> populateDbMutiny() {
-		return getMutinySessionFactory().withSession( s -> s
-					  .persistAll( margaret, nellie, hedy, rebeccaActress, rebeccaSinger )
-					  .chain( s::flush ) );
+	@BeforeEach
+	public void populateDb(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withSession( s -> s
+				.persistAll( margaret, nellie, hedy, rebeccaActress, rebeccaSinger )
+				.chain( s::flush ) ) );
 	}
 
 	/**
@@ -62,12 +60,11 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	 */
 	@Test
 	public void testMaxResultsAndOffsetWithStageWithBasicQuery(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
 						.setMaxResults( 2 )
 						.setFirstResult( 1 )
-						.getResultList() ) )
+						.getResultList() )
 				// I cannot use the order-by, so I'm not sure which result it will return
 				.thenAccept( list -> {
 					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
@@ -78,11 +75,10 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 
 	@Test
 	public void testOffsetWithStageWithBasicQuery(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
 						.setFirstResult( 3 )
-						.getResultList() ) )
+						.getResultList() )
 				// I cannot use the order-by, so I'm not sure which results it will return
 				.thenAccept( list -> {
 					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
@@ -93,11 +89,10 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 
 	@Test
 	public void testMaxResultsWithStageWithBasicQuery(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> openSession()
+		test( context, openSession()
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_BASIC_QUERY )
 						.setMaxResults( 4 )
-						.getResultList() ) )
+						.getResultList() )
 				// I cannot use the order-by, so I'm not sure which result it will return
 				.thenAccept( list -> {
 					assertThat( list ).containsAnyOf( margaret, nellie, hedy, rebeccaActress, rebeccaSinger );
@@ -108,159 +103,145 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 
 	@Test
 	public void testMaxResultsWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
-						.getResultList() ) )
+						.getResultList() )
 				.thenAccept( list -> assertThat( list ).containsExactly( margaret, rebeccaActress ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( margaret, rebeccaActress ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( margaret, rebeccaActress ) )
 		);
 	}
 
 	@Test
 	public void testFirstResultWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setFirstResult( 1 )
-						.getResultList() ) )
+						.getResultList() )
 				.thenAccept( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testFirstResultWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setFirstResult( 1 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsAndOffsetWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.setFirstResult( 1 )
-						.getResultList() ) )
+						.getResultList() )
 				.thenAccept( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsAndOffsetWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
+		test( context, enableFilter( openMutinySession(), FamousPerson.IS_ALIVE_FILTER )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.setFirstResult( 1 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsForParameterizedFilterWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
-						.getResultList() ) )
+						.getResultList() )
 				.thenAccept( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsForParameterizedFilterWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( rebeccaActress, rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMaxResultsForParameterizedFilterWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 1 )
-						.getSingleResult() ) )
+						.getSingleResult() )
 				.thenAccept( result -> assertThat( result ).isEqualTo( rebeccaActress ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMaxResultsForParameterizedFilterWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 1 )
 						.getSingleResult() )
-				.invoke( result -> assertThat( result ).isEqualTo( rebeccaActress ) ) )
+				.invoke( result -> assertThat( result ).isEqualTo( rebeccaActress ) )
 		);
 	}
 
 	@Test
 	public void testFirstResultForParameterizedFilterWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setFirstResult( 1 )
-						.getResultList() )
+						.getResultList()
 						.thenAccept( list -> assertThat( list ).containsExactly( rebeccaSinger ) ) )
 		);
 	}
 
 	@Test
 	public void testFirstResultForParameterizedFilterWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setFirstResult( 1 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( rebeccaSinger ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsAndFirstResultForParameterizedFilterWithStage(VertxTestContext context) {
-		test( context, populateDb()
-				.thenCompose( vd -> enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openSession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.setFirstResult( 1 )
-						.getResultList() ) )
+						.getResultList() )
 				.thenAccept( list -> assertThat( list ).containsExactly( rebeccaSinger ) )
 		);
 	}
 
 	@Test
 	public void testMaxResultsAndFirstResultForParameterizedFilterWithMutiny(VertxTestContext context) {
-		test( context, populateDbMutiny()
-				.call( () -> enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
+		test( context, enableFilter( openMutinySession(), FamousPerson.HAS_NAME_FILTER, "name", rebeccaActress.name )
 				.chain( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
 						.setMaxResults( 2 )
 						.setFirstResult( 1 )
 						.getResultList() )
-				.invoke( list -> assertThat( list ).containsExactly( rebeccaSinger ) ) )
+				.invoke( list -> assertThat( list ).containsExactly( rebeccaSinger ) )
 		);
 	}
 

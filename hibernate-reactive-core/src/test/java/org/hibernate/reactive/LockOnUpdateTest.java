@@ -42,12 +42,9 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 								.call( session::flush )
 								.chain( () -> this.updateRecord( "FIRST", true ) )
 						)
-						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find(
-										Record.class,
-										secondRecord.name
-								) ) )
-						.invoke( (record) -> assertTrue( record.text.contains( "updated" ) ) )
+						.chain( () -> getMutinySessionFactory().withSession( session -> session
+										.find( Record.class, secondRecord.name ) ) )
+						.invoke( record -> assertTrue( record.text.contains( "updated" ) ) )
 		);
 	}
 
@@ -63,11 +60,8 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 								.call( () -> session.lock( secondRecord, LockMode.PESSIMISTIC_WRITE ) )
 								.chain( () -> this.updateRecord( "SECOND", false ) )
 						)
-						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find(
-										Record.class,
-										secondRecord.name
-								) ) )
+						.chain( () -> getMutinySessionFactory().withSession( session -> session
+								.find( Record.class, secondRecord.name ) ) )
 						.invoke( (record) -> assertTrue( record.text.contains( "updated" ) ) )
 		);
 	}
@@ -75,8 +69,8 @@ public class LockOnUpdateTest extends BaseReactiveTest {
 	private Uni<Record> updateRecord(final String name, final boolean doLock) {
 		if ( doLock ) {
 			return getMutinySessionFactory()
-					.withTransaction( session -> session.find( Record.class, name,
-															   LockMode.PESSIMISTIC_WRITE
+					.withTransaction( session -> session
+							.find( Record.class, name, LockMode.PESSIMISTIC_WRITE
 					) )
 					.map( entity -> entity.setText( "I'm an updated record" ) );
 		}

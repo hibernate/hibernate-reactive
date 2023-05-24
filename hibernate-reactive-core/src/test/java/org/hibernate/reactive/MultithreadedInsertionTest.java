@@ -67,7 +67,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
+@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 public class MultithreadedInsertionTest {
 
 	/**
@@ -128,7 +128,6 @@ public class MultithreadedInsertionTest {
 	}
 
 	@Test
-	@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 	public void testIdentityGenerator(VertxTestContext context) {
 		final DeploymentOptions deploymentOptions = new DeploymentOptions();
 		deploymentOptions.setInstances( N_THREADS );

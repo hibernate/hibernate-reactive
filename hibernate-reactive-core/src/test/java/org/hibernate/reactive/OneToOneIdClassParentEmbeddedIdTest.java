@@ -23,9 +23,6 @@ import jakarta.persistence.OneToOne;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-;
-
-
 public class OneToOneIdClassParentEmbeddedIdTest extends BaseReactiveTest {
 
 	@Override

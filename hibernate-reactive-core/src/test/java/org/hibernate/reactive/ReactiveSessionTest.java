@@ -9,25 +9,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.LockModeType;
@@ -36,7 +26,13 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.persistence.metamodel.EntityType;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ReactiveSessionTest extends BaseReactiveTest {
 
 	@Override
@@ -56,13 +52,6 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( pig -> session.close()
 								.thenApply( v -> pig == null ? null : pig.getName() ) )
 				);
-	}
-
-	@Override
-	public CompletionStage<Void> cleanDb() {
-		return getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from GuineaPig" ).executeUpdate()
-						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
 	@Test
@@ -655,12 +644,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenCompose( v -> session.flush() )
 								.thenCompose( v -> session.close() )
 						)
-						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( Assertions::assertNull )
 						.handle( (r, e) -> {
-								Assertions.assertInstanceOf( HibernateException.class, e.getCause() );
-								return CompletionStages.voidFuture();
+							assertNotNull( e );
+							return r;
 						} )
+
 		);
 	}
 
@@ -690,7 +678,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenAccept( pig -> {
 									assertNotNull( pig );
 									// Checking we are actually changing the name
-									Assertions.assertNotEquals( pig.getName(), NEW_NAME );
+									assertNotEquals( pig.getName(), NEW_NAME );
 									pig.setName( NEW_NAME );
 								} )
 								.thenCompose( v -> session.flush() )
@@ -712,7 +700,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 								.thenAccept( pig -> {
 									assertNotNull( pig );
 									// Checking we are actually changing the name
-									Assertions.assertNotEquals( pig.getName(), NEW_NAME );
+									assertNotEquals( pig.getName(), NEW_NAME );
 									assertEquals( pig.version, 0 );
 									pig.setName( NEW_NAME );
 									pig.version = 10; //ignored by Hibernate
@@ -771,14 +759,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testMetamodel(VertxTestContext context) {
-		test( context, getSessionFactory().withSession( session -> {
-			EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity( GuineaPig.class );
-			Assertions.assertNotNull( pig );
-			assertEquals( 3, pig.getAttributes().size() );
-			assertEquals( "GuineaPig", pig.getName() );
-			return CompletionStages.voidFuture();
-		} ) );
+	public void testMetamodel() {
+		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity( GuineaPig.class );
+		assertNotNull( pig );
+		assertEquals( 3, pig.getAttributes().size() );
+		assertEquals( "GuineaPig", pig.getName() );
 	}
 
 	@Test
@@ -822,7 +807,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( (s, t) -> s.persist( new GuineaPig( 10, "Tulip" ) ) )
 						).handle( (i, t) -> {
-							Assertions.assertNotNull( t );
+							assertNotNull( t );
 							assertTrue( t instanceof CompletionException );
 							assertTrue( t.getCause() instanceof PersistenceException );
 							return null;

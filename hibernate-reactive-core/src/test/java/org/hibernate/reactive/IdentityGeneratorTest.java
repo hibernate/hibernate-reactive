@@ -57,7 +57,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-	private CompletionStage<?> populateDb(VertxTestContext context) {
+	private CompletionStage<?> populateDb() {
 		final List<EntityWithIdentity> identities = new ArrayList<>( ENTITY_NUMBER );
 		for ( int i = 0; i < ENTITY_NUMBER; i++ ) {
 			identities.add( new EntityWithIdentity( i ) );
@@ -76,7 +76,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testIdentityGenerator(VertxTestContext context) {
-		test( context, populateDb( context )
+		test( context, populateDb()
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session
 						.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )

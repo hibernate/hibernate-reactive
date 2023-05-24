@@ -20,6 +20,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import org.assertj.core.api.Assertions;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 
 	// Vertx DB2 client is throwing "java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0."
-	// TODO:  remove db extension when https://github.com/eclipse-vertx/vertx-sql-client/issues/1208 is resolved
+	// See https://github.com/eclipse-vertx/vertx-sql-client/issues/899
 	@RegisterExtension
 	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
@@ -159,10 +160,7 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
-				.invoke( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.invoke( list -> Assertions.assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 

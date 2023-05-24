@@ -32,6 +32,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extends BaseReactiveTest {
 
 	@RegisterExtension
-	public DBSelectionExtension dbSelection = DBSelectionExtension.runOnlyFor( POSTGRESQL );
+	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	public static class OrderedTest extends InsertOrderingReferenceSeveralDifferentSubclassBase {
 

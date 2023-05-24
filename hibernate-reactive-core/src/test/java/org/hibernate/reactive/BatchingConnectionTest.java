@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
@@ -18,11 +16,10 @@ import org.hibernate.reactive.pool.impl.SqlClientConnection;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +27,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
 public class BatchingConnectionTest extends ReactiveSessionTest {
 
 	private static SqlStatementTracker sqlTracker;
@@ -46,6 +42,11 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 		return configuration;
 	}
 
+	@BeforeEach
+	public void clearTracker() {
+		sqlTracker.clear();
+	}
+
 	protected void addServices(StandardServiceRegistryBuilder builder) {
 		sqlTracker.registerService( builder );
 	}
@@ -58,12 +59,6 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 			}
 		}
 		return false;
-	}
-
-	@Override
-	public CompletionStage<Void> cleanDb() {
-		getSessionFactory().close();
-		return CompletionStages.voidFuture();
 	}
 
 	@Test

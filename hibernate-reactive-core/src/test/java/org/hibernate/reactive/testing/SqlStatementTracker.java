@@ -103,17 +103,4 @@ public class SqlStatementTracker extends SqlStatementLogger {
 			return SqlStatementLogger.class;
 		}
 	}
-
-//	private static class JdbcServicesLogger extends JdbcServicesImpl {
-//		private final SqlStatementTracker tracker;
-//
-//		public JdbcServicesLogger(SqlStatementTracker tracker) {
-//			this.tracker = tracker;
-//		}
-//
-//		@Override
-//		public SqlStatementLogger getSqlStatementLogger() {
-//			return tracker;
-//		}
-//	}
 }
