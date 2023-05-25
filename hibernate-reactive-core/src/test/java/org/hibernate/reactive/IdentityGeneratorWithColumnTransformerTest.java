@@ -26,8 +26,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,9 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Similar to {@link IdentityGeneratorTest} but enables SQL comments and uses a {@link ColumnTransformer}.
  */
 public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest {
-
-	// Comments don't work with Db2
-	private static final String ENABLE_COMMENTS = String.valueOf( dbType() != DB2 );
 
 	/**
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
@@ -65,7 +60,7 @@ public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( AvailableSettings.USE_SQL_COMMENTS, ENABLE_COMMENTS );
+		configuration.setProperty( AvailableSettings.USE_SQL_COMMENTS, "true" );
 		return configuration;
 	}
 
