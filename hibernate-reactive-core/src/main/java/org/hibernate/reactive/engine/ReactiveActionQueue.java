@@ -44,6 +44,7 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityActionVetoException;
 import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
+import org.hibernate.reactive.engine.impl.ReactiveEntityInsertActionHolder;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
@@ -78,7 +79,7 @@ public class ReactiveActionQueue {
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order to respect referential
 	// integrity
-	private ExecutableList<ReactiveEntityInsertAction> insertions;
+	private ExecutableList<ReactiveEntityInsertActionHolder> insertions;
 	private ExecutableList<ReactiveEntityDeleteAction> deletions;
 	private ExecutableList<ReactiveEntityUpdateAction> updates;
 	// Actually the semantics of the next three are really "Bag"
@@ -281,7 +282,7 @@ public class ReactiveActionQueue {
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			OrderedActions.EntityInsertAction.ensureInitialized( this );
-			this.insertions.add( insert );
+			this.insertions.add( new ReactiveEntityInsertActionHolder( insert ) );
 			ret = voidFuture();
 		}
 
@@ -1016,13 +1017,13 @@ public class ReactiveActionQueue {
 	 *
 	 * @author Jay Erb
 	 */
-	private static class InsertActionSorter implements ExecutableList.Sorter<ReactiveEntityInsertAction> {
+	private static class InsertActionSorter implements ExecutableList.Sorter<ReactiveEntityInsertActionHolder> {
 		/**
 		 * Singleton access
 		 */
 		public static final InsertActionSorter INSTANCE = new InsertActionSorter();
 		// the map of batch numbers to EntityInsertAction lists
-		private Map<BatchIdentifier, List<ReactiveEntityInsertAction>> actionBatches;
+		private Map<BatchIdentifier, List<ReactiveEntityInsertActionHolder>> actionBatches;
 
 		public InsertActionSorter() {
 		}
@@ -1030,20 +1031,21 @@ public class ReactiveActionQueue {
 		/**
 		 * Sort the insert actions.
 		 */
-		public void sort(List<ReactiveEntityInsertAction> insertions) {
+		public void sort(List<ReactiveEntityInsertActionHolder> insertions) {
 			// optimize the hash size to eliminate a rehash.
 			this.actionBatches = new HashMap<>();
 
 			// the mapping of entity names to their latest batch numbers.
 			final List<BatchIdentifier> latestBatches = new ArrayList<>();
 
-			for ( ReactiveEntityInsertAction action : insertions ) {
+			for ( ReactiveEntityInsertActionHolder action : insertions ) {
+				final ReactiveEntityInsertAction actionDelegate = action.getDelegate();
 				BatchIdentifier batchIdentifier = new BatchIdentifier(
-						action.getEntityName(),
-						action.getSession()
+						actionDelegate.getEntityName(),
+						actionDelegate.getSession()
 								.getFactory()
 								.getMetamodel()
-								.entityPersister( action.getEntityName() )
+								.entityPersister( actionDelegate.getEntityName() )
 								.getRootEntityName()
 				);
 
@@ -1055,8 +1057,8 @@ public class ReactiveActionQueue {
 				else {
 					latestBatches.add( batchIdentifier );
 				}
-				addParentChildEntityNames( action, batchIdentifier );
-				addToBatch( batchIdentifier, action );
+				addParentChildEntityNames( actionDelegate, batchIdentifier );
+				addToBatch( batchIdentifier, actionDelegate );
 			}
 			insertions.clear();
 
@@ -1233,10 +1235,10 @@ public class ReactiveActionQueue {
 		}
 
 		private void addToBatch(BatchIdentifier batchIdentifier, ReactiveEntityInsertAction action) {
-			List<ReactiveEntityInsertAction> actions = actionBatches
+			List<ReactiveEntityInsertActionHolder> actions = actionBatches
 					.computeIfAbsent( batchIdentifier, k -> new LinkedList<>() );
 
-			actions.add( action );
+			actions.add( new ReactiveEntityInsertActionHolder( action ) );
 		}
 
 		private static class BatchIdentifier {
