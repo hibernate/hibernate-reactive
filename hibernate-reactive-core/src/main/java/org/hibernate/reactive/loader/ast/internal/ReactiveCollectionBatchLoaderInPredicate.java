@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
@@ -22,10 +21,10 @@ import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
@@ -37,7 +36,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 
 	private final int keyColumnCount;
 	private final int sqlBatchSize;
-	private final List<JdbcParameter> jdbcParameters;
+	private final JdbcParametersList jdbcParameters;
 	private final SelectStatement sqlAst;
 	private final JdbcOperationQuerySelect jdbcSelect;
 
@@ -64,7 +63,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 			);
 		}
 
-		this.jdbcParameters = new ArrayList<>();
+		final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder();
 		this.sqlAst = LoaderSelectBuilder.createSelect(
 				attributeMapping,
 				null,
@@ -73,9 +72,10 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 				sqlBatchSize,
 				influencers,
 				LockOptions.NONE,
-				jdbcParameters::add,
+				jdbcParametersBuilder::add,
 				sessionFactory
 		);
+		this.jdbcParameters = jdbcParametersBuilder.build();
 		assert this.jdbcParameters.size() == this.sqlBatchSize * this.keyColumnCount;
 
 		this.jdbcSelect = sessionFactory.getJdbcServices()

@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -36,7 +34,6 @@ import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.SimpleFromClauseAccessImpl;
 import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -46,6 +43,7 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.FetchParent;
@@ -148,7 +146,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     public CompletionStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session) {
         final SessionFactoryImplementor sessionFactory = session.getFactory();
 
-        final List<JdbcParameter> jdbcParameters = new ArrayList<>();
+        final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
         final SelectStatement sqlSelect = LoaderSelectBuilder.createSelect(
                 entityDescriptor(),
                 singletonList( naturalIdMapping() ),
@@ -157,9 +155,10 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 1,
                 session.getLoadQueryInfluencers(),
                 LockOptions.NONE,
-                jdbcParameters::add,
+                jdbcParametersListBuilder::add,
                 sessionFactory
         );
+        final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
         final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
         final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();

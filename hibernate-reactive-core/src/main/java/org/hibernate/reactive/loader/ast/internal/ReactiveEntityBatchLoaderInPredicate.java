@@ -24,10 +24,10 @@ import org.hibernate.loader.ast.spi.SqlInPredicateMultiKeyLoader;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.arrayList;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
@@ -42,7 +42,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 	private final int domainBatchSize;
 	private final int sqlBatchSize;
 
-	private List<JdbcParameter> jdbcParameters;
+	private JdbcParametersList jdbcParameters;
 	private SelectStatement sqlAst;
 	private JdbcOperationQuerySelect jdbcSelectOperation;
 
@@ -185,7 +185,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 
 		final int expectedNumberOfParameters = identifierMapping.getJdbcTypeCount() * sqlBatchSize;
 
-		jdbcParameters = arrayList( expectedNumberOfParameters );
+		final JdbcParametersList.Builder parametersListBuilder = JdbcParametersList.newBuilder( expectedNumberOfParameters );
 		sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
 				// null here means to select everything
@@ -195,9 +195,10 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 				sqlBatchSize,
 				LoadQueryInfluencers.NONE,
 				LockOptions.NONE,
-				jdbcParameters::add,
+				parametersListBuilder::add,
 				sessionFactory
 		);
+		final JdbcParametersList jdbcParameters = parametersListBuilder.build();
 		assert jdbcParameters.size() == expectedNumberOfParameters;
 
 		jdbcSelectOperation = sessionFactory.getJdbcServices()

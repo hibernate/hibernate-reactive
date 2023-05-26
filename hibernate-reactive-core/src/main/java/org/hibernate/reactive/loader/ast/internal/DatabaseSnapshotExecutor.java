@@ -40,6 +40,7 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.sql.results.graph.internal.ImmutableFetchList;
@@ -57,15 +58,14 @@ class DatabaseSnapshotExecutor {
 	private final EntityMappingType entityDescriptor;
 
 	private final JdbcOperationQuerySelect jdbcSelect;
-	private final List<JdbcParameter> jdbcParameters;
+	private final JdbcParametersList jdbcParameters;
 
 	DatabaseSnapshotExecutor(
 			EntityMappingType entityDescriptor,
 			SessionFactoryImplementor sessionFactory) {
 		this.entityDescriptor = entityDescriptor;
-		this.jdbcParameters = new ArrayList<>(
-				entityDescriptor.getIdentifierMapping().getJdbcTypeCount()
-		);
+		JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder(
+				entityDescriptor.getIdentifierMapping().getJdbcTypeCount() );
 
 		final QuerySpec rootQuerySpec = new QuerySpec( true );
 
@@ -118,7 +118,7 @@ class DatabaseSnapshotExecutor {
 					);
 
 					final JdbcParameter jdbcParameter = new JdbcParameterImpl( selection.getJdbcMapping() );
-					jdbcParameters.add( jdbcParameter );
+					jdbcParametersBuilder.add( jdbcParameter );
 
 					final ColumnReference columnReference = (ColumnReference) sqlExpressionResolver
 							.resolveSqlExpression( tableReference, selection );
@@ -132,7 +132,7 @@ class DatabaseSnapshotExecutor {
 					);
 				}
 		);
-
+		this.jdbcParameters = jdbcParametersBuilder.build();
 
 		entityDescriptor.forEachAttributeMapping(
 				attributeMapping -> {

@@ -23,13 +23,13 @@ import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.CallbackImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
@@ -38,7 +38,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			Loadable persister,
 			ModelPart restrictivePart,
 			SelectStatement sqlAst,
-			List<JdbcParameter> jdbcParameters,
+			JdbcParametersList jdbcParameters,
 			LockOptions lockOptions,
 			SessionFactoryImplementor sessionFactory) {
 		super( persister, restrictivePart, sqlAst, jdbcParameters, lockOptions, sessionFactory );
