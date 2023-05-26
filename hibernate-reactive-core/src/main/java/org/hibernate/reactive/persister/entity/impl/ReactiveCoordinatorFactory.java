@@ -7,6 +7,7 @@ package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
@@ -27,7 +28,9 @@ public final class ReactiveCoordinatorFactory {
 			AbstractEntityPersister entityPersister,
 			SessionFactoryImplementor factory) {
 		// we only have updates to issue for entities with one or more singular attributes
-		for ( AttributeMapping attributeMapping : entityPersister.getAttributeMappings() ) {
+		final AttributeMappingsList attributeMappings = entityPersister.getAttributeMappings();
+		for ( int i = 0; i < attributeMappings.size(); i++ ) {
+			AttributeMapping attributeMapping = attributeMappings.get( i );
 			if ( attributeMapping instanceof SingularAttributeMapping ) {
 				return new ReactiveUpdateCoordinatorStandard( entityPersister, factory );
 			}

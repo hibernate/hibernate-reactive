@@ -556,7 +556,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		// in the collected names.  iterate here because it is already alphabetical
 
 		final List<SingularAttributeMapping> collectedAttrMappings = new ArrayList<>();
-		for ( AttributeMapping attributeMapping : getAttributeMappings() ) {
+		final AttributeMappingsList attributeMappings = getAttributeMappings();
+		for ( int i = 0; i < attributeMappings.size(); i++ ) {
+			AttributeMapping attributeMapping = attributeMappings.get( i );
 			if ( attributeNames.contains( attributeMapping.getAttributeName() ) ) {
 				collectedAttrMappings.add( (SingularAttributeMapping) attributeMapping );
 			}
