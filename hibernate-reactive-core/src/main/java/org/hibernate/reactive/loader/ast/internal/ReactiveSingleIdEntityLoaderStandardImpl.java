@@ -5,9 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,8 +21,8 @@ import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 /**
  * Standard implementation of {@link ReactiveSingleIdEntityLoader}.
@@ -195,8 +193,8 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 			LoadQueryInfluencers queryInfluencers,
 			SessionFactoryImplementor sessionFactory) {
 
-		final List<JdbcParameter> jdbcParameters = new ArrayList<>();
 
+		final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
 				// null here means to select everything
@@ -206,9 +204,10 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 				1,
 				queryInfluencers,
 				lockOptions,
-				jdbcParameters::add,
+				jdbcParametersListBuilder::add,
 				sessionFactory
 		);
+		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
 		return new ReactiveSingleIdLoadPlan<>(
 				(Loadable) getLoadable(),

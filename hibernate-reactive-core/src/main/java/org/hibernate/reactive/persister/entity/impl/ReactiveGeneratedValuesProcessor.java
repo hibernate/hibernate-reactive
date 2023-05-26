@@ -18,11 +18,11 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 /**
  * A reactive version of {@link org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor}
@@ -31,14 +31,14 @@ class ReactiveGeneratedValuesProcessor {
 
     private final SelectStatement selectStatement;
     private final List<AttributeMapping> generatedValuesToSelect;
-    private final List<JdbcParameter> jdbcParameters;
+    private final JdbcParametersList jdbcParameters;
 
     private final EntityMappingType entityDescriptor;
     private final SessionFactoryImplementor sessionFactory;
 
     ReactiveGeneratedValuesProcessor(SelectStatement selectStatement,
                                      List<AttributeMapping> generatedValuesToSelect,
-                                     List<JdbcParameter> jdbcParameters,
+                                     JdbcParametersList jdbcParameters,
                                      EntityMappingType entityDescriptor,
                                      SessionFactoryImplementor sessionFactory) {
         this.selectStatement = selectStatement;
