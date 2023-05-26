@@ -8,6 +8,7 @@ package org.hibernate.reactive.engine.impl;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
+import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.ComparableEntityAction;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.internal.Nullability;
@@ -94,4 +95,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	default CompletionStage<NonNullableTransientDependencies> reactiveFindNonNullableTransientEntities() {
 		return ForeignKeys.findNonNullableTransientEntities( getPersister().getEntityName(), getInstance(), getState(), isEarlyInsert(), getSession() );
 	}
+
+	AbstractEntityInsertAction asAbstractEntityInsertAction();
+
 }
