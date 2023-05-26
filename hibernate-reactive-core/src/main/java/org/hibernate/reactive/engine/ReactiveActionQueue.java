@@ -6,11 +6,9 @@
 package org.hibernate.reactive.engine;
 
 import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +21,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
-import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.action.internal.UnresolvedEntityInsertActions;
@@ -36,7 +33,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.proxy.HibernateProxy;
@@ -47,13 +43,11 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
 import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityActionVetoException;
 import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityIdentityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
@@ -61,6 +55,8 @@ import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -71,121 +67,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class ReactiveActionQueue {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = make( Log.class, lookup() );
 
-	/**
-	 * A LinkedHashMap containing providers for all the ExecutableLists, inserted in execution order
-	 */
-	private static final LinkedHashMap<Class<? extends ReactiveExecutable>, ListProvider<?>> EXECUTABLE_LISTS_MAP;
-
-	static {
-		EXECUTABLE_LISTS_MAP = CollectionHelper.linkedMapOfSize( 8 );
-
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveOrphanRemovalAction.class,
-				new ListProvider<ReactiveOrphanRemovalAction>() {
-					ExecutableList<ReactiveOrphanRemovalAction> get(ReactiveActionQueue instance) {
-						return instance.orphanRemovals;
-					}
-					ExecutableList<ReactiveOrphanRemovalAction> init(ReactiveActionQueue instance) {
-						// OrphanRemovalAction executables never require sorting.
-						return instance.orphanRemovals = new ExecutableList<>( false );
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveEntityInsertAction.class,
-				new ListProvider<ReactiveEntityInsertAction>() {
-					ExecutableList<ReactiveEntityInsertAction> get(ReactiveActionQueue instance) {
-						return instance.insertions;
-					}
-
-					ExecutableList<ReactiveEntityInsertAction> init(ReactiveActionQueue instance) {
-						instance.insertions = instance.isOrderInsertsEnabled()
-								? new ExecutableList<>( new InsertActionSorter() )
-								: new ExecutableList<>( false );
-						return instance.insertions;
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveEntityUpdateAction.class,
-				new ListProvider<ReactiveEntityUpdateAction>() {
-					ExecutableList<ReactiveEntityUpdateAction> get(ReactiveActionQueue instance) {
-						return instance.updates;
-					}
-
-					ExecutableList<ReactiveEntityUpdateAction> init(ReactiveActionQueue instance) {
-						return instance.updates = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				QueuedOperationCollectionAction.class,
-				new ListProvider<QueuedOperationCollectionAction>() {
-					ExecutableList<QueuedOperationCollectionAction> get(ReactiveActionQueue instance) {
-						return instance.collectionQueuedOps;
-					}
-					ExecutableList<QueuedOperationCollectionAction> init(ReactiveActionQueue instance) {
-						return instance.collectionQueuedOps = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveCollectionRemoveAction.class,
-				new ListProvider<ReactiveCollectionRemoveAction>() {
-					ExecutableList<ReactiveCollectionRemoveAction> get(ReactiveActionQueue instance) {
-						return instance.collectionRemovals;
-					}
-					ExecutableList<ReactiveCollectionRemoveAction> init(ReactiveActionQueue instance) {
-						return instance.collectionRemovals = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveCollectionUpdateAction.class,
-				new ListProvider<ReactiveCollectionUpdateAction>() {
-					ExecutableList<ReactiveCollectionUpdateAction> get(ReactiveActionQueue instance) {
-						return instance.collectionUpdates;
-					}
-					ExecutableList<ReactiveCollectionUpdateAction> init(ReactiveActionQueue instance) {
-						return instance.collectionUpdates = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveCollectionRecreateAction.class,
-				new ListProvider<ReactiveCollectionRecreateAction>() {
-					ExecutableList<ReactiveCollectionRecreateAction> get(ReactiveActionQueue instance) {
-						return instance.collectionCreations;
-					}
-					ExecutableList<ReactiveCollectionRecreateAction> init(ReactiveActionQueue instance) {
-						return instance.collectionCreations = new ExecutableList<>(
-								instance.isOrderUpdatesEnabled()
-						);
-					}
-				}
-		);
-		EXECUTABLE_LISTS_MAP.put(
-				ReactiveEntityDeleteAction.class,
-				new ListProvider<ReactiveEntityDeleteAction>() {
-					ExecutableList<ReactiveEntityDeleteAction> get(ReactiveActionQueue instance) {
-						return instance.deletions;
-					}
-
-					ExecutableList<ReactiveEntityDeleteAction> init(ReactiveActionQueue instance) {
-						// EntityDeleteAction executables never require sorting.
-						return instance.deletions = new ExecutableList<>( false );
-					}
-				}
-		);
-	}
 
 	// NOTE: ExecutableList fields must be instantiated via ListProvider#init or #getOrInit
 	//       to ensure that they are instantiated consistently.
@@ -213,6 +96,116 @@ public class ReactiveActionQueue {
 	private AfterTransactionCompletionProcessQueue afterTransactionProcesses;
 	private BeforeTransactionCompletionProcessQueue beforeTransactionProcesses;
 
+	//Extract this as a constant to perform efficient iterations:
+	//method values() otherwise allocates a new array on each invocation.
+	private static final ReactiveActionQueue.OrderedActions[] ORDERED_OPERATIONS = ReactiveActionQueue.OrderedActions.values();
+
+	//The order of these operations is very important
+	private enum OrderedActions {
+		CollectionRemoveAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.collectionRemovals;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.collectionRemovals == null ) {
+					instance.collectionRemovals = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
+				}
+			}
+		},
+		OrphanRemovalAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.orphanRemovals;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.orphanRemovals == null ) {
+					instance.orphanRemovals = new ExecutableList<>( false );
+				}
+			}
+		},
+		EntityInsertAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.insertions;
+			}
+			@Override
+			public void ensureInitialized(final ReactiveActionQueue instance) {
+				if ( instance.insertions == null ) {
+					//Special case of initialization
+					instance.insertions = instance.isOrderInsertsEnabled()
+							? new ExecutableList<>( ReactiveActionQueue.InsertActionSorter.INSTANCE )
+							: new ExecutableList<>( false );
+				}
+			}
+		},
+		EntityUpdateAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.updates;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.updates == null ) {
+					instance.updates = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
+				}
+			}
+		},
+		QueuedOperationCollectionAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.collectionQueuedOps;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.collectionQueuedOps == null ) {
+					instance.collectionQueuedOps = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
+				}
+			}
+		},
+		CollectionUpdateAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.collectionUpdates;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.collectionUpdates == null ) {
+					instance.collectionUpdates = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
+				}
+			}
+		},
+		CollectionRecreateAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.collectionCreations;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.collectionCreations == null ) {
+					instance.collectionCreations = new ExecutableList<>( instance.isOrderUpdatesEnabled() );
+				}
+			}
+		},
+		EntityDeleteAction {
+			@Override
+			public ExecutableList<?> getActions(ReactiveActionQueue instance) {
+				return instance.deletions;
+			}
+			@Override
+			public void ensureInitialized(ReactiveActionQueue instance) {
+				if ( instance.deletions == null ) {
+					instance.deletions = new ExecutableList<>( false );
+				}
+			}
+		};
+
+		public abstract <T extends ReactiveExecutable & Comparable<? super T>> ExecutableList<T> getActions(ReactiveActionQueue instance);
+		public abstract void ensureInitialized(ReactiveActionQueue instance);
+	}
+
 	/**
 	 * Constructs an action queue bound to the given session.
 	 *
@@ -221,6 +214,94 @@ public class ReactiveActionQueue {
 	public ReactiveActionQueue(ReactiveSession session) {
 		this.session = session;
 		isTransactionCoordinatorShared = false;
+	}
+
+	public void clear() {
+		for ( OrderedActions value : ORDERED_OPERATIONS ) {
+			final ExecutableList<?> list = value.getActions( this );
+			if ( list != null ) {
+				list.clear();
+			}
+		}
+		if ( unresolvedInsertions != null ) {
+			unresolvedInsertions.clear();
+		}
+	}
+
+
+	/**
+	 * Adds an entity (REGULAR) insert action
+	 *
+	 * @param action The action representing the entity insertion
+	 */
+	public CompletionStage<Void> addAction(ReactiveEntityInsertAction action) {
+		LOG.tracev( "Adding a ReactiveEntityRegularInsertAction for [{0}] object", action.getEntityName() );
+		return addInsertAction( action );
+	}
+
+	private CompletionStage<Void> addInsertAction( ReactiveEntityInsertAction insert) {
+		CompletionStage<Void> ret = voidFuture();
+		if ( insert.isEarlyInsert() ) {
+			// For early inserts, must execute inserts before finding non-nullable transient entities.
+			// TODO: find out why this is necessary
+			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
+			ret = ret.thenCompose( v -> executeInserts() );
+		}
+
+		return ret
+				.thenCompose( v -> insert.reactiveFindNonNullableTransientEntities() )
+				.thenCompose( nonNullables -> {
+					if ( nonNullables == null ) {
+						LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
+						return addResolvedEntityInsertAction( insert );
+					}
+					else {
+						if ( LOG.isTraceEnabled() ) {
+							LOG.tracev( "Adding insert with non-nullable, transient entities; insert=[{0}], dependencies=[{1}]", insert, nonNullables.toLoggableString( insert.getSession() ) );
+						}
+						if ( unresolvedInsertions == null ) {
+							unresolvedInsertions = new UnresolvedEntityInsertActions();
+						}
+						unresolvedInsertions.addUnresolvedEntityInsertAction( insert.asAbstractEntityInsertAction(), nonNullables );
+						return voidFuture();
+					}
+				} );
+	}
+
+	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		CompletionStage<Void> ret;
+		if ( insert.isEarlyInsert() ) {
+			LOG.trace( "Executing insertions before resolved early-insert" );
+			ret = executeInserts()
+					.thenCompose( v -> {
+						LOG.debug( "Executing identity-insert immediately" );
+						return execute( insert );
+					} );
+		}
+		else {
+			LOG.trace( "Adding resolved non-early insert action." );
+			OrderedActions.EntityInsertAction.ensureInitialized( this );
+			this.insertions.add( insert );
+			ret = voidFuture();
+		}
+
+		return ret.thenCompose( v -> {
+			if ( !insert.isVeto() ) {
+				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
+				if ( unresolvedInsertions == null ) {
+					return comp;
+				}
+				else {
+					return comp.thenCompose( vv -> loop(
+							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
+							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
+					) );
+				}
+			}
+			else {
+				throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
+			}
+		} );
 	}
 
 	private static String[] convertTimestampSpaces(Serializable[] spaces) {
@@ -266,119 +347,14 @@ public class ReactiveActionQueue {
 		return q == null ? "ExecutableList{size=0}" : q.toString();
 	}
 
-	public void clear() {
-		for ( ListProvider<?> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = listProvider.get( this );
-			if ( l != null ) {
-				l.clear();
-			}
-		}
-		if ( unresolvedInsertions != null ) {
-			unresolvedInsertions.clear();
-		}
-	}
-
-	/**
-	 * Adds an entity (REGULAR) insert action
-	 *
-	 * @param action The action representing the entity insertion
-	 */
-	public CompletionStage<Void> addAction(ReactiveEntityRegularInsertAction action) {
-		LOG.tracev( "Adding a ReactiveEntityRegularInsertAction for [{0}] object", action.getEntityName() );
-		return addInsertAction( action );
-	}
-
-	/**
-	 * Adds an entity (IDENTITY) insert action
-	 *
-	 * @param action The action representing the entity insertion
-	 */
-	public CompletionStage<Void> addAction(ReactiveEntityIdentityInsertAction action) {
-		LOG.tracev( "Adding a ReactiveEntityIdentityInsertAction for [{0}] object", action.getEntityName() );
-		return addInsertAction( action );
-	}
-
-	private <D extends AbstractEntityInsertAction & ReactiveEntityInsertAction> CompletionStage<Void> addInsertAction(D insert) {
-		CompletionStage<Void> ret = voidFuture();
-		if ( insert.isEarlyInsert() ) {
-			// For early inserts, must execute inserts before finding non-nullable transient entities.
-			// TODO: find out why this is necessary
-			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
-			ret = ret.thenCompose( v -> executeInserts() );
-		}
-
-		return ret
-				.thenCompose( v -> insert.reactiveFindNonNullableTransientEntities() )
-				.thenCompose( nonNullables -> {
-					if ( nonNullables == null ) {
-						LOG.tracev( "Adding insert with no non-nullable, transient entities: [{0}]", insert );
-						return addResolvedEntityInsertAction( insert );
-					}
-					else {
-						if ( LOG.isTraceEnabled() ) {
-							LOG.tracev( "Adding insert with non-nullable, transient entities; insert=[{0}], dependencies=[{1}]", insert, nonNullables.toLoggableString( insert.getSession() ) );
-						}
-						if ( unresolvedInsertions == null ) {
-							unresolvedInsertions = new UnresolvedEntityInsertActions();
-						}
-						unresolvedInsertions.addUnresolvedEntityInsertAction( insert, nonNullables );
-						return voidFuture();
-					}
-				} );
-	}
-
-	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret;
-		if ( insert.isEarlyInsert() ) {
-			LOG.trace( "Executing insertions before resolved early-insert" );
-			ret = executeInserts()
-					.thenCompose( v -> {
-						LOG.debug( "Executing identity-insert immediately" );
-						return execute( insert );
-					} );
-		}
-		else {
-			LOG.trace( "Adding resolved non-early insert action." );
-			addAction( ReactiveEntityInsertAction.class, insert );
-			ret = voidFuture();
-		}
-
-		return ret.thenCompose( v -> {
-			if ( !insert.isVeto() ) {
-				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
-				if ( unresolvedInsertions == null ) {
-					return comp;
-				}
-				else {
-					return comp.thenCompose( vv -> loop(
-							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
-							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
-					) );
-				}
-			}
-			else {
-				// FIXME: Add it to the Log interface
-				throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
-			}
-		} );
-	}
-
-	private <T extends ReactiveExecutable & Comparable<? super T>> void addAction(Class<T> executableClass, T action) {
-		getExecutableList(executableClass).getOrInit( this ).add( action );
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T extends ReactiveExecutable & Comparable<? super T>> ListProvider<T> getExecutableList(Class<T> executableClass) {
-		return (ListProvider<T>) EXECUTABLE_LISTS_MAP.get( executableClass );
-	}
-
 	/**
 	 * Adds an entity delete action
 	 *
 	 * @param action The action representing the entity deletion
 	 */
 	public void addAction(ReactiveEntityDeleteAction action) {
-		addAction( ReactiveEntityDeleteAction.class, action );
+		OrderedActions.EntityDeleteAction.ensureInitialized( this );
+		this.deletions.add( action );
 	}
 
 	/**
@@ -387,7 +363,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the orphan removal
 	 */
 	public void addAction(ReactiveOrphanRemovalAction action) {
-		addAction( ReactiveOrphanRemovalAction.class, action );
+		OrderedActions.OrphanRemovalAction.ensureInitialized( this );
+		this.orphanRemovals.add( action );
 	}
 
 	/**
@@ -396,7 +373,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the entity update
 	 */
 	public void addAction(ReactiveEntityUpdateAction action) {
-		addAction( ReactiveEntityUpdateAction.class, action );
+		OrderedActions.EntityUpdateAction.ensureInitialized( this );
+		this.updates.add( action );
 	}
 
 	/**
@@ -405,7 +383,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the (re)creation of a collection
 	 */
 	public void addAction(ReactiveCollectionRecreateAction action) {
-		addAction( ReactiveCollectionRecreateAction.class, action );
+		OrderedActions.CollectionRecreateAction.ensureInitialized( this );
+		this.collectionCreations.add( action );
 	}
 
 	/**
@@ -414,7 +393,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the removal of a collection
 	 */
 	public void addAction(ReactiveCollectionRemoveAction action) {
-		addAction( ReactiveCollectionRemoveAction.class, action );
+		OrderedActions.CollectionRemoveAction.ensureInitialized( this );
+		this.collectionRemovals.add( action );
 	}
 
 	/**
@@ -423,7 +403,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the update of a collection
 	 */
 	public void addAction(ReactiveCollectionUpdateAction action) {
-		addAction( ReactiveCollectionUpdateAction.class, action );
+		OrderedActions.CollectionUpdateAction.ensureInitialized( this );
+		this.collectionUpdates.add( action );
 	}
 
 	/**
@@ -432,7 +413,8 @@ public class ReactiveActionQueue {
 	 * @param action The action representing the queued operation
 	 */
 	public void addAction(QueuedOperationCollectionAction action) {
-		addAction( QueuedOperationCollectionAction.class, action );
+		OrderedActions.QueuedOperationCollectionAction.ensureInitialized( this );
+		this.collectionQueuedOps.add( action );
 	}
 
 	/**
@@ -537,11 +519,9 @@ public class ReactiveActionQueue {
 		}
 
 		CompletionStage<Void> ret = voidFuture();
-		for ( ListProvider<? extends ReactiveExecutable> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<? extends ReactiveExecutable> l = listProvider.get( this );
-			if ( l != null && !l.isEmpty() ) {
-				ret = ret.thenCompose( v -> executeActions( l ) );
-			}
+
+		for ( OrderedActions action : ORDERED_OPERATIONS ) {
+			ret = ret.thenCompose( v -> executeActions( action.getActions( this ) ) );
 		}
 		return ret;
 	}
@@ -618,9 +598,9 @@ public class ReactiveActionQueue {
 		if ( tables.isEmpty() ) {
 			return false;
 		}
-		for ( ListProvider<?> listProvider : EXECUTABLE_LISTS_MAP.values() ) {
-			ExecutableList<?> l = listProvider.get( this );
-			if ( areTablesToBeUpdated( l, tables ) ) {
+		for ( OrderedActions action : ORDERED_OPERATIONS ) {
+			final ExecutableList<?> list = action.getActions( this );
+			if ( areTablesToBeUpdated( list, tables ) ) {
 				return true;
 			}
 		}
@@ -637,6 +617,9 @@ public class ReactiveActionQueue {
 	 */
 	private CompletionStage<Void> executeActions(
 			ExecutableList<? extends ReactiveExecutable> list) throws HibernateException {
+		if ( list == null || list.isEmpty() ) {
+			return voidFuture();
+		}
 		// todo : consider ways to improve the double iteration of Executables here:
 		//		1) we explicitly iterate list here to perform Executable#execute()
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.

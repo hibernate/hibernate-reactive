@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
+import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.entry.CacheEntry;
@@ -148,6 +149,11 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	@Override
 	public EntityKey getEntityKey() {
 		return super.getEntityKey();
+	}
+
+	@Override
+	public AbstractEntityInsertAction asAbstractEntityInsertAction() {
+		return this;
 	}
 
 	@Override
