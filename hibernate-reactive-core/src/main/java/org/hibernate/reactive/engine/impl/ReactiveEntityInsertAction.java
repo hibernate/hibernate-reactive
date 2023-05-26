@@ -9,7 +9,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
-import org.hibernate.action.internal.ComparableEntityAction;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
@@ -29,7 +28,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *
  * @see org.hibernate.action.internal.AbstractEntityInsertAction
  */
-public interface ReactiveEntityInsertAction extends ReactiveExecutable, ComparableEntityAction {
+public interface ReactiveEntityInsertAction extends ReactiveExecutable {
 	boolean isEarlyInsert();
 	NonNullableTransientDependencies findNonNullableTransientEntities();
 	SharedSessionContractImplementor getSession();
@@ -97,5 +96,9 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	}
 
 	AbstractEntityInsertAction asAbstractEntityInsertAction();
+
+	default int compareActionTo(ReactiveEntityInsertAction delegate) {
+		return asAbstractEntityInsertAction().compareTo( delegate.asAbstractEntityInsertAction() );
+	}
 
 }
