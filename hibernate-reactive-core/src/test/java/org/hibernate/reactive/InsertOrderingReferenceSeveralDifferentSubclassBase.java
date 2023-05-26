@@ -17,6 +17,7 @@ import org.hibernate.reactive.testing.SqlStatementTracker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorColumn;
@@ -31,6 +32,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -127,6 +129,7 @@ public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extend
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testSubclassReferenceChain(VertxTestContext context) {
 		UnrelatedEntity unrelatedEntity1 = new UnrelatedEntity();
 		SubclassZero subclassZero = new SubclassZero( "SubclassZero" );

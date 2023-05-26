@@ -17,6 +17,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -28,6 +29,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @see LazyInitializationException
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class LazyInitializationExceptionTest extends BaseReactiveTest {
 
 	@Override

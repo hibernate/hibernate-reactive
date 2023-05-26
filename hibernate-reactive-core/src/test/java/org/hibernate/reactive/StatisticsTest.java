@@ -13,16 +13,18 @@ import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
+@Timeout(value = 10, timeUnit = MINUTES)
 public class StatisticsTest extends BaseReactiveTest {
 
 	@Override

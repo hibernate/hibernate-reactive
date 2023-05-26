@@ -18,8 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
@@ -33,6 +35,8 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
  */
 public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public static class IndividuallyStrategyTest extends SchemaUpdateTestBase {
 
 		@Override
@@ -42,6 +46,8 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 			return configuration;
 		}
 	}
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class GroupedStrategyTest extends SchemaUpdateTestBase {
 

@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,6 +19,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 public class JoinedSubclassIdentityTest extends BaseReactiveTest {
 
 	@Override

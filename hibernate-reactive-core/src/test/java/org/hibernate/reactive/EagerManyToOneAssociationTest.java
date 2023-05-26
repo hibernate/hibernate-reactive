@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@Timeout( value = 5, timeUnit = TimeUnit.MINUTES )
+@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class EagerManyToOneAssociationTest extends BaseReactiveTest {
 
 	@Override

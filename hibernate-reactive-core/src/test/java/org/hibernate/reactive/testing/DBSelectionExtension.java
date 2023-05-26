@@ -79,7 +79,7 @@ public class DBSelectionExtension implements ExecutionCondition {
 	}
 
 	private boolean isSkippable(DBType dbType) {
-		for ( DBType db : dbType ) {
+		for ( DBType db : skippable ) {
 			if ( db == dbType ) {
 				return true;
 			}

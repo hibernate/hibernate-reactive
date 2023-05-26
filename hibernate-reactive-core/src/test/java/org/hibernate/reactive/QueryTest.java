@@ -15,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.ColumnResult;
 import jakarta.persistence.Entity;
@@ -38,6 +39,7 @@ import jakarta.persistence.criteria.Root;
 
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.QueryTest.Author.AUTHOR_TABLE;
 import static org.hibernate.reactive.QueryTest.Author.HQL_NAMED_QUERY;
@@ -50,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Timeout(value = 10, timeUnit = MINUTES)
 public class QueryTest extends BaseReactiveTest {
 
 	@Override

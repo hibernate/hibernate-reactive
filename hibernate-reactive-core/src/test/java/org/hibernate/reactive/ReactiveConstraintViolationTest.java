@@ -13,13 +13,17 @@ import org.hibernate.exception.ConstraintViolationException;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class ReactiveConstraintViolationTest extends BaseReactiveTest {
 

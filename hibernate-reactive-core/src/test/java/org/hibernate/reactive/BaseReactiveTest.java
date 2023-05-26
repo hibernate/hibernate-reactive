@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.hibernate.SessionFactory;
@@ -46,6 +45,7 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -65,7 +65,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
 public abstract class BaseReactiveTest {
 	/**
 	 * Configure Vertx JUnit5 test context
@@ -76,7 +75,7 @@ public abstract class BaseReactiveTest {
 	private static VertxOptions vertxOptions() {
 		return new VertxOptions()
 				.setBlockedThreadCheckInterval( 10 )
-				.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+				.setBlockedThreadCheckIntervalUnit( MINUTES );
 	}
 
 	/**
@@ -179,6 +178,7 @@ public abstract class BaseReactiveTest {
 	}
 
 	@BeforeEach
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void before(VertxTestContext context) {
 		test( context, setupSessionFactory( this::constructConfiguration ) );
 	}

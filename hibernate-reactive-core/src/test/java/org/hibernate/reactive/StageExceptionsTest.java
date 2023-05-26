@@ -13,15 +13,16 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PersistenceException;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 public class StageExceptionsTest extends BaseReactiveTest {
 
@@ -38,6 +39,7 @@ public class StageExceptionsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testDuplicateKeyException(VertxTestContext context) {
 		final Class<PersistenceException> expectedException = PersistenceException.class;
 

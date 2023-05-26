@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -32,6 +33,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public static class IndividuallySchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
 
 		@Override
@@ -50,6 +53,7 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 		}
 	}
 
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public static class GroupedSchemaUpdateMySqlTestBase extends SchemaUpdateMySqlTestBase {
 
 		@Override

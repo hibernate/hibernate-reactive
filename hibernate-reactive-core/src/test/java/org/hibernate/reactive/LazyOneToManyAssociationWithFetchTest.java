@@ -17,6 +17,7 @@ import org.hibernate.reactive.stage.Stage;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityGraph;
@@ -28,8 +29,11 @@ import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 

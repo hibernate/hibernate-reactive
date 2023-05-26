@@ -19,6 +19,7 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +32,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * If the entities aren't in the cache it will load them from the db.
  * </p>
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class CachedQueryResultsTest extends BaseReactiveTest {
 
 	private static final Fruit[] FRUITS = {

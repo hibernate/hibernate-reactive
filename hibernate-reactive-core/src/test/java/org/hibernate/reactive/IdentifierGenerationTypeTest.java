@@ -15,6 +15,7 @@ import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +23,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import org.assertj.core.api.Assertions;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @see org.hibernate.reactive.id.impl.IdentifierGeneration
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 
 	// Vertx DB2 client is throwing "java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0."

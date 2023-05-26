@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -33,6 +34,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -47,6 +49,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test INDIVIDUALLY option without setting the default catalog name
 	 */
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public static class IndividuallySchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -60,6 +64,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test INDIVIDUALLY option when we set the catalog name to the default name
 	 */
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public static class IndividuallySchemaUpdateWithCatalogTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -73,6 +79,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test GROUPED option without setting the default catalog name
 	 */
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public static class GroupedSchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -86,6 +94,8 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	/**
 	 * Test GROUPED option when we set the catalog name to default name
 	 */
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public static class GroupedSchemaUpdateWithCatalogNameTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override

@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 import org.hibernate.cfg.Configuration;
@@ -23,7 +24,10 @@ import org.hibernate.reactive.provider.Settings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class UriConfigTest extends BaseReactiveTest {
 

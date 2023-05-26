@@ -13,14 +13,18 @@ import org.hibernate.reactive.stage.impl.StageSessionImpl;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * We test that the right implementation of {@link org.hibernate.reactive.pool.ReactiveConnection} is used
  * when we set {@link org.hibernate.reactive.mutiny.Mutiny.Session#setBatchSize(Integer)}
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class BatchSizeTest extends BaseReactiveTest {
 
 	@Test

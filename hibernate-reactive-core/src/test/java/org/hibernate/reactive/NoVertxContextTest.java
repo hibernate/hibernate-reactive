@@ -7,10 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -26,7 +22,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -38,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The error doesn't always happen unless the tests run outside
  * an existing Vert.x context - that's why we don't extend {@link BaseReactiveTest}.
  */
+@Timeout( value = 10, timeUnit = MINUTES)
 public class NoVertxContextTest {
 
 	/**

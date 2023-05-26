@@ -15,6 +15,7 @@ import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,6 +24,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
@@ -40,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see IdentityGeneratorTest
  * @see IdentityGeneratorTypeTest
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 
 	@RegisterExtension
@@ -49,6 +53,7 @@ public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
 	 * queries will be used for each datastore to get the id
 	 */
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public static class EnableUseGetGeneratedKeysTest extends IdentityGeneratorTypeForCockroachDBTest {
 
 		@Override

@@ -12,12 +12,14 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.cfg.AvailableSettings.USE_NATIONALIZED_CHARACTER_DATA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *     definition.
  * </p>
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class UnicodeCharsTest extends BaseReactiveTest {
 
 	@Override

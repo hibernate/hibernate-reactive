@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,11 +24,13 @@ import org.hibernate.reactive.stage.Stage;
 
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test importing a SQL script which is using the multi-line format
  */
+@Timeout(value = 10, timeUnit = MINUTES)
 public class MultilineImportsTest extends BaseReactiveTest {
 
 	private static CompletionStage<List<Object>> runQuery(Stage.Session s) {

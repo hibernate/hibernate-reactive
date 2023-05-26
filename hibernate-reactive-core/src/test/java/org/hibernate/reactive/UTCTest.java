@@ -25,13 +25,17 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class UTCTest extends BaseReactiveTest {
 

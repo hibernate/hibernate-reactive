@@ -14,7 +14,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.vertx.VertxInstance;
 
@@ -37,6 +36,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
 import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
@@ -67,7 +67,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 20, timeUnit = TimeUnit.MINUTES)
+@Timeout(value = MultithreadedInsertionTest.TIMEOUT_MINUTES, timeUnit = MINUTES)
 public class MultithreadedInsertionTest {
 
 	/**
@@ -78,9 +78,7 @@ public class MultithreadedInsertionTest {
 	private static final int ENTITIES_STORED_PER_THREAD = 2000;
 
 	//Should finish much sooner, but generating this amount of IDs could be slow on some CIs
-	private static final int THREAD_TIMEOUT_MINUTES = 10;
-
-	private static final int POOL_TIMEOUT_MILLISECONDS = 444000;
+	public static final int TIMEOUT_MINUTES = 10;
 
 	// Keeping this disabled because it generates a lot of queries
 	private static final boolean LOG_SQL = false;
@@ -105,7 +103,7 @@ public class MultithreadedInsertionTest {
 		//intentionally for the purpose of the test; functionally this isn't required
 		//but it's useful as self-test in the design of this, to ensure that the way
 		//things are setup are indeed being run in multiple, separate threads.
-		vertxOptions.setBlockedThreadCheckInterval( THREAD_TIMEOUT_MINUTES );
+		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
 		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
 		vertx = Vertx.vertx( vertxOptions );
 		Configuration configuration = new Configuration();
@@ -235,7 +233,7 @@ public class MultithreadedInsertionTest {
 
 		public void waitForEveryone() {
 			try {
-				countDownLatch.await( THREAD_TIMEOUT_MINUTES, TimeUnit.MINUTES );
+				countDownLatch.await( TIMEOUT_MINUTES, TimeUnit.MINUTES );
 				prettyOut( "Everyone has now breached '" + label + "'" );
 			}
 			catch ( InterruptedException e ) {

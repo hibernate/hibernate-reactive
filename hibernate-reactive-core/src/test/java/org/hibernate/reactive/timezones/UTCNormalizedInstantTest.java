@@ -15,13 +15,17 @@ import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 import static java.sql.Types.TIMESTAMP;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class UTCNormalizedInstantTest extends BaseReactiveTest {
 

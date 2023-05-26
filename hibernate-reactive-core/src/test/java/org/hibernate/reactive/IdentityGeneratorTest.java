@@ -15,6 +15,7 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,9 +23,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class IdentityGeneratorTest extends BaseReactiveTest {
 
@@ -75,6 +78,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testIdentityGenerator(VertxTestContext context) {
 		test( context, populateDb()
 				.thenCompose( v -> openSession() )
@@ -108,7 +112,7 @@ public class IdentityGeneratorTest extends BaseReactiveTest {
 		}
 
 		public EntityWithIdentity(int index) {
-			this.name =  PREFIX + index;
+			this.name = PREFIX + index;
 			this.position = index;
 		}
 

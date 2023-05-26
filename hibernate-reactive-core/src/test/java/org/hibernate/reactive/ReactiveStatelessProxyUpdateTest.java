@@ -16,6 +16,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,6 +28,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl#reactiveUpdate(Object)
  * @see ReactiveStatelessSessionTest
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 
 	/**

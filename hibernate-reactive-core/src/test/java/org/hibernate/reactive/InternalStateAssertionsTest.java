@@ -18,10 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
@@ -31,6 +33,7 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
  * Checks that we throw the right exception when a session is shared between threads.
  * @see org.hibernate.reactive.common.InternalStateAssertions
  */
+@Timeout(value = 10, timeUnit = MINUTES)
 public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	/**

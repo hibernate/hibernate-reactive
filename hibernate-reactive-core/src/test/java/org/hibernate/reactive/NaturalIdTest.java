@@ -14,14 +14,18 @@ import org.hibernate.annotations.NaturalId;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.common.Identifier.composite;
 import static org.hibernate.reactive.common.Identifier.id;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class NaturalIdTest extends BaseReactiveTest {
 
