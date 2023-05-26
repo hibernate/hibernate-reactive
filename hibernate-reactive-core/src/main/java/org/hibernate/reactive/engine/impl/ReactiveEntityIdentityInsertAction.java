@@ -8,6 +8,7 @@ package org.hibernate.reactive.engine.impl;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
+import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -107,6 +108,11 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	@Override
 	public EntityKey getEntityKey() {
 		return super.getEntityKey();
+	}
+
+	@Override
+	public AbstractEntityInsertAction asAbstractEntityInsertAction() {
+		return this;
 	}
 
 	@Override
