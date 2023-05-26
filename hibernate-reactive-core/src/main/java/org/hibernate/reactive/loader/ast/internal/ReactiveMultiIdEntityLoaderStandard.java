@@ -43,11 +43,11 @@ import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -221,8 +221,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 			LOG.tracef( "#loadEntitiesById(`%s`, `%s`, ..)", getEntityDescriptor().getEntityName(), numberOfIdsInBatch );
 		}
 
-		final List<JdbcParameter> jdbcParameters = new ArrayList<>( numberOfIdsInBatch * idJdbcTypeCount );
-
+		final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder( numberOfIdsInBatch * idJdbcTypeCount );
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
 				// null here means to select everything
@@ -232,9 +231,10 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 				numberOfIdsInBatch,
 				session.getLoadQueryInfluencers(),
 				lockOptions,
-				jdbcParameters::add,
+				jdbcParametersListBuilder::add,
 				getSessionFactory()
 		);
+		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
 		final JdbcServices jdbcServices = getSessionFactory().getJdbcServices();
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();

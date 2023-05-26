@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -29,7 +28,6 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.CallbackImpl;
@@ -37,6 +35,7 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 /**
  *
@@ -70,7 +69,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		final SessionFactoryImplementor sessionFactory = session.getFactory();
 
 		// todo (6.0) : cache the SQL AST and JdbcParameters
-		final List<JdbcParameter> jdbcParameters = new ArrayList<>();
+		final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelectByUniqueKey(
 				entityDescriptor,
 				Collections.emptyList(),
@@ -78,9 +77,10 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				null,
 				LoadQueryInfluencers.NONE,
 				LockOptions.NONE,
-				jdbcParameters::add,
+				jdbcParametersListBuilder::add,
 				sessionFactory
 		);
+		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
 		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
@@ -125,7 +125,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		final SessionFactoryImplementor sessionFactory = session.getFactory();
 
 		// todo (6.0) : cache the SQL AST and JdbcParameters
-		final List<JdbcParameter> jdbcParameters = new ArrayList<>();
+		final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
 		final SelectStatement sqlAst = LoaderSelectBuilder.createSelectByUniqueKey(
 				entityDescriptor,
 				Collections.singletonList( entityDescriptor.getIdentifierMapping() ),
@@ -133,9 +133,10 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				null,
 				LoadQueryInfluencers.NONE,
 				LockOptions.NONE,
-				jdbcParameters::add,
+				jdbcParametersListBuilder::add,
 				sessionFactory
 		);
+		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
 		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();

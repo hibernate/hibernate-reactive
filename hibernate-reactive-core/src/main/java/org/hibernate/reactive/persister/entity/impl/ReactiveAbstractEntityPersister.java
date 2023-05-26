@@ -51,8 +51,8 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.type.BasicType;
 
 import jakarta.persistence.metamodel.Attribute;
@@ -613,7 +613,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 		else {
 			final SessionFactoryImplementor factory = getFactory();
-			final List<JdbcParameter> jdbcParameters = new ArrayList<>();
+			final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
 			final SelectStatement select = LoaderSelectBuilder.createSelect(
 					this,
 					partsToSelect,
@@ -622,9 +622,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					1,
 					LoadQueryInfluencers.NONE,
 					LockOptions.NONE,
-					jdbcParameters::add,
+					jdbcParametersListBuilder::add,
 					factory
 			);
+			final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 			return new ReactiveSingleIdArrayLoadPlan( getIdentifierMapping(), select, jdbcParameters, LockOptions.NONE, factory );
 		}
 	}

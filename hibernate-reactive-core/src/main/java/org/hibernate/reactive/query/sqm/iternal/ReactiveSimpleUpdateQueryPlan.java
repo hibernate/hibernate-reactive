@@ -29,10 +29,10 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.update.UpdateStatement;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryUpdate;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 
 /**
@@ -45,7 +45,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 
 	private JdbcOperationQueryUpdate jdbcUpdate;
 	private FromClauseAccess tableGroupAccess;
-	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<List<JdbcParameter>>>> jdbcParamsXref;
+	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref;
 	private Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParamMappingTypeResolutions;
 
 	public ReactiveSimpleUpdateQueryPlan(SqmUpdateStatement<?> sqmUpdate, DomainParameterXref domainParameterXref) {

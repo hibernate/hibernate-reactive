@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
@@ -27,12 +25,12 @@ import org.hibernate.reactive.metamodel.mapping.internal.ReactivePluralAttribute
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
@@ -46,14 +44,14 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 	private final int keyJdbcCount;
 
 	private final SelectStatement sqlAst;
-	private final List<JdbcParameter> jdbcParameters;
+	private final JdbcParametersList jdbcParameters;
 
 	public ReactiveCollectionLoaderSingleKey(PluralAttributeMapping attributeMapping, LoadQueryInfluencers influencers, SessionFactoryImplementor sessionFactory) {
 		// PluralAttributeMappingImpl is the only implementation available at the moment in ORM
 		final PluralAttributeMapping reactivePluralAttributeMapping = new ReactivePluralAttributeMapping( (PluralAttributeMappingImpl) attributeMapping );
 		this.attributeMapping = reactivePluralAttributeMapping;
 		this.keyJdbcCount = reactivePluralAttributeMapping.getKeyDescriptor().getJdbcTypeCount();
-		this.jdbcParameters = new ArrayList<>();
+		final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder();
 		this.sqlAst = LoaderSelectBuilder.createSelect(
 				reactivePluralAttributeMapping,
 				null,
@@ -62,9 +60,10 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 				1,
 				influencers,
 				LockOptions.NONE,
-				jdbcParameters::add,
+				jdbcParametersBuilder::add,
 				sessionFactory
 		);
+		this.jdbcParameters = jdbcParametersBuilder.build();
 	}
 
 	@Override
@@ -80,7 +79,7 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 		return sqlAst;
 	}
 
-	public List<JdbcParameter> getJdbcParameters() {
+	public JdbcParametersList getJdbcParameters() {
 		return jdbcParameters;
 	}
 
