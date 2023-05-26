@@ -29,8 +29,10 @@ import org.hibernate.type.descriptor.java.DataHelper;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
@@ -38,6 +40,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatyp
 /**
  * Check that each property is mapped as the expected type in the database.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Override

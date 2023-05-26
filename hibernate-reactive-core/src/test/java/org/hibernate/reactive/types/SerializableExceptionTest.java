@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import io.vertx.junit5.Timeout;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * query, it won't guess the right type and won't try again. It's a problem for us when dealing with Buffers and
  * Serializable.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class SerializableExceptionTest extends BaseReactiveTest {
 
 	@Override

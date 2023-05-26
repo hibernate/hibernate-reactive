@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.example;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
@@ -20,6 +21,9 @@ import java.util.List;
 import static jakarta.persistence.FetchType.LAZY;
 import static java.lang.System.out;
 import static java.time.Month.*;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class MutinyMain extends BaseReactiveTest {
 

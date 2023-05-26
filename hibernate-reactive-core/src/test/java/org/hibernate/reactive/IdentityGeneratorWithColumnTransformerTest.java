@@ -16,6 +16,7 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,6 +25,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,6 +87,8 @@ public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
+
 	public void testIdentityGenerator(VertxTestContext context) {
 		test( context, populateDb()
 				.thenCompose( v -> openSession() )

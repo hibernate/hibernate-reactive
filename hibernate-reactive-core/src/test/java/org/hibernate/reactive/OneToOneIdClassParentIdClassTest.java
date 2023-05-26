@@ -12,14 +12,18 @@ import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.OneToOne;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class OneToOneIdClassParentIdClassTest extends BaseReactiveTest {
 

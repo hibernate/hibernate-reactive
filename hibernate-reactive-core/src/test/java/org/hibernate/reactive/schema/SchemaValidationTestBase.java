@@ -18,12 +18,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -95,6 +97,7 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
 	// When we have created the table, the validation should pass
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testValidationSucceeds(VertxTestContext context) {
 		Configuration validateConf = constructConfiguration( "validate" );
 		validateConf.addAnnotatedClass( BasicTypesTestEntity.class );
@@ -107,6 +110,7 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
 	// Validation should fail if a table is missing
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testValidationFails(VertxTestContext context) {
 		Configuration validateConf = constructConfiguration( "validate" );
 		validateConf.addAnnotatedClass( BasicTypesTestEntity.class );

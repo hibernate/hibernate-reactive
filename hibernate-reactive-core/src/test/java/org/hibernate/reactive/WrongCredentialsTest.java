@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import io.vertx.junit5.Timeout;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
@@ -28,6 +30,8 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
  *     schema generation. You might just see some warnings in the log.
  * </p>
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class WrongCredentialsTest extends BaseReactiveTest {
 
 	@Override

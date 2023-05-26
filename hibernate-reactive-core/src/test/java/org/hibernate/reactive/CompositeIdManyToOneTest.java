@@ -13,6 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -23,9 +24,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled // This also fails in 1.1, see issue https://github.com/hibernate/hibernate-reactive/issues/1384
+@Timeout(value = 10, timeUnit = MINUTES)
 public class CompositeIdManyToOneTest extends BaseReactiveTest {
 
     @Override

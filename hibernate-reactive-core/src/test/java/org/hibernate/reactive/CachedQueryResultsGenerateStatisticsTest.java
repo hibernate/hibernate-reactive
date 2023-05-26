@@ -15,13 +15,17 @@ import org.hibernate.reactive.provider.Settings;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Checks the # of cache hits when the configuration property Settings.GENERATE_STATISTICS is set to TRUE
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class CachedQueryResultsGenerateStatisticsTest extends BaseReactiveTest {
 
 	@Override

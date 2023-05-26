@@ -16,12 +16,14 @@ import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
@@ -35,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This class creates multiple additional databases so that we can check that queries run
  * on the database for the selected tenant.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class ReactiveMultitenantTest extends BaseReactiveTest {
 
 	private static final MyCurrentTenantIdentifierResolver TENANT_RESOLVER = new MyCurrentTenantIdentifierResolver();

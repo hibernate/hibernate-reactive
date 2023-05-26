@@ -8,6 +8,7 @@ package org.hibernate.reactive.schema;
 import java.io.Serializable;
 import java.util.Objects;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -40,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class IndividuallySchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
 
@@ -50,6 +54,8 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 			return configuration;
 		}
 	}
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class GroupedSchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
 

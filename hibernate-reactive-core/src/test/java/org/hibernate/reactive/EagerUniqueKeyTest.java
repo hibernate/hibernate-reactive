@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.Hibernate;
@@ -27,12 +28,15 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @see LazyUniqueKeyTest
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class EagerUniqueKeyTest extends BaseReactiveTest {
 
 	@Override

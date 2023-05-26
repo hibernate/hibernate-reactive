@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
@@ -29,6 +30,7 @@ import jakarta.persistence.metamodel.Attribute;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static java.util.Collections.singleton;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * We test bytecode enhancements in a separate module, new related tests should be created there.
  * I'm keeping this one because it seems to work and might highlight if something changes in the future.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class LazyPropertyTest extends BaseReactiveTest {
 
 	@Override

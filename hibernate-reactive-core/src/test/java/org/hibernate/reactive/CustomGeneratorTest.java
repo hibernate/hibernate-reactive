@@ -21,15 +21,19 @@ import org.hibernate.type.Type;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class CustomGeneratorTest extends BaseReactiveTest {
 

@@ -8,6 +8,7 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.annotations.DynamicUpdate;
@@ -19,9 +20,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.annotations.OptimisticLockType.ALL;
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class OptimisticLockingTest extends BaseReactiveTest {
 

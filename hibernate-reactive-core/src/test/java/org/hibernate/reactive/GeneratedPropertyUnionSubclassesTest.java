@@ -19,6 +19,7 @@ import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,6 +31,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
@@ -44,6 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * Note that id generation using Identity is not a valid mapping.
  * </p>
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class GeneratedPropertyUnionSubclassesTest extends BaseReactiveTest {
 
 	// It requires native queries, so it won't work for every db

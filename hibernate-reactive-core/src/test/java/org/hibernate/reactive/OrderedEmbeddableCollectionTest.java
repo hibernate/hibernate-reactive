@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import io.vertx.junit5.Timeout;
 import jakarta.persistence.Basic;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
@@ -27,11 +29,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.assertj.core.api.Assertions;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Timeout(value = 10, timeUnit = MINUTES)
 public class OrderedEmbeddableCollectionTest extends BaseReactiveTest {
 
 	@RegisterExtension // This exposes a strange bug in the DB2 client

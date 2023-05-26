@@ -12,6 +12,7 @@ import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -19,6 +20,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -33,6 +34,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import org.assertj.core.api.Assertions;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
@@ -40,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class IndividuEachySchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 
@@ -50,6 +54,8 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 			return configuration;
 		}
 	}
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class GroupedSchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 

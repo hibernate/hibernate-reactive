@@ -8,6 +8,7 @@ package org.hibernate.reactive.schema;
 import java.io.Serializable;
 import java.util.Objects;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -40,6 +42,8 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
 public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
+
+	@Timeout(value = 10, timeUnit = MINUTES)
 
 	public static class IndividuallySchemaUpdateMariaDBTestBase
 			extends SchemaUpdateMariaDBTestBase {
@@ -52,6 +56,7 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 		}
 	}
 
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public static class GroupedSchemaUpdateMariaDBTestBase extends SchemaUpdateMariaDBTestBase {
 
 		@Override

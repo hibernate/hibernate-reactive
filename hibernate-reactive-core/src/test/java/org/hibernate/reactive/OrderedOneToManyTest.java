@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import org.hibernate.Hibernate;
@@ -22,9 +23,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class OrderedOneToManyTest extends BaseReactiveTest {
 

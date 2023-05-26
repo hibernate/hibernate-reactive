@@ -11,17 +11,21 @@ import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test a find after a flush and before closing the session
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class FindAfterFlushTest extends BaseReactiveTest {
 
 	@Override

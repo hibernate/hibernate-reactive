@@ -21,12 +21,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
@@ -48,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @see ReactiveMultitenantTest
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 
 	// To check if we are using the right database we run native queries for PostgreSQL

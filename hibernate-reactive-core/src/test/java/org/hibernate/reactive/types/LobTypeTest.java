@@ -27,6 +27,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LobTypeTest extends BaseReactiveTest {
 
 	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.skipTestsFor( DB2 );
+	public DBSelectionExtension selectionRule = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

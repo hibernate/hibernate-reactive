@@ -15,6 +15,7 @@ import org.hibernate.annotations.OptimisticLocking;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -23,9 +24,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.annotations.OptimisticLockType.DIRTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class DynamicUpdateTest extends BaseReactiveTest {
 

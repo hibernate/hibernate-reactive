@@ -18,16 +18,20 @@ import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.AvailableSettings.JDBC_TIME_ZONE;
 import static org.hibernate.cfg.AvailableSettings.TIMEZONE_DEFAULT_STORAGE;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.hibernate.type.descriptor.DateTimeUtils.roundToDefaultPrecision;
+
+@Timeout(value = 10, timeUnit = MINUTES)
 
 public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
 	@Override

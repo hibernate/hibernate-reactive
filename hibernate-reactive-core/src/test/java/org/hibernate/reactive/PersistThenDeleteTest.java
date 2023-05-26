@@ -10,11 +10,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -22,6 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * are being auto-flushed before a mutation query on the same
  * table space is executed.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class PersistThenDeleteTest extends BaseReactiveTest {
 
 	@Override

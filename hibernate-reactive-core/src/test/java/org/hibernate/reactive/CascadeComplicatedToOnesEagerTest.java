@@ -16,6 +16,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
@@ -28,6 +29,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToMany;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -83,6 +85,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Entities are inserted in the following order:
  * c, e, d, b, g, f.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 
 	private B b;

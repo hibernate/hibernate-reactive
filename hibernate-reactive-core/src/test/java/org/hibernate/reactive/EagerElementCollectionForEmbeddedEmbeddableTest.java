@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -25,6 +26,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @see EagerElementCollectionForEmbeddableEntityTypeListTest
  */
+@Timeout(value = 10, timeUnit = MINUTES)
+
 public class EagerElementCollectionForEmbeddedEmbeddableTest extends BaseReactiveTest {
 
 	private Person thePerson;

@@ -15,6 +15,7 @@ import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -22,6 +23,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,11 +91,13 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void longIdentityType(VertxTestContext context) {
 		assertType( context, LongTypeEntity.class, new LongTypeEntity(), 1L );
 	}
 
 	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
 	public void integerIdentityType(VertxTestContext context) {
 		assertType( context, IntegerTypeEntity.class, new IntegerTypeEntity(), 1 );
 	}
