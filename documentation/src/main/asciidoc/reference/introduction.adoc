@@ -1068,9 +1068,18 @@ On the other hand, if you use `openSession()`, you'll have to manage the
 association between sessions and contexts yourself. Now, that's in principle
 straightforward, but you'd be surprised how often people mess up.
 
-IMPORTANT: The session is not thread-safe (or "stream-safe"), so using it across
-different threads (or reactive streams) may cause bugs that are _extremely_ hard
-to detect. Don't say we didn't warn you!
+IMPORTANT: The Hibernate session is not thread-safe (nor "stream-safe"), so using
+it across different threads (or reactive streams) may cause bugs that are _extremely_
+hard to detect. Don't say we didn't warn you!
+
+More than a few users are surprised by this restriction. But we insist that it's
+completely natural. An atomic operation of the session, from your point of view as
+a user of the session, is a method like `flush()`, `find()`, or `getResultList()`.
+Any one of those methods can result in _multiple interactions with the database_.
+And between such interactions, the session is simply not in a well-defined state.
+Reactive streams are a kind of thread, and it's quite unreasonable to expect that
+reactive programming should vanish away your concurrency problems in a shimmering
+puff of pixie dust. That's not how these things work.
 
 For example, I bet you would like to be able to write code like this:
 
@@ -1507,19 +1516,22 @@ In a multitenant application, the database or database schema depends on the cur
 tenant identifier. The easiest way to set this up in Hibernate Reactive is to extend
 `DefaultSqlClientPool` and override `getTenantPool(String tenantId)`.
 
-For multitenancy, you'll also need to set at least one of the following
-configuration properties defined by Hibernate ORM:
+For multitenancy, might also need to set the following configuration property defined
+by Hibernate ORM:
 
 |===
 | Configuration property name            | Value
 
-| `hibernate.multiTenancy`               | The multitenancy strategy: `database` or `schema`
 | `hibernate.tenant_identifier_resolver` | (Optional) A class which implements `CurrentTenantIdentifierResolver`
 |===
 
 If you don't provide a `CurrentTenantIdentifierResolver`, you can specify
 the tenant id explicitly when you call `openSession()`, `withSession()`,
 or `withTransaction()`.
+
+TIP: You don't need a custom pool if you're using _discriminator_-based multitenancy.
+In that case, all you need is to declare the `@TenantId` properties of your entities,
+just like in Hibernate ORM 6.
 
 == Next steps
 
