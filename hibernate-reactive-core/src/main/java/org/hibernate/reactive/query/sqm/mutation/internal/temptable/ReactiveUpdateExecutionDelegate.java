@@ -57,11 +57,11 @@ import static org.hibernate.reactive.query.sqm.mutation.internal.temptable.React
 import static org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveExecuteWithTemporaryTableHelper.saveMatchingIdsIntoIdTable;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveUpdateExcutionDelegate extends UpdateExecutionDelegate implements ReactiveTableBasedUpdateHandler.ReactiveExecutionDelegate {
+public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate implements ReactiveTableBasedUpdateHandler.ReactiveExecutionDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	public ReactiveUpdateExcutionDelegate(
+	public ReactiveUpdateExecutionDelegate(
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable idTable,
 			AfterUseAction afterUseAction,
@@ -214,13 +214,13 @@ public class ReactiveUpdateExcutionDelegate extends UpdateExecutionDelegate impl
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(
 						jdbcUpdate,
-				getJdbcParameterBindings(),
-				executionContext.getSession()
+						getJdbcParameterBindings(),
+						executionContext.getSession()
 						.getJdbcCoordinator()
 						.getStatementPreparer()
 						::prepareStatement,
-						ReactiveUpdateExcutionDelegate::doNothing,
-				executionContext
+						ReactiveUpdateExecutionDelegate::doNothing,
+						executionContext
 		);
 	}
 
@@ -294,7 +294,7 @@ public class ReactiveUpdateExcutionDelegate extends UpdateExecutionDelegate impl
 								.getJdbcCoordinator()
 								.getStatementPreparer()
 								::prepareStatement,
-						ReactiveUpdateExcutionDelegate::doNothing,
+						ReactiveUpdateExecutionDelegate::doNothing,
 						executionContext
 				);
 	}
