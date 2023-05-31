@@ -29,6 +29,7 @@ import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
 import org.hibernate.engine.spi.ActionQueue;
+import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -203,7 +204,7 @@ public class ReactiveActionQueue {
 			}
 		};
 
-		public abstract <T extends ReactiveExecutable & Comparable<? super T>> ExecutableList<T> getActions(ReactiveActionQueue instance);
+		public abstract <T extends ReactiveExecutable & ComparableExecutable> ExecutableList<T> getActions(ReactiveActionQueue instance);
 		public abstract void ensureInitialized(ReactiveActionQueue instance);
 	}
 
@@ -1332,17 +1333,4 @@ public class ReactiveActionQueue {
 
 	}
 
-	private abstract static class ListProvider<T extends ReactiveExecutable & Comparable<? super T> & Serializable> {
-		abstract ExecutableList<T> get(ReactiveActionQueue instance);
-
-		abstract ExecutableList<T> init(ReactiveActionQueue instance);
-
-		ExecutableList<T> getOrInit(ReactiveActionQueue instance) {
-			ExecutableList<T> list = get( instance );
-			if ( list == null ) {
-				list = init( instance );
-			}
-			return list;
-		}
-	}
 }
