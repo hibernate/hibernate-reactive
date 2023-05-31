@@ -12,6 +12,7 @@ import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
+import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -28,7 +29,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  *
  * @see org.hibernate.action.internal.AbstractEntityInsertAction
  */
-public interface ReactiveEntityInsertAction extends ReactiveExecutable {
+public interface ReactiveEntityInsertAction extends ReactiveExecutable, ComparableExecutable {
 	boolean isEarlyInsert();
 	NonNullableTransientDependencies findNonNullableTransientEntities();
 	SharedSessionContractImplementor getSession();
