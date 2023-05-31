@@ -148,12 +148,6 @@ subprojects {
         }
 
         mavenCentral()
-
-        // Example: ./gradlew build -PenableJBossSnapshotsRep
-        if ( project.hasProperty('enableJBossSnapshotsRep') ) {
-            // Used only for testing with the latest Hibernate ORM snapshots.
-            maven { url 'https://repository.jboss.org/nexus/content/repositories/snapshots' }
-        }
     }
     
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
