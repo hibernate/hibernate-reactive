@@ -46,6 +46,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
+import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
+import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
 
 /**
  * This is a multi-threaded stress test, intentionally consuming some time.
@@ -95,10 +97,10 @@ public class MultithreadedIdentityGenerationTest {
 		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
 		vertx = Vertx.vertx( vertxOptions );
 		Configuration configuration = new Configuration();
+		setDefaultProperties( configuration );
 		configuration.addAnnotatedClass( EntityWithGeneratedId.class );
-		BaseReactiveTest.setDefaultProperties( configuration );
 		configuration.setProperty( SHOW_SQL, String.valueOf( LOG_SQL ) );
-		BaseReactiveTest.setDefaultProperties( configuration );
+		configuration.setProperty( POOL_CONNECT_TIMEOUT, String.valueOf( TIMEOUT_MINUTES * 60 * 1000 ) );
 		StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() )
 				//Inject our custom vert.x instance:
