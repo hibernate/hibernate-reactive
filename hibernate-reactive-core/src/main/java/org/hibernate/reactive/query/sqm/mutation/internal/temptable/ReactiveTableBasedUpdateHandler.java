@@ -80,7 +80,7 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 	}
 
 	@Override
-	protected ReactiveUpdateExcutionDelegate buildExecutionDelegate(
+	protected ReactiveUpdateExecutionDelegate buildExecutionDelegate(
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable idTable,
 			AfterUseAction afterUseAction,
@@ -93,7 +93,7 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 			Map<SqmParameter<?>, List<List<JdbcParameter>>> parameterResolutions,
 			Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions,
 			DomainQueryExecutionContext executionContext) {
-		return new ReactiveUpdateExcutionDelegate(
+		return new ReactiveUpdateExecutionDelegate(
 				sqmConverter,
 				idTable,
 				afterUseAction,
