@@ -13,10 +13,11 @@ import org.hibernate.HibernateException;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
+import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 
-public final class ReactiveEntityInsertActionHolder implements Executable, ReactiveExecutable, Comparable<ReactiveEntityInsertActionHolder>,
+public final class ReactiveEntityInsertActionHolder implements Executable, ReactiveExecutable, ComparableExecutable,
 		Serializable {
 
 	private final ReactiveEntityInsertAction delegate;
@@ -24,11 +25,6 @@ public final class ReactiveEntityInsertActionHolder implements Executable, React
 	public ReactiveEntityInsertActionHolder(ReactiveEntityInsertAction delegate) {
 		Objects.requireNonNull( delegate );
 		this.delegate = delegate;
-	}
-
-	@Override
-	public int compareTo(ReactiveEntityInsertActionHolder o) {
-		return delegate.compareActionTo( o.delegate );
 	}
 
 	@Override
@@ -68,5 +64,20 @@ public final class ReactiveEntityInsertActionHolder implements Executable, React
 
 	public ReactiveEntityInsertAction getDelegate() {
 		return delegate;
+	}
+
+	@Override
+	public String getPrimarySortClassifier() {
+		return delegate.getPrimarySortClassifier();
+	}
+
+	@Override
+	public Object getSecondarySortIndex() {
+		return delegate.getSecondarySortIndex();
+	}
+
+	@Override
+	public int compareTo(final ComparableExecutable o) {
+		return delegate.compareTo( o );
 	}
 }
