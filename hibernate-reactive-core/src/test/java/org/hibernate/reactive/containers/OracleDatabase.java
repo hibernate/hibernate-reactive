@@ -85,7 +85,7 @@ class OracleDatabase implements TestableDatabase {
 	}
 
 	public static final OracleContainer oracle = new OracleContainer(
-				imageName( "gvenzl/oracle-free", "23-slim-faststart" )
+				imageName( "gvenzl/oracle-free", "latest-faststart" )
 					.asCompatibleSubstituteFor( "gvenzl/oracle-xe" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
