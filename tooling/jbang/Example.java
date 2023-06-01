@@ -5,17 +5,18 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.3.8}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.3.8}
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.3.8}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:1.1.9.Final}
-//DEPS org.slf4j:slf4j-simple:1.7.30
-//DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
 //DEPS com.ongres.scram:client:2.1
+//DEPS io.vertx:vertx-pg-client:${vertx.version:4.4.2}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.4.2}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:4.4.2}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:2.0.0.Final}
+//DEPS org.slf4j:slf4j-simple:2.0.7
+//DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -58,7 +59,7 @@ import static jakarta.persistence.FetchType.LAZY;
  *             <pre>
  *                 podman run --rm --name HibernateTestingPGSQL \
  *                      -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
- *                      -p 5432:5432 postgres:14
+ *                      -p 5432:5432 postgres:15.2
  *              </pre>
  *         </dd>
  *         <dt>3. Run the example with JBang</dt>
@@ -136,23 +137,23 @@ public class Example {
 		try (Mutiny.SessionFactory factory = createSessionFactory()) {
 			// obtain a reactive session
 			factory.withTransaction(
-					// persist the Authors with their Books in a transaction
-					(session, tx) -> session.persistAll( author1, author2 )
-			)
+							// persist the Authors with their Books in a transaction
+							(session, tx) -> session.persistAll( author1, author2 )
+					)
 					// wait for it to finish
 					.await().indefinitely();
 
 			out.println();
 			out.println( "Looking for the book \"" + book1.getTitle() + "\"..." );
 			factory.withSession(
-					// retrieve a Book
-					session -> session.find( Book.class, book1.getId() )
-							// author is a lazy association, we need to fetch it first if we want to use it
-							.chain( book -> session.fetch( book.getAuthor() )
-									// print its title and author
-									.invoke( author -> out.println( "FOUND: \"" + book.getTitle() + "\"" + " by " + author.getName() + " is a great book!" ) )
-							)
-			)
+							// retrieve a Book
+							session -> session.find( Book.class, book1.getId() )
+									// author is a lazy association, we need to fetch it first if we want to use it
+									.chain( book -> session.fetch( book.getAuthor() )
+											// print its title and author
+											.invoke( author -> out.println( "FOUND: \"" + book.getTitle() + "\"" + " by " + author.getName() + " is a great book!" ) )
+									)
+					)
 					// wait for it to finish
 					.await().indefinitely();
 		}

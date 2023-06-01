@@ -5,13 +5,13 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-pg-client:$\{vertx.version:4.3.8}
-//DEPS io.vertx:vertx-unit:$\{vertx.version:4.3.8}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:1.1.9.Final}
+//DEPS io.vertx:vertx-pg-client:$\{vertx.version:4.4.2}
+//DEPS io.vertx:vertx-unit:$\{vertx.version:4.4.2}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:2.0.0.Final}
 //DEPS org.assertj:assertj-core:3.24.2
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:cockroachdb:1.18.0
-//DEPS org.slf4j:slf4j-simple:1.7.30
+//DEPS org.slf4j:slf4j-simple:2.0.7
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
