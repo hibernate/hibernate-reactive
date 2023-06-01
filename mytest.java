@@ -1,32 +1,22 @@
+///usr/bin/env jbang "$0" "$@" ; exit $?
 /* Hibernate, Relational Persistence for Idiomatic Java
  *
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.4.2}
-//DEPS com.ongres.scram:client:2.1
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.4.2}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.4.2}
 //DEPS io.vertx:vertx-unit:${vertx.version:4.4.2}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:2.0.0.Final}
 //DEPS org.assertj:assertj-core:3.24.2
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:postgresql:1.18.3
-//DEPS org.testcontainers:mysql:1.18.3
-//DEPS org.testcontainers:db2:1.18.3
 //DEPS org.testcontainers:mariadb:1.18.3
-//DEPS org.testcontainers:cockroachdb:1.18.3
-//
-//// Testcontainer needs the JDBC drivers to start the containers
-//// Hibernate Reactive doesn't use them
-//DEPS org.postgresql:postgresql:42.6.0
-//DEPS com.mysql:mysql-connector-j:8.0.33
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.1.4
-//
+//DEPS org.slf4j:slf4j-simple:2.0.7
 
-import java.util.function.Supplier;
+//// Testcontainer needs the JDBC drivers to start the container
+//// Hibernate Reactive doesn't need it
+//DEPS org.mariadb.jdbc:mariadb-java-client:3.1.4
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
@@ -40,6 +30,7 @@ import org.hibernate.reactive.provider.Settings;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -49,63 +40,42 @@ import org.junit.runner.notification.Failure;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.testcontainers.containers.CockroachContainer;
-import org.testcontainers.containers.Db2Container;
-import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * An example of a JUnit test class for Hibernate Reactive using
- * <a hreaf="https://vertx.io/docs/vertx-unit/java/">Vert.x Unit</a> and
- * <a hreaf="https://www.testcontainers.org/">Testcontainers</a>
- * that you can run using <a hreaf="https://www.jbang.dev/">JBang</a>.
- * <p>
- * Before running the tests, Testcontainers will start the selected
- * Docker image with the required database created.
- * </p>
- * <p>
- * The {@link #DATABASE} constant define which database to use and
- * it can be change to any of the values in {@link Database}.
- * </p>
- * <p>
- * Usage example:
- *     <dl>
- *         <dt>1. Download JBang</dt>
- *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
- *         <dt>2. Run the test with JBang</dt>
- *         <dd>
- *             <pre>jbang ReactiveTest.java</pre>
- *         </dd>
- *         <dt>3. (Optional) Edit the file (with IntelliJ IDEA for example):</dt>
- *         <dd>
- *             <pre>jbang edit --open=idea SampleIssueTest.java</pre>
- *         </dd>
- *     </dl>
- * <p/>
- * <p>
- *     Note that in a real case scenario, you would only need the dependencies
- *     for the database of your choice.
- * </p>
- */
+//DESCRIPTION An example of a JUnit test class for Hibernate Reactive using
+//DESCRIPTION [Vert.x Unit](https://vertx.io/docs/vertx-unit/java),
+//DESCRIPTION [Testcontainers](https://www.testcontainers.org)
+//DESCRIPTION and [MySQL](https://www.mysql.com/)
+//DESCRIPTION that you can run using [JBang](JBang).
+//DESCRIPTION
+//DESCRIPTION Before running the tests, Testcontainers will start the selected
+//DESCRIPTION Docker image with the required database created.
+//DESCRIPTION
+//DESCRIPTION Usage example:
+//DESCRIPTION   1. Use as jbang template `jbang init -t mariadb-reproducer@hibernate/hibernate-reactive mytest.java`
+//DESCRIPTION   2. Run the test with JBang: `jbang mytest.java`
+//DESCRIPTION   3. (Optional) Edit the file (with IntelliJ IDEA for example):
+//DESCRIPTION             jbang edit --live --open=idea mytest.java
 @RunWith(VertxUnitRunner.class)
-public class ReactiveTest {
+public class mytest {
 
-	/**
-	 * The database to use for the tests
-	 */
-	public final static Database DATABASE = Database.POSTGRESQL;
+    public static DockerImageName imageName(String registry, String image, String version) {
+		return DockerImageName
+				.parse( registry + "/" + image + ":" + version )
+				.asCompatibleSubstituteFor( image );
+	}
 
-	private static JdbcDatabaseContainer<?> container;
+    @ClassRule
+    public final static MariaDBContainer<?> database = new MariaDBContainer<>( imageName( "docker.io", "mariadb", "10.11.3" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
 	@BeforeClass
 	public static void startContainer() {
-		container = DATABASE.startContainer();
+		database.start();
 	}
 
 	/**
@@ -115,11 +85,11 @@ public class ReactiveTest {
 		Configuration configuration = new Configuration();
 
 		// JDBC url
-		configuration.setProperty( Settings.URL, container.getJdbcUrl() );
+		configuration.setProperty( Settings.URL, database.getJdbcUrl() );
 
 		// Credentials
-		configuration.setProperty( Settings.USER, container.getUsername() );
-		configuration.setProperty( Settings.PASS, container.getPassword() );
+		configuration.setProperty( Settings.USER, database.getUsername() );
+		configuration.setProperty( Settings.PASS, database.getPassword() );
 
 		// Schema generation. Supported values are create, drop, create-drop, drop-create, none
 		configuration.setProperty( Settings.HBM2DDL_AUTO, "create" );
@@ -184,7 +154,7 @@ public class ReactiveTest {
 	/**
 	 * Example of a class representing an entity.
 	 * <p>
-	 * If you create new entities, be sure to add them in {@link #createConfiguration()}.
+	 * If you create new entities, be sure to add them in .
 	 * For example:
 	 * <pre>
 	 * configuration.addAnnotatedClass( MyOtherEntity.class );
@@ -221,39 +191,11 @@ public class ReactiveTest {
 		}
 	}
 
-	/**
-	 * The only purpose of this class is to make it easier to switch among the available databases
-	 * for this unit test.
-	 * <p>
-	 * It's a wrapper around the testcontainers classes.
-	 */
-	enum Database {
-		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:15.2" ) ),
-		MYSQL( () -> new MySQLContainer( "mysql:8.0.33" ) ),
-		DB2( () -> new Db2Container( "docker.io/ibmcom/db2:11.5.8.0" ).acceptLicense() ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:10.11.3" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v22.2.10" ) );
-
-		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
-
-		Database(Supplier<JdbcDatabaseContainer<?>> supplier) {
-			containerSupplier = supplier;
-		}
-
-		public JdbcDatabaseContainer<?> startContainer() {
-			JdbcDatabaseContainer<?> jdbcDatabaseContainer = containerSupplier.get();
-			jdbcDatabaseContainer
-					.withReuse( true )
-					.start();
-			return jdbcDatabaseContainer;
-		}
-	}
-
-	// This main class is only for JBang so that it can run the tests with `jbang ReactiveTest`
+	// This main class is only for JBang so that it can run the tests with `jbang mytest.java`
 	public static void main(String[] args) {
-		System.out.println( "Starting the test suite with " + DATABASE );
+		System.out.println( "Starting the test suite with MariaDB");
 
-		Result result = JUnitCore.runClasses( ReactiveTest.class );
+		Result result = JUnitCore.runClasses( mytest.class );
 
 		for ( Failure failure : result.getFailures() ) {
 			System.out.println();
