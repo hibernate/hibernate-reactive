@@ -703,14 +703,14 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Blob getBlob(int columnIndex) {
-		Blob blob = blob( row -> row.getValue( columnIndex ), row -> row.getBuffer( columnIndex ) );
+		Blob blob = blob( row -> row.getValue( columnIndex - 1 ), row -> row.getBuffer( columnIndex - 1 ) );
 		wasNull = blob == null;
 		return blob;
 	}
 
 	@Override
 	public Clob getClob(int columnIndex) {
-		Clob clob = clob( row -> row.getString( columnIndex ) );
+		Clob clob = clob( row -> row.getString( columnIndex - 1 ) );
 		wasNull = clob == null;
 		if ( wasNull ) {
 			return null;
