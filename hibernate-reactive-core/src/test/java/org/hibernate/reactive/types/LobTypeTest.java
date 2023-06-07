@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.jupiter.api.Disabled;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,6 +27,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,11 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test types that we expect to work only on selected DBs.
  */
-@Disabled // [ORM-6] Creates the columns in Postgres as oid, and return null
 public class LobTypeTest extends BaseReactiveTest {
 
+	// Db2: Client doesn't support CLOB type. See https://github.com/hibernate/hibernate-reactive/issues/1662
+	// Postgres: Client doesn't support OID type: See https://github.com/hibernate/hibernate-reactive/issues/1663
 	@RegisterExtension
-	public DBSelectionExtension selectionRule = skipTestsFor( DB2 );
+	public DBSelectionExtension selectionRule = skipTestsFor( DB2, POSTGRESQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
