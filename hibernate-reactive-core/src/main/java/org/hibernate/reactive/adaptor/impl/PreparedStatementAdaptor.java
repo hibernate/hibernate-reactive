@@ -346,7 +346,25 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setCharacterStream(int parameterIndex, Reader reader, long length) {
-		throw new UnsupportedOperationException();
+		try {
+			int charsLength = (int) length;
+			char[] chars = new char[charsLength];
+			int charsRead = 0;
+			while ( true ) {
+				int n = reader.read( chars, charsRead, charsLength - charsRead );
+				if ( n == -1 ) {
+					break;
+				}
+				charsRead += n;
+				if ( charsRead == length ) {
+					break;
+				}
+			}
+			setString( parameterIndex, new String( chars, 0, charsRead ) );
+		}
+		catch (IOException e) {
+			throw new RuntimeException( e );
+		}
 	}
 
 	@Override
