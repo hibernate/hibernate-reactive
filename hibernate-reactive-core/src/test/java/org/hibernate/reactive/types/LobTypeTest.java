@@ -13,10 +13,10 @@ import java.util.function.Consumer;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +26,7 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test types that we expect to work only on selected DBs.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
 public class LobTypeTest extends BaseReactiveTest {
 
 	// Db2: Client doesn't support CLOB type. See https://github.com/hibernate/hibernate-reactive/issues/1662
