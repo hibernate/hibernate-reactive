@@ -104,15 +104,14 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		matchingIdSelection.getFromClause().addRoot( mutatingTableGroup );
 
 		mutatingEntityDescriptor.getIdentifierMapping().forEachSelectable(
-				(jdbcPosition, selection) -> {
+				(selectionIndex, selection) -> {
 					final TableReference tableReference = mutatingTableGroup.resolveTableReference(
 							mutatingTableGroup.getNavigablePath(),
 							selection.getContainingTableExpression()
 					);
 					matchingIdSelection.getSelectClause().addSqlSelection(
 							new SqlSelectionImpl(
-									jdbcPosition,
-									jdbcPosition + 1,
+									selectionIndex + 1,
 									sqmConverter.getSqlExpressionResolver().resolveSqlExpression(
 											tableReference,
 											selection
@@ -127,7 +126,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			matchingIdSelection.getSelectClause().addSqlSelection(
 					new SqlSelectionImpl(
 							jdbcPosition,
-							jdbcPosition + 1,
 							new QueryLiteral<>(
 									UUID.fromString( sessionUidAccess.apply( executionContext.getSession() ) ),
 									(BasicValuedMapping) idTable.getSessionUidColumn().getJdbcMapping()
@@ -219,6 +217,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		return querySpec;
 	}
 
+	// TODO: I think we can reuse the method in ExecuteWithTemporaryTableHelper
 	private static void applyIdTableSelections(
 			QuerySpec querySpec,
 			TableReference tableReference,
@@ -232,7 +231,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 				if ( temporaryTableColumn != idTable.getSessionUidColumn() ) {
 					querySpec.getSelectClause().addSqlSelection(
 							new SqlSelectionImpl(
-									i + 1,
 									i,
 									new ColumnReference(
 											tableReference,
@@ -251,7 +249,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 					(i, selectableMapping) -> {
 						querySpec.getSelectClause().addSqlSelection(
 								new SqlSelectionImpl(
-										i + 1,
 										i,
 										new ColumnReference(
 												tableReference,
