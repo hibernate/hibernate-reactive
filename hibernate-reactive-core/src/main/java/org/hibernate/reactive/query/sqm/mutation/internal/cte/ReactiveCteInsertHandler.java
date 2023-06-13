@@ -224,7 +224,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 						if ( !assignsId && entityDescriptor.getGenerator().generatedOnExecution() ) {
 							querySpec.getSelectClause().addSqlSelection(
 									new SqlSelectionImpl(
-											1,
 											0,
 											SqmInsertStrategyHelper.createRowNumberingExpression(
 													querySpec,
@@ -254,7 +253,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 					columnNames.add( columnReference.getColumnExpression() );
 					querySpec.getSelectClause().addSqlSelection(
 							new SqlSelectionImpl(
-									1,
 									0,
 									columnReference.getQualifier().equals( valuesAlias )
 											? columnReference
@@ -362,7 +360,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				);
 				rowsWithSequenceQuery.getSelectClause().addSqlSelection(
 						new SqlSelectionImpl(
-								1,
 								0,
 								rowNumberColumnReference
 						)
@@ -373,7 +370,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 						);
 				rowsWithSequenceQuery.getSelectClause().addSqlSelection(
 						new SqlSelectionImpl(
-								2,
 								1,
 								new SelfRenderingSqlFragmentExpression( fragment )
 						)
@@ -444,7 +440,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				entityQuery.getFromClause().addRoot( baseTableGroup );
 				entityQuery.getSelectClause().addSqlSelection(
 						new SqlSelectionImpl(
-								1,
 								0,
 								new BinaryArithmeticExpression(
 										new ColumnReference(
@@ -488,7 +483,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 					final CteColumn cteColumn = cteColumns.get( i );
 					entityQuery.getSelectClause().addSqlSelection(
 							new SqlSelectionImpl(
-									i + 1,
 									i,
 									new ColumnReference(
 											"e",
@@ -559,7 +553,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 		final Expression count = createCountStar( factory, sqmConverter );
 		domainResults
 				.add( new BasicResult<>( 0, null, ( (SqlExpressible) count ).getJdbcMapping() ) );
-		querySpec.getSelectClause().addSqlSelection( new SqlSelectionImpl( 1, 0, count ) );
+		querySpec.getSelectClause().addSqlSelection( new SqlSelectionImpl( 0, count ) );
 		querySpec.getFromClause().addRoot(
 				new CteTableGroup(
 						new NamedTableReference(

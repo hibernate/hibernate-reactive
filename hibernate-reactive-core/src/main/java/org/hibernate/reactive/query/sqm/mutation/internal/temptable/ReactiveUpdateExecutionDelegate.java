@@ -273,9 +273,8 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 		// And transform assignments to target column references and selections
 		for ( Assignment assignment : assignments ) {
 			targetColumnReferences.addAll( assignment.getAssignable().getColumnReferences() );
-			insertSourceSelectQuerySpec.getSelectClause().addSqlSelection(
-					new SqlSelectionImpl( 0, -1, assignment.getAssignedValue() )
-			);
+			insertSourceSelectQuerySpec.getSelectClause()
+					.addSqlSelection( new SqlSelectionImpl( assignment.getAssignedValue() ) );
 		}
 
 		final InsertSelectStatement insertSqlAst = new InsertSelectStatement( targetTableReference );

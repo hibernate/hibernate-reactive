@@ -152,7 +152,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 						( (SqlExpressible) count ).getJdbcMapping()
 				)
 		);
-		querySpec.getSelectClause().addSqlSelection( new SqlSelectionImpl( 1, 0, count ) );
+		querySpec.getSelectClause().addSqlSelection( new SqlSelectionImpl( 0, count ) );
 		querySpec.getFromClause().addRoot(
 				new CteTableGroup(
 						new NamedTableReference(
