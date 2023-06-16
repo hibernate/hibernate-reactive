@@ -13,9 +13,12 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.FlushEventListener;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -23,6 +26,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingEventListener
 		implements ReactiveFlushEventListener, FlushEventListener {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	@Override
 	public CompletionStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException {
@@ -59,6 +64,6 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 
 	@Override
 	public void onFlush(FlushEvent event) throws HibernateException {
-		throw new UnsupportedOperationException();
+		throw LOG.nonReactiveMethodCall( "reactiveOnFlush" );
 	}
 }
