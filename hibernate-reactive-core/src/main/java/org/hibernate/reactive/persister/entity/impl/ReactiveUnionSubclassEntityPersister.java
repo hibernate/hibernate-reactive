@@ -326,6 +326,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			Object rowId,
 			SharedSessionContractImplementor session) {
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
