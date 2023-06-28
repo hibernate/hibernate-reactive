@@ -212,6 +212,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			Object rowId,
 			SharedSessionContractImplementor session) {
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
