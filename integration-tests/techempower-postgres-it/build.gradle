@@ -1,0 +1,104 @@
+buildscript {
+	repositories {
+		// Example: ./gradlew build -PenableMavenLocalRepo
+		if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
+			// Useful for local development, it should be disabled otherwise
+			mavenLocal()
+		}
+		mavenCentral()
+	}
+}
+
+description = 'TechEmpower integration tests'
+
+ext {
+	jacksonDatabindVersion = '2.15.2'
+	jbossLoggingVersion = '3.5.0.Final'
+	assertjVersion = '3.24.2'
+}
+
+dependencies {
+	implementation project( ':hibernate-reactive-core' )
+	implementation "io.vertx:vertx-web:${vertxVersion}"
+	implementation "io.vertx:vertx-web-client:${vertxVersion}"
+
+	runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+	// The Pg client requires this dependency
+	runtimeOnly "com.ongres.scram:client:2.1"
+	runtimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+
+	// logging
+	implementation "org.jboss.logging:jboss-logging:${jbossLoggingVersion}"
+
+	// Testcontainers
+	implementation "org.testcontainers:postgresql:${testcontainersVersion}"
+
+	// Testing
+	testImplementation "org.assertj:assertj-core:${assertjVersion}"
+	testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+}
+
+// Configuration for the tests
+tasks.withType( Test ).configureEach {
+	defaultCharacterEncoding = "UTF-8"
+	useJUnitPlatform()
+	testLogging {
+		showStandardStreams = project.hasProperty( 'showStandardOutput' )
+		showStackTraces = true
+		exceptionFormat = 'full'
+		displayGranularity = 1
+		events = ['PASSED', 'FAILED', 'SKIPPED']
+	}
+
+	// We need a to use an instance of PostgreSQL with a specific configuration.
+	// So, for this particular integration-test module, we default to true unless docker is disabled.
+	systemProperty 'docker', project.properties['docker'] ?: true
+	systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
+
+    if ( project.hasProperty( 'includeTests' ) ) {
+        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
+        filter {
+			includeTestsMatching project.properties['includeTests'] ?: '*' as String
+		}
+    }
+}
+
+// Print a summary of the results of the tests (number of failures, successes and skipped)
+// This is the same as the one in hibernate-reactive-core
+def loggingSummary(db, result, desc) {
+	if ( !desc.parent ) { // will match the outermost suite
+		def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+		def repeatLength = output.length() + 1
+		logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
+	}
+}
+
+test {
+	doFirst {
+		systemProperty 'db', 'PostgreSQL'
+	}
+	// We only want to test this on Postgres
+	afterSuite { desc, result ->
+		loggingSummary( 'PostgreSQL', result, desc )
+	}
+}
+
+def javaMainClass = "org.hibernate.reactive.it.techempower.VertxServer"
+jar {
+	dependsOn = [':hibernate-reactive-core:jar']
+	archiveFileName = "${project.name}.jar"
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	manifest {
+		attributes 'Main-Class': javaMainClass
+		attributes 'Implementation-Version': project.version
+	}
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+}
+
+tasks.register( "startVertx", JavaExec ) {
+	description = "Starts the Vert.x Server app"
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = javaMainClass
+}
