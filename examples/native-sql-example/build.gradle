@@ -1,7 +1,25 @@
+// Optional: We configure the repositories to ease development and CI builds
+buildscript {
+    repositories {
+        // Optional: Enables the maven local repository
+        // Example: ./gradlew build -PenableMavenLocalRepo
+        if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
+            // Useful for local development, it should be disabled otherwise
+            mavenLocal()
+        }
+        mavenCentral()
+    }
+}
+
+plugins {
+    // Optional: Hibernate Gradle plugin to enable bytecode enhancements
+    id "org.hibernate.orm" version "${hibernateOrmGradlePluginVersion}"
+}
+
 description = 'Hibernate Reactive native SQL Example'
 
 dependencies {
-    implementation project(':hibernate-reactive-core')
+    implementation project( ':hibernate-reactive-core' )
 
     // Hibernate Validator (optional)
     implementation 'org.hibernate.validator:hibernate-validator:7.0.2.Final'
@@ -20,66 +38,35 @@ dependencies {
     runtimeOnly 'com.ongres.scram:client:2.1'
 }
 
-// All of the remaining configuration is only necessary to enable
-// the Hibernate bytecode enhancer and field-level lazy fetching.
-// (This is very optional!)
+// Optional: enable the bytecode enhancements
+hibernate { enhancement }
 
-buildscript {
-    repositories {
-        // Example: ./gradlew build -PenableMavenLocalRepo
-        if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
-            // Useful for local development, it should be disabled otherwise
-            mavenLocal()
-        }
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
-        mavenCentral()
-    }
-    dependencies {
-        classpath "org.hibernate.orm:hibernate-gradle-plugin:${hibernateOrmGradlePluginVersion}"
-    }
-}
-
-// Hibernate Gradle plugin to enable bytecode enhancements
-apply plugin: 'org.hibernate.orm'
-
-hibernate {
-    enhancement {
-        lazyInitialization(true)
-        dirtyTracking(true)
-        associationManagement(false)
-    }
-}
-
-// The following rules define a task to run
-// the different API available.
+// Create tasks to run the different API available.
 //
-// They require the selected db ready
-// to accept connections.
+// They require the selected db ready to accept connections.
 //
-// Examples:
-// gradle runExampleMySQLMain runExamplePostgreSQLMutinyMain
-def mainClasses = ['Main', 'MutinyMain']
+// Examples, in the native-sql-example folder:
+// gradle runExampleOnPostgreSQLMain runExampleOnPostgreSQLMutinyMain
+def mainJavaClasses = ['Main', 'MutinyMain']
 def dbs = ['PostgreSQL']
-
-dbs.each { db ->
-    tasks.addRule( "Pattern runExampleOn${db}<mainClass>" ) { String taskName ->
-        if ( taskName.startsWith( "runExampleOn${db}" ) ) {
-            task( type: JavaExec, taskName ) {
-                def  mainClass = taskName.substring( "runExampleOn${db}".length() )
-                group = "Execution"
-                description = "Run ${mainClass} on ${db}"
-                classpath = sourceSets.main.runtimeClasspath
-                main = "org.hibernate.reactive.example.nativesql.${mainClass}"
-                // The persistence unit name defined in resources/META-INF/persistence.xml
-                args db.toLowerCase() + '-example'
-            }
+mainJavaClasses.each { String mainJavaClass ->
+    dbs.each { String db ->
+        tasks.register( "runExampleOn${db}${mainJavaClass}", JavaExec ) {
+            description = "Run ${mainJavaClass} on ${db}"
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = "org.hibernate.reactive.example.nativesql.${mainJavaClass}"
+            // The persistence unit name defined in resources/META-INF/persistence.xml
+            args db.toLowerCase() + '-example'
         }
     }
 }
 
-task runAllExamplesOnPostgreSQL(
-        dependsOn: mainClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" } ) {
-    description = "Run ${mainClasses} on PostgreSQL"
+tasks.register( "runAllExamplesOnPostgreSQL" ) {
+    dependsOn = mainJavaClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" }
+    description = "Run ${mainJavaClasses} on PostgreSQL"
+}
+
+tasks.register( "runAllExamples" ) {
+    dependsOn = ["runAllExamplesOnPostgreSQL"]
+    description = "Run all examples on ${dbs}"
 }
