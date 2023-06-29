@@ -12,22 +12,24 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoor
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorStandard;
 
-public class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
-
-	private final AbstractEntityPersister entityPersister;
-	private final SessionFactoryImplementor factory;
+final class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
 
 	public ReactiveUpdateCoordinatorStandardScopeFactory(
 			AbstractEntityPersister entityPersister,
 			SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
-		this.entityPersister = entityPersister;
-		this.factory = factory;
 	}
 
 	@Override
 	public ReactiveScopedUpdateCoordinator makeScopedCoordinator() {
-		return new ReactiveUpdateCoordinatorStandard( entityPersister, factory );
+		return new ReactiveUpdateCoordinatorStandard(
+				entityPersister(),
+				factory(),
+				this.getStaticUpdateGroup(),
+				this.getBatchKey(),
+				this.getVersionUpdateGroup(),
+				this.getVersionUpdateBatchkey()
+		);
 	}
 
 }
