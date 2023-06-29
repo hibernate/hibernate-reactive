@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.EntityEntry;
@@ -42,8 +43,14 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 
 	private CompletableFuture<Void> updateResultStage;
 
-	public ReactiveUpdateCoordinatorStandard(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
-		super( entityPersister, factory );
+	public ReactiveUpdateCoordinatorStandard(
+			AbstractEntityPersister entityPersister,
+			SessionFactoryImplementor factory,
+			MutationOperationGroup staticUpdateGroup,
+			BatchKey batchKey,
+			MutationOperationGroup versionUpdateGroup,
+			BatchKey versionUpdateBatchkey) {
+		super( entityPersister, factory, staticUpdateGroup, batchKey, versionUpdateGroup, versionUpdateBatchkey );
 	}
 
 	// Utility method to use method reference
