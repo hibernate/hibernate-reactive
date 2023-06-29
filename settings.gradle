@@ -87,6 +87,7 @@ include 'native-sql-example'
 include 'documentation'
 include 'release'
 include 'bytecode-enhancements-it'
+include 'verticle-postgres-it'
 
 // Examples
 for ( project in rootProject.children ) {
