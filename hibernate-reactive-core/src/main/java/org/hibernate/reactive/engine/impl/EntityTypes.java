@@ -10,27 +10,37 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
+import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.engine.impl.ForeignKeys.getEntityIdentifierIfNotUnsaved;
+import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Reactive operations that really belong to {@link EntityType}
@@ -124,14 +134,12 @@ public class EntityTypes {
 		else {
 			return persister
 					.reactiveLoadByUniqueKey( uniqueKeyPropertyName, key, session )
-					.thenApply( loaded -> {
-						// If the entity was not in the Persistence Context, but was found now,
-						// add it to the Persistence Context
-						if ( loaded != null ) {
-							persistenceContext.addEntity( euk, loaded );
-						}
-						return loaded;
-					} );
+					.thenApply( ukResult -> loadHibernateProxyEntity( ukResult, session )
+							.thenApply( targetUK -> {
+								persistenceContext.addEntity( euk, targetUK );
+								return targetUK;
+							} )
+					);
 
 		}
 	}
@@ -173,7 +181,15 @@ public class EntityTypes {
 							 session,
 							 owner,
 							 copyCache
-					 ).thenAccept( copy -> copied[i] = copy )
+					 ).thenCompose( copy -> {
+						 if ( copy instanceof CompletionStage ) {
+							 return ( (CompletionStage) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+						 }
+						 else {
+							 copied[i] = copy;
+							 return voidFuture();
+						 }
+					 } )
 		).thenApply( v -> copied );
 	}
 
@@ -207,17 +223,25 @@ public class EntityTypes {
 			}
 		}
 		return loop( 0, types.length,
-				i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
-						&& types[i] instanceof EntityType,
-				i -> replace(
-						(EntityType) types[i],
-						original[i],
-						target[i] == UNFETCHED_PROPERTY ? null : target[i],
-						session,
-						owner,
-						copyCache,
-						foreignKeyDirection
-				).thenAccept( copy -> copied[i] = copy )
+					 i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
+							 && types[i] instanceof EntityType,
+					 i -> replace(
+							 (EntityType) types[i],
+							 original[i],
+							 target[i] == UNFETCHED_PROPERTY ? null : target[i],
+							 session,
+							 owner,
+							 copyCache,
+							 foreignKeyDirection
+					 ).thenCompose( copy -> {
+						 if ( copy instanceof CompletionStage ) {
+							 return ( (CompletionStage) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+						 }
+						 else {
+							 copied[i] = copy;
+							 return voidFuture();
+						 }
+					 } )
 		).thenApply( v -> copied );
 	}
 
@@ -311,6 +335,12 @@ public class EntityTypes {
 							.thenCompose( fetched -> {
 								Object idOrUniqueKey = entityType.getIdentifierOrUniqueKeyType( session.getFactory() )
 										.replace( fetched, null, session, owner, copyCache );
+								if ( idOrUniqueKey instanceof CompletionStage ) {
+									return ( (CompletionStage) idOrUniqueKey ).thenCompose(
+											key -> resolve( entityType, key, owner, session )
+									);
+								}
+
 								return resolve( entityType, idOrUniqueKey, owner, session );
 							} );
 				} );
@@ -319,7 +349,10 @@ public class EntityTypes {
 	/**
 	 * see EntityType#getIdentifier(Object, SharedSessionContractImplementor)
 	 */
-	private static CompletionStage<Object> getIdentifier(EntityType entityType, Object value, SessionImplementor session) {
+	private static CompletionStage<Object> getIdentifier(
+			EntityType entityType,
+			Object value,
+			SessionImplementor session) {
 		if ( entityType.isReferenceToIdentifierProperty() ) {
 			// tolerates nulls
 			return getEntityIdentifierIfNotUnsaved( entityType.getAssociatedEntityName(), value, session );
@@ -328,17 +361,86 @@ public class EntityTypes {
 			return nullFuture();
 		}
 
-		EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
+		if( value instanceof HibernateProxy ) {
+			return getIdentifierFromHibernateProxy( entityType, (HibernateProxy)value, session );
+		}
+
+		final LazyInitializer lazyInitializer = extractLazyInitializer( value );
+		if ( lazyInitializer != null ) {
+			/*
+				If the value is a Proxy and the property access is field, the value returned by
+			 	`attributeMapping.getAttributeMetadata().getPropertyAccess().getGetter().get( object )`
+			 	is always null except for the id, we need the to use the proxy implementation to
+			 	extract the property value.
+			 */
+			value = lazyInitializer.getImplementation();
+		}
+		else if ( isPersistentAttributeInterceptable( value ) ) {
+				/*
+					If the value is an instance of PersistentAttributeInterceptable, and it is not initialized
+					we need to force initialization the get the property value
+				 */
+			final PersistentAttributeInterceptor interceptor = asPersistentAttributeInterceptable( value ).$$_hibernate_getInterceptor();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
+				( (EnhancementAsProxyLazinessInterceptor) interceptor ).forceInitialize( value, null );
+			}
+		}
+		final EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
 		String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
 		Object propertyValue = entityPersister.getPropertyValue( value, uniqueKeyPropertyName );
 		// We now have the value of the property-ref we reference. However,
 		// we need to dig a little deeper, as that property might also be
 		// an entity type, in which case we need to resolve its identifier
-		Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
+		final Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
 		if ( type.isEntityType() ) {
 			propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
 		}
 		return completedFuture( propertyValue );
+
+	}
+
+	private static CompletionStage<Object> getIdentifierFromHibernateProxy(EntityType entityType, HibernateProxy proxy, SharedSessionContractImplementor session) {
+		LazyInitializer initializer = proxy.getHibernateLazyInitializer();
+		final String entityName = initializer.getEntityName();
+		final Object identifier = initializer.getIdentifier();
+		return ( (ReactiveSessionImpl) session ).reactiveImmediateLoad( entityName, identifier )
+				.thenApply( entity -> {
+					checkEntityFound( session, entityName, identifier, entity );
+					initializer.setSession( session );
+					initializer.setImplementation( entity );
+					if ( entity != null ) {
+						final EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
+						String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
+						Object propertyValue = entityPersister.getPropertyValue( entity, uniqueKeyPropertyName );
+						// We now have the value of the property-ref we reference. However,
+						// we need to dig a little deeper, as that property might also be
+						// an entity type, in which case we need to resolve its identifier
+						final Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
+						if ( type.isEntityType() ) {
+							propertyValue = getIdentifier( (EntityType) type, propertyValue, (SessionImplementor) session );
+						}
+						return completedFuture( propertyValue );
+					}
+					return CompletionStages.nullFuture();
+				} );
+	}
+
+	private static CompletionStage<Object> loadHibernateProxyEntity(
+			Object entity,
+			SharedSessionContractImplementor session) {
+		if ( entity instanceof HibernateProxy ) {
+			LazyInitializer initializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
+			final String entityName = initializer.getEntityName();
+			final Object identifier = initializer.getIdentifier();
+			return ( (ReactiveSessionImpl) session ).reactiveImmediateLoad( entityName, identifier )
+					.thenApply( result -> {
+						checkEntityFound( session, entityName, identifier, result );
+						return result;
+					} );
+		}
+		else {
+			return completedFuture( entity );
+		}
 	}
 
 }
