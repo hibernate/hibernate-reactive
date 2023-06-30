@@ -7,9 +7,11 @@ package org.hibernate.reactive.it;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test fetching of basic lazy fields when
  * bytecode enhancements is enabled.
  */
+@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class LazyBasicFieldTest extends BaseReactiveIT {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

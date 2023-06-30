@@ -32,7 +32,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Promise;
 import io.vertx.core.VertxOptions;
 import io.vertx.junit5.RunTestOnContext;
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -48,7 +47,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public abstract class BaseReactiveIT {
 
 	// These properties are in DatabaseConfiguration in core
