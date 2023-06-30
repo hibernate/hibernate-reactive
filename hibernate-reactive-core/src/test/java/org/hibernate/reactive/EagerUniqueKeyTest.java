@@ -12,7 +12,6 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import jakarta.persistence.CascadeType;
@@ -73,18 +72,17 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 						) ) );
 	}
 
-	@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
 	public void testMergeReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
 				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session -> session
-								.merge( new Foo( session.getReference( Bar.class, bar.getId() ) ) ) ) )
-				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() )
-						.thenAccept( b -> assertEquals( "unique3", b.getKey() ) )
-				) )
+						.withTransaction( session -> {
+							Bar reference =  session.getReference( Bar.class, bar.getId() );
+							return session.merge( new Foo( reference ) );
+						} ) )
+						.thenAccept( merged -> assertEquals( merged.getBar().getKey(), bar.getKey() ) )
 		);
 	}
 

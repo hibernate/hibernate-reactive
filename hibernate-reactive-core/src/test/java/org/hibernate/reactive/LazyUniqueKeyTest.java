@@ -13,7 +13,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -80,17 +79,19 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				) ) );
 	}
 
-	@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
 	public void testMergeReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
 				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session-> session.merge( new Foo( session.getReference( Bar.class, bar.id ) ) ) )
+						.withTransaction( session-> {
+							Bar reference = session.getReference( Bar.class, bar.id );
+							return session.merge( new Foo( reference ) );
+						} )
 				)
-				.thenCompose( result -> getSessionFactory()
-						.withTransaction( session-> session.fetch( result.bar )
+				.thenCompose( merged -> getSessionFactory()
+						.withTransaction( session-> session.fetch( merged.bar )
 						.thenAccept( b -> assertEquals( "unique3", b.key ) )
 				) ) );
 	}
@@ -121,13 +122,29 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 		Foo() {
 		}
 
-		@GeneratedValue
 		@Id
+		@GeneratedValue
 		long id;
 		@ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
 		@Fetch(FetchMode.SELECT)
 		@JoinColumn(name = "bar_key", referencedColumnName = "nat_key")
 		Bar bar;
+
+		public long getId() {
+			return id;
+		}
+
+		public void setId(long id) {
+			this.id = id;
+		}
+
+		public Bar getBar() {
+			return bar;
+		}
+
+		public void setBar(Bar bar) {
+			this.bar = bar;
+		}
 	}
 
 	@Entity(name = "Bar")
@@ -139,11 +156,19 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 		Bar() {
 		}
 
-		@GeneratedValue
 		@Id
+		@GeneratedValue
 		long id;
 		@Column(name = "nat_key", unique = true)
 		String key;
+
+		public long getId() {
+			return id;
+		}
+
+		public void setId(long id) {
+			this.id = id;
+		}
 
 		public String getKey() {
 			return key;
