@@ -14,7 +14,6 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorStandard;
 
 public final class ReactiveCoordinatorFactory {
 
@@ -32,7 +31,7 @@ public final class ReactiveCoordinatorFactory {
 		for ( int i = 0; i < attributeMappings.size(); i++ ) {
 			AttributeMapping attributeMapping = attributeMappings.get( i );
 			if ( attributeMapping instanceof SingularAttributeMapping ) {
-				return new ReactiveUpdateCoordinatorStandard( entityPersister, factory );
+				return new ReactiveUpdateCoordinatorStandardScopeFactory( entityPersister, factory );
 			}
 		}
 
