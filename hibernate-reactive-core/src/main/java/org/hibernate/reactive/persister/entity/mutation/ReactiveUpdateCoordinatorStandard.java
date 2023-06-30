@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.EntityEntry;
@@ -23,7 +24,6 @@ import org.hibernate.persister.entity.mutation.AttributeAnalysis;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
@@ -35,22 +35,29 @@ import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUti
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
+/**
+ * Reactive version of {@link UpdateCoordinatorStandard}, but it cannot be share between multiple update operations.
+ */
+public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveScopedUpdateCoordinator {
 
-	private CompletionStage<Void> stage;
-
+	private CompletableFuture<Void> updateResultStage;
 
 	public ReactiveUpdateCoordinatorStandard(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
 	}
 
-	private void complete(Object o, Throwable throwable) {
+	// Utility method to use method reference
+	private void complete(final Object o, final Throwable throwable) {
 		if ( throwable != null ) {
-			stage.toCompletableFuture().completeExceptionally( throwable );
+			fail( throwable );
 		}
 		else {
-			stage.toCompletableFuture().complete( null );
+			updateResultStage.complete( null );
 		}
+	}
+
+	private void fail(Throwable throwable) {
+		updateResultStage.completeExceptionally( throwable );
 	}
 
 	@Override
@@ -85,7 +92,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		// Ensure that an immutable or non-modifiable entity is not being updated unless it is
 		// in the process of being deleted.
 		if ( entry == null && !entityPersister().isMutable() ) {
-			return CompletionStages.failedFuture(new IllegalStateException( "Updating immutable entity that is not in session yet" ));
+			fail( new IllegalStateException( "Updating immutable entity that is not in session yet" ) );
+			return updateResultStage;
 		}
 
 		CompletionStage<Void> s = voidFuture();
@@ -144,8 +152,10 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 							forceDynamicUpdate
 					);
 
-					// stage gets updated by doDynamicUpdate and doStaticUpdate which get called by performUpdate
-					return stage != null ? stage : voidFuture();
+					// doDynamicUpdate, doVersionUpdate, or doStaticUpdate will initialize the stage,
+					// if an update is necessary.
+					// Otherwise, updateResultStage could be null.
+					return updateResultStage != null ? updateResultStage : voidFuture();
 				});
 	}
 
@@ -202,7 +212,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object oldVersion,
 			SharedSessionContractImplementor session) {
 		assert getVersionUpdateGroup() != null;
-		this.stage = new CompletableFuture<>();
+		this.updateResultStage = new CompletableFuture<>();
 
 		final EntityTableMapping mutatingTableDetails = (EntityTableMapping) getVersionUpdateGroup()
 				.getSingleOperation().getTableDetails();
@@ -274,7 +284,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			UpdateCoordinatorStandard.InclusionChecker dirtinessChecker,
 			UpdateCoordinatorStandard.UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
-		this.stage = new CompletableFuture<>();
+		this.updateResultStage = new CompletableFuture<>();
 		// Create the JDBC operation descriptors
 		final MutationOperationGroup dynamicUpdateGroup = generateDynamicUpdateGroup(
 				id,
@@ -342,7 +352,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object[] oldValues,
 			UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
-		this.stage = new CompletableFuture<>();
+		this.updateResultStage = new CompletableFuture<>();
 		final MutationOperationGroup staticUpdateGroup = getStaticUpdateGroup();
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, staticUpdateGroup );
 

@@ -13,7 +13,7 @@ import org.hibernate.persister.entity.mutation.UpdateCoordinatorNoOp;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp implements ReactiveUpdateCoordinator {
+public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp implements ReactiveScopedUpdateCoordinator, ReactiveUpdateCoordinator {
 
 	public ReactiveUpdateCoordinatorNoOp(AbstractEntityPersister entityPersister) {
 		super( entityPersister );
@@ -45,4 +45,11 @@ public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp impleme
 			SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
+
+	@Override
+	public ReactiveScopedUpdateCoordinator makeScopedCoordinator() {
+		//This particular implementation is stateless, so we can return ourselves w/o needing to create a scope.
+		return this;
+	}
+
 }

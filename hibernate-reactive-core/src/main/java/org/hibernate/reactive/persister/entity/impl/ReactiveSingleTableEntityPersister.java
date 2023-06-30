@@ -303,6 +303,9 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final Object rowId,
 			final SharedSessionContractImplementor session) throws HibernateException {
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
+				// multiple update operations
+				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 

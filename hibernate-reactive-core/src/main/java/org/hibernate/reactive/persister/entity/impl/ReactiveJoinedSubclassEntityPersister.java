@@ -212,6 +212,9 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			Object rowId,
 			SharedSessionContractImplementor session) {
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
+				// multiple update operations
+				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
