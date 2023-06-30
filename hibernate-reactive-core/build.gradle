@@ -49,10 +49,10 @@ dependencies {
     testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11"
 
     // JDBC driver for Testcontainers with MariaDB Server
-    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.1.4";
+    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.1.4"
 
     // JDBC driver for Testcontainers with MYSQL Server
-    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.33";
+    testRuntimeOnly "com.mysql:mysql-connector-j:8.0.33"
 
     // JDBC driver for Db2 server, for testing
     testRuntimeOnly "com.ibm.db2:jcc:11.5.8.0"
@@ -78,10 +78,6 @@ dependencies {
     testImplementation "org.testcontainers:oracle-xe:${testcontainersVersion}"
 }
 
-test {
-    useJUnitPlatform()
-}
-
 // Print a summary of the results of the tests (number of failures, successes and skipped)
 def loggingSummary(db, result, desc) {
     if ( !desc.parent ) { // will match the outermost suite
@@ -91,15 +87,30 @@ def loggingSummary(db, result, desc) {
     }
 }
 
+// Example:
+// gradle test -Pdb=MySQL
+test {
+	def selectedDb = project.hasProperty( 'db' )
+			? project.properties['db']
+			: 'PostgreSQL'
+	doFirst {
+		systemProperty 'db', selectedDb
+	}
+	afterSuite { desc, result ->
+		loggingSummary( selectedDb, result, desc )
+	}
+}
+
 // Configuration for the tests
-tasks.withType(Test) {
+tasks.withType( Test ).configureEach {
     defaultCharacterEncoding = "UTF-8"
+    useJUnitPlatform()
     testLogging {
-        displayGranularity 1
         showStandardStreams = project.hasProperty('showStandardOutput')
         showStackTraces = true
         exceptionFormat = 'full'
-        events 'PASSED', 'FAILED', 'SKIPPED'
+        displayGranularity = 1
+        events = ['PASSED', 'FAILED', 'SKIPPED']
     }
     systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
     systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
@@ -107,22 +118,21 @@ tasks.withType(Test) {
     if ( project.hasProperty( 'includeTests' ) ) {
         // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
         filter {
-            includeTestsMatching project.getProperty( 'includeTests' ) ?: '*'
+            includeTestsMatching project.properties['includeTests'] ?: '*' as String
         }
     }
 }
 
-// Example:
-// gradle test -Pdb=MySQL
-test {
-    def selectedDb = project.hasProperty( 'db' )
-            ? project.getProperty( 'db' )
-            : 'PostgreSQL'
-    afterSuite { desc, result ->
-        loggingSummary( selectedDb, result, desc )
-    }
-    doFirst {
-        systemProperty 'db', selectedDb
+def createTestDbTask(dbName) {
+    tasks.register( "testDb${dbName}", Test ) {
+        description = "Run tests for ${dbName}"
+
+        doFirst() {
+            systemProperty 'db', dbName
+        }
+        afterSuite { desc, result ->
+            loggingSummary( dbName, result, desc )
+        }
     }
 }
 
@@ -132,22 +142,16 @@ test {
 // gradle testDbMySQL testDbDB2
 tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
     if ( taskName.startsWith( "testDb" ) ) {
-        task( type: Test, taskName ) {
-            def dbName = taskName.substring( "testDb".length() )
-            description = "Run tests for ${dbName}"
-
-            afterSuite { desc, result ->
-                loggingSummary( dbName, result, desc )
-            }
-            doFirst() {
-                systemProperty 'db', dbName
-            }
-        }
+        def dbName = taskName.substring( "testDb".length() )
+        createTestDbTask( dbName )
     }
 }
 
 // The dbs we want to test when running testAll
 def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
-task testAll( dependsOn: dbs.collect( [] as HashSet ) { db -> "testDb${db}" } ) {
+dbs.forEach { createTestDbTask it }
+
+tasks.register( "testAll", Test ) {
     description = "Run tests for ${dbs}"
+    dependsOn = dbs.collect( [] as HashSet ) { db -> "testDb${db}" }
 }
