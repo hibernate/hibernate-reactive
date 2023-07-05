@@ -19,10 +19,10 @@ ext {
 
 dependencies {
     implementation project(':hibernate-reactive-core')
-    implementation "io.vertx:vertx-web:${vertxVersion}"
-    implementation "io.vertx:vertx-web-client:${vertxVersion}"
+    implementation "io.vertx:vertx-web:${vertxSqlClientVersion}"
+    implementation "io.vertx:vertx-web-client:${vertxSqlClientVersion}"
 
-    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
     // The Pg client requires this dependency
     runtimeOnly "com.ongres.scram:client:2.1"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
@@ -35,7 +35,7 @@ dependencies {
 
     // Testing
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
-    testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+    testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
 }
 
 // Configuration for the tests

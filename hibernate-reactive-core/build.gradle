@@ -21,18 +21,18 @@ dependencies {
     annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.2.1.Final'
 
     //Specific implementation details of Hibernate Reactive:
-    implementation "io.vertx:vertx-sql-client:${vertxVersion}"
+    implementation "io.vertx:vertx-sql-client:${vertxSqlClientVersion}"
 
     // Testing
     testImplementation 'org.assertj:assertj-core:3.24.2'
-    testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+    testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
 
     // Drivers
-    testImplementation "io.vertx:vertx-pg-client:${vertxVersion}"
-    testImplementation "io.vertx:vertx-mysql-client:${vertxVersion}"
-    testImplementation "io.vertx:vertx-db2-client:${vertxVersion}"
-    testImplementation "io.vertx:vertx-mssql-client:${vertxVersion}"
-    testImplementation "io.vertx:vertx-oracle-client:${vertxVersion}"
+    testImplementation "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
+    testImplementation "io.vertx:vertx-mysql-client:${vertxSqlClientVersion}"
+    testImplementation "io.vertx:vertx-db2-client:${vertxSqlClientVersion}"
+    testImplementation "io.vertx:vertx-mssql-client:${vertxSqlClientVersion}"
+    testImplementation "io.vertx:vertx-oracle-client:${vertxSqlClientVersion}"
 
     // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
     testImplementation 'com.ongres.scram:client:2.1'
