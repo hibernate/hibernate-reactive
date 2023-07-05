@@ -15,12 +15,18 @@ ext {
     jacksonDatabindVersion = '2.15.2'
     jbossLoggingVersion = '3.5.0.Final'
     assertjVersion = '3.24.2'
+    vertxWebVersion = project.hasProperty( 'vertxWebVersion' )
+            ? project.property( 'vertxWebVersion' )
+            : vertxSqlClientVersion
+    vertxWebClientVersion = project.hasProperty( 'vertxWebClientVersion' )
+            ? project.property( 'vertxWebClientVersion' )
+            : vertxSqlClientVersion
 }
 
 dependencies {
     implementation project(':hibernate-reactive-core')
-    implementation "io.vertx:vertx-web:${vertxSqlClientVersion}"
-    implementation "io.vertx:vertx-web-client:${vertxSqlClientVersion}"
+    implementation "io.vertx:vertx-web:${vertxWebVersion}"
+    implementation "io.vertx:vertx-web-client:${vertxWebClientVersion}"
 
     runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
     // The Pg client requires this dependency
