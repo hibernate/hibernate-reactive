@@ -52,17 +52,17 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 	public void testFindSelect(VertxTestContext context) {
 		Foo foo = new Foo( new Bar( "unique" ) );
 		test( context, getSessionFactory()
-				.withTransaction( session -> session
-						.persist( foo )
-						.thenCompose( v -> session.flush() )
-						.thenAccept( v -> session.clear() )
-						.thenCompose( v -> session.find( Foo.class, foo.id ) )
+					  .withTransaction( session -> session
+							  .persist( foo )
+							  .thenCompose( v -> session.flush() )
+							  .thenAccept( v -> session.clear() )
+							  .thenCompose( v -> session.find( Foo.class, foo.id ) )
 //                        .thenApply( result -> {
 //                            assertFalse( Hibernate.isInitialized( result.bar) );
 //                            return result;
 //                        } )
-						.thenCompose( result -> session.fetch( result.bar ) )
-						.thenAccept( bar -> assertEquals( "unique", bar.key ) ) )
+							  .thenCompose( result -> session.fetch( result.bar ) )
+							  .thenAccept( bar -> assertEquals( "unique", bar.key ) ) )
 		);
 	}
 
@@ -76,7 +76,7 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				.thenCompose( result -> getSessionFactory()
 						.withTransaction( session -> session.fetch( result.bar )
 								.thenAccept( b -> assertEquals( "unique2", b.key ) )
-				) ) );
+						) ) );
 	}
 
 	@Test
@@ -85,12 +85,15 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
 				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session-> session.merge( new Foo( session.getReference( Bar.class, bar.id ) ) ) )
+						.withTransaction( session -> session.merge( new Foo( session.getReference(
+								Bar.class,
+								bar.id
+						) ) ) )
 				)
 				.thenCompose( result -> getSessionFactory()
-						.withTransaction( session-> session.fetch( result.bar )
-						.thenAccept( b -> assertEquals( "unique3", b.key ) )
-				) ) );
+						.withTransaction( session -> session.fetch( result.bar )
+								.thenAccept( b -> assertEquals( "unique3", b.key ) )
+						) ) );
 	}
 
 	@Test
@@ -99,13 +102,13 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
 				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session-> {
+						.withTransaction( session -> {
 							Foo foo = new Foo( session.getReference( Bar.class, bar.id ) );
 							return session.persist( foo ).thenApply( v -> foo );
 						} )
 				)
 				.thenCompose( result -> getSessionFactory()
-						.withTransaction( session-> session.fetch( result.bar )
+						.withTransaction( session -> session.fetch( result.bar )
 								.thenAccept( b -> assertEquals( "unique3", b.getKey() ) )
 						) ) );
 	}
