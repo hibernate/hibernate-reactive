@@ -148,7 +148,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	 * @see org.hibernate.persister.collection.BasicCollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
+	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getCreateEntryCoordinator().reactiveInsertRows( collection, id, collection::includeInRecreate, session );
 	}
 
@@ -187,10 +187,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		return updateRowsCoordinator;
 	}
 
-	public ReactiveInsertRowsCoordinator getInsertRowsCoordinator() {
-		return insertRowsCoordinator;
-	}
-
 	@Override
 	public ReactiveRemoveCoordinator getRemoveCoordinator() {
 		return removeCoordinator;
@@ -199,13 +195,5 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	@Override
 	protected ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
 		return deleteRowsCoordinator;
-	}
-
-	public ReactiveDeleteRowsCoordinator getDeleteRowsCoordinator() {
-		return deleteRowsCoordinator;
-	}
-
-	public ReactiveUpdateRowsCoordinator getUpdateRowsCoordinator() {
-		return updateRowsCoordinator;
 	}
 }

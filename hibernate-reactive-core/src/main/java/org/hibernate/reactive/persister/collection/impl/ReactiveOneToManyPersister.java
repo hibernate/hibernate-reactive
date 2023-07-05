@@ -245,7 +245,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return getInsertRowsCoordinator()
 				.reactiveInsertRows( collection, id, collection::includeInRecreate, session )
 				.thenCompose( unused -> writeIndex( collection, collection.entries( this ), id, true, session ) );
