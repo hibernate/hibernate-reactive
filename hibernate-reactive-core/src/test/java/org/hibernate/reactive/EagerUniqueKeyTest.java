@@ -5,8 +5,9 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.junit5.Timeout;
-import io.vertx.junit5.VertxTestContext;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
@@ -14,6 +15,8 @@ import org.hibernate.annotations.FetchMode;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,10 +25,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.List;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
