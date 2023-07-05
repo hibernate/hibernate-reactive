@@ -24,7 +24,6 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
-import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
@@ -79,8 +78,11 @@ public class EntityTypes {
 			OneToOneType type = (OneToOneType) entityType;
 			String propertyName = type.getPropertyName();
 			if ( propertyName != null ) {
-				EntityPersister ownerPersister = session.getFactory().getMetamodel()
-						.entityPersister( entityType.getAssociatedEntityName() );
+				final EntityPersister ownerPersister = session.getFactory()
+						.getRuntimeMetamodels()
+						.getMappingMetamodel()
+						.getEntityDescriptor( entityType.getAssociatedEntityName() );
+
 				Object id = session.getContextEntityIdentifier( owner );
 				EntityKey entityKey = session.generateEntityKey( id, ownerPersister );
 				return session.getPersistenceContextInternal().isPropertyNull( entityKey, propertyName );
@@ -183,7 +185,8 @@ public class EntityTypes {
 							 copyCache
 					 ).thenCompose( copy -> {
 						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+							 return ( (CompletionStage<?>) copy )
+									 .thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
 						 }
 						 else {
 							 copied[i] = copy;
@@ -202,7 +205,7 @@ public class EntityTypes {
 			final Type[] types,
 			final SessionImplementor session,
 			final Object owner,
-			final Map copyCache,
+			final Map<Object, Object> copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
 		Object[] copied = new Object[original.length];
 		for ( int i = 0; i < types.length; i++ ) {
@@ -235,7 +238,7 @@ public class EntityTypes {
 							 foreignKeyDirection
 					 ).thenCompose( copy -> {
 						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+							 return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
 						 }
 						 else {
 							 copied[i] = copy;
@@ -254,7 +257,7 @@ public class EntityTypes {
 			Object target,
 			SessionImplementor session,
 			Object owner,
-			Map copyCache,
+			Map<Object, Object> copyCache,
 			ForeignKeyDirection foreignKeyDirection)
 			throws HibernateException {
 		boolean include = entityType.isAssociationType()
@@ -274,7 +277,7 @@ public class EntityTypes {
 			Object target,
 			SessionImplementor session,
 			Object owner,
-			Map copyCache) {
+			Map<Object, Object> copyCache) {
 		if ( original == null ) {
 			return nullFuture();
 		}
@@ -320,11 +323,12 @@ public class EntityTypes {
 			Object original,
 			SessionImplementor session,
 			Object owner,
-			Map copyCache) {
+			Map<Object, Object> copyCache) {
 		return getIdentifier( entityType, original, session )
 				.thenCompose( id -> {
 					if ( id == null ) {
-						throw new AssertionFailure( "non-transient entity has a null id: " + original.getClass().getName() );
+						throw new AssertionFailure( "non-transient entity has a null id: " + original.getClass()
+								.getName() );
 					}
 					// For the special case of a @ManyToOne joined on a (non-primary) unique key,
 					// the "id" class is actually the associated entity object itself, but treated
@@ -336,9 +340,8 @@ public class EntityTypes {
 								Object idOrUniqueKey = entityType.getIdentifierOrUniqueKeyType( session.getFactory() )
 										.replace( fetched, null, session, owner, copyCache );
 								if ( idOrUniqueKey instanceof CompletionStage ) {
-									return ( (CompletionStage) idOrUniqueKey ).thenCompose(
-											key -> resolve( entityType, key, owner, session )
-									);
+									return ( (CompletionStage<?>) idOrUniqueKey )
+											.thenCompose( key -> resolve( entityType, key, owner, session ) );
 								}
 
 								return resolve( entityType, idOrUniqueKey, owner, session );
@@ -361,8 +364,8 @@ public class EntityTypes {
 			return nullFuture();
 		}
 
-		if( value instanceof HibernateProxy ) {
-			return getIdentifierFromHibernateProxy( entityType, (HibernateProxy)value, session );
+		if ( value instanceof HibernateProxy ) {
+			return getIdentifierFromHibernateProxy( entityType, (HibernateProxy) value, session );
 		}
 
 		final LazyInitializer lazyInitializer = extractLazyInitializer( value );
@@ -399,7 +402,10 @@ public class EntityTypes {
 
 	}
 
-	private static CompletionStage<Object> getIdentifierFromHibernateProxy(EntityType entityType, HibernateProxy proxy, SharedSessionContractImplementor session) {
+	private static CompletionStage<Object> getIdentifierFromHibernateProxy(
+			EntityType entityType,
+			HibernateProxy proxy,
+			SharedSessionContractImplementor session) {
 		LazyInitializer initializer = proxy.getHibernateLazyInitializer();
 		final String entityName = initializer.getEntityName();
 		final Object identifier = initializer.getIdentifier();
@@ -421,7 +427,7 @@ public class EntityTypes {
 						}
 						return completedFuture( propertyValue );
 					}
-					return CompletionStages.nullFuture();
+					return nullFuture();
 				} );
 	}
 
