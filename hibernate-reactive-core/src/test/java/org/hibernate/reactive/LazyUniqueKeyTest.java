@@ -13,7 +13,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.reactive.testing.DBSelectionExtension;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -80,7 +79,6 @@ public class LazyUniqueKeyTest extends BaseReactiveTest {
 				) ) );
 	}
 
-	@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1504
 	@Test
 	public void testMergeReference(VertxTestContext context) {
 		Bar bar = new Bar( "unique3" );
