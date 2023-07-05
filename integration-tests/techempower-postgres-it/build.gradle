@@ -61,12 +61,12 @@ tasks.withType( Test ).configureEach {
 	systemProperty 'docker', project.properties['docker'] ?: true
 	systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
 
-    if ( project.hasProperty( 'includeTests' ) ) {
-        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
-        filter {
+	if ( project.hasProperty( 'includeTests' ) ) {
+		// Example: ./gradlew testAll -PincludeTests=DefaultPortTest
+		filter {
 			includeTestsMatching project.properties['includeTests'] ?: '*' as String
 		}
-    }
+	}
 }
 
 // Print a summary of the results of the tests (number of failures, successes and skipped)
@@ -99,7 +99,7 @@ jar {
 		attributes 'Implementation-Version': project.version
 	}
 	from {
-		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree( it ) }
 	}
 }
 

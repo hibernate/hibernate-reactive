@@ -82,7 +82,7 @@ ext {
     // Mainly, to allow CI to test the latest versions of Vert.X
     // Example:
     // ./gradlew build -PvertxSqlClientVersion=4.0.0-SNAPSHOT
-    if ( !project.hasProperty('vertxSqlClientVersion') ) {
+    if ( !project.hasProperty( 'vertxSqlClientVersion' ) ) {
         vertxSqlClientVersion = '4.4.4'
     }
 
