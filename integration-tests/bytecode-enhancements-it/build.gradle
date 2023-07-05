@@ -27,7 +27,7 @@ dependencies {
     annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
 
     // Testing on one database should be enough
-    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
 
     // Allow authentication to PostgreSQL using SCRAM:
     runtimeOnly 'com.ongres.scram:client:2.1'
@@ -40,7 +40,7 @@ dependencies {
 
     // Testing
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
-    testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+    testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
 }
 
 // Optional: enable the bytecode enhancements

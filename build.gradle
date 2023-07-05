@@ -81,16 +81,16 @@ ext {
 
     // Mainly, to allow CI to test the latest versions of Vert.X
     // Example:
-    // ./gradlew build -PvertxVersion=4.0.0-SNAPSHOT
-    if ( !project.hasProperty('vertxVersion') ) {
-        vertxVersion = '4.4.4'
+    // ./gradlew build -PvertxSqlClientVersion=4.0.0-SNAPSHOT
+    if ( !project.hasProperty('vertxSqlClientVersion') ) {
+        vertxSqlClientVersion = '4.4.4'
     }
 
     testcontainersVersion = '1.18.3'
 
     logger.lifecycle "Hibernate ORM Version: " + project.hibernateOrmVersion
     logger.lifecycle "Hibernate ORM Gradle plugin Version: " + project.hibernateOrmGradlePluginVersion
-    logger.lifecycle "Vert.x Version: " + project.vertxVersion
+    logger.lifecycle "Vert.x SQL Client Version: " + project.vertxSqlClientVersion
     logger.lifecycle "Hibernate Reactive: " + project.version
 }
 

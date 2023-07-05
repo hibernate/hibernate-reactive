@@ -29,7 +29,7 @@ dependencies {
     annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
 
     // database driver for PostgreSQL
-    runtimeOnly "io.vertx:vertx-pg-client:${vertxVersion}"
+    runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
 
     // logging (optional)
     runtimeOnly "org.apache.logging.log4j:log4j-core:2.20.0"
