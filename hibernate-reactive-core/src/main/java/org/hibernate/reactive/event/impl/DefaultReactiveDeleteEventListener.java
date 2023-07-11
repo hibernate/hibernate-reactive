@@ -128,8 +128,8 @@ public class DefaultReactiveDeleteEventListener
 			final EventSource source = event.getSession();
 			Object object = event.getObject();
 			if ( object instanceof CompletionStage ) {
-				final CompletionStage<Object> objectStage = (CompletionStage<Object>) object;
-				return objectStage.thenCompose( objectEvent -> fetchAndDelete( event, transientEntities, source, objectEvent ) );
+				final CompletionStage<?> stage = (CompletionStage<?>) object;
+				return stage.thenCompose( objectEvent -> fetchAndDelete( event, transientEntities, source, objectEvent ) );
 			}
 			else {
 				return fetchAndDelete( event, transientEntities, source, object);
