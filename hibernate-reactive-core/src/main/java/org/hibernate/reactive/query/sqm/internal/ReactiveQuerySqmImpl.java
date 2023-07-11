@@ -7,7 +7,12 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
@@ -210,7 +215,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			final int toIndex = max != -1
 					? first + max
 					: resultSize;
-			return list.subList( first, toIndex > resultSize ? resultSize : toIndex );
+			return list.subList( first, Math.min( toIndex, resultSize ) );
 		}
 		return list;
 	}
