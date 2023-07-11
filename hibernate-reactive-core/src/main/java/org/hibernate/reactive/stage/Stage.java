@@ -349,6 +349,12 @@ public interface Stage {
 		 */
 		SelectionQuery<R> setPlan(EntityGraph<R> entityGraph);
 
+		/**
+		 * Enable a {@linkplain org.hibernate.annotations.FetchProfile fetch
+		 * profile} which will be in effect during execution of this query.
+		 */
+		SelectionQuery<R> enableFetchProfile(String profileName);
+
 		@Override
 		SelectionQuery<R> setParameter(int parameter, Object argument);
 
@@ -903,7 +909,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
 		 */
-		<R> SelectionQuery<R> createSelectionQuery(String queryString);
+		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
 
 		/**
 		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL

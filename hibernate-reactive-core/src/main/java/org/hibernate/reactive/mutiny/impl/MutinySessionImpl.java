@@ -116,8 +116,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> SelectionQuery<R> createSelectionQuery(String queryString) {
-		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ), factory );
 	}
 
 	@Override

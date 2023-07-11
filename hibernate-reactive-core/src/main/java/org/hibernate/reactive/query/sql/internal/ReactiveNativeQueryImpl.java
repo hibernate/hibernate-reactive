@@ -741,4 +741,9 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
 		super.applyGraph( graph, semantic );
 	}
+
+	@Override
+	public void enableFetchProfile(String profileName) {
+		throw new UnsupportedOperationException("A native SQL query cannot use fetch profiles");
+	}
 }
