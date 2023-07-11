@@ -933,8 +933,12 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
+		 * @deprecated See explanation in
+		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
+		 *
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
+		@Deprecated
 		<R> Query<R> createQuery(String queryString);
 
 		/**
@@ -1496,8 +1500,12 @@ public interface Stage {
 		 *
 		 * @return The {@link Query} instance for manipulation and execution
 		 *
+		 * @deprecated See explanation in
+		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
+		 *
 		 * @see org.hibernate.Session#createQuery(String)
 		 */
+		@Deprecated
 		<R> Query<R> createQuery(String queryString);
 
 		/**
@@ -1512,6 +1520,30 @@ public interface Stage {
 		 * @see org.hibernate.Session#createQuery(String, Class)
 		 */
 		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string.
+		 *
+		 * @param queryString The HQL/JPQL query
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
+		 * update or delete statement.
+		 *
+		 * @param queryString The HQL/JPQL query, update or delete statement
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		MutationQuery createMutationQuery(String queryString);
 
 		/**
 		 * Create an instance of {@link Query} for the given SQL query string,

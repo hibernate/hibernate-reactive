@@ -8,7 +8,7 @@ package org.hibernate.reactive.mutiny.impl;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Parameter;
 import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
-import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveMutationQuery;
 
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -16,9 +16,9 @@ import java.util.function.Supplier;
 public class MutinyMutationQueryImpl<R> implements MutationQuery {
 
 	private final MutinySessionFactoryImpl factory;
-	private final ReactiveQuery<R> delegate;
+	private final ReactiveMutationQuery<R> delegate;
 
-	public MutinyMutationQueryImpl(ReactiveQuery<R> delegate, MutinySessionFactoryImpl factory) {
+	public MutinyMutationQueryImpl(ReactiveMutationQuery<R> delegate, MutinySessionFactoryImpl factory) {
 		this.delegate = delegate;
 		this.factory = factory;
 	}
