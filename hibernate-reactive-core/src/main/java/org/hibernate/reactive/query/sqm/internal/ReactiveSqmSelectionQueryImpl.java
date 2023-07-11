@@ -588,4 +588,10 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
 		getQueryOptions().applyGraph( graph, semantic );
 	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> enableFetchProfile(String profileName) {
+		selectionQueryDelegate.enableFetchProfile( profileName );
+		return this;
+	}
 }

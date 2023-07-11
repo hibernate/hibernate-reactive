@@ -72,6 +72,37 @@ public class LazyManyToOneAssociationTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void fetchProfileOnQuery(VertxTestContext context) {
+		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
+		final Author author = new Author( 5, "Charlie Mackesy", book );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( book )
+								.thenCompose( v -> s.persist( author ) )
+								.thenCompose( v -> s.flush() ) )
+						.thenCompose( v -> openSession()
+								.thenCompose( s -> s.createSelectionQuery( "from Author where id = ?1", Author.class )
+										.enableFetchProfile( "withBook" )
+										.setParameter(1, author.getId() )
+										.getSingleResultOrNull() ) )
+						.thenAccept( optionalAuthor -> {
+							assertNotNull( optionalAuthor );
+							assertEquals( author, optionalAuthor );
+							assertTrue( isInitialized( optionalAuthor.getBook() ) );
+							assertEquals( book, optionalAuthor.getBook() );
+						} )
+						.thenCompose( v -> openSession()
+								.thenCompose( s -> s.find( Book.class, book.getId() ) ) )
+						.thenAccept( optionalBook -> {
+							assertNotNull( optionalBook );
+							assertEquals( book, optionalBook );
+						} )
+		);
+	}
+
+	@Test
 	public void namedEntityGraphWithOneAuthor(VertxTestContext context) {
 		final Book book = new Book( 6, "The Boy, The Mole, The Fox and The Horse" );
 		final Author author = new Author( 5, "Charlie Mackesy", book );
