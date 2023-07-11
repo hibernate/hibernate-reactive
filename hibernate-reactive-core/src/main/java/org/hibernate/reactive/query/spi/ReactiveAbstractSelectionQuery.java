@@ -184,13 +184,18 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private R convertException(Throwable t) {
-		if ( t instanceof CompletionException ) {
-			t = t.getCause();
+		if ( t instanceof CompletionException && t.getCause() != null ) {
+			return convertException( t.getCause() );
 		}
-		if ( t instanceof HibernateException ) {
+		else if ( t instanceof HibernateException ) {
 			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
 		}
-		throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+		else if ( t instanceof RuntimeException ) {
+			throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+		}
+		else {
+			throw new CompletionException( t );
+		}
 	}
 
 	private LockOptions getLockOptions() {
