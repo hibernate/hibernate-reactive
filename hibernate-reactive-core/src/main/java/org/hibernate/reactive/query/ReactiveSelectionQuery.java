@@ -64,6 +64,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	@Override
 	ReactiveSelectionQuery<R> setTimeout(int timeout);
+
 	Integer getFetchSize();
 
 	ReactiveSelectionQuery<R> setFetchSize(int fetchSize);
