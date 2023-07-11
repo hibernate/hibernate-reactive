@@ -225,9 +225,19 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		return delegate.reactiveGet( entityClass, id, null, entityGraph );
 	}
 
-	@Override
+	@Override @Deprecated
 	public <R> Query<R> createQuery(String queryString) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(String queryString) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( queryString ) );
 	}
 
 	@Override
