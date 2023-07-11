@@ -32,81 +32,77 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see org.hibernate.query.sqm.mutation.internal.SqmMutationStrategyHelper
  */
 public class ReactiveSqmMutationStrategyHelper {
-	/**
-	 * Singleton access
-	 */
-	public static final ReactiveSqmMutationStrategyHelper INSTANCE = new ReactiveSqmMutationStrategyHelper();
 
 	private ReactiveSqmMutationStrategyHelper() {
 	}
 
-	public static CompletionStage<Void> visitCollectionTables(EntityMappingType entityDescriptor, Consumer<PluralAttributeMapping> consumer) {
-		if ( !entityDescriptor.getEntityPersister().hasCollections() ) {
-			// none to clean-up
-			return voidFuture();
-		}
+//	public static CompletionStage<Void> visitCollectionTables(EntityMappingType entityDescriptor, Consumer<PluralAttributeMapping> consumer) {
+//		if ( !entityDescriptor.getEntityPersister().hasCollections() ) {
+//			// none to clean-up
+//			return voidFuture();
+//		}
+//
+//		final CompletableFuture<Void> stage = new CompletableFuture<>();
+//		try {
+//			entityDescriptor.visitSubTypeAttributeMappings(
+//					attributeMapping -> {
+//						if ( attributeMapping instanceof PluralAttributeMapping ) {
+//							try {
+//								consumer.accept( (PluralAttributeMapping) attributeMapping );
+//								complete( stage, null );
+//							}
+//							catch (Throwable throwable) {
+//								complete( stage, throwable );
+//							}
+//						}
+//						else if ( attributeMapping instanceof EmbeddedAttributeMapping ) {
+//							visitCollectionTables( (EmbeddedAttributeMapping) attributeMapping, consumer )
+//									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
+//						}
+//						else {
+//							complete( stage, null );
+//						}
+//					} );
+//			return stage;
+//		}
+//		catch (Throwable throwable) {
+//			complete( stage, throwable );
+//			return stage;
+//		}
+//	}
 
-		final CompletableFuture<Void> stage = new CompletableFuture();
-		try {
-			entityDescriptor.visitSubTypeAttributeMappings(
-					attributeMapping -> {
-						if ( attributeMapping instanceof PluralAttributeMapping ) {
-							try {
-								consumer.accept( (PluralAttributeMapping) attributeMapping );
-								complete( stage, null );
-							}
-							catch (Throwable throwable) {
-								complete( stage, throwable );
-							}
-						}
-						else if ( attributeMapping instanceof EmbeddedAttributeMapping ) {
-							visitCollectionTables( (EmbeddedAttributeMapping) attributeMapping, consumer )
-									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
-						}
-						else {
-							complete( stage, null );
-						}
-					} );
-			return stage;
-		}
-		catch (Throwable throwable) {
-			complete( stage, throwable );
-			return stage;
-		}
-	}
-
-	private static CompletionStage<Void> visitCollectionTables(EmbeddedAttributeMapping attributeMapping, Consumer<PluralAttributeMapping> consumer) {
-		final CompletableFuture<Void> stage = new CompletableFuture<>();
-
-		try {
-			attributeMapping.visitSubParts(
-					modelPart -> {
-						if ( modelPart instanceof PluralAttributeMapping ) {
-							try {
-								consumer.accept( (PluralAttributeMapping) modelPart );
-								complete( stage, null );
-							}
-							catch (Throwable throwable) {
-								complete( stage, throwable );
-							}
-						}
-						else if ( modelPart instanceof EmbeddedAttributeMapping ) {
-							visitCollectionTables( (EmbeddedAttributeMapping) modelPart, consumer )
-									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
-						}
-						else {
-							complete( stage, null );
-						}
-					},
-					null
-			);
-			return stage;
-		}
-		catch (Throwable t) {
-			complete( stage, t );
-			return stage;
-		}
-	}
+//	private static CompletionStage<Void> visitCollectionTables(EmbeddedAttributeMapping attributeMapping, Consumer<PluralAttributeMapping> consumer) {
+//		final CompletableFuture<Void> stage = new CompletableFuture<>();
+//
+//		try {
+//			attributeMapping.visitSubParts(
+//					modelPart -> {
+//						if ( modelPart instanceof PluralAttributeMapping ) {
+//							try {
+//								consumer.accept( (PluralAttributeMapping) modelPart );
+//								complete( stage, null );
+//							}
+//							catch (Throwable throwable) {
+//								complete( stage, throwable );
+//							}
+//						}
+//						else if ( modelPart instanceof EmbeddedAttributeMapping ) {
+//							visitCollectionTables( (EmbeddedAttributeMapping) modelPart, consumer )
+//									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
+//						}
+//						else {
+//							complete( stage, null );
+//						}
+//					},
+//					null
+//			);
+//			return stage;
+//		}
+//		catch (Throwable t) {
+//			complete( stage, t );
+//			return stage;
+//		}
+//	}
 
 	public static CompletionStage<Void> cleanUpCollectionTables(
 			EntityMappingType entityDescriptor,

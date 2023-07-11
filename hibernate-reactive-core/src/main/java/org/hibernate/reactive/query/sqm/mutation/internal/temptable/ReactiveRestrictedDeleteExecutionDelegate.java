@@ -155,8 +155,8 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		// Use the converter to interpret the where-clause.  We do this for 2 reasons:
 		//		1) the resolved Predicate is ultimately the base for applying restriction to the deletes
 		//		2) we also inspect each ColumnReference that is part of the where-clause to see which
-		//			table it comes from.  if all of the referenced columns (if any at all) are from the root table
-		//			we can perform all of the deletes without using an id-table
+		//			table it comes from. If all the referenced columns (if any at all) are from the root table
+		//			we can perform all the deletes without using an id-table
 		final MutableBoolean needsIdTableWrapper = new MutableBoolean( false );
 		final Predicate specifiedRestriction = converter.visitWhereClause(
 				sqmDelete.getWhereClause(),
@@ -221,7 +221,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		}
 	}
 
-	private CompletionStage executeWithoutIdTable(
+	private CompletionStage<Integer> executeWithoutIdTable(
 			Predicate suppliedPredicate,
 			TableGroup tableGroup,
 			Map<SqmParameter<?>, List<List<JdbcParameter>>> restrictionSqmParameterResolutions,
@@ -307,8 +307,9 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				jdbcParameterBindings,
 				executionContext
 		);
+
+		final CompletionStage<Void>[] deleteFromNonRootStages = new CompletionStage[] { voidFuture() };
 		if ( rootTableReference instanceof UnionTableReference ) {
-			final CompletionStage<Void>[] deleteFromNonRootStages = new CompletionStage[] { voidFuture() };
 			final MutableInteger rows = new MutableInteger();
 			return cleanUpCollectionTablesStage
 					.thenCompose( v -> visitUnionTableReferences(
@@ -324,8 +325,6 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 					.thenApply( o -> rows.get() );
 		}
 		else {
-			final CompletionStage<Void>[] deleteFromNonRootStages = new CompletionStage[] { voidFuture() };
-
 			entityDescriptor.visitConstraintOrderedTables(
 					(tableExpression, tableKeyColumnVisitationSupplier) -> {
 						if ( !tableExpression.equals( rootTableName ) ) {
@@ -640,8 +639,6 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 			QuerySpec idTableSubQuery,
 			ExecutionContext executionContext) {
 		LOG.tracef( "deleteFromTableUsingIdTable - %s", tableExpression );
-
-		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 
 		final TableKeyExpressionCollector keyColumnCollector = new TableKeyExpressionCollector( entityDescriptor );
 		final NamedTableReference targetTable = new NamedTableReference(

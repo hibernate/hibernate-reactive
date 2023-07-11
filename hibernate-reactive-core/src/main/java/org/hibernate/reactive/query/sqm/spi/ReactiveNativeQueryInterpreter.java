@@ -23,7 +23,7 @@ public class ReactiveNativeQueryInterpreter implements NativeQueryInterpreter {
 
 	@Override
 	public <R> NativeSelectQueryPlan<R> createQueryPlan(NativeSelectQueryDefinition<R> queryDefinition, SessionFactoryImplementor sessionFactory) {
-		return new ReactiveNativeSelectQueryPlanImpl(
+		return new ReactiveNativeSelectQueryPlanImpl<>(
 				queryDefinition.getSqlString(),
 				queryDefinition.getAffectedTableNames(),
 				queryDefinition.getQueryParameterOccurrences(),

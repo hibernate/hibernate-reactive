@@ -20,9 +20,9 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsert
 public class ReactivePersistentTableInsertStrategy extends PersistentTableInsertStrategy
 		implements ReactivePersistentTableStrategy, ReactiveSqmMultiTableInsertStrategy {
 
-	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture<>();
 
-	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture<>();
 
 	private boolean prepared;
 

@@ -16,7 +16,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 
-public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan, ReactiveSelectQueryPlan {
+public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan<T>, ReactiveSelectQueryPlan<T> {
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**

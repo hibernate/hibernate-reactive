@@ -22,8 +22,6 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutati
 public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryTableMutationStrategy
 		implements ReactiveSqmMultiTableMutationStrategy {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
 	public ReactiveLocalTemporaryTableMutationStrategy(LocalTemporaryTableMutationStrategy mutationStrategy) {
 		super( mutationStrategy.getTemporaryTable(), mutationStrategy.getSessionFactory() );
 	}

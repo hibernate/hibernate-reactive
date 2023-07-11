@@ -22,9 +22,9 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutati
 public class ReactivePersistentTableMutationStrategy extends PersistentTableMutationStrategy
 		implements ReactivePersistentTableStrategy, ReactiveSqmMultiTableMutationStrategy {
 
-	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture<>();
 
-	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture<>();
 
 	private boolean prepared;
 

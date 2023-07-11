@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.query.sqm.iternal;
+package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.List;
 import java.util.Map;
@@ -119,10 +119,10 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		return executionContext.getQueryOptions().getEffectiveLimit().getMaxRowsJpa() == 0
 				? completedFuture( emptyList() )
-				: withCacheableSqmInterpretation( executionContext, null, listInterpreter );
+				: withCacheableSqmInterpretation( executionContext, listInterpreter );
 	}
 
-	private <T, X> CompletionStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, X context, SqmInterpreter<T, X> interpreter) {
+	private <T, X> CompletionStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, SqmInterpreter<T, X> interpreter) {
 		// NOTE : VERY IMPORTANT - intentional double-lock checking
 		//		The other option would be to leverage `java.util.concurrent.locks.ReadWriteLock`
 		//		to protect access.  However, synchronized is much simpler here.  We will verify
@@ -162,7 +162,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			jdbcParameterBindings = createJdbcParameterBindings( localCopy, executionContext );
 		}
 
-		return interpreter.interpret( context, executionContext, localCopy, jdbcParameterBindings );
+		return interpreter.interpret( null, executionContext, localCopy, jdbcParameterBindings );
 	}
 
 	private JdbcParameterBindings createJdbcParameterBindings(CacheableSqmInterpretation sqmInterpretation, DomainQueryExecutionContext executionContext) {
@@ -295,14 +295,6 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 		public Map<SqmParameter<?>, MappingModelExpressible<?>> getSqmParameterMappingModelTypes() {
 			return sqmParameterMappingModelTypes;
-		}
-
-		JdbcParameterBindings getFirstParameterBindings() {
-			return firstParameterBindings;
-		}
-
-		void setFirstParameterBindings(JdbcParameterBindings firstParameterBindings) {
-			this.firstParameterBindings = firstParameterBindings;
 		}
 	}
 }

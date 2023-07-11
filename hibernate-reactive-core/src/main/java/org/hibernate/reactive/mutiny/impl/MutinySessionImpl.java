@@ -33,7 +33,7 @@ import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;

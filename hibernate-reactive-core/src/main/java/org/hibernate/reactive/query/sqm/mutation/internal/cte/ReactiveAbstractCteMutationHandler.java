@@ -78,7 +78,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 	 */
 	@Override
 	default CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
-		final SqmDeleteOrUpdateStatement sqmMutationStatement = getSqmDeleteOrUpdateStatement();
+		final SqmDeleteOrUpdateStatement<?> sqmMutationStatement = getSqmDeleteOrUpdateStatement();
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final EntityMappingType entityDescriptor = getEntityDescriptor();
 		final String explicitDmlTargetAlias;

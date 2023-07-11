@@ -71,7 +71,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
-		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 
 		final TableGroup mutatingTableGroup = sqmConverter.getMutatingTableGroup();
 

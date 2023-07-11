@@ -36,10 +36,10 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import static java.util.Collections.emptyList;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
-public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanImpl implements ReactiveNativeSelectQueryPlan {
+public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanImpl<R> implements ReactiveNativeSelectQueryPlan<R> {
 
 	private final Set<String> affectedTableNames;
-	private String sql;
+	private final String sql;
 	private final List<ParameterOccurrence> parameterList;
 	private final JdbcValuesMappingProducer resultSetMapping;
 

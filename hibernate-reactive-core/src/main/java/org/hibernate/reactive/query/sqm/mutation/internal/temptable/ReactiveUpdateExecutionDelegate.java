@@ -120,7 +120,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 							executionContext
 					);
 
-					CompletionStage<Void>[] resultStage = new CompletionStage[] { voidFuture() };
+					final CompletionStage<Void>[] resultStage = new CompletionStage[] { voidFuture() };
 					getEntityDescriptor().visitConstraintOrderedTables(
 							(tableExpression, tableKeyColumnVisitationSupplier) -> resultStage[0] = resultStage[0].thenCompose(
 									v -> reactiveUpdateTable(

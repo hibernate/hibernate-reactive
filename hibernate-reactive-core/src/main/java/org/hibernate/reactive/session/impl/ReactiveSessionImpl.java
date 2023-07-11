@@ -117,8 +117,8 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
-import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
-import org.hibernate.reactive.query.sqm.iternal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
