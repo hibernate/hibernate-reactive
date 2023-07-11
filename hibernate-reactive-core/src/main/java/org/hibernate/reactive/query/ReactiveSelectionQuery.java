@@ -115,11 +115,14 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	ReactiveSelectionQuery<R> setLockMode(String alias, LockMode lockMode);
 
+	@Deprecated
 	ReactiveSelectionQuery<R> setAliasSpecificLockMode(String alias, LockMode lockMode);
 
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
 
 	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
+
+	void enableFetchProfile(String profileName);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Object value);

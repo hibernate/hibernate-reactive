@@ -7,12 +7,7 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
@@ -830,5 +825,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	@Override
 	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
 		super.applyGraph( graph, semantic );
+	}
+
+	@Override
+	public void enableFetchProfile(String profileName) {
+		selectionQueryDelegate.enableFetchProfile( profileName );
 	}
 }

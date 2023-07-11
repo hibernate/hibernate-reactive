@@ -832,11 +832,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		return interpretAndCreateSelectionQuery( hqlString, null );
-	}
-
-	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
 		return interpretAndCreateSelectionQuery( hqlString, resultType );
 	}

@@ -500,11 +500,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString) {
-		return interpretAndCreateSelectionQuery( hqlString, null );
-	}
-
-	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
 		return interpretAndCreateSelectionQuery( hqlString, resultType );
 	}

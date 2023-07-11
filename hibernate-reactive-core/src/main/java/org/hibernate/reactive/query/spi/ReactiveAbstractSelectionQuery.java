@@ -6,8 +6,7 @@
 package org.hibernate.reactive.query.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -18,6 +17,7 @@ import java.util.stream.Stream;
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
@@ -36,6 +36,8 @@ import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.sql.results.internal.TupleMetadata;
 
 import jakarta.persistence.NoResultException;
+
+import static java.util.Collections.emptySet;
 
 /**
  * Emulate {@link org.hibernate.query.spi.AbstractSelectionQuery}.
@@ -62,6 +64,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private final Supplier<Class<R>> getResultType;
 	private final Supplier<String> getQueryString;
+
+	private Set<String> fetchProfiles;
 
 	private final Runnable beforeQuery;
 
@@ -175,13 +179,40 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public CompletionStage<List<R>> reactiveList() {
+		final Set<String> profiles = applyProfiles();
 		beforeQuery.run();
 		return doReactiveList()
 				.handle( (list, error) -> {
 					handleException( error );
 					return list;
 				} )
-				.whenComplete( (rs, throwable) -> afterQuery.accept( throwable == null ) );
+				.whenComplete( (rs, throwable) -> {
+					afterQuery.accept( throwable == null );
+					unapplyProfiles( profiles );
+				} );
+	}
+
+	private void unapplyProfiles(Set<String> profiles) {
+		for ( String profile : profiles) {
+			session.getLoadQueryInfluencers().disableFetchProfile( profile );
+		}
+	}
+
+	private Set<String> applyProfiles() {
+		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
+		if ( fetchProfiles != null ) {
+			final Set<String> profiles = new HashSet<>( fetchProfiles.size() );
+			for ( String profile : fetchProfiles ) {
+				if ( !loadQueryInfluencers.isFetchProfileEnabled( profile ) ) {
+					loadQueryInfluencers.enableFetchProfile( profile );
+					profiles.add( profile );
+				}
+			}
+			return profiles;
+		}
+		else {
+			return emptySet();
+		}
 	}
 
 	private void handleException(Throwable e) {
@@ -312,4 +343,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 		throw LOG.nonReactiveMethodCall( "reactiveUniqueResultOptional" );
 	}
 
+	public void enableFetchProfile(String profileName) {
+		if ( fetchProfiles == null ) {
+			fetchProfiles = new HashSet<>();
+		}
+		fetchProfiles.add( profileName );
+	}
 }

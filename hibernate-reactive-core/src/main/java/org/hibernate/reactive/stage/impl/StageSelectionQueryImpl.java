@@ -63,6 +63,12 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	}
 
 	@Override
+	public SelectionQuery<T> enableFetchProfile(String profileName) {
+		delegate.enableFetchProfile( profileName );
+		return this;
+	}
+
+	@Override
 	public CompletionStage<T> getSingleResult() {
 		return delegate.getReactiveSingleResult();
 	}

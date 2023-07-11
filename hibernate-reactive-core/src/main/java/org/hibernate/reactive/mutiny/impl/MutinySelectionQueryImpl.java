@@ -18,7 +18,7 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
-import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -26,9 +26,9 @@ import java.util.function.Supplier;
 
 public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 	private final MutinySessionFactoryImpl factory;
-	private final ReactiveQuery<R> delegate;
+	private final ReactiveSelectionQuery<R> delegate;
 
-	public MutinySelectionQueryImpl(ReactiveQuery<R> delegate, MutinySessionFactoryImpl factory) {
+	public MutinySelectionQueryImpl(ReactiveSelectionQuery<R> delegate, MutinySessionFactoryImpl factory) {
 		this.delegate = delegate;
 		this.factory = factory;
 	}
@@ -207,6 +207,12 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 	@Override
 	public SelectionQuery<R> setComment(String comment) {
 		delegate.setComment( comment );
+		return this;
+	}
+
+	@Override
+	public SelectionQuery<R> enableFetchProfile(String profileName) {
+		delegate.enableFetchProfile( profileName );
 		return this;
 	}
 }
