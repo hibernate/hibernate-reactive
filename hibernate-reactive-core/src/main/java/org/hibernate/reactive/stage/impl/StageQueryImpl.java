@@ -17,6 +17,7 @@ import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.Query;
 
 import java.util.List;
@@ -59,6 +60,12 @@ public class StageQueryImpl<R> implements Query<R> {
 	@Override
 	public Query<R> setPlan(EntityGraph<R> entityGraph) {
 		delegate.applyGraph( (RootGraphImplementor<?>) entityGraph, GraphSemantic.FETCH );
+		return this;
+	}
+
+	@Override
+	public Stage.SelectionQuery<R> enableFetchProfile(String profileName) {
+		delegate.enableFetchProfile( profileName );
 		return this;
 	}
 
