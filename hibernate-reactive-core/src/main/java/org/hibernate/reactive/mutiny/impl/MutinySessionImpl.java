@@ -21,7 +21,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -228,7 +228,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
-		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
+		Class<T> entityClass = ( (RootGraph<T>) entityGraph ).getGraphedType().getJavaType();
 		return uni( () -> delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 

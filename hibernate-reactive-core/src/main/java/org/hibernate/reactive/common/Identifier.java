@@ -90,16 +90,16 @@ public abstract class Identifier<T> {
         return new Id<>(attribute, id);
     }
 
-    public static <T,I> Id<T> id(String attributeName, Object id) {
+    public static <T> Id<T> id(String attributeName, Object id) {
         return new Id<>(attributeName, id);
     }
 
-    public static <T,I> Id<T> id(Class<T> entityClass, String attributeName, Object id) {
+    public static <T> Id<T> id(Class<T> entityClass, String attributeName, Object id) {
         return new Id<>(attributeName, id);
     }
 
     @SafeVarargs
-    public static <T,I> Identifier<T> composite(Id<T>... ids) {
+    public static <T> Identifier<T> composite(Id<T>... ids) {
         return new Composite<>(ids);
     }
 }

@@ -20,7 +20,7 @@ import org.hibernate.Filter;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.LockModeTypeHelper;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -150,7 +150,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
-		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
+		Class<T> entityClass = ( (RootGraph<T>) entityGraph ).getGraphedType().getJavaType();
 		return delegate.reactiveFind( entityClass, id, null, entityGraph );
 	}
 
