@@ -141,6 +141,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		return delegate.isOpen();
 	}
 
+	@Override
+	public Stage.SessionFactory getFactory() {
+		return delegate.getFactory().unwrap( Stage.SessionFactory.class );
+	}
+
 	private Transaction<?> currentTransaction;
 
 	@Override

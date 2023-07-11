@@ -269,6 +269,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
+	public MutinySessionFactoryImpl getFactory() {
+		return factory;
+	}
+
+	@Override
 	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
 		return delegate.getResultSetMapping( resultType, mappingName );
 	}

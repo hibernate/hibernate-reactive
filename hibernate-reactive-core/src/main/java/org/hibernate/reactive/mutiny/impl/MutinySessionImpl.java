@@ -258,8 +258,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	@SafeVarargs
-	public final <T> Uni<Void> mergeAll(T... entity) {
+	public final Uni<Void> mergeAll(Object... entity) {
 		return uni( () -> applyToAll( delegate::reactiveMerge, entity ) );
 	}
 
@@ -521,6 +520,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
+	}
+
+	@Override
+	public Mutiny.SessionFactory getFactory() {
+		return factory;
 	}
 
 	@Override

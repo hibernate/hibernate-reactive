@@ -520,6 +520,16 @@ public class MutinySessionTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test void testFactory(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withSession( session -> {
+			session.getFactory().getCache().evictAll();
+			session.getFactory().getMetamodel().entity(GuineaPig.class);
+			session.getFactory().getCriteriaBuilder().createQuery(GuineaPig.class);
+			session.getFactory().getStatistics().isStatisticsEnabled();
+			return Uni.createFrom().voidItem();
+		} ) );
+	}
+
 	@Test
 	public void testMetamodel() {
 		EntityType<GuineaPig> pig = getSessionFactory().getMetamodel().entity(GuineaPig.class);

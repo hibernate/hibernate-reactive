@@ -14,6 +14,7 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
 
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -768,6 +769,16 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		assertNotNull( pig );
 		assertEquals( 3, pig.getAttributes().size() );
 		assertEquals( "GuineaPig", pig.getName() );
+	}
+
+	@Test void testFactory(VertxTestContext context) {
+		test( context, getSessionFactory().withSession( session -> {
+			session.getFactory().getCache().evictAll();
+			session.getFactory().getMetamodel().entity(GuineaPig.class);
+			session.getFactory().getCriteriaBuilder().createQuery(GuineaPig.class);
+			session.getFactory().getStatistics().isStatisticsEnabled();
+			return CompletionStages.voidFuture();
+		} ) );
 	}
 
 	@Test

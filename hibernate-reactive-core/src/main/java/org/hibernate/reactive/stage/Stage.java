@@ -701,7 +701,7 @@ public interface Stage {
 		 *
 		 * @see #merge(Object)
 		 */
-		<T> CompletionStage<Void> merge(T... entities);
+		CompletionStage<Void> merge(Object... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database.
@@ -1390,6 +1390,11 @@ public interface Stage {
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
+
+		/**
+		 * The {@link SessionFactory} which created this session.
+		 */
+		SessionFactory getFactory();
 	}
 
 	/**
@@ -1802,6 +1807,11 @@ public interface Stage {
 		 * connection.
 		 */
 		CompletionStage<Void> close();
+
+		/**
+		 * The {@link SessionFactory} which created this session.
+		 */
+		SessionFactory getFactory();
 	}
 
 	/**

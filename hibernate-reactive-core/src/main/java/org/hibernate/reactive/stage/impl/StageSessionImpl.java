@@ -179,8 +179,8 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.reactiveMerge( entity );
 	}
 
-	@Override @SafeVarargs
-	public final <T> CompletionStage<Void> merge(T... entity) {
+	@Override
+	public final CompletionStage<Void> merge(Object... entity) {
 		return applyToAll( delegate::reactiveMerge, entity );
 	}
 
@@ -458,6 +458,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public boolean isOpen() {
 		return delegate.isOpen();
+	}
+
+	@Override
+	public Stage.SessionFactory getFactory() {
+		return delegate.getFactory().unwrap( Stage.SessionFactory.class );
 	}
 
 	@Override

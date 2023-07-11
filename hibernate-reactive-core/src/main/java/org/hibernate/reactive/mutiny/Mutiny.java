@@ -684,7 +684,7 @@ public interface Mutiny {
 		 *
 		 * @see #merge(Object)
 		 */
-		<T> Uni<Void> mergeAll(T... entities);
+		Uni<Void> mergeAll(Object... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database.
@@ -1352,6 +1352,11 @@ public interface Mutiny {
 		 * @return false if {@link #close()} has been called
 		 */
 		boolean isOpen();
+
+		/**
+		 * The {@link SessionFactory} which created this session.
+		 */
+		SessionFactory getFactory();
 	}
 
 	/**
@@ -1755,6 +1760,11 @@ public interface Mutiny {
 		 * connection.
 		 */
 		Uni<Void> close();
+
+		/**
+		 * The {@link SessionFactory} which created this session.
+		 */
+		SessionFactory getFactory();
 	}
 
 	/**
