@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -15,8 +14,6 @@ import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 
 public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryTableMutationStrategy
