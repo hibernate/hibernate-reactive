@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.query.sqm.iternal;
+package org.hibernate.reactive.query.sqm.internal;
+
 
 import java.util.List;
 import java.util.Map;
@@ -24,72 +25,76 @@ import org.hibernate.query.sqm.sql.SqmTranslation;
 import org.hibernate.query.sqm.sql.SqmTranslator;
 import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
-import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
-import org.hibernate.sql.ast.tree.update.UpdateStatement;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryUpdate;
+import org.hibernate.sql.ast.tree.insert.InsertStatement;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryInsert;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
-
 /**
- * @see org.hibernate.query.sqm.internal.SimpleUpdateQueryPlan
+ * @see org.hibernate.query.sqm.internal.SimpleInsertQueryPlan
  */
-public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan {
+public class ReactiveSimpleInsertQueryPlan implements ReactiveNonSelectQueryPlan {
 
-	private final SqmUpdateStatement<?> sqmUpdate;
+	private final SqmInsertStatement<?> sqmInsert;
+
 	private final DomainParameterXref domainParameterXref;
 
-	private JdbcOperationQueryUpdate jdbcUpdate;
+	private Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions;
+
+	private JdbcOperationQueryInsert jdbcInsert;
 	private FromClauseAccess tableGroupAccess;
 	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref;
-	private Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParamMappingTypeResolutions;
 
-	public ReactiveSimpleUpdateQueryPlan(SqmUpdateStatement<?> sqmUpdate, DomainParameterXref domainParameterXref) {
-		this.sqmUpdate = sqmUpdate;
+	public ReactiveSimpleInsertQueryPlan(
+			SqmInsertStatement<?> sqmInsert,
+			DomainParameterXref domainParameterXref) {
+		this.sqmInsert = sqmInsert;
 		this.domainParameterXref = domainParameterXref;
 	}
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
-		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
+		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmInsert );
 		final SharedSessionContractImplementor session = executionContext.getSession();
-		final SessionFactoryImplementor factory = session.getFactory();
-		SqlAstTranslator<JdbcOperationQueryUpdate> updateTranslator = null;
-		if ( jdbcUpdate == null ) {
-			updateTranslator = createUpdateTranslator( executionContext );
+		SqlAstTranslator<JdbcOperationQueryInsert> insertTranslator = null;
+		if ( jdbcInsert == null ) {
+			insertTranslator = createInsertTranslator( executionContext );
 		}
 
 		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,
 				jdbcParamsXref,
-				factory.getRuntimeMetamodels().getMappingMetamodel(),
+				session.getFactory().getRuntimeMetamodels().getMappingMetamodel(),
 				tableGroupAccess::findTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmParamMappingTypeResolutions.get( parameter );
+						return (MappingModelExpressible<T>) paramTypeResolutions.get(parameter);
 					}
 				},
 				session
 		);
 
-		if ( jdbcUpdate != null && !jdbcUpdate.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
-			updateTranslator = createUpdateTranslator( executionContext );
+		if ( jdbcInsert != null && !jdbcInsert.isCompatibleWith(
+				jdbcParameterBindings,
+				executionContext.getQueryOptions()
+		) ) {
+			insertTranslator = createInsertTranslator( executionContext );
 		}
 
-		if ( updateTranslator != null ) {
-			jdbcUpdate = updateTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
+		if ( insertTranslator != null ) {
+			jdbcInsert = insertTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		}
 
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(
-						jdbcUpdate,
+						jdbcInsert,
 						jdbcParameterBindings,
 						session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
 						(i, ps) -> {},
@@ -97,14 +102,14 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 				);
 	}
 
-	// I can probably change ORM to reuse this
-	private SqlAstTranslator<JdbcOperationQueryUpdate> createUpdateTranslator(DomainQueryExecutionContext executionContext) {
+	//TODO: reuse from ORM
+	private SqlAstTranslator<JdbcOperationQueryInsert> createInsertTranslator(DomainQueryExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final QueryEngine queryEngine = factory.getQueryEngine();
 
 		final SqmTranslatorFactory translatorFactory = queryEngine.getSqmTranslatorFactory();
-		final SqmTranslator<UpdateStatement> translator = translatorFactory.createSimpleUpdateTranslator(
-				sqmUpdate,
+		final SqmTranslator<InsertStatement> translator = translatorFactory.createInsertTranslator(
+				sqmInsert,
 				executionContext.getQueryOptions(),
 				domainParameterXref,
 				executionContext.getQueryParameterBindings(),
@@ -112,13 +117,20 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 				factory
 		);
 
-		final SqmTranslation<UpdateStatement> sqmInterpretation = translator.translate();
+		final SqmTranslation<InsertStatement> sqmInterpretation = translator.translate();
 
 		tableGroupAccess = sqmInterpretation.getFromClauseAccess();
-		this.jdbcParamsXref = SqmUtil
-				.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
-		this.sqmParamMappingTypeResolutions = sqmInterpretation.getSqmParameterMappingModelTypeResolutions();
-		return factory.getJdbcServices().getJdbcEnvironment().getSqlAstTranslatorFactory()
-				.buildUpdateTranslator( factory, sqmInterpretation.getSqlAst() );
+
+		this.jdbcParamsXref = SqmUtil.generateJdbcParamsXref(
+				domainParameterXref,
+				sqmInterpretation::getJdbcParamsBySqmParam
+		);
+
+		this.paramTypeResolutions = sqmInterpretation.getSqmParameterMappingModelTypeResolutions();
+
+		return factory.getJdbcServices()
+				.getJdbcEnvironment()
+				.getSqlAstTranslatorFactory()
+				.buildInsertTranslator( factory, sqmInterpretation.getSqlAst() );
 	}
 }

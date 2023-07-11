@@ -20,8 +20,8 @@ import org.hibernate.query.sqm.SqmSelectionQuery;
 import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.reactive.query.sqm.iternal.ReactiveQuerySqmImpl;
-import org.hibernate.reactive.query.sqm.iternal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 
 /**
  * @see org.hibernate.query.sql.spi.NamedNativeQueryMemento

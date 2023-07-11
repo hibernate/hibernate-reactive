@@ -6,7 +6,6 @@
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.SQLWarning;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -14,7 +13,6 @@ import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.dialect.temptable.TemporaryTableExporter;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -166,22 +164,6 @@ public class ReactiveTemporaryTableHelper {
 		return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 	}
 
-	private static SqlExceptionHelper.WarningHandler WARNING_HANDLER = new SqlExceptionHelper.WarningHandlerLoggingSupport() {
-		public boolean doProcess() {
-			return LOG.isDebugEnabled();
-		}
-
-		public void prepare(SQLWarning warning) {
-			LOG.warningsCreatingTempTable( warning );
-		}
-
-		@Override
-		protected void logWarning(String description, String message) {
-			LOG.debug( description );
-			LOG.debug( message );
-		}
-	};
-
 	private static void logException(String action, String creationCommand, TemporaryTable temporaryTable, Throwable throwable) {
 		if ( throwable != null ) {
 			if ( creationCommand != null ) {
@@ -201,11 +183,6 @@ public class ReactiveTemporaryTableHelper {
 				);
 			}
 		}
-	}
-
-	private static void logException(String sql, JdbcServices jdbcServices) {
-		final SqlStatementLogger statementLogger = jdbcServices.getSqlStatementLogger();
-		statementLogger.logStatement( sql, FormatStyle.BASIC.getFormatter() );
 	}
 
 	private static void logStatement(String sql, JdbcServices jdbcServices) {

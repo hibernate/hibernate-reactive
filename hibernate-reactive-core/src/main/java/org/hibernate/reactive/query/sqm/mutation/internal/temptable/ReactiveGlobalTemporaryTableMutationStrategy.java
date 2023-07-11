@@ -24,9 +24,9 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutati
 public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporaryTableStrategy
 		implements ReactiveGlobalTemporaryTableStrategy, ReactiveSqmMultiTableMutationStrategy {
 
-	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture<>();
 
-	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture();
+	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture<>();
 
 	private boolean prepared;
 

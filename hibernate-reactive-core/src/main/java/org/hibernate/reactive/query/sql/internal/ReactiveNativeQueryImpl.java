@@ -62,11 +62,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
-	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session, String[] querySpaces) {
-		this( memento, session );
-		addQuerySpaces( querySpaces );
-	}
-
 	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
 		super( memento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );

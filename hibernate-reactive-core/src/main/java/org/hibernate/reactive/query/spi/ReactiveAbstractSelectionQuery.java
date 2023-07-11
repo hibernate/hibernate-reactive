@@ -30,8 +30,8 @@ import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.query.sqm.iternal.AggregatedSelectReactiveQueryPlan;
-import org.hibernate.reactive.query.sqm.iternal.ConcreteSqmSelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.AggregatedSelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.ConcreteSqmSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.sql.results.internal.TupleMetadata;
 
@@ -52,9 +52,9 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private final Supplier<QueryOptions> queryOptionsSupplier;
 
-	private SharedSessionContractImplementor session;
+	private final SharedSessionContractImplementor session;
 	private final Supplier<CompletionStage<List<R>>> doList;
-	private final Supplier<SqmStatement> getStatement;
+	private final Supplier<SqmStatement<?>> getStatement;
 
 	private final Supplier<TupleMetadata> getTupleMetadata;
 
@@ -66,7 +66,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	private final Runnable beforeQuery;
 
 	private final Consumer<Boolean> afterQuery;
-	private Function<List<R>, R> uniqueElement;
+	private final Function<List<R>, R> uniqueElement;
 	private final InterpretationsKeySource interpretationsKeySource;
 
 	// I'm sure we can avoid some of this by making some methods public in ORM,
@@ -75,7 +75,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			InterpretationsKeySource interpretationKeySource,
 			SharedSessionContractImplementor session,
 			Supplier<CompletionStage<List<R>>> doList,
-			Supplier<SqmStatement> getStatement,
+			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
 			Supplier<Class<R>> getResultType,
@@ -98,40 +98,12 @@ public class ReactiveAbstractSelectionQuery<R> {
 				interpretationKeySource
 		);
 	}
-//
-//	public ReactiveAbstractSelectionQuery(
-//			DomainQueryExecutionContext domainQueryExecutionContext,
-//			SharedSessionContractImplementor session,
-//			Supplier<CompletionStage<List<R>>> doList,
-//			Supplier<SqmStatement> getStatement,
-//			Supplier<TupleMetadata> getTupleMetadata,
-//			Supplier<DomainParameterXref> getDomainParameterXref,
-//			Supplier<Class<R>> getResultType,
-//			Supplier<String> getQueryString,
-//			Runnable beforeQuery,
-//			Consumer<Boolean> afterQuery,
-//			Function<List<R>, R> uniqueElement) {
-//		this(
-//				domainQueryExecutionContext::getQueryOptions,
-//				session,
-//				doList,
-//				getStatement,
-//				getTupleMetadata,
-//				getDomainParameterXref,
-//				getResultType,
-//				getQueryString,
-//				beforeQuery,
-//				afterQuery,
-//				uniqueElement,
-//				null
-//		);
-//	}
 
 	public ReactiveAbstractSelectionQuery(
 			Supplier<QueryOptions> queryOptionsSupplier,
 			SharedSessionContractImplementor session,
 			Supplier<CompletionStage<List<R>>> doList,
-			Supplier<SqmStatement> getStatement,
+			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
 			Supplier<Class<R>> getResultType,
@@ -292,7 +264,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return doList.get();
 	}
 
-	public SqmStatement getSqmStatement() {
+	public SqmStatement<?> getSqmStatement() {
 		return getStatement.get();
 	}
 
@@ -329,7 +301,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public Stream<R> getResultStream() {
-		throw LOG.nonReactiveMethodCall( "<no alterative>" );
+		throw LOG.nonReactiveMethodCall( "<no alternative>" );
 	}
 
 	public R uniqueResult() {

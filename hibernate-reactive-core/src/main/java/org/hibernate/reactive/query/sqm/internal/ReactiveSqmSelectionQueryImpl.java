@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.query.sqm.iternal;
+package org.hibernate.reactive.query.sqm.internal;
 
 
 import java.time.Instant;
@@ -28,8 +28,6 @@ import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryLogging;
 import org.hibernate.query.QueryParameter;
-import org.hibernate.query.criteria.internal.NamedCriteriaQueryMementoImpl;
-import org.hibernate.query.hql.internal.NamedHqlQueryMementoImpl;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -64,22 +62,6 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
 		super( hql, hqlInterpretation, expectedResultType, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-	}
-
-	public ReactiveSqmSelectionQueryImpl(
-			NamedHqlQueryMementoImpl memento,
-			Class<R> resultType,
-			SharedSessionContractImplementor session) {
-		super( memento, resultType, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-	}
-
-	public ReactiveSqmSelectionQueryImpl(
-			NamedCriteriaQueryMementoImpl memento,
-			Class<R> resultType,
-			SharedSessionContractImplementor session) {
-		super( memento, resultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
@@ -251,7 +233,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		return this;
 	}
 
-	@Override
+	@Override @Deprecated
 	public ReactiveSqmSelectionQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
 		super.setAliasSpecificLockMode( alias, lockMode );
 		return this;
