@@ -72,6 +72,12 @@ public class MutinyQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public Query<R> enableFetchProfile(String profileName) {
+		delegate.enableFetchProfile( profileName );
+		return this;
+	}
+
+	@Override
 	public Uni<R> getSingleResult() {
 		return uni( delegate::getReactiveSingleResult );
 	}

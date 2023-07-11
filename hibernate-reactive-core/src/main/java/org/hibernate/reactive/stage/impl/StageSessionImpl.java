@@ -108,8 +108,8 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> SelectionQuery<R> createSelectionQuery(String queryString) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString ) );
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
 	}
 
 	@Override
