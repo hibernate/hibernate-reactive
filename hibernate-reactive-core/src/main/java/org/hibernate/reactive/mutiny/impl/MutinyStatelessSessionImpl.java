@@ -68,9 +68,19 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
-	@Override
+	@Override @Deprecated
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
 		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType), factory );
+	}
+
+	@Override
+	public Mutiny.MutationQuery createMutationQuery(String queryString) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( queryString), factory );
 	}
 
 	@Override
