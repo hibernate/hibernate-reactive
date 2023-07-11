@@ -485,7 +485,7 @@ public class StageSessionImpl implements Stage.Session {
 		return delegate.createEntityGraph( rootType, graphName );
 	}
 
-	@Override
+	@Override @Deprecated
 	public <R> Query<R> createQuery(String queryString) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
 	}

@@ -33,7 +33,6 @@ import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -125,7 +124,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return new MutinyMutationQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
-	@Override
+	@Override @Deprecated
 	public <R> Query<R> createQuery(String queryString) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
@@ -143,7 +142,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
 		return new MutinyMutationQueryImpl<>(
-				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaUpdate ),
+				delegate.createReactiveMutationQuery( criteriaUpdate ),
 				factory
 		);
 	}
@@ -151,7 +150,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
 		return new MutinyMutationQueryImpl<>(
-				(ReactiveQuerySqmImpl<R>) delegate.createReactiveMutationQuery( criteriaDelete ),
+				delegate.createReactiveMutationQuery( criteriaDelete ),
 				factory
 		);
 	}
