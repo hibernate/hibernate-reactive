@@ -32,7 +32,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 
 	@Override
 	public NamedSqmQueryMemento getSqmQueryMemento(String queryName) {
-		return wrap( delegate.getSqmQueryMemento( queryName ) );
+		return wrapSqmQueryMemento( delegate.getSqmQueryMemento( queryName ) );
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 
 	@Override
 	public NamedNativeQueryMemento getNativeQueryMemento(String queryName) {
-		return wrap( delegate.getNativeQueryMemento( queryName ) );
+		return wrapNativeQueryMemento( delegate.getNativeQueryMemento( queryName ) );
 	}
 
 	@Override
@@ -105,7 +105,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 			SessionFactoryImplementor sessionFactory,
 			MetadataImplementor bootMetamodel,
 			String registrationName) {
-		return delegate.resolve( sessionFactory, bootMetamodel, registrationName );
+		return wrap(delegate.resolve( sessionFactory, bootMetamodel, registrationName ));
 	}
 
 	@Override
@@ -118,7 +118,17 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 		delegate.close();
 	}
 
-	private static NamedSqmQueryMemento wrap(final NamedSqmQueryMemento sqmQueryMemento) {
+	private static NamedQueryMemento wrap(final NamedQueryMemento namedQueryMemento) {
+		if ( namedQueryMemento == null ) {
+			return null;
+		} else if( namedQueryMemento instanceof  NamedSqmQueryMemento ) {
+			return wrapSqmQueryMemento( (NamedSqmQueryMemento) namedQueryMemento );
+		} else {
+			return wrapNativeQueryMemento( (NamedNativeQueryMemento) namedQueryMemento );
+		}
+	}
+
+	private static NamedSqmQueryMemento wrapSqmQueryMemento(final NamedSqmQueryMemento sqmQueryMemento) {
 		if ( sqmQueryMemento == null ) {
 			return null;
 		}
@@ -131,7 +141,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 		}
 	}
 
-	private static NamedNativeQueryMemento wrap(final NamedNativeQueryMemento nativeQueryMemento) {
+	private static NamedNativeQueryMemento wrapNativeQueryMemento(final NamedNativeQueryMemento nativeQueryMemento) {
 		if ( nativeQueryMemento == null ) {
 			return null;
 		}
