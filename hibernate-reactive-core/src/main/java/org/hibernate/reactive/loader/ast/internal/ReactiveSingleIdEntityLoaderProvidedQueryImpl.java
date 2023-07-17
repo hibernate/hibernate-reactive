@@ -15,6 +15,7 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.Parameter;
 
@@ -51,7 +52,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 		query.setParameter( (Parameter<Object>) query.getParameters().iterator().next(), pkValue );
 		query.setHibernateFlushMode( FlushMode.MANUAL );
 
-		return completedFuture( query.uniqueResult() );
+		return ( (ReactiveSelectionQuery) query ).reactiveUnique();
 	}
 
 	@Override
