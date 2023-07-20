@@ -8,7 +8,7 @@ package org.hibernate.reactive.query.sqm.internal;
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -96,7 +96,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();

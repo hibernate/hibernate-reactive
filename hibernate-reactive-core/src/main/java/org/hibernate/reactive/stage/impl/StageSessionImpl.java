@@ -40,7 +40,7 @@ import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
@@ -61,23 +61,23 @@ public class StageSessionImpl implements Stage.Session {
 		this.delegate = session;
 	}
 	@Override
-	public CompletionStage<Void> flush() {
+	public InternalStage<Void> flush() {
 //		checkOpen();
 		return delegate.reactiveFlush();
 	}
 
 	@Override
-	public <T> CompletionStage<T> fetch(T association) {
+	public <T> InternalStage<T> fetch(T association) {
 		return delegate.reactiveFetch( association, false );
 	}
 
 	@Override
-	public <E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field) {
+	public <E,T> InternalStage<T> fetch(E entity, Attribute<E,T> field) {
 		return delegate.reactiveFetch( entity, field );
 	}
 
 	@Override
-	public <T> CompletionStage<T> unproxy(T association) {
+	public <T> InternalStage<T> unproxy(T association) {
 		return delegate.reactiveFetch( association, true );
 	}
 
@@ -118,109 +118,109 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
+	public <T> InternalStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}
 
 	@Override
-	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
+	public <T> InternalStage<List<T>> find(Class<T> entityClass, Object... ids) {
 		return delegate.reactiveFind( entityClass, ids );
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> id) {
+	public <T> InternalStage<T> find(Class<T> entityClass, Identifier<T> id) {
 		return delegate.reactiveFind( entityClass, id.namedValues() );
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
+	public <T> InternalStage<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
 		return delegate.reactiveFind( entityClass, primaryKey, new LockOptions( lockMode ), null );
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+	public <T> InternalStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
 		return find( entityClass, id, LockModeTypeHelper.getLockMode( lockModeType ) );
 	}
 
 	// FIXME: Should I delete this?
 //	@Override
-	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
+	public <T> InternalStage<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
 		return delegate.reactiveFind( entityClass, primaryKey, lockOptions, null );
 	}
 
 	@Override
-	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
+	public <T> InternalStage<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraph<T>) entityGraph ).getGraphedType().getJavaType();
 		return delegate.reactiveFind( entityClass, id, null, entityGraph );
 	}
 
 	@Override
-	public CompletionStage<Void> persist(Object entity) {
+	public InternalStage<Void> persist(Object entity) {
 		return delegate.reactivePersist( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> persist(Object... entity) {
+	public InternalStage<Void> persist(Object... entity) {
 		return applyToAll( delegate::reactivePersist, entity );
 	}
 
 	@Override
-	public CompletionStage<Void> remove(Object entity) {
+	public InternalStage<Void> remove(Object entity) {
 		return delegate.reactiveRemove( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> remove(Object... entity) {
+	public InternalStage<Void> remove(Object... entity) {
 		return applyToAll( delegate::reactiveRemove, entity );
 	}
 
 	@Override
-	public <T> CompletionStage<T> merge(T entity) {
+	public <T> InternalStage<T> merge(T entity) {
 		return delegate.reactiveMerge( entity );
 	}
 
 	@Override
-	public final CompletionStage<Void> merge(Object... entity) {
+	public final InternalStage<Void> merge(Object... entity) {
 		return applyToAll( delegate::reactiveMerge, entity );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object entity) {
+	public InternalStage<Void> refresh(Object entity) {
 		return delegate.reactiveRefresh( entity, LockOptions.NONE );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
+	public InternalStage<Void> refresh(Object entity, LockMode lockMode) {
 		return delegate.reactiveRefresh( entity, new LockOptions(lockMode) );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
+	public InternalStage<Void> refresh(Object entity, LockModeType lockModeType) {
 		return Stage.Session.super.refresh( entity, lockModeType );
 	}
 
 	//	@Override
-	public CompletionStage<Void> refresh(Object entity, LockOptions lockOptions) {
+	public InternalStage<Void> refresh(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveRefresh( entity, lockOptions );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object... entity) {
+	public InternalStage<Void> refresh(Object... entity) {
 		return applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity );
 	}
 
 	@Override
-	public CompletionStage<Void> lock(Object entity, LockMode lockMode) {
+	public InternalStage<Void> lock(Object entity, LockMode lockMode) {
 		return delegate.reactiveLock( entity, new LockOptions(lockMode) );
 	}
 
 	@Override
-	public CompletionStage<Void> lock(Object entity, LockModeType lockModeType) {
+	public InternalStage<Void> lock(Object entity, LockModeType lockModeType) {
 		return Stage.Session.super.lock( entity, lockModeType );
 	}
 
 	// @Override
-	public CompletionStage<Void> lock(Object entity, LockOptions lockOptions) {
+	public InternalStage<Void> lock(Object entity, LockOptions lockOptions) {
 		return delegate.reactiveLock( entity, lockOptions );
 	}
 
@@ -363,7 +363,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withTransaction(Function<Stage.Transaction, InternalStage<T>> work) {
 		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
 	}
 
@@ -378,7 +378,7 @@ public class StageSessionImpl implements Stage.Session {
 		boolean rollback;
 		Throwable error;
 
-		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+		InternalStage<T> execute(Function<Stage.Transaction, InternalStage<T>> work) {
 			currentTransaction = this;
 			return begin()
 					.thenCompose( v -> executeInTransaction( work ) )
@@ -390,7 +390,7 @@ public class StageSessionImpl implements Stage.Session {
 		 * differentiate an error starting a transaction (and therefore doesn't need to
 		 * roll back) and an error thrown by the work.
 		 */
-		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+		InternalStage<T> executeInTransaction(Function<Stage.Transaction, InternalStage<T>> work) {
 			return work.apply( this )
 					// only flush() if the work completed with no exception
 					.thenCompose( result -> flush().thenApply( v -> result ) )
@@ -410,15 +410,15 @@ public class StageSessionImpl implements Stage.Session {
 
 		}
 
-		CompletionStage<Void> flush() {
+		InternalStage<Void> flush() {
 			return delegate.reactiveAutoflush();
 		}
 
-		CompletionStage<Void> begin() {
+		InternalStage<Void> begin() {
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
-		CompletionStage<Void> end() {
+		InternalStage<Void> end() {
 			ReactiveActionQueue actionQueue = delegate.getReactiveActionQueue();
 			return actionQueue.beforeTransactionCompletion()
 					.thenApply( v -> delegate.getReactiveConnection() )
@@ -451,7 +451,7 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public CompletionStage<Void> close() {
+	public InternalStage<Void> close() {
 		return delegate.reactiveClose();
 	}
 

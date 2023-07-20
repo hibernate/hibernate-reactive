@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;

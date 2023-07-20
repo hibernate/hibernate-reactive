@@ -7,7 +7,7 @@ package org.hibernate.reactive.event;
 
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.LoadEvent;
@@ -27,6 +27,6 @@ public interface ReactiveLoadEventListener extends Serializable {
 	 *
 	 * @throws HibernateException
 	 */
-	CompletionStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
+	InternalStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException;
 
 }

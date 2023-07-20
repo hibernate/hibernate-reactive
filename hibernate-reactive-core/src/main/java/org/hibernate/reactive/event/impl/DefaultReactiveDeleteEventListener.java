@@ -10,7 +10,7 @@ import static org.hibernate.reactive.engine.impl.Cascade.fetchLazyAssociationsBe
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -108,7 +108,7 @@ public class DefaultReactiveDeleteEventListener
 	 *
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnDelete(DeleteEvent event) throws HibernateException {
 		return reactiveOnDelete( event, DeleteContext.create() );
 	}
 
@@ -120,15 +120,15 @@ public class DefaultReactiveDeleteEventListener
 	 *
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException {
+	public InternalStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities) throws HibernateException {
 		if ( optimizeUnloadedDelete( event ) ) {
 			return voidFuture();
 		}
 		else {
 			final EventSource source = event.getSession();
 			Object object = event.getObject();
-			if ( object instanceof CompletionStage ) {
-				final CompletionStage<Object> objectStage = (CompletionStage<Object>) object;
+			if ( object instanceof InternalStage ) {
+				final InternalStage<Object> objectStage = (InternalStage<Object>) object;
 				return objectStage.thenCompose( objectEvent -> fetchAndDelete( event, transientEntities, source, objectEvent ) );
 			}
 			else {
@@ -190,7 +190,7 @@ public class DefaultReactiveDeleteEventListener
 		}
 	}
 
-	private CompletionStage<Void> fetchAndDelete(
+	private InternalStage<Void> fetchAndDelete(
 			DeleteEvent event,
 			DeleteContext transientEntities,
 			EventSource source,
@@ -209,7 +209,7 @@ public class DefaultReactiveDeleteEventListener
 				.thenCompose( entity -> reactiveOnDelete( event, transientEntities, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities, Object entity) {
+	private InternalStage<Void> reactiveOnDelete(DeleteEvent event, DeleteContext transientEntities, Object entity) {
 		final PersistenceContext persistenceContext = event.getSession().getPersistenceContextInternal();
 		final EntityEntry entityEntry = persistenceContext.getEntry( entity );
 		if ( entityEntry == null ) {
@@ -220,7 +220,7 @@ public class DefaultReactiveDeleteEventListener
 		}
 	}
 
-	private CompletionStage<Void> deleteTransientInstance(DeleteEvent event, DeleteContext transientEntities, Object entity) {
+	private InternalStage<Void> deleteTransientInstance(DeleteEvent event, DeleteContext transientEntities, Object entity) {
 		LOG.trace( "Entity was not persistent in delete processing" );
 
 		final EventSource source = event.getSession();
@@ -268,7 +268,7 @@ public class DefaultReactiveDeleteEventListener
 				} );
 	}
 
-	private CompletionStage<Void> deletePersistentInstance(
+	private InternalStage<Void> deletePersistentInstance(
 			DeleteEvent event,
 			DeleteContext transientEntities,
 			Object entity,
@@ -295,7 +295,7 @@ public class DefaultReactiveDeleteEventListener
 		}
 	}
 
-	private CompletionStage<Void> delete(
+	private InternalStage<Void> delete(
 			DeleteEvent event,
 			DeleteContext transientEntities,
 			EventSource source,
@@ -391,7 +391,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param transientEntities A cache of already visited transient entities
 	 * (to avoid infinite recursion).
 	 */
-	protected CompletionStage<Void> deleteTransientEntity(
+	protected InternalStage<Void> deleteTransientEntity(
 			EventSource session,
 			Object entity,
 			EntityPersister persister,
@@ -419,7 +419,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param persister The entity persister.
 	 * @param transientEntities A cache of already deleted entities.
 	 */
-	protected CompletionStage<Void> deleteEntity(
+	protected InternalStage<Void> deleteEntity(
 			final EventSource session,
 			final Object entity,
 			final EntityEntry entityEntry,
@@ -550,7 +550,7 @@ public class DefaultReactiveDeleteEventListener
 		return deletedState;
 	}
 
-	protected CompletionStage<Void> cascadeBeforeDelete(
+	protected InternalStage<Void> cascadeBeforeDelete(
 			EventSource session,
 			EntityPersister persister,
 			Object entity,
@@ -566,7 +566,7 @@ public class DefaultReactiveDeleteEventListener
 				);
 	}
 
-	protected CompletionStage<Void> cascadeAfterDelete(
+	protected InternalStage<Void> cascadeAfterDelete(
 			EventSource session,
 			EntityPersister persister,
 			Object entity,

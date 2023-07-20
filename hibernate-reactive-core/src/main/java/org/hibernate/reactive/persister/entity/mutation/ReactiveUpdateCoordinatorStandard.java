@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,7 +68,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	}
 
 	@Override
-	public CompletionStage<Void> coordinateReactiveUpdate(
+	public InternalStage<Void> coordinateReactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -103,7 +103,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			return updateResultStage;
 		}
 
-		CompletionStage<Void> s = voidFuture();
+		InternalStage<Void> s = voidFuture();
 		return s.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration(entity, values, session) )
 				.thenCompose( preUpdateGeneratedAttributeIndexes -> {
 					final int[] dirtyAttributeIndexes = dirtyAttributeIndexes( incomingDirtyAttributeIndexes, preUpdateGeneratedAttributeIndexes );
@@ -166,7 +166,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				});
 	}
 
-	private CompletionStage<int[]> reactivePreUpdateInMemoryValueGeneration(
+	private InternalStage<int[]> reactivePreUpdateInMemoryValueGeneration(
 			Object entity,
 			Object[] currentValues,
 			SharedSessionContractImplementor session) {
@@ -175,7 +175,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			return completedFuture(EMPTY_INT_ARRAY);
 		}
 
-		CompletionStage<Void> result = voidFuture();
+		InternalStage<Void> result = voidFuture();
 
 		final Generator[] generators = entityMetamodel.getGenerators();
 		if ( generators.length != 0 ) {

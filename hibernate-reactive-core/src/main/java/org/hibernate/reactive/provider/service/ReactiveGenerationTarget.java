@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.CountDownLatch;
 
 import org.hibernate.reactive.logging.impl.Log;
@@ -88,8 +88,8 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 	 * Execute all commands and log exceptions without propagating them.
 	 * This method never fails.
 	 */
-	private CompletionStage<Void> executeCommands(ReactiveConnection reactiveConnection) {
-		CompletionStage<Void> result = voidFuture();
+	private InternalStage<Void> executeCommands(ReactiveConnection reactiveConnection) {
+		InternalStage<Void> result = voidFuture();
 		for ( String command : commands ) {
 			result = result.thenApply( v -> command )
 					.thenCompose( reactiveConnection::execute )

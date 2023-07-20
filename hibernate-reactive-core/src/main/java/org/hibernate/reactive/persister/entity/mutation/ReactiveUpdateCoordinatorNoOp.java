@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.persister.entity.mutation;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
@@ -33,7 +33,7 @@ public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp impleme
 	}
 
 	@Override
-	public CompletionStage<Void> coordinateReactiveUpdate(
+	public InternalStage<Void> coordinateReactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,

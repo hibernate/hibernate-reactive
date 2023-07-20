@@ -8,7 +8,7 @@ package org.hibernate.reactive.sql.exec.internal;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -43,7 +43,7 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactive(
+	public InternalStage<Integer> executeReactive(
 			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,

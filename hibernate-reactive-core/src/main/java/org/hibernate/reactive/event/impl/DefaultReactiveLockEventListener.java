@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -47,7 +47,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
-	public CompletionStage<Void> reactiveOnLock(LockEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnLock(LockEvent event) throws HibernateException {
 		if ( event.getObject() == null ) {
 			throw new NullPointerException( "attempted to lock null" );
 		}
@@ -79,13 +79,13 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				.thenCompose( entity -> reactiveOnLock( event, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnLock(LockEvent event, Object entity) {
+	private InternalStage<Void> reactiveOnLock(LockEvent event, Object entity) {
 
 		final SessionImplementor source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
 		final EntityEntry entry = persistenceContext.getEntry(entity);
-		final CompletionStage<EntityEntry> stage;
+		final InternalStage<EntityEntry> stage;
 		if ( entry==null ) {
 			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 			final Object id = persister.getIdentifier( entity, source );
@@ -139,7 +139,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 	 * @param lockOptions contains the requested lock mode.
 	 * @param source The session which is the source of the event being processed.
 	 */
-	protected CompletionStage<Void> upgradeLock(
+	protected InternalStage<Void> upgradeLock(
 			Object object,
 			EntityEntry entry,
 			LockOptions lockOptions,
@@ -184,7 +184,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		}
 	}
 
-	private CompletionStage<Void> doUpgradeLock(Object object, EntityEntry entry,
+	private InternalStage<Void> doUpgradeLock(Object object, EntityEntry entry,
 												LockOptions lockOptions,
 												EventSource source) {
 

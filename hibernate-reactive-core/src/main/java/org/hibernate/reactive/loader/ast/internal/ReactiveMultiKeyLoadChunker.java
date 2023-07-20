@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.Bindable;
@@ -81,7 +81,7 @@ public class ReactiveMultiKeyLoadChunker<K> {
 	 * @param keyCollector Called for each key as it is processed
 	 * @param boundaryListener Notifications that processing a chunk has completed
 	 */
-	public CompletionStage<Void> processChunks(
+	public InternalStage<Void> processChunks(
 			K[] keys,
 			int nonNullElementCount,
 			ReactiveMultiKeyLoadChunker.SqlExecutionContextCreator sqlExecutionContextCreator,
@@ -111,7 +111,7 @@ public class ReactiveMultiKeyLoadChunker<K> {
 		return voidFuture();
 	}
 
-	private CompletionStage<Void> processChunk(
+	private InternalStage<Void> processChunk(
 			K[] keys,
 			int startIndex,
 			ReactiveMultiKeyLoadChunker.SqlExecutionContextCreator sqlExecutionContextCreator,

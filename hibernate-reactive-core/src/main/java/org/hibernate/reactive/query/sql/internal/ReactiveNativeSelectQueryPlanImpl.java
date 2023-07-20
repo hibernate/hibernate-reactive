@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.results.ResultSetMapping;
@@ -66,7 +66,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
+	public InternalStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		final QueryOptions queryOptions = executionContext.getQueryOptions();
 		if ( queryOptions.getEffectiveLimit().getMaxRowsJpa() == 0 ) {
 			return completedFuture( emptyList() );

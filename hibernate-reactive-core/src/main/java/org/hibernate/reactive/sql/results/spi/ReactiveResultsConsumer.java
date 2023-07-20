@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.spi;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
@@ -15,7 +15,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 
 public interface ReactiveResultsConsumer<T, R> {
 
-	CompletionStage<T> consume(
+	InternalStage<T> consume(
 			ReactiveValuesResultSet jdbcValues,
 			SharedSessionContractImplementor session,
 			JdbcValuesSourceProcessingOptions processingOptions,

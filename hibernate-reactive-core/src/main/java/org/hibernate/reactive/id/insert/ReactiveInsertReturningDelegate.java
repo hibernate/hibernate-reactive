@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.id.insert;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -25,7 +25,7 @@ public class ReactiveInsertReturningDelegate extends InsertReturningDelegate imp
 	}
 
 	@Override
-	public CompletionStage<Object> reactivePerformInsert(
+	public InternalStage<Object> reactivePerformInsert(
 			String insertSQL,
 			SharedSessionContractImplementor session,
 			Binder binder) {

@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -32,7 +32,7 @@ public class ReactiveMultiTableInsertQueryPlan implements ReactiveNonSelectQuery
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmInsert );
 		return mutationStrategy.reactiveExecuteInsert( sqmInsert, domainParameterXref, executionContext );
 	}

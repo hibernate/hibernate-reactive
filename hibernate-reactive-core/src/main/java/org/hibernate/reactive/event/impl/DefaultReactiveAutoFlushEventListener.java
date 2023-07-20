@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -30,12 +30,12 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
-	public CompletionStage<Void> reactiveOnAutoFlush(AutoFlushEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnAutoFlush(AutoFlushEvent event) throws HibernateException {
 		final EventSource source = event.getSession();
 		final SessionEventListenerManager eventListenerManager = source.getEventListenerManager();
 
 		eventListenerManager.partialFlushStart();
-		CompletionStage<Void> autoFlushStage = voidFuture();
+		InternalStage<Void> autoFlushStage = voidFuture();
 		if ( flushMightBeNeeded( source ) ) {
 			// Need to get the number of collection removals before flushing to executions
 			// (because flushing to executions can add collection removal actions to the action queue).

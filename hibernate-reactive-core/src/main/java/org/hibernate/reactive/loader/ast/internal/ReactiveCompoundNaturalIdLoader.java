@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -18,7 +18,7 @@ import org.hibernate.metamodel.mapping.internal.CompoundNaturalIdMapping;
 import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 
-public class ReactiveCompoundNaturalIdLoader<T> extends CompoundNaturalIdLoader<CompletionStage<T>> implements ReactiveNaturalIdLoader<T> {
+public class ReactiveCompoundNaturalIdLoader<T> extends CompoundNaturalIdLoader<InternalStage<T>> implements ReactiveNaturalIdLoader<T> {
 
 	private final ReactiveNaturalIdLoaderDelegate<T> delegate;
 
@@ -48,19 +48,19 @@ public class ReactiveCompoundNaturalIdLoader<T> extends CompoundNaturalIdLoader<
 	}
 
 	@Override
-	public CompletionStage<Object> resolveNaturalIdToId(
+	public InternalStage<Object> resolveNaturalIdToId(
 			Object naturalIdValue,
 			SharedSessionContractImplementor session) {
 		return delegate.resolveNaturalIdToId( naturalIdValue, session );
 	}
 
 	@Override
-	public CompletionStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session) {
 		return delegate.resolveIdToNaturalId( id, session );
 	}
 
 	@Override
-	public CompletionStage<T> load(
+	public InternalStage<T> load(
 			Object naturalIdValue,
 			NaturalIdLoadOptions options,
 			SharedSessionContractImplementor session) {

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sqm.mutation.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -27,7 +27,7 @@ public interface ReactiveSqmMultiTableInsertStrategy extends SqmMultiTableInsert
 		throw LOG.nonReactiveMethodCall( "reactiveExecuteInsert" );
 	}
 
-	CompletionStage<Integer> reactiveExecuteInsert(
+	InternalStage<Integer> reactiveExecuteInsert(
 			SqmInsertStatement<?> sqmInsertStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context);

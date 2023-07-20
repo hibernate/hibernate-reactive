@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.event;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
@@ -22,13 +22,13 @@ public interface ReactivePersistEventListener {
 	 *
 	 * @param event The create event to be handled.
 	 */
-	CompletionStage<Void> reactiveOnPersist(PersistEvent event);
+	InternalStage<Void> reactiveOnPersist(PersistEvent event);
 
 	/**
 	 * Handle the given create event.
 	 *
 	 * @param event The create event to be handled.
 	 */
-	CompletionStage<Void> reactiveOnPersist(PersistEvent event, PersistContext createdAlready);
+	InternalStage<Void> reactiveOnPersist(PersistEvent event, PersistContext createdAlready);
 
 }

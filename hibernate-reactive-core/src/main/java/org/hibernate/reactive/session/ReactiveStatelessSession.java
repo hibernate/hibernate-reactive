@@ -10,8 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**Mutiny
  * A contract with the Hibernate stateless session backing the user-visible
@@ -26,41 +25,41 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
-	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
+	<T> InternalStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
 
-	<T> CompletionStage<T> reactiveGet(String entityName, Object id);
+	<T> InternalStage<T> reactiveGet(String entityName, Object id);
 
-	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+	<T> InternalStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
-	<T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+	<T> InternalStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
-	CompletionStage<Void> reactiveInsert(Object entity);
+	InternalStage<Void> reactiveInsert(Object entity);
 
-	CompletionStage<Void> reactiveDelete(Object entity);
+	InternalStage<Void> reactiveDelete(Object entity);
 
-	CompletionStage<Void> reactiveUpdate(Object entity);
+	InternalStage<Void> reactiveUpdate(Object entity);
 
-	CompletionStage<Void> reactiveRefresh(Object entity);
+	InternalStage<Void> reactiveRefresh(Object entity);
 
-	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
+	InternalStage<Void> reactiveRefresh(Object entity, LockMode lockMode);
 
-	CompletionStage<Void> reactiveInsertAll(Object... entities);
+	InternalStage<Void> reactiveInsertAll(Object... entities);
 
-	CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities);
+	InternalStage<Void> reactiveInsertAll(int batchSize, Object... entities);
 
-	CompletionStage<Void> reactiveUpdateAll(Object... entities);
+	InternalStage<Void> reactiveUpdateAll(Object... entities);
 
-	CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities);
+	InternalStage<Void> reactiveUpdateAll(int batchSize, Object... entities);
 
-	CompletionStage<Void> reactiveDeleteAll(Object... entities);
+	InternalStage<Void> reactiveDeleteAll(Object... entities);
 
-	CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities);
+	InternalStage<Void> reactiveDeleteAll(int batchSize, Object... entities);
 
-	CompletionStage<Void> reactiveRefreshAll(Object... entities);
+	InternalStage<Void> reactiveRefreshAll(Object... entities);
 
-	CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities);
+	InternalStage<Void> reactiveRefreshAll(int batchSize, Object... entities);
 
 	boolean isOpen();
 
-	void close(CompletableFuture<Void> closing);
+	void close(InternalStage<Void> closing);
 }

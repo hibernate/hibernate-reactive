@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
@@ -57,7 +57,7 @@ public class ReactiveMutationExecutorPostInsertSingleTable extends MutationExecu
 	}
 
 	@Override
-	public CompletionStage<Object> executeReactive(
+	public InternalStage<Object> executeReactive(
 			Object modelReference,
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,

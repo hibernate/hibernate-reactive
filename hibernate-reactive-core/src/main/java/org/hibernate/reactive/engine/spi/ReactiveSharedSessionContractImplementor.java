@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.spi;
 
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 
 import org.hibernate.engine.spi.PersistenceContext;
@@ -18,7 +18,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
  */
 public interface ReactiveSharedSessionContractImplementor {
 
-	default CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
+	default InternalStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
 		return falseFuture();
 	}
 

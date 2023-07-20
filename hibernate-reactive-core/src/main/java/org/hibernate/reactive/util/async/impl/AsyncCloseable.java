@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.util.async.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Copy of com.ibm.asyncutil.util.AsyncClosable in com.ibm.async:asyncutil:0.1.0
@@ -32,6 +32,6 @@ public interface AsyncCloseable {
 	 * @return a {@link CompletionStage} that completes when all resources associated with this object
 	 * have been released, or with an exception if the resources cannot be released.
 	 */
-	CompletionStage<Void> close();
+	InternalStage<Void> close();
 
 }

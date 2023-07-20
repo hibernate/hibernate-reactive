@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -29,7 +29,7 @@ public class ReactiveUpdateRowsCoordinatorNoOp extends UpdateRowsCoordinatorNoOp
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
 

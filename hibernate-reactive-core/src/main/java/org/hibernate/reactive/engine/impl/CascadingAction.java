@@ -13,7 +13,6 @@ import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
 
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
 
 /**
  * A {@link Stage.Session reactive session} operation that may
@@ -35,7 +34,7 @@ public interface CascadingAction<C> {
 	 * which is specific to each CascadingAction type
 	 * @param isCascadeDeleteEnabled Are cascading deletes enabled.
 	 */
-	CompletionStage<Void> cascade(
+	InternalStage<Void> cascade(
 			EventSource session,
 			Object child,
 			String entityName,
@@ -81,7 +80,7 @@ public interface CascadingAction<C> {
 	 * @param propertyType The property type
 	 * @param propertyIndex The index of the property within the owner.
 	 */
-	CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex);
+	InternalStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex);
 
 	/**
 	 * Should this action be performed (or noCascade consulted) in the case of lazy properties.

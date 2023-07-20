@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -64,22 +64,22 @@ public class ReactiveDirectResultSetAccess extends DirectResultSetAccess impleme
 	}
 
 	@Override
-	public CompletionStage<ResultSet> getReactiveResultSet() {
+	public InternalStage<ResultSet> getReactiveResultSet() {
 		return completedFuture( resultSet );
 	}
 
 	@Override
-	public CompletionStage<ResultSetMetaData> getReactiveMetadata() {
+	public InternalStage<ResultSetMetaData> getReactiveMetadata() {
 		return completedFuture( getMetaData() );
 	}
 
 	@Override
-	public CompletionStage<Integer> getReactiveColumnCount() {
+	public InternalStage<Integer> getReactiveColumnCount() {
 		return completedFuture( getColumnCount() );
 	}
 
 	@Override
-	public CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
+	public InternalStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
 		throw LOG.notYetImplemented();
 	}
 

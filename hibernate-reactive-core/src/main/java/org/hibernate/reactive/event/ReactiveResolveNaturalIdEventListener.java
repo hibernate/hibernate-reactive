@@ -7,7 +7,7 @@ package org.hibernate.reactive.event;
 
 import org.hibernate.event.spi.ResolveNaturalIdEvent;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Defines the contract for handling of resolve natural id events generated from a session.
@@ -24,6 +24,6 @@ public interface ReactiveResolveNaturalIdEventListener {
 	 *
 	 * @param event The resolve natural id event to be handled.
 	 */
-	CompletionStage<Void> onReactiveResolveNaturalId(ResolveNaturalIdEvent event);
+	InternalStage<Void> onReactiveResolveNaturalId(ResolveNaturalIdEvent event);
 
 }

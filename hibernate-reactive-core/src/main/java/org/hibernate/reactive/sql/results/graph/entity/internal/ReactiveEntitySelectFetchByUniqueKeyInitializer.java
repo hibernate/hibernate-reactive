@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -40,7 +40,7 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer extends ReactiveEnt
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
 		if ( entityInstance != null || isInitialized ) {
 			return voidFuture();
 		}

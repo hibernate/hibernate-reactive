@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.tuple;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.Incubating;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
@@ -21,6 +21,6 @@ public abstract class StageGenerator implements BeforeExecutionGenerator {
         throw new UnsupportedOperationException( "Use generate(Stage.Session, Object, Object, EventType) instead" );
     }
 
-    public abstract CompletionStage<Object> generate(Stage.Session session, Object owner, Object currentValue,
+    public abstract InternalStage<Object> generate(Stage.Session session, Object owner, Object currentValue,
                                                      EventType eventType);
 }

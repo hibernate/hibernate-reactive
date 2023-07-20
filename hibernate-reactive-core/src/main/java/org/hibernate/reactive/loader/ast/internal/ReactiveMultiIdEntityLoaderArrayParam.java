@@ -9,7 +9,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -75,7 +75,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 	}
 
 	@Override
-	protected <K> CompletionStage<List<E>> performOrderedMultiLoad(
+	protected <K> InternalStage<List<E>> performOrderedMultiLoad(
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
@@ -232,7 +232,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 	}
 
 	@Override
-	protected <K> CompletionStage<List<E>> performUnorderedMultiLoad(
+	protected <K> InternalStage<List<E>> performUnorderedMultiLoad(
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {

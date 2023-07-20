@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -22,7 +22,7 @@ public class ReactiveCollectionLoaderNamedQuery implements ReactiveCollectionLoa
 	}
 
 	@Override
-	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException();
 	}
 }

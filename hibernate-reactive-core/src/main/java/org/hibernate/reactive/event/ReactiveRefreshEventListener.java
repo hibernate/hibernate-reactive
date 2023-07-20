@@ -9,7 +9,7 @@ import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.event.spi.RefreshEvent;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Defines the contract for handling of refresh events generated from a session.
@@ -23,8 +23,8 @@ public interface ReactiveRefreshEventListener extends Serializable {
      *
      * @param event The refresh event to be handled.
      */
-	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event);
+	InternalStage<Void> reactiveOnRefresh(RefreshEvent event);
 
-	CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready);
+	InternalStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready);
 
 }

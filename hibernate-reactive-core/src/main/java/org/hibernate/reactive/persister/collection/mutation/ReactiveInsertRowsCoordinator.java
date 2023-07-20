@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.persister.collection.mutation;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -13,7 +13,7 @@ import org.hibernate.persister.collection.mutation.InsertRowsCoordinator;
 
 public interface ReactiveInsertRowsCoordinator extends InsertRowsCoordinator {
 
-	CompletionStage<Void> reactiveInsertRows(
+	InternalStage<Void> reactiveInsertRows(
 			PersistentCollection<?> collection,
 			Object id,
 			EntryFilter entryChecker,

@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
@@ -58,7 +57,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	 * @see #reactiveMakeEntityManaged()
 	 */
 	// @see org.hibernate.action.internal.AbstractEntityInsertAction#nullifyTransientReferencesIfNotAlready()
-	default CompletionStage<Void> reactiveNullifyTransientReferencesIfNotAlready() {
+	default InternalStage<Void> reactiveNullifyTransientReferencesIfNotAlready() {
 		if ( !areTransientReferencesNullified() ) {
 			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), (SessionImplementor) getSession(), getPersister() )
 					.nullifyTransientReferences( getState() )
@@ -77,7 +76,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	 *
 	 * @see org.hibernate.action.internal.AbstractEntityInsertAction#makeEntityManaged()
 	 */
-	default CompletionStage<Void> reactiveMakeEntityManaged() {
+	default InternalStage<Void> reactiveMakeEntityManaged() {
 		return reactiveNullifyTransientReferencesIfNotAlready()
 				.thenAccept( v -> getSession().getPersistenceContextInternal().addEntity(
 						getInstance(),
@@ -92,7 +91,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 				));
 	}
 
-	default CompletionStage<NonNullableTransientDependencies> reactiveFindNonNullableTransientEntities() {
+	default InternalStage<NonNullableTransientDependencies> reactiveFindNonNullableTransientEntities() {
 		return ForeignKeys.findNonNullableTransientEntities( getPersister().getEntityName(), getInstance(), getState(), isEarlyInsert(), getSession() );
 	}
 

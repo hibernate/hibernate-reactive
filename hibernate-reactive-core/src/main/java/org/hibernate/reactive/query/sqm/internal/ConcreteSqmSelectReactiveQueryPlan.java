@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Supplier;
 
 import org.hibernate.ScrollMode;
@@ -82,7 +82,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				listInterpreter( hql, domainParameterXref, executionContext, sqmInterpretation, jdbcParameterBindings, rowTransformer );
 	}
 
-	private static <R> CompletionStage<List<R>> listInterpreter(
+	private static <R> InternalStage<List<R>> listInterpreter(
 			String hql,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext executionContext,
@@ -116,13 +116,13 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
+	public InternalStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		return executionContext.getQueryOptions().getEffectiveLimit().getMaxRowsJpa() == 0
 				? completedFuture( emptyList() )
 				: withCacheableSqmInterpretation( executionContext, listInterpreter );
 	}
 
-	private <T, X> CompletionStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, SqmInterpreter<T, X> interpreter) {
+	private <T, X> InternalStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, SqmInterpreter<T, X> interpreter) {
 		// NOTE : VERY IMPORTANT - intentional double-lock checking
 		//		The other option would be to leverage `java.util.concurrent.locks.ReadWriteLock`
 		//		to protect access.  However, synchronized is much simpler here.  We will verify
@@ -247,7 +247,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	}
 
 	private interface SqmInterpreter<T, X> {
-		CompletionStage<T> interpret(
+		InternalStage<T> interpret(
 				X context,
 				DomainQueryExecutionContext executionContext,
 				CacheableSqmInterpretation sqmInterpretation,

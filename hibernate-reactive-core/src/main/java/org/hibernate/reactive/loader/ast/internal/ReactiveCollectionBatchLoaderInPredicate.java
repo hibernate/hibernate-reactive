@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -89,7 +89,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 	}
 
 	@Override
-	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
 		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Loading collection `%s#%s` by batch-fetch",
@@ -134,7 +134,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 		}
 	}
 
-	private <T> CompletionStage<Void> initializeKeys(
+	private <T> InternalStage<Void> initializeKeys(
 			T key,
 			T[] keysToInitialize,
 			int nonNullKeysToInitializeCount,

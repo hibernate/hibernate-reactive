@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -41,7 +41,7 @@ public class ReactiveInsertRowsCoordinatorNoOp implements ReactiveInsertRowsCoor
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, EntryFilter entryChecker, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, EntryFilter entryChecker, SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
 

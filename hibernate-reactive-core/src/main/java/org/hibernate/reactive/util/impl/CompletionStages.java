@@ -10,14 +10,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LogCategory;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -31,10 +30,10 @@ public class  CompletionStages {
 	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ) );
 
 	// singleton instances:
-	private static final CompletionStage<Void> VOID = completedFuture( null );
-	private static final CompletionStage<Integer> ZERO = completedFuture( 0 );
-	private static final CompletionStage<Boolean> TRUE = completedFuture( true );
-	private static final CompletionStage<Boolean> FALSE = completedFuture( false );
+	private static final InternalStage<Void> VOID = completedFuture( null );
+	private static final InternalStage<Integer> ZERO = completedFuture( 0 );
+	private static final InternalStage<Boolean> TRUE = completedFuture( true );
+	private static final InternalStage<Boolean> FALSE = completedFuture( false );
 
 	private static <T> boolean alwaysTrue(T o, int index) {
 		return true;
@@ -48,48 +47,46 @@ public class  CompletionStages {
 		return true;
 	}
 
-	private static CompletionStage<Boolean> alwaysContinue(Object ignored) {
+	private static InternalStage<Boolean> alwaysContinue(Object ignored) {
 		return TRUE;
 	}
 
-	public static CompletionStage<Void> voidFuture(Object ignore) {
+	public static InternalStage<Void> voidFuture(Object ignore) {
 		return voidFuture();
 	}
 
-	public static CompletionStage<Void> voidFuture() {
+	public static InternalStage<Void> voidFuture() {
 		return VOID;
 	}
 
-	public static CompletionStage<Integer> zeroFuture() {
+	public static InternalStage<Integer> zeroFuture() {
 		return ZERO;
 	}
 
-	public static CompletionStage<Integer> zeroFuture(Object ignore) {
+	public static InternalStage<Integer> zeroFuture(Object ignore) {
 		return zeroFuture();
 	}
 
-	public static CompletionStage<Boolean> trueFuture() {
+	public static InternalStage<Boolean> trueFuture() {
 		return TRUE;
 	}
 
-	public static CompletionStage<Boolean> falseFuture() {
+	public static InternalStage<Boolean> falseFuture() {
 		return FALSE;
 	}
 
-	public static <T> CompletionStage<T> nullFuture() {
+	public static <T> InternalStage<T> nullFuture() {
 		//Unsafe cast, but perfectly fine: avoids having to allocate a new instance
 		//for each different "type of null".
-		return (CompletionStage<T>) VOID;
+		return (InternalStage<T>) VOID;
 	}
 
-	public static <T> CompletionStage<T> completedFuture(T value) {
-		return CompletableFuture.completedFuture( value );
+	public static <T> InternalStage<T> completedFuture(T value) {
+		return InternalStage.completedFuture( value );
 	}
 
-	public static <T> CompletionStage<T> failedFuture(Throwable t) {
-		CompletableFuture<T> ret = new CompletableFuture<>();
-		ret.completeExceptionally( t );
-		return ret;
+	public static <T> InternalStage<T> failedFuture(Throwable t) {
+		return InternalStage.failedStage( t );
 	}
 
 	public static <T extends Throwable, Ret> Ret rethrow(Throwable x) throws T {
@@ -132,7 +129,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static CompletionStage<Integer> total(int start, int end, IntFunction<CompletionStage<Integer>> consumer) {
+	public static InternalStage<Integer> total(int start, int end, IntFunction<InternalStage<Integer>> consumer) {
 		return range( start, end )
 				.thenCompose( i -> consumer.apply( i.intValue() ) )
 				.fold( 0, Integer::sum );
@@ -147,7 +144,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Integer> total(Iterator<T> iterator, Function<T,CompletionStage<Integer>> consumer) {
+	public static <T> InternalStage<Integer> total(Iterator<T> iterator, Function<T,InternalStage<Integer>> consumer) {
 		return fromIterator( iterator )
 				.thenCompose( consumer )
 				.fold( 0, Integer::sum );
@@ -162,7 +159,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Integer> total(T[] array, Function<T, CompletionStage<Integer>> consumer) {
+	public static <T> InternalStage<Integer> total(T[] array, Function<T, InternalStage<Integer>> consumer) {
 		return total( 0, array.length, index -> consumer.apply( array[index] ) );
 	}
 
@@ -174,7 +171,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Void> loop(T[] array, Function<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(T[] array, Function<T, InternalStage<?>> consumer) {
 		return loop( 0, array.length, index -> consumer.apply( array[index] ) );
 	}
 
@@ -188,7 +185,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Void> loop(T[] array, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(T[] array, IntPredicate filter, IntFunction<InternalStage<?>> consumer) {
 		return loop( 0, array.length, filter, consumer );
 	}
 
@@ -201,7 +198,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, IntBiFunction<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(Iterator<T> iterator, IntBiFunction<T, InternalStage<?>> consumer) {
 		return loop( iterator, CompletionStages::alwaysTrue, consumer );
 	}
 	/**
@@ -217,7 +214,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static <T> CompletionStage<Void> loop(Iterator<T> iterator, IntBiPredicate<T> filter, IntBiFunction<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(Iterator<T> iterator, IntBiPredicate<T> filter, IntBiFunction<T, InternalStage<?>> consumer) {
 		if ( iterator.hasNext() ) {
 			final IndexedIteratorLoop<T> loop = new IndexedIteratorLoop<>( iterator, filter, consumer );
 			return asyncWhile( loop::next );
@@ -258,7 +255,7 @@ public class  CompletionStages {
 			throw (T) throwable;
 		}
 
-		public CompletionStage<R> getResultAsCompletionStage() {
+		public InternalStage<R> getResultAsCompletionStage() {
 			if ( throwable == null ) {
 				return completedFuture( result );
 			}
@@ -268,7 +265,7 @@ public class  CompletionStages {
 		/**
 		 * Same as {@link #getResultAsCompletionStage()}, but allows method reference
 		 */
-		public CompletionStage<R> getResultAsCompletionStage(Void unused) {
+		public InternalStage<R> getResultAsCompletionStage(Void unused) {
 			return getResultAsCompletionStage();
 		}
 	}
@@ -298,18 +295,18 @@ public class  CompletionStages {
 	 */
 	private static class IndexedIteratorLoop<T> {
 		private final IntBiPredicate<T> filter;
-		private final IntBiFunction<T, CompletionStage<?>> consumer;
+		private final IntBiFunction<T, InternalStage<?>> consumer;
 		private final Iterator<T> iterator;
 		private int currentIndex = -1;
 		private T currentEntry;
 
-		public IndexedIteratorLoop(Iterator<T> iterator, IntBiPredicate<T> filter, IntBiFunction<T, CompletionStage<?>> consumer) {
+		public IndexedIteratorLoop(Iterator<T> iterator, IntBiPredicate<T> filter, IntBiFunction<T, InternalStage<?>> consumer) {
 			this.iterator = iterator;
 			this.filter = filter;
 			this.consumer = consumer;
 		}
 
-		public CompletionStage<Boolean> next() {
+		public InternalStage<Boolean> next() {
 			if ( hasNext() ) {
 				final T entry = currentEntry;
 				final int index = currentIndex;
@@ -346,7 +343,7 @@ public class  CompletionStages {
 	 * }
 	 * </pre>
 	 */
-	public static <T> CompletionStage<Void> loop(Collection<T> collection, Function<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(Collection<T> collection, Function<T, InternalStage<?>> consumer) {
 		return loop( collection, CompletionStages::alwaysTrue, consumer );
 	}
 
@@ -354,7 +351,7 @@ public class  CompletionStages {
 	 * @deprecated always prefer the variants which use a List rather than a Collection
 	 */
 	@Deprecated
-	public static <T> CompletionStage<Void> loop(Collection<T> collection, Predicate<T> filter, Function<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(Collection<T> collection, Predicate<T> filter, Function<T, InternalStage<?>> consumer) {
 		if ( collection instanceof List ) {
 			//This is true in almost all known cases, so a good optimisation in practice.
 			return loop( (List<T>) collection, filter, consumer );
@@ -365,15 +362,15 @@ public class  CompletionStages {
 		}
 	}
 
-	public static <T> CompletionStage<Void> loop(List<T> list, Function<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(List<T> list, Function<T, InternalStage<?>> consumer) {
 		return loop( list, CompletionStages::alwaysTrue, consumer );
 	}
 
-	public static <T> CompletionStage<Void> loop(List<T> list, Predicate<T> filter, Function<T,CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(List<T> list, Predicate<T> filter, Function<T,InternalStage<?>> consumer) {
 		return loop( 0, list.size(), index -> filter.test( list.get( index ) ), index -> consumer.apply( list.get( index ) ) );
 	}
 
-	public static <T> CompletionStage<Void> loop(Queue<T> queue, Function<T, CompletionStage<?>> consumer) {
+	public static <T> InternalStage<Void> loop(Queue<T> queue, Function<T, InternalStage<?>> consumer) {
 		return loop( queue.iterator(), CompletionStages::alwaysTrue , (value, integer) -> consumer.apply( value ) );
 	}
 
@@ -385,15 +382,15 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static CompletionStage<Void> loop(int start, int end, IntFunction<CompletionStage<?>> consumer) {
+	public static InternalStage<Void> loop(int start, int end, IntFunction<InternalStage<?>> consumer) {
 		return loop( start, end, CompletionStages::alwaysTrue, consumer );
 	}
 
-	public static <T> CompletionStage<Void> whileLoop(T[] array, Function<T, CompletionStage<Boolean>> consumer) {
+	public static <T> InternalStage<Void> whileLoop(T[] array, Function<T, InternalStage<Boolean>> consumer) {
 		return loop( 0, array.length, index -> consumer.apply( array[index] ) );
 	}
 
-	public static CompletionStage<Void> whileLoop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<Boolean>> consumer) {
+	public static InternalStage<Void> whileLoop(int start, int end, IntPredicate filter, IntFunction<InternalStage<Boolean>> consumer) {
 		if ( start < end ) {
 			final ArrayLoop loop = new ArrayLoop( start, end, filter, consumer);
 			return asyncWhile( loop::next );
@@ -411,7 +408,7 @@ public class  CompletionStages {
 	 * }
 	 * }</pre>
 	 */
-	public static CompletionStage<Void> loop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<?>> consumer) {
+	public static InternalStage<Void> loop(int start, int end, IntPredicate filter, IntFunction<InternalStage<?>> consumer) {
 		if ( start < end ) {
 			final ArrayLoop loop = new ArrayLoop( start, end, filter, index -> consumer
 					.apply( index ).thenCompose( CompletionStages::alwaysContinue ) );
@@ -420,11 +417,11 @@ public class  CompletionStages {
 		return voidFuture();
 	}
 
-	public static CompletionStage<Void> whileLoop(Supplier<CompletionStage<Boolean>> loopSupplier) {
+	public static InternalStage<Void> whileLoop(Supplier<InternalStage<Boolean>> loopSupplier) {
 		return asyncWhile( loopSupplier::get );
 	}
 
-	public static CompletionStage<Void> whileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier) {
+	public static InternalStage<Void> whileLoop(Supplier<Boolean> whileCondition, Supplier<InternalStage<?>> loopSupplier) {
 		if ( whileCondition.get() ) {
 			final WhileLoop whileLoop = new WhileLoop( whileCondition, loopSupplier );
 			return asyncWhile( whileLoop::next );
@@ -434,16 +431,16 @@ public class  CompletionStages {
 
 	private static class WhileLoop {
 
-		private final Supplier<CompletionStage<?>> loopSupplier;
+		private final Supplier<InternalStage<?>> loopSupplier;
 
 		private final Supplier<Boolean> whileCondition;
 
-		public WhileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier ) {
+		public WhileLoop(Supplier<Boolean> whileCondition, Supplier<InternalStage<?>> loopSupplier ) {
 			this.loopSupplier = loopSupplier;
 			this.whileCondition = whileCondition;
 		}
 
-		public CompletionStage<Boolean> next() {
+		public InternalStage<Boolean> next() {
 			if ( whileCondition.get() ) {
 				return loopSupplier.get().thenCompose( ignore -> TRUE );
 			}
@@ -472,19 +469,19 @@ public class  CompletionStages {
 
 		private final IntPredicate filter;
 
-		private final IntFunction<CompletionStage<Boolean>> consumer;
+		private final IntFunction<InternalStage<Boolean>> consumer;
 
 		private final int end;
 		private int current;
 
-		public ArrayLoop(int start, int end, IntPredicate filter, IntFunction<CompletionStage<Boolean>> consumer) {
+		public ArrayLoop(int start, int end, IntPredicate filter, IntFunction<InternalStage<Boolean>> consumer) {
 			this.end = end;
 			this.filter = filter;
 			this.consumer = consumer;
 			this.current = start;
 		}
 
-		public CompletionStage<Boolean> next() {
+		public InternalStage<Boolean> next() {
 			current = next( current );
 			if ( current < end ) {
 				final int index = current++;
@@ -506,7 +503,7 @@ public class  CompletionStages {
 		}
 	}
 
-	public static CompletionStage<Void> applyToAll(Function<Object, CompletionStage<?>> op, Object[] entity) {
+	public static InternalStage<Void> applyToAll(Function<Object, InternalStage<?>> op, Object[] entity) {
 		switch ( entity.length ) {
 			case 0: return nullFuture();
 			case 1: return op.apply( entity[0] ).thenCompose( CompletionStages::voidFuture );

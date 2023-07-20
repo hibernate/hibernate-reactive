@@ -8,7 +8,7 @@ package org.hibernate.reactive.id.insert;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -38,7 +38,7 @@ public interface ReactiveAbstractSelectingDelegate extends ReactiveInsertGenerat
 	Object extractGeneratedValue(ResultSet resultSet, SharedSessionContractImplementor session);
 
 	@Override
-	default CompletionStage<Object> reactivePerformInsert(
+	default InternalStage<Object> reactivePerformInsert(
 			PreparedStatementDetails insertStatementDetails,
 			JdbcValueBindings jdbcValueBindings,
 			Object entity,

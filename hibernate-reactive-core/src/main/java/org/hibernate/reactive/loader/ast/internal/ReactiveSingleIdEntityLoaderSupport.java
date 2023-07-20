@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -32,7 +32,7 @@ public abstract class ReactiveSingleIdEntityLoaderSupport<T> implements Reactive
 	}
 
 	@Override
-	public CompletionStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
 		if ( databaseSnapshotExecutor == null ) {
 			databaseSnapshotExecutor = new DatabaseSnapshotExecutor( entityDescriptor, sessionFactory );
 		}

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sqm.mutation.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -28,7 +28,7 @@ public interface ReactiveSqmMultiTableMutationStrategy extends SqmMultiTableMuta
 		throw LOG.nonReactiveMethodCall( "reactiveExecuteUpdate" );
 	}
 
-	CompletionStage<Integer> reactiveExecuteUpdate(
+	InternalStage<Integer> reactiveExecuteUpdate(
 			SqmUpdateStatement<?> sqmUpdateStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context);
@@ -41,7 +41,7 @@ public interface ReactiveSqmMultiTableMutationStrategy extends SqmMultiTableMuta
 		throw LOG.nonReactiveMethodCall( "reactiveExecuteDelete" );
 	}
 
-	CompletionStage<Integer> reactiveExecuteDelete(
+	InternalStage<Integer> reactiveExecuteDelete(
 			SqmDeleteStatement<?> sqmDeleteStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context);

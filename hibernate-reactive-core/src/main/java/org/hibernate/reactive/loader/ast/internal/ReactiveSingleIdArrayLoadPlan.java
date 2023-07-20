@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -30,7 +30,7 @@ public class ReactiveSingleIdArrayLoadPlan extends ReactiveSingleIdLoadPlan<Obje
 	}
 
 	@Override
-	protected RowTransformer<CompletionStage<Object[]>> getRowTransformer() {
+	protected RowTransformer<InternalStage<Object[]>> getRowTransformer() {
 		return RowTransformerDatabaseSnapshotImpl.instance();
 	}
 

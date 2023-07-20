@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.FetchMode;
 import org.hibernate.LockOptions;
@@ -109,7 +109,7 @@ public class ReactiveAbstractPersisterDelegate {
 	/**
 	 * @see org.hibernate.persister.entity.AbstractEntityPersister#multiLoad(Object[], EventSource, MultiIdLoadOptions)`
 	 */
-	public <K> CompletionStage<? extends List<?>> multiLoad(
+	public <K> InternalStage<? extends List<?>> multiLoad(
 			K[] ids,
 			EventSource session,
 			MultiIdLoadOptions loadOptions) {
@@ -160,7 +160,7 @@ public class ReactiveAbstractPersisterDelegate {
 		return batchSize;
 	}
 
-	public CompletionStage<Void> processInsertGeneratedProperties(
+	public InternalStage<Void> processInsertGeneratedProperties(
 			Object id,
 			Object entity,
 			Object[] state,
@@ -181,7 +181,7 @@ public class ReactiveAbstractPersisterDelegate {
 		return reactiveGeneratedValuesProcessor.processGeneratedValues( id, entity, state, session );
 	}
 
-	public CompletionStage<Void> processUpdateGeneratedProperties(
+	public InternalStage<Void> processUpdateGeneratedProperties(
 			Object id,
 			Object entity,
 			Object[] state,
@@ -221,7 +221,7 @@ public class ReactiveAbstractPersisterDelegate {
 		);
 	}
 
-	public CompletionStage<Object> load(
+	public InternalStage<Object> load(
 			EntityPersister persister,
 			Object id,
 			Object optionalObject,
@@ -240,7 +240,7 @@ public class ReactiveAbstractPersisterDelegate {
 		return generator instanceof IdentityGenerator ? new ReactiveIdentityGenerator() : generator;
 	}
 
-	public CompletionStage<Object> loadEntityIdByNaturalId(
+	public InternalStage<Object> loadEntityIdByNaturalId(
 			Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef( "Resolving natural-id [%s] to id : %s ",

@@ -7,7 +7,7 @@ package org.hibernate.reactive.sql.results.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -42,7 +42,7 @@ public class ReactiveStandardValuesMappingProducer extends JdbcValuesMappingProd
 	}
 
 	@Override
-		public CompletionStage<JdbcValuesMapping> reactiveResolve(
+		public InternalStage<JdbcValuesMapping> reactiveResolve(
 				JdbcValuesMetadata jdbcResultsMetadata,
 				LoadQueryInfluencers loadQueryInfluencers,
 				SessionFactoryImplementor sessionFactory) {

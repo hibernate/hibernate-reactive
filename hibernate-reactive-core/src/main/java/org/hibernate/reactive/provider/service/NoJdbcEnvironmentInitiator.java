@@ -6,7 +6,7 @@
 package org.hibernate.reactive.provider.service;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
@@ -78,7 +78,7 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 					.toCompletableFuture().join();
 		}
 
-		private static CompletionStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
+		private static InternalStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
 			final DatabaseMetadata databaseMetadata = connection.getDatabaseMetadata();
 			return resolutionInfoStage( connection, databaseMetadata )
 					.handle( CompletionStages::handle )
@@ -97,7 +97,7 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 					} );
 		}
 
-		private static CompletionStage<ReactiveDialectResolutionInfo> resolutionInfoStage(ReactiveConnection connection, DatabaseMetadata databaseMetadata) {
+		private static InternalStage<ReactiveDialectResolutionInfo> resolutionInfoStage(ReactiveConnection connection, DatabaseMetadata databaseMetadata) {
 			if ( databaseMetadata.productName().equalsIgnoreCase( "PostgreSQL" ) ) {
 				// We need to check if the database is PostgreSQL or CockroachDB
 				// Hibernate ORM does it using a query, so we need to check in advance

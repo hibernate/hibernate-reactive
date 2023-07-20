@@ -7,7 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.lang.reflect.Array;
 import java.util.Locale;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.internal.BatchFetchQueueHelper;
@@ -41,7 +41,7 @@ import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LO
  * @see EntityBatchLoaderArrayParam
  */
 public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEntityLoaderSupport<T>
-		implements EntityBatchLoader<CompletionStage<T>>, ReactiveSingleIdEntityLoader<T>, SqlArrayMultiKeyLoader, Preparable {
+		implements EntityBatchLoader<InternalStage<T>>, ReactiveSingleIdEntityLoader<T>, SqlArrayMultiKeyLoader, Preparable {
 
 	private final int domainBatchSize;
 
@@ -73,12 +73,12 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 	}
 
 	@Override
-	public CompletionStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	public InternalStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		return load( pkValue, null, lockOptions, readOnly, session );
 	}
 
 	@Override
-	public final CompletionStage<T> load(
+	public final InternalStage<T> load(
 			Object pkValue,
 			Object entityInstance,
 			LockOptions lockOptions,
@@ -111,7 +111,7 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 		return idsToLoad;
 	}
 
-	private CompletionStage<Void> initializeEntities(
+	private InternalStage<Void> initializeEntities(
 			Object[] idsToInitialize,
 			Object pkValue,
 			Object entityInstance,

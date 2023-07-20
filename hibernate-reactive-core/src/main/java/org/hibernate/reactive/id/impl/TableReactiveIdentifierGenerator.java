@@ -7,7 +7,7 @@ package org.hibernate.reactive.id.impl;
 
 import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -71,7 +71,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	@Override
-	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
+	protected InternalStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
 
 		// We need to read the current hi value from the table
 		// and update it by the specified increment, but we

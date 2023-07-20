@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.impl;
 
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
@@ -174,7 +174,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
 		return ( (ReactiveCollectionLoader) determineLoaderToUse( key, session ) )
 				.reactiveLoad( key, session )
 				.thenCompose( CompletionStages::voidFuture );
@@ -190,7 +190,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		return super.isRowInsertEnabled();
 	}
 
-	private CompletionStage<Void> writeIndex(
+	private InternalStage<Void> writeIndex(
 			PersistentCollection<?> collection,
 			Iterator<?> entries,
 			Object key,
@@ -254,7 +254,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
+	public InternalStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return getInsertRowsCoordinator()
 				.reactiveInsertRows( collection, id, collection::includeInRecreate, session )
 				.thenCompose( unused -> writeIndex( collection, collection.entries( this ), id, true, session ) );
@@ -264,7 +264,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#insertRows(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
+	public InternalStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return getInsertRowsCoordinator()
 				.reactiveInsertRows( collection, id, collection::includeInInsert, session )
 				.thenCompose( unused -> writeIndex( collection, collection.entries( this ), id, true, session ) );
@@ -274,7 +274,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#updateRows(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return 	getUpdateRowsCoordinator().reactiveUpdateRows( id, collection, session );
 	}
 
@@ -283,7 +283,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#deleteRows(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getDeleteRowsCoordinator().reactiveDeleteRows(collection, id, session);
 	}
 
@@ -291,7 +291,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#remove(Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session) {
 		return getRemoveCoordinator().reactiveDeleteAllRows( id, session );
 	}
 }

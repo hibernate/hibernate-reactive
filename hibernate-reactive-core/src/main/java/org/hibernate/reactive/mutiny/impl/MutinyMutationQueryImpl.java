@@ -10,7 +10,7 @@ import jakarta.persistence.Parameter;
 import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Supplier;
 
 public class MutinyMutationQueryImpl<R> implements MutationQuery {
@@ -23,7 +23,7 @@ public class MutinyMutationQueryImpl<R> implements MutationQuery {
 		this.factory = factory;
 	}
 
-	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+	private <T> Uni<T> uni(Supplier<InternalStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
 	}
 

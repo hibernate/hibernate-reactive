@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -53,7 +53,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	}
 
 	@Override
-	public CompletionStage<JdbcValuesMapping> reactiveResolve(
+	public InternalStage<JdbcValuesMapping> reactiveResolve(
 			JdbcValuesMetadata jdbcResultsMetadata,
 			LoadQueryInfluencers loadQueryInfluencers,
 			SessionFactoryImplementor sessionFactory) {

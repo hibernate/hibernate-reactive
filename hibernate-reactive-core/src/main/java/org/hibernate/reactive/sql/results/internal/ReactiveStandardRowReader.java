@@ -7,7 +7,7 @@ package org.hibernate.reactive.sql.results.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -53,7 +53,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 	}
 
 	@Override
-	public CompletionStage<R> reactiveReadRow(ReactiveRowProcessingState rowProcessingState, JdbcValuesSourceProcessingOptions options) {
+	public InternalStage<R> reactiveReadRow(ReactiveRowProcessingState rowProcessingState, JdbcValuesSourceProcessingOptions options) {
 		LOGGER.trace( "ReactiveStandardRowReader#readRow" );
 
 		return coordinateInitializers( rowProcessingState )
@@ -120,7 +120,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		initializers.finishUpRow( rowProcessingState );
 	}
 
-	private CompletionStage<Void> coordinateInitializers(ReactiveRowProcessingState rowProcessingState) {
+	private InternalStage<Void> coordinateInitializers(ReactiveRowProcessingState rowProcessingState) {
 		initializers.resolveKeys( rowProcessingState );
 		return initializers.resolveInstances( rowProcessingState )
 				.thenCompose( v -> initializers.initializeInstance( rowProcessingState ) );

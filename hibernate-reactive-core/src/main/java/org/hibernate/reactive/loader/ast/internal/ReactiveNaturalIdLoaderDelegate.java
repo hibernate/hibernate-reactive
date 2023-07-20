@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -61,7 +61,7 @@ import static java.util.Collections.singletonList;
  * </p>
  * @param <T>
  */
-public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNaturalIdLoader<CompletionStage<T>> implements ReactiveNaturalIdLoader<T> {
+public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNaturalIdLoader<InternalStage<T>> implements ReactiveNaturalIdLoader<T> {
 
     public ReactiveNaturalIdLoaderDelegate(
             NaturalIdMapping naturalIdMapping,
@@ -70,7 +70,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     }
 
     @Override
-    public CompletionStage<T> load(
+    public InternalStage<T> load(
             Object naturalIdValue,
             NaturalIdLoadOptions options,
             SharedSessionContractImplementor session) {
@@ -111,7 +111,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     }
 
     @Override
-    public CompletionStage<Object> resolveNaturalIdToId(
+    public InternalStage<Object> resolveNaturalIdToId(
             Object naturalIdValue,
             SharedSessionContractImplementor session) {
         return reactiveSelectByNaturalId(
@@ -143,7 +143,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     }
 
     @Override
-    public CompletionStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session) {
+    public InternalStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session) {
         final SessionFactoryImplementor sessionFactory = session.getFactory();
 
         final JdbcParametersList.Builder jdbcParametersListBuilder = JdbcParametersList.newBuilder();
@@ -211,7 +211,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     /**
      * @see AbstractNaturalIdLoader#selectByNaturalId(Object, NaturalIdLoadOptions, BiFunction, LoaderSqlAstCreationState.FetchProcessor, Function, BiConsumer, SharedSessionContractImplementor)
      */
-    public CompletionStage<Object> reactiveSelectByNaturalId(
+    public InternalStage<Object> reactiveSelectByNaturalId(
             Object bindValue,
             NaturalIdLoadOptions options,
             BiFunction<TableGroup, LoaderSqlAstCreationState, DomainResult<?>> domainResultProducer,

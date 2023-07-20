@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
@@ -75,7 +75,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 	}
 
 	@Override
-	public CompletionStage<List<R>> consume(
+	public InternalStage<List<R>> consume(
 			ReactiveValuesResultSet jdbcValues,
 			SharedSessionContractImplementor session,
 			JdbcValuesSourceProcessingOptions processingOptions,
@@ -101,7 +101,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 						? new EntityResult<>( domainResultJavaType )
 						: new Results<>( domainResultJavaType );
 
-		Supplier<CompletionStage<Void>> addToResultsSupplier = addToResultsSupplier( results, rowReader, rowProcessingState, processingOptions, isEntityResultType );
+		Supplier<InternalStage<Void>> addToResultsSupplier = addToResultsSupplier( results, rowReader, rowProcessingState, processingOptions, isEntityResultType );
 		return whileLoop( () -> rowProcessingState.next()
 					.thenCompose( hasNext -> {
 						if ( hasNext ) {
@@ -121,7 +121,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 		} );
 	}
 
-	private Supplier<CompletionStage<Void>> addToResultsSupplier(
+	private Supplier<InternalStage<Void>> addToResultsSupplier(
 			ReactiveListResultsConsumer.Results<R> results,
 			ReactiveRowReader<R> rowReader,
 			ReactiveRowProcessingState rowProcessingState,

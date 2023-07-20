@@ -7,7 +7,7 @@ package org.hibernate.reactive.stage;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -167,7 +167,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.Query#getSingleResult()
 		 */
-		CompletionStage<R> getSingleResult();
+		InternalStage<R> getSingleResult();
 
 		/**
 		 * Asynchronously execute this query, returning a single row that
@@ -181,7 +181,7 @@ public interface Stage {
 		 *
 		 * @see #getSingleResult()
 		 */
-		CompletionStage<R> getSingleResultOrNull();
+		InternalStage<R> getSingleResultOrNull();
 
 		/**
 		 * Asynchronously execute this query, returning the query results
@@ -193,7 +193,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.Query#getResultList()
 		 */
-		CompletionStage<List<R>> getResultList();
+		InternalStage<List<R>> getResultList();
 
 		/**
 		 * Set the read-only/modifiable mode for entities and proxies
@@ -371,7 +371,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.Query#executeUpdate()
 		 */
-		CompletionStage<Integer> executeUpdate();
+		InternalStage<Integer> executeUpdate();
 
 		@Override
 		MutationQuery setParameter(int parameter, Object argument);
@@ -503,7 +503,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#find(Class, Object)
 		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
+		<T> InternalStage<T> find(Class<T> entityClass, Object id);
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -518,7 +518,7 @@ public interface Stage {
 		 * @see #find(Class,Object)
 		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+		<T> InternalStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -533,7 +533,7 @@ public interface Stage {
 		 * @see #find(Class,Object)
 		 * @see #lock(Object, LockMode) this discussion of lock modes
 		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		default <T> InternalStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
 			return find( entityClass, id, convertToLockMode(lockModeType) );
 		}
 
@@ -550,7 +550,7 @@ public interface Stage {
 //		 * @see #find(Class,Object)
 //		 * @see #lock(Object, LockMode) this discussion of lock modes
 //		 */
-//		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockOptions lockOptions);
+//		<T> InternalStage<T> find(Class<T> entityClass, Object id, LockOptions lockOptions);
 
 		 /**
 		 * Asynchronously return the persistent instance with the given
@@ -563,7 +563,7 @@ public interface Stage {
 		 *
 		 * @see #find(Class,Object)
 		 */
-		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
+		<T> InternalStage<T> find(EntityGraph<T> entityGraph, Object id);
 
 		/**
 		 * Asynchronously return the persistent instances of the given entity
@@ -575,7 +575,7 @@ public interface Stage {
 		 *
 		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
 		 */
-		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
+		<T> InternalStage<List<T>> find(Class<T> entityClass, Object... ids);
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -588,7 +588,7 @@ public interface Stage {
 		 * @return a persistent instance or null via a {@code CompletionStage}
 		 */
 		@Incubating
-		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
+		<T> InternalStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
 
 		/**
 		 * Return the persistent instance of the given entity class with the
@@ -640,14 +640,14 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#persist(Object)
 		 */
-		CompletionStage<Void> persist(Object entity);
+		InternalStage<Void> persist(Object entity);
 
 		/**
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
 		 */
-		CompletionStage<Void> persist(Object... entities);
+		InternalStage<Void> persist(Object... entities);
 
 		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
@@ -668,14 +668,14 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#remove(Object)
 		 */
-		CompletionStage<Void> remove(Object entity);
+		InternalStage<Void> remove(Object entity);
 
 		/**
 		 * Remove multiple entity instances at once.
 		 *
 		 * @see #remove(Object)
 		 */
-		CompletionStage<Void> remove(Object... entities);
+		InternalStage<Void> remove(Object... entities);
 
 		/**
 		 * Copy the state of the given object onto the persistent instance with
@@ -694,14 +694,14 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#merge(Object)
 		 */
-		<T> CompletionStage<T> merge(T entity);
+		<T> InternalStage<T> merge(T entity);
 
 		/**
 		 * Merge multiple entity instances at once.
 		 *
 		 * @see #merge(Object)
 		 */
-		CompletionStage<Void> merge(Object... entities);
+		InternalStage<Void> merge(Object... entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database.
@@ -721,7 +721,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#refresh(Object)
 		 */
-		CompletionStage<Void> refresh(Object entity);
+		InternalStage<Void> refresh(Object entity);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database,
@@ -732,7 +732,7 @@ public interface Stage {
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
+		InternalStage<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database,
@@ -743,7 +743,7 @@ public interface Stage {
 		 *
 		 * @see #refresh(Object)
 		 */
-		default CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
+		default InternalStage<Void> refresh(Object entity, LockModeType lockModeType) {
 			return refresh( entity, convertToLockMode(lockModeType) );
 		}
 
@@ -756,14 +756,14 @@ public interface Stage {
 //		 *
 //		 * @see #refresh(Object)
 //		 */
-//		CompletionStage<Void> refresh(Object entity, LockOptions lockOptions);
+//		InternalStage<Void> refresh(Object entity, LockOptions lockOptions);
 
 		/**
 		 * Refresh multiple entity instances at once.
 		 *
 		 * @see #refresh(Object)
 		 */
-		CompletionStage<Void> refresh(Object... entities);
+		InternalStage<Void> refresh(Object... entities);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,
@@ -787,7 +787,7 @@ public interface Stage {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
-		CompletionStage<Void> lock(Object entity, LockMode lockMode);
+		InternalStage<Void> lock(Object entity, LockMode lockMode);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,
@@ -811,7 +811,7 @@ public interface Stage {
 		 *
 		 * @throws IllegalArgumentException if the given instance is not managed
 		 */
-		default CompletionStage<Void> lock(Object entity, LockModeType lockModeType) {
+		default InternalStage<Void> lock(Object entity, LockModeType lockModeType) {
 			return lock( entity, convertToLockMode(lockModeType) );
 		}
 
@@ -824,7 +824,7 @@ public interface Stage {
 //		 *
 //		 * @throws IllegalArgumentException if the given instance is not managed
 //		 */
-//		CompletionStage<Void> lock(Object entity, LockOptions lockOptions);
+//		InternalStage<Void> lock(Object entity, LockOptions lockOptions);
 
 		/**
 		 * Force this session to flush asynchronously. Must be called at the
@@ -838,7 +838,7 @@ public interface Stage {
 		 *
 		 * @see jakarta.persistence.EntityManager#flush()
 		 */
-		CompletionStage<Void> flush();
+		InternalStage<Void> flush();
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
@@ -854,7 +854,7 @@ public interface Stage {
 		 * @see Stage#fetch(Object)
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
-		<T> CompletionStage<T> fetch(T association);
+		<T> InternalStage<T> fetch(T association);
 
 		/**
 		 * Fetch a lazy property of the given entity, identified by a JPA
@@ -865,7 +865,7 @@ public interface Stage {
 		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
 		 * </pre>
 		 */
-		<E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field);
+		<E,T> InternalStage<T> fetch(E entity, Attribute<E,T> field);
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading,
@@ -881,7 +881,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.Hibernate#unproxy(Object)
 		 */
-		<T> CompletionStage<T> unproxy(T association);
+		<T> InternalStage<T> unproxy(T association);
 
 		/**
 		 * Determine the current lock mode of the given entity.
@@ -1372,7 +1372,7 @@ public interface Stage {
 		 *
 		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
-		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withTransaction(Function<Transaction, InternalStage<T>> work);
 
 		/**
 		 * Obtain the transaction currently associated with this session,
@@ -1439,7 +1439,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#get(Class, Object)
 		 */
-		<T> CompletionStage<T> get(Class<T> entityClass, Object id);
+		<T> InternalStage<T> get(Class<T> entityClass, Object id);
 
 		/**
 		 * Retrieve a row, obtaining the specified lock mode.
@@ -1452,7 +1452,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
 		 */
-		<T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode);
+		<T> InternalStage<T> get(Class<T> entityClass, Object id, LockMode lockMode);
 
 		/**
 		 * Retrieve a row, obtaining the specified lock mode.
@@ -1465,7 +1465,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
 		 */
-		default <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		default <T> InternalStage<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
 			return get( entityClass, id, convertToLockMode(lockModeType) );
 		}
 
@@ -1478,7 +1478,7 @@ public interface Stage {
 		 *
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 */
-		<T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id);
+		<T> InternalStage<T> get(EntityGraph<T> entityGraph, Object id);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
@@ -1598,7 +1598,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#insert(Object)
 		 */
-		CompletionStage<Void> insert(Object entity);
+		InternalStage<Void> insert(Object entity);
 
 		/**
 		 * Insert multiple rows.
@@ -1607,7 +1607,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#insert(Object)
 		 */
-		CompletionStage<Void> insert(Object... entities);
+		InternalStage<Void> insert(Object... entities);
 
 		/**
 		 * Insert multiple rows.
@@ -1617,7 +1617,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#insert(Object)
 		 */
-		CompletionStage<Void> insert(int batchSize, Object... entities);
+		InternalStage<Void> insert(int batchSize, Object... entities);
 
 		/**
 		 * Delete a row.
@@ -1626,7 +1626,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
-		CompletionStage<Void> delete(Object entity);
+		InternalStage<Void> delete(Object entity);
 
 		/**
 		 * Delete multiple rows.
@@ -1635,7 +1635,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
-		CompletionStage<Void> delete(Object... entities);
+		InternalStage<Void> delete(Object... entities);
 
 		/**
 		 * Delete multiple rows.
@@ -1645,7 +1645,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
-		CompletionStage<Void> delete(int batchSize, Object... entities);
+		InternalStage<Void> delete(int batchSize, Object... entities);
 
 		/**
 		 * Update a row.
@@ -1654,7 +1654,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		CompletionStage<Void> update(Object entity);
+		InternalStage<Void> update(Object entity);
 
 		/**
 		 * Update multiple rows.
@@ -1663,7 +1663,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		CompletionStage<Void> update(Object... entities);
+		InternalStage<Void> update(Object... entities);
 
 		/**
 		 * Update multiple rows.
@@ -1673,7 +1673,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		CompletionStage<Void> update(int batchSize, Object... entities);
+		InternalStage<Void> update(int batchSize, Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1682,7 +1682,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
-		CompletionStage<Void> refresh(Object entity);
+		InternalStage<Void> refresh(Object entity);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1691,7 +1691,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
-		CompletionStage<Void> refresh(Object... entities);
+		InternalStage<Void> refresh(Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1701,7 +1701,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
-		CompletionStage<Void> refresh(int batchSize, Object... entities);
+		InternalStage<Void> refresh(int batchSize, Object... entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1711,7 +1711,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
-		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
+		InternalStage<Void> refresh(Object entity, LockMode lockMode);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1721,7 +1721,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object, LockMode)
 		 */
-		default CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
+		default InternalStage<Void> refresh(Object entity, LockModeType lockModeType) {
 			return refresh( entity, convertToLockMode(lockModeType) );
 		}
 
@@ -1741,7 +1741,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
-		<T> CompletionStage<T> fetch(T association);
+		<T> InternalStage<T> fetch(T association);
 
 		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
@@ -1783,7 +1783,7 @@ public interface Stage {
 		 *
 		 * @see SessionFactory#withTransaction(BiFunction)
 		 */
-		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withTransaction(Function<Transaction, InternalStage<T>> work);
 
 		/**
 		 * Obtain the transaction currently associated with this session,
@@ -1806,7 +1806,7 @@ public interface Stage {
 		 * Close the reactive session and release the underlying database
 		 * connection.
 		 */
-		CompletionStage<Void> close();
+		InternalStage<Void> close();
 
 		/**
 		 * The {@link SessionFactory} which created this session.
@@ -1875,7 +1875,7 @@ public interface Stage {
 		 *
 		 * @see #withSession(Function)
 		 */
-		CompletionStage<Session> openSession();
+		InternalStage<Session> openSession();
 
 		/**
 		 * Obtain a new {@link Session reactive session} {@link CompletionStage} for a
@@ -1890,7 +1890,7 @@ public interface Stage {
 		 *
 		 * @see #withSession(Function)
 		 */
-		CompletionStage<Session> openSession(String tenantId);
+		InternalStage<Session> openSession(String tenantId);
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1901,7 +1901,7 @@ public interface Stage {
 		 * The client must explicitly close the session by calling
 		 * {@link StatelessSession#close()}.
 		 */
-		CompletionStage<StatelessSession> openStatelessSession();
+		InternalStage<StatelessSession> openStatelessSession();
 
 		/**
 		 * Obtain a {@link StatelessSession reactive stateless session}
@@ -1914,7 +1914,7 @@ public interface Stage {
 		 *
 		 * @param tenantId the id of the tenant
 		 */
-		CompletionStage<StatelessSession> openStatelessSession(String tenantId);
+		InternalStage<StatelessSession> openStatelessSession(String tenantId);
 
 		/**
 		 * Perform work using a {@link Session reactive session}.
@@ -1933,7 +1933,7 @@ public interface Stage {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
-		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
+		<T> InternalStage<T> withSession(Function<Session, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link Session reactive session} for a
@@ -1953,7 +1953,7 @@ public interface Stage {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
-		<T> CompletionStage<T> withSession(String tenantId, Function<Session, CompletionStage<T>> work);
+		<T> InternalStage<T> withSession(String tenantId, Function<Session, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link Session reactive session} within an
@@ -1977,7 +1977,7 @@ public interface Stage {
 		 * @see #withSession(Function)
 		 * @see Session#withTransaction(Function)
 		 */
-		<T> CompletionStage<T> withTransaction(BiFunction<Session, Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withTransaction(BiFunction<Session, Transaction, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link Session reactive session} within an
@@ -2000,7 +2000,7 @@ public interface Stage {
 		 * @see #withTransaction(BiFunction)
 		 * @see Session#withTransaction(Function)
 		 */
-		default <T> CompletionStage<T> withTransaction(Function<Session, CompletionStage<T>> work) {
+		default <T> InternalStage<T> withTransaction(Function<Session, InternalStage<T>> work) {
 			return withTransaction( (session, transaction) -> work.apply( session ) );
 		}
 
@@ -2026,7 +2026,7 @@ public interface Stage {
 		 * @see #withSession(String, Function)
 		 * @see Session#withTransaction(Function)
 		 */
-		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an
@@ -2048,7 +2048,7 @@ public interface Stage {
 		 * @see #withStatelessSession(Function)
 		 * @see StatelessSession#withTransaction(Function)
 		 */
-		default <T> CompletionStage<T> withStatelessTransaction(Function<StatelessSession, CompletionStage<T>> work) {
+		default <T> InternalStage<T> withStatelessTransaction(Function<StatelessSession, InternalStage<T>> work) {
 			return withStatelessTransaction( ( (statelessSession, transaction) -> work.apply( statelessSession ) ) );
 		}
 
@@ -2072,7 +2072,7 @@ public interface Stage {
 		 * @see #withStatelessSession(Function)
 		 * @see StatelessSession#withTransaction(Function)
 		 */
-		<T> CompletionStage<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link StatelessSession reactive session} within an
@@ -2095,7 +2095,7 @@ public interface Stage {
 		 * @see #withStatelessSession(String, Function)
 		 * @see StatelessSession#withTransaction(Function)
 		 */
-		<T> CompletionStage<T> withStatelessTransaction(String tenantId, BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
+		<T> InternalStage<T> withStatelessTransaction(String tenantId, BiFunction<StatelessSession, Transaction, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link StatelessSession stateless session}.
@@ -2113,7 +2113,7 @@ public interface Stage {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
-		<T> CompletionStage<T> withStatelessSession(Function<StatelessSession, CompletionStage<T>> work);
+		<T> InternalStage<T> withStatelessSession(Function<StatelessSession, InternalStage<T>> work);
 
 		/**
 		 * Perform work using a {@link StatelessSession stateless session}.
@@ -2132,7 +2132,7 @@ public interface Stage {
 		 * @param work a function which accepts the session and returns
 		 *             the result of the work as a {@link CompletionStage}.
 		 */
-		<T> CompletionStage<T> withStatelessSession(String tenantId, Function<StatelessSession, CompletionStage<T>> work);
+		<T> InternalStage<T> withStatelessSession(String tenantId, Function<StatelessSession, InternalStage<T>> work);
 
 		/**
 		 * @return an instance of {@link CriteriaBuilder} for creating
@@ -2173,7 +2173,7 @@ public interface Stage {
 	 * An object whose {@link #close()} method returns a {@link CompletionStage}.
 	 */
 	interface Closeable {
-		CompletionStage<Void> close();
+		InternalStage<Void> close();
 	}
 
 	/**
@@ -2189,7 +2189,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.Hibernate#initialize(Object)
 	 */
-	static <T> CompletionStage<T> fetch(T association) {
+	static <T> InternalStage<T> fetch(T association) {
 		if ( association == null ) {
 			return CompletionStages.nullFuture();
 		}

@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;

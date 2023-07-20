@@ -9,7 +9,7 @@ import jakarta.persistence.Parameter;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.stage.Stage.MutationQuery;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 public class StageMutationQueryImpl<T> implements MutationQuery {
 
@@ -20,7 +20,7 @@ public class StageMutationQueryImpl<T> implements MutationQuery {
 	}
 
 	@Override
-	public CompletionStage<Integer> executeUpdate() {
+	public InternalStage<Integer> executeUpdate() {
 		return delegate.executeReactiveUpdate();
 	}
 

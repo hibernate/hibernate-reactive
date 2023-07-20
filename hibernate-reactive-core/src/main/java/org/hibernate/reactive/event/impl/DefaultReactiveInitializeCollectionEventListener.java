@@ -9,7 +9,7 @@ import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
@@ -41,7 +41,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 	/**
 	 * called by a collection that wants to initialize itself
 	 */
-	public CompletionStage<Void> onReactiveInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
+	public InternalStage<Void> onReactiveInitializeCollection(InitializeCollectionEvent event) throws HibernateException {
 		final PersistentCollection<?> collection = event.getCollection();
 		final SessionImplementor source = event.getSession();
 

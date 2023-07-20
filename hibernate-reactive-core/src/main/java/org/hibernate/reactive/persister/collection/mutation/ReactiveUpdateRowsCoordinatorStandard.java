@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -52,7 +52,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		MODEL_MUTATION_LOGGER.tracef( "Updating collection rows - %s#%s", getMutationTarget().getRolePath(), key );
 
 		// update all the modified entries
@@ -61,7 +61,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 						.debugf( "Updated `%s` collection rows - %s#%s", count, getMutationTarget().getRolePath(), key ) );
 	}
 
-	private CompletionStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	private InternalStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor( session, getOperationGroup() );
 		return completedFuture( mutationExecutor )
 				.thenCompose( ignore -> {
@@ -107,7 +107,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 				.whenComplete( (o, throwable) -> mutationExecutor.release() );
 	}
 
-	private CompletionStage<Boolean> processRow(
+	private InternalStage<Boolean> processRow(
 			Object key,
 			PersistentCollection<?> collection,
 			Object entry,
@@ -135,7 +135,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 				.thenCompose( ReactiveUpdateRowsCoordinatorStandard::alwaysTrue );
 	}
 
-	private static CompletionStage<Boolean> alwaysTrue(Object ignore) {
+	private static InternalStage<Boolean> alwaysTrue(Object ignore) {
 		return CompletionStages.trueFuture();
 	}
 

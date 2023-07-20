@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.session;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.Incubating;
 import org.hibernate.dialect.Dialect;
@@ -14,6 +14,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
@@ -41,9 +42,9 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	Dialect getDialect();
 
-	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
+	<T> InternalStage<T> reactiveFetch(T association, boolean unproxy);
 
-	CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable);
+	InternalStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable);
 
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
 

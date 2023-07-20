@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -44,7 +44,7 @@ public class ReactiveCollectionLoaderSubSelectFetch extends CollectionLoaderSubS
 	}
 
 	@Override
-	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object triggerKey, SharedSessionContractImplementor session) {
+	public InternalStage<PersistentCollection<?>> reactiveLoad(Object triggerKey, SharedSessionContractImplementor session) {
 		final CollectionKey collectionKey = new CollectionKey( attributeMapping.getCollectionDescriptor(), triggerKey );
 
 		final SessionFactoryImplementor sessionFactory = session.getFactory();

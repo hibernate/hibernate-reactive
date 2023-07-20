@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -48,7 +48,7 @@ class ReactiveGeneratedValuesProcessor {
         this.sessionFactory = sessionFactory;
     }
 
-    CompletionStage<Void> processGeneratedValues(Object id,
+    InternalStage<Void> processGeneratedValues(Object id,
                                                         Object entity,
                                                         Object[] state,
                                                         SharedSessionContractImplementor session) {

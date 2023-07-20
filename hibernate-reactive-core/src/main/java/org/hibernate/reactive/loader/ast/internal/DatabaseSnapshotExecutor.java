@@ -7,7 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -162,7 +162,7 @@ class DatabaseSnapshotExecutor {
 		return ImmutableFetchList.EMPTY;
 	}
 
-	CompletionStage<Object[]> loadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+	InternalStage<Object[]> loadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
 		if ( log.isTraceEnabled() ) {
 			log.tracef( "Getting current persistent state for `%s#%s`", entityDescriptor.getEntityName(), id );
 		}

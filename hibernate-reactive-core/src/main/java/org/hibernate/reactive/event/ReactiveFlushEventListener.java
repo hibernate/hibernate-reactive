@@ -9,7 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.event.spi.FlushEvent;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Defines the contract for handling of reactive session flush events.
@@ -20,5 +20,5 @@ public interface ReactiveFlushEventListener extends Serializable {
 	 *
 	 * @param event The flush event to be handled.
 	 */
-	CompletionStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException;
+	InternalStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException;
 }

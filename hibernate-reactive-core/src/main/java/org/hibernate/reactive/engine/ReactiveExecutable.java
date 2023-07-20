@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.action.spi.Executable;
 
@@ -16,5 +16,5 @@ import org.hibernate.action.spi.Executable;
  * to {@link Executable}.
  */
 public interface ReactiveExecutable extends Executable, Serializable {
-	CompletionStage<Void> reactiveExecute();
+	InternalStage<Void> reactiveExecute();
 }

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.exec.spi;
 
 import java.sql.PreparedStatement;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -19,7 +19,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
  */
 public interface ReactiveJdbcMutationExecutor {
 
-	CompletionStage<Integer> executeReactive(
+	InternalStage<Integer> executeReactive(
 			JdbcOperationQueryMutation jdbcMutation,
 			JdbcParameterBindings jdbcParameterBindings,
 			Function<String, PreparedStatement> statementCreator,

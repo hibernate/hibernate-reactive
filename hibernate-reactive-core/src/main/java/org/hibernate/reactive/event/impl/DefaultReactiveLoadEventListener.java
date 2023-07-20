@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -96,8 +96,8 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		// Since this method is not reactive, we're not expecting to hit the
 		// database here (if we do, it's a bug) and so we can assume the
 		// returned CompletionStage is already completed
-		final CompletionStage<Void> checkId = checkId( event, loadType, persister );
-		if ( !checkId.toCompletableFuture().isDone() ) {
+		final InternalStage<Void> checkId = checkId( event, loadType, persister );
+		if ( !checkId.isDone() ) {
 			// This only happens if the object is loaded from the db
 			throw new UnexpectedAccessToTheDatabase();
 		}
@@ -106,14 +106,14 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			// Since this method is not reactive, we're not expecting to hit the
 			// database here (if we do, it's a bug) and so we can assume the
 			// returned CompletionStage is already completed (a proxy, perhaps)
-			final CompletionStage<Object> loaded = doOnLoad( persister, event, loadType );
-			if ( !loaded.toCompletableFuture().isDone() ) {
+			final InternalStage<Object> loaded = doOnLoad( persister, event, loadType );
+			if ( !loaded.isDone() ) {
 				// This only happens if the object is loaded from the db
 				throw new UnexpectedAccessToTheDatabase();
 			}
 			else {
 				// Proxy
-				event.setResult( loaded.toCompletableFuture().getNow( null ) );
+				event.setResult( loaded.getNow( null ) );
 			}
 		}
 		catch (HibernateException e) {
@@ -121,7 +121,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			throw e;
 		}
 
-		if ( event.getResult() instanceof CompletionStage ) {
+		if ( event.getResult() instanceof InternalStage ) {
 			throw new AssertionFailure( "Unexpected CompletionStage" );
 		}
 	}
@@ -132,7 +132,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 * @param event The load event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException {
+	public InternalStage<Void> reactiveOnLoad(LoadEvent event, LoadType loadType) throws HibernateException {
 		final ReactiveEntityPersister persister = (ReactiveEntityPersister) getPersister( event );
 		if ( persister == null ) {
 			throw LOG.unableToLocatePersister( event.getEntityClassName() );
@@ -142,7 +142,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				.thenCompose( vd -> doOnLoad( persister, event, loadType )
 						.thenAccept( event::setResult )
 						.handle( (v, x) -> {
-							if ( event.getResult() instanceof CompletionStage ) {
+							if ( event.getResult() instanceof InternalStage ) {
 								throw new AssertionFailure( "Unexpected CompletionStage" );
 							}
 							if ( x instanceof HibernateException ) {
@@ -170,7 +170,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				} );
 	}
 
-	private CompletionStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
+	private InternalStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
 		final Class<?> idClass = persister.getIdentifierType().getReturnedClass();
 		if ( idClass != null
 				&& !idClass.isInstance( event.getEntityId() )
@@ -193,7 +193,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 	}
 
-	private CompletionStage<Object> doOnLoad(
+	private InternalStage<Object> doOnLoad(
 			final EntityPersister persister,
 			final LoadEvent event,
 			final LoadType loadType) {
@@ -211,7 +211,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				: lockAndLoad( event, persister, keyToLoad, loadType, session );
 	}
 
-	private CompletionStage<Void> checkIdClass(
+	private InternalStage<Void> checkIdClass(
 			final EntityPersister persister,
 			final LoadEvent event,
 			final LoadType loadType,
@@ -256,7 +256,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	/*
 	 * See DefaultLoadEventListener#loadByDerivedIdentitySimplePkValue
 	 */
-	private CompletionStage<Void> loadByDerivedIdentitySimplePkValue(
+	private InternalStage<Void> loadByDerivedIdentitySimplePkValue(
 			LoadEvent event,
 			LoadType options,
 			EntityPersister dependentPersister,
@@ -286,7 +286,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The loaded entity.
 	 */
-	private CompletionStage<Object> load( LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private InternalStage<Object> load( LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		final EventSource session = event.getSession();
 		if ( event.getInstanceToLoad() != null ) {
 			if ( session.getPersistenceContextInternal().getEntry( event.getInstanceToLoad() ) != null ) {
@@ -322,7 +322,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The result of the proxy/load operation.
 	 */
-	private CompletionStage<Object> proxyOrLoad(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private InternalStage<Object> proxyOrLoad(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev(
 					"Loading entity: {0}",
@@ -347,7 +347,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		return persistenceContext.getEntry( existing ).getStatus().isDeletedOrGone();
 	}
 
-	private CompletionStage<Object> loadWithBytecodeProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private InternalStage<Object> loadWithBytecodeProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		// if there is already a managed entity instance associated with the PC, return it
 		final EventSource session = event.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
@@ -371,7 +371,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 	}
 
-	private CompletionStage<Object> loadWithRegularProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private InternalStage<Object> loadWithRegularProxy(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		// This is the case where the proxy is a separate object:
 		// look for a proxy
 		final Object proxy = event.getSession().getPersistenceContextInternal().getProxy( keyToLoad );
@@ -394,7 +394,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			&& persister.getEntityPersister().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();
 	}
 
-	private static CompletionStage<Object> loadWithProxyFactory(LoadEvent event, EntityPersister persister, EntityKey keyToLoad) {
+	private static InternalStage<Object> loadWithProxyFactory(LoadEvent event, EntityPersister persister, EntityKey keyToLoad) {
 		final EventSource session = event.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		final Object proxy = persistenceContext.getProxy( keyToLoad );
@@ -478,7 +478,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The created/existing proxy
 	 */
-	private CompletionStage<Object> narrowedProxy(
+	private InternalStage<Object> narrowedProxy(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
@@ -506,7 +506,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 	}
 
-	private CompletionStage<Object> proxyImplementation(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
+	private InternalStage<Object> proxyImplementation(LoadEvent event, EntityPersister persister, EntityKey keyToLoad, LoadType options) {
 		return load( event, persister, keyToLoad, options )
 				.thenApply( optional -> {
 					if ( optional != null ) {
@@ -581,7 +581,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The loaded entity
 	 */
-	private CompletionStage<Object> lockAndLoad(
+	private InternalStage<Object> lockAndLoad(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
@@ -638,7 +638,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The loaded entity, or null.
 	 */
-	private CompletionStage<Object> doLoad(
+	private InternalStage<Object> doLoad(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad,
@@ -666,7 +666,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 	}
 
-	private static CompletionStage<Object> initializeIfNecessary(Object entity) {
+	private static InternalStage<Object> initializeIfNecessary(Object entity) {
 		if ( isPersistentAttributeInterceptable( entity ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( entity );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
@@ -688,7 +688,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 	}
 
-	private CompletionStage<Object> loadFromCacheOrDatasource(
+	private InternalStage<Object> loadFromCacheOrDatasource(
 			LoadEvent event,
 			EntityPersister persister,
 			EntityKey keyToLoad) {
@@ -741,7 +741,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	protected CompletionStage<Object> loadFromDatasource(LoadEvent event, EntityPersister persister) {
+	protected InternalStage<Object> loadFromDatasource(LoadEvent event, EntityPersister persister) {
 		return ( (ReactiveEntityPersister) persister )
 				.reactiveLoad(
 						event.getEntityId(),

@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.exception.ConstraintViolationException;
 

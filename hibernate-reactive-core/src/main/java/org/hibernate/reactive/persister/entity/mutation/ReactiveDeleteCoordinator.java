@@ -7,7 +7,7 @@ package org.hibernate.reactive.persister.entity.mutation;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
@@ -35,7 +35,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private CompletionStage<Void> stage;
+	private InternalStage<Void> stage;
 
 	public ReactiveDeleteCoordinator(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
@@ -46,7 +46,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 		throw LOG.nonReactiveMethodCall( "coordinateReactiveDelete" );
 	}
 
-	public CompletionStage<Void> coordinateReactiveDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
+	public InternalStage<Void> coordinateReactiveDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
 		try {
 			super.coordinateDelete( entity, id, version, session );
 			return stage != null ? stage : voidFuture();

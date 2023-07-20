@@ -34,7 +34,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.Executor;
 
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
@@ -74,7 +74,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 			Object[] positionalParameters,
 			ResultSetProcessor<T> resultSetProcessor) throws SQLException {
 
-		final CompletionStage<ReactiveConnection> connectionStage = service.getConnection();
+		final InternalStage<ReactiveConnection> connectionStage = service.getConnection();
 
 		try (final ResultSet resultSet = getQueryResultSet( queryString, positionalParameters, connectionStage )) {
 			return resultSetProcessor.process( resultSet );
@@ -92,7 +92,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 		return reactiveConnection;
 	}
 
-	private static CompletionStage<Void> closeConnection(ReactiveConnection connection) {
+	private static InternalStage<Void> closeConnection(ReactiveConnection connection) {
 		// Avoid NullPointerException if we couldn't create a connection
 		return connection != null ? connection.close() : voidFuture();
 	}
@@ -100,7 +100,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 	private ResultSet getQueryResultSet(
 			String queryString,
 			Object[] positionalParameters,
-			CompletionStage<ReactiveConnection> connectionStage) {
+			InternalStage<ReactiveConnection> connectionStage) {
 		final Object[] parametersToUse = positionalParameters != null ? positionalParameters : new Object[0];
 		final Parameters parametersDialectSpecific = Parameters.instance(
 				getJdbcEnvironment().getDialect()

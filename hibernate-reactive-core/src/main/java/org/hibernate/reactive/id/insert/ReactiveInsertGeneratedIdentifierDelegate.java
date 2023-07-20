@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.id.insert;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -17,11 +17,11 @@ import org.hibernate.id.insert.Binder;
  */
 public interface ReactiveInsertGeneratedIdentifierDelegate {
 
-	CompletionStage<Object> reactivePerformInsert(
+	InternalStage<Object> reactivePerformInsert(
 			PreparedStatementDetails insertStatementDetails,
 			JdbcValueBindings valueBindings,
 			Object entity,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactivePerformInsert(String insertSQL, SharedSessionContractImplementor session, Binder binder);
+	InternalStage<Object> reactivePerformInsert(String insertSQL, SharedSessionContractImplementor session, Binder binder);
 }

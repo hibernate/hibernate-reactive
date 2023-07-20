@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.Internal;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
@@ -45,7 +45,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 		throw LOG.nonReactiveMethodCall( "coordinateReactiveInsert" );
 	}
 
-	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
+	public InternalStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
 		return reactivePreInsertInMemoryValueGeneration( currentValues, entity, session )
 				.thenCompose( v -> entityPersister().getEntityMetamodel().isDynamicInsert()
 						? doDynamicInserts( id, currentValues, entity, session )
@@ -53,8 +53,8 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 				);
 	}
 
-	private CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
-		CompletionStage<Void> stage = voidFuture();
+	private InternalStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
+		InternalStage<Void> stage = voidFuture();
 
 		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
 		if ( entityMetamodel.hasPreInsertGeneratedValues() ) {
@@ -91,7 +91,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 		throw LOG.nonReactiveMethodCall( "decomposeForReactiveInsert" );
 	}
 
-	protected CompletionStage<Void> decomposeForReactiveInsert(
+	protected InternalStage<Void> decomposeForReactiveInsert(
 			MutationExecutor mutationExecutor,
 			Object id,
 			Object[] values,
@@ -126,7 +126,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	@Override
-	protected CompletionStage<Object> doDynamicInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
+	protected InternalStage<Object> doDynamicInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
 		final boolean[] insertability = getPropertiesToInsert( values );
 		final MutationOperationGroup insertGroup = generateDynamicInsertSqlGroup( insertability );
 		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, insertGroup );
@@ -154,7 +154,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	@Override
-	protected CompletionStage<Object> doStaticInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
+	protected InternalStage<Object> doStaticInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );
 		final TableInclusionChecker tableInclusionChecker = getTableInclusionChecker( insertValuesAnalysis );
 		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, getStaticInsertGroup() );

@@ -7,7 +7,6 @@ package org.hibernate.reactive.testing;
 
 import java.time.Instant;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 
 import io.smallrye.mutiny.Uni;
 import org.assertj.core.api.AbstractInstantAssert;

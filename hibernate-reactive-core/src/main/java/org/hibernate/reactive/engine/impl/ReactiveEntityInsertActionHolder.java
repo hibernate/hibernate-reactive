@@ -7,7 +7,6 @@ package org.hibernate.reactive.engine.impl;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.spi.AfterTransactionCompletionProcess;
@@ -58,7 +57,7 @@ public final class ReactiveEntityInsertActionHolder implements Executable, React
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() {
+	public InternalStage<Void> reactiveExecute() {
 		return delegate.reactiveExecute();
 	}
 

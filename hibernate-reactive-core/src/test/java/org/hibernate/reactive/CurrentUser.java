@@ -11,7 +11,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 import org.hibernate.annotations.ValueGenerationType;
 import org.hibernate.generator.EventType;
 import org.hibernate.generator.EventTypeSets;

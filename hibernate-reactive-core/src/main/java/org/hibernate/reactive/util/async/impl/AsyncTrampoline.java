@@ -5,12 +5,14 @@
  */
 package org.hibernate.reactive.util.async.impl;
 
-import java.util.concurrent.CompletableFuture;
+import org.hibernate.reactive.engine.impl.InternalStage;
+
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.hibernate.reactive.engine.impl.POCInternalStage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 /**
@@ -20,15 +22,15 @@ import org.hibernate.reactive.util.impl.CompletionStages;
  * Static methods for asynchronous looping procedures without exhausting the stack.
  *
  * <p>
- * When working with {@link CompletionStage}, it's often desirable to have a loop like construct
+ * When working with {@link InternalStage}, it's often desirable to have a loop like construct
  * which keeps producing stages until some condition is met. Because continuations are asynchronous,
  * it's usually easiest to do this with a recursive approach:
  *
  * <pre>
  * {@code
- * CompletionStage<Integer> getNextNumber();
+ * InternalStage<Integer> getNextNumber();
  *
- * CompletionStage<Integer> getFirstOddNumber(int current) {
+ * InternalStage<Integer> getFirstOddNumber(int current) {
  *   if (current % 2 != 0)
  *     // found odd number
  *     return CompletableFuture.completedFuture(current);
@@ -43,7 +45,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
  *
  * <pre>
  * {@code
- * CompletionStage<Integer> getNextNumber() {
+ * InternalStage<Integer> getNextNumber() {
  *   return CompletableFuture.completedFuture(random.nextInt());
  * }
  * }
@@ -61,7 +63,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
  *
  * <pre>
  * {@code
- * CompletionStage<Integer> getFirstOddNumber(int initial) {
+ * InternalStage<Integer> getFirstOddNumber(int initial) {
  *   return AsyncTrampoline.asyncWhile(
  *    i -> i % 2 == 0,
  *    i -> getNextNumber(),
@@ -82,21 +84,21 @@ public final class AsyncTrampoline {
 	private AsyncTrampoline() {
 	}
 
-	private static class TrampolineInternal<T> extends CompletableFuture<T> {
+	private static class TrampolineInternal<T> extends POCInternalStage<T> {
 
 		private final Predicate<? super T> shouldContinue;
-		private final Function<? super T, ? extends CompletionStage<T>> f;
+		private final Function<? super T, ? extends InternalStage<T>> f;
 
 		private TrampolineInternal(
 				final Predicate<? super T> shouldContinue,
-				final Function<? super T, ? extends CompletionStage<T>> f) {
+				final Function<? super T, ? extends InternalStage<T>> f) {
 			this.shouldContinue = shouldContinue;
 			this.f = f;
 		}
 
-		private static <T> CompletionStage<T> trampoline(
+		private static <T> InternalStage<T> trampoline(
 				final Predicate<? super T> shouldContinue,
-				final Function<? super T, ? extends CompletionStage<T>> f,
+				final Function<? super T, ? extends InternalStage<T>> f,
 				final T initialValue) {
 			final TrampolineInternal<T> trampolineInternal = new TrampolineInternal<>( shouldContinue, f );
 			trampolineInternal.unroll( initialValue, null, null );
@@ -176,42 +178,42 @@ public final class AsyncTrampoline {
 	 * Effectively produces {@code fn(seed).thenCompose(fn).thenCompose(fn)... .thenCompose(fn)} until
 	 * an value fails the predicate. Note that predicate will be applied on seed (like a while loop,
 	 * the initial value is tested). If the predicate or fn throw an exception,
-	 * or the {@link CompletionStage} returned by fn completes exceptionally, iteration will stop and
+	 * or the {@link InternalStage} returned by fn completes exceptionally, iteration will stop and
 	 * an exceptional stage will be returned.
 	 *
 	 * @param shouldContinue a predicate which will be applied to every intermediate T value
 	 * (including the {@code initialValue}) until it fails and looping stops.
-	 * @param fn the function for the loop body which produces a new {@link CompletionStage} based on
+	 * @param fn the function for the loop body which produces a new {@link InternalStage} based on
 	 * the result of the previous iteration.
 	 * @param initialValue the value that will initially be passed to {@code fn}, it will also be
 	 * initially tested by {@code shouldContinue}
 	 * @param <T> the type of elements produced by the loop
 	 *
-	 * @return a {@link CompletionStage} that completes with the first value t such that {@code
+	 * @return a {@link InternalStage} that completes with the first value t such that {@code
 	 * shouldContinue.test(T) == false}, or with an exception if one was thrown.
 	 */
-	public static <T> CompletionStage<T> asyncWhile(
+	public static <T> InternalStage<T> asyncWhile(
 			final Predicate<? super T> shouldContinue,
-			final Function<? super T, ? extends CompletionStage<T>> fn,
+			final Function<? super T, ? extends InternalStage<T>> fn,
 			final T initialValue) {
 		return TrampolineInternal.trampoline( shouldContinue, fn, initialValue );
 	}
 
 	/**
-	 * Repeatedly uses the function {@code fn} to produce a {@link CompletionStage} of a boolean,
+	 * Repeatedly uses the function {@code fn} to produce a {@link InternalStage} of a boolean,
 	 * stopping when then boolean is {@code false}. The asynchronous equivalent of {@code
 	 * while(fn.get());}. Generally, the function fn must perform some side effect for this method to
-	 * be useful. If the {@code fn} throws or produces an exceptional {@link CompletionStage}, an
+	 * be useful. If the {@code fn} throws or produces an exceptional {@link InternalStage}, an
 	 * exceptional stage will be returned.
 	 *
-	 * @param fn a {@link Supplier} of a {@link CompletionStage} that indicates whether iteration
+	 * @param fn a {@link Supplier} of a {@link InternalStage} that indicates whether iteration
 	 * should continue
 	 *
-	 * @return a {@link CompletionStage} that is complete when a stage produced by {@code fn} has
+	 * @return a {@link InternalStage} that is complete when a stage produced by {@code fn} has
 	 * returned {@code false}, or with an exception if one was thrown
 	 */
-	public static CompletionStage<Void> asyncWhile(
-			final Supplier<? extends CompletionStage<Boolean>> fn) {
+	public static InternalStage<Void> asyncWhile(
+			final Supplier<? extends InternalStage<Boolean>> fn) {
 		return AsyncTrampoline.asyncWhile( b -> b, b -> fn.get(), true )
 				.thenCompose( CompletionStages::voidFuture );
 	}

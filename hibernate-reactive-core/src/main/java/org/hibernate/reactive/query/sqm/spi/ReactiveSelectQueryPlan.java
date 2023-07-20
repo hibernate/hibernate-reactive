@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.spi;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.ScrollMode;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -36,5 +36,5 @@ public interface ReactiveSelectQueryPlan<R> extends SelectQueryPlan<R> {
 	/**
 	 * Perform (execute) the query returning a List
 	 */
-	CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext);
+	InternalStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext);
 }

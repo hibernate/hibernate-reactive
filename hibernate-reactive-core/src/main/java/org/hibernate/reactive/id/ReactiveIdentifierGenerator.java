@@ -9,7 +9,7 @@ import org.hibernate.Incubating;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * A replacement for {@link org.hibernate.id.IdentifierGenerator},
@@ -31,5 +31,5 @@ public interface ReactiveIdentifierGenerator<Id> {
 	 *
 	 * @param session the reactive session
 	 */
-	CompletionStage<Id> generate(ReactiveConnectionSupplier session, Object entity);
+	InternalStage<Id> generate(ReactiveConnectionSupplier session, Object entity);
 }

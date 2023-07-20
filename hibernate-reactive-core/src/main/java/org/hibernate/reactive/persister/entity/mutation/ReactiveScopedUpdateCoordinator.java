@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.persister.entity.mutation;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 
@@ -18,7 +18,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
  */
 public interface ReactiveScopedUpdateCoordinator {
 
-	CompletionStage<Void> coordinateReactiveUpdate(
+	InternalStage<Void> coordinateReactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,

@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
@@ -28,7 +28,7 @@ public class ReactiveMutationExecutorSingleNonBatched extends MutationExecutorSi
 	}
 
 	@Override
-	public CompletionStage<Void> performReactiveNonBatchedOperations(
+	public InternalStage<Void> performReactiveNonBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,

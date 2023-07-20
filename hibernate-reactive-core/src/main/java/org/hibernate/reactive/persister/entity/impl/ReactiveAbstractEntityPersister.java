@@ -10,7 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -143,7 +143,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<Void> reactiveLock(
+	default InternalStage<Void> reactiveLock(
 			Object id,
 			Object version,
 			Object object,
@@ -218,7 +218,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.whenComplete( (r, e) -> logSqlException( e, () -> "could not lock: " + infoString( this, id, getFactory() ), sql ) );
 	}
 
-	private CompletionStage<Boolean> writeLock(SharedSessionContractImplementor session, String sql, boolean writeLock, Object[] arguments) {
+	private InternalStage<Boolean> writeLock(SharedSessionContractImplementor session, String sql, boolean writeLock, Object[] arguments) {
 		return writeLock
 				? getReactiveConnection( session ).update( sql, arguments ).thenApply( affected -> affected > 0 )
 				: getReactiveConnection( session ).select( sql, arguments ).thenApply( Iterator::hasNext );
@@ -260,7 +260,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	@Override
-	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+	default InternalStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
 		return getReactiveSingleIdEntityLoader().reactiveLoadDatabaseSnapshot( id, session );
 	}
 
@@ -270,7 +270,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 * @see AbstractEntityPersister#getCurrentVersion(Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	default CompletionStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session) {
+	default InternalStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Getting version: {0}", infoString( this, id, getFactory() ) );
 		}
@@ -283,7 +283,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.thenCompose( resultSet -> currentVersion( session, resultSet ) );
 	}
 
-	private CompletionStage<Object> currentVersion(SharedSessionContractImplementor session, ResultSet resultSet) {
+	private InternalStage<Object> currentVersion(SharedSessionContractImplementor session, ResultSet resultSet) {
 		try {
 			if ( !resultSet.next() ) {
 				return nullFuture();
@@ -302,19 +302,19 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 	}
 
-	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+	default <E, T> InternalStage<T> reactiveInitializeLazyProperty(
 			Attribute<E, T> field, E entity,
 			SharedSessionContractImplementor session) {
 		return reactiveInitializeLazyProperty( field.getName(), entity, session );
 	}
 
-	default <E, T> CompletionStage<T> reactiveInitializeLazyProperty(
+	default <E, T> InternalStage<T> reactiveInitializeLazyProperty(
 			String field,
 			E entity,
 			SharedSessionContractImplementor session) {
 		final Object result = initializeLazyProperty( field, entity, session );
 		if ( result instanceof CompletionStage ) {
-			return (CompletionStage<T>) result;
+			return (InternalStage<T>) result;
 		}
 		else if ( result instanceof PersistentCollection ) {
 			// Hibernate core doesn't set the field when it's a
@@ -345,7 +345,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	}
 
 	// See AbstractEntityPersister#initializeLazyPropertiesFromDatastore(Object, Object, EntityEntry, String, SharedSessionContractImplementor)
-	default CompletionStage<Object> reactiveInitializeLazyPropertiesFromDatastore(
+	default InternalStage<Object> reactiveInitializeLazyPropertiesFromDatastore(
 			Object entity,
 			Object id,
 			EntityEntry entry,
@@ -390,7 +390,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				) );
 	}
 
-	default CompletionStage<Object> initLazyProperty(
+	default InternalStage<Object> initLazyProperty(
 			String fieldName, Object entity,
 			SharedSessionContractImplementor session,
 			EntityEntry entry,
@@ -398,7 +398,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
 			Set<String> initializedLazyAttributeNames,
 			Object[] values) {    // Load all the lazy properties that are in the same fetch group
-		CompletionStage<Object> resultStage = nullFuture();
+		InternalStage<Object> resultStage = nullFuture();
 		int i = 0;
 		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
 			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
@@ -412,7 +412,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final Object selectedValue =  values[i++];
 			if ( selectedValue instanceof CompletionStage ) {
 				// This happens with a lazy one-to-one (bytecode enhancement enabled)
-				CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
+				InternalStage<Object> selectedValueStage = (InternalStage<Object>) selectedValue;
 				resultStage = resultStage
 						.thenCompose( result -> selectedValueStage
 								.thenApply( selected -> {
@@ -446,7 +446,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		} );
 	}
 
-	default CompletionStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
+	default InternalStage<Object> reactiveInitializeEnhancedEntityUsedAsProxy(
 			Object entity,
 			String nameOfAttributeBeingAccessed,
 			SharedSessionContractImplementor session) {
@@ -491,7 +491,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		throw new IllegalStateException();
 	}
 
-	private CompletionStage<?> loadFromDatabaseOrCache(
+	private InternalStage<?> loadFromDatabaseOrCache(
 			Object entity,
 			SharedSessionContractImplementor session,
 			EntityKey entityKey,

@@ -21,7 +21,7 @@ import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Supplier;
 
 public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
@@ -33,7 +33,7 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 		this.factory = factory;
 	}
 
-	private <T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+	private <T> Uni<T> uni(Supplier<InternalStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
 	}
 

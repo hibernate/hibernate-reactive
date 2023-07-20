@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -74,7 +74,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 	}
 
 	@Override
-	protected CompletionStage<List<T>> performOrderedMultiLoad(
+	protected InternalStage<List<T>> performOrderedMultiLoad(
 			Object[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
@@ -159,7 +159,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 			// load the entity state.
 			idsInBatch.add( id );
 
-			CompletionStage<Void> loopResult = voidFuture();
+			InternalStage<Void> loopResult = voidFuture();
 			if ( idsInBatch.size() >= maxBatchSize ) {
 				// we've hit the allotted max-batch-size, perform an "intermediate load"
 				loopResult = loadEntitiesById( idsInBatch, lockOptions, session )
@@ -205,7 +205,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		} );
 	}
 
-	private CompletionStage<List<T>> loadEntitiesById(
+	private InternalStage<List<T>> loadEntitiesById(
 			List<Object> idsInBatch,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session) {
@@ -283,7 +283,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		);
 	}
 
-	private CompletionStage<List<T>> performSingleMultiLoad(
+	private InternalStage<List<T>> performSingleMultiLoad(
 			Object id,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session) {
@@ -297,7 +297,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 	}
 
 	@Override
-	protected CompletionStage<List<T>> performUnorderedMultiLoad(
+	protected InternalStage<List<T>> performUnorderedMultiLoad(
 			Object[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {

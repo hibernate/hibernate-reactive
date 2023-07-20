@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
@@ -55,7 +55,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session) {
 		if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
 			MODEL_MUTATION_LOGGER
 					.debugf( "Deleting collection - %s : %s", getMutationTarget().getRolePath(), key );

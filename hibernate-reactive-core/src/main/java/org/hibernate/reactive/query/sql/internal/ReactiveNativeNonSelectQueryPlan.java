@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -45,7 +45,7 @@ public class ReactiveNativeNonSelectQueryPlan implements ReactiveNonSelectQueryP
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
 		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
 						.thenCompose( aBoolean -> {

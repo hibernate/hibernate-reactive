@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.schema;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;

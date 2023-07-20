@@ -7,7 +7,7 @@ package org.hibernate.reactive.sql.exec.spi;
 
 import java.sql.PreparedStatement;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
@@ -22,7 +22,7 @@ import org.hibernate.sql.results.spi.RowTransformer;
  */
 public interface ReactiveSelectExecutor {
 
-	<T, R> CompletionStage<T> executeQuery(
+	<T, R> InternalStage<T> executeQuery(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
@@ -31,7 +31,7 @@ public interface ReactiveSelectExecutor {
 			Function<String, PreparedStatement> statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer);
 
-	<R> CompletionStage<List<R>> list(
+	<R> InternalStage<List<R>> list(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,

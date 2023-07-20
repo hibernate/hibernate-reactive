@@ -10,7 +10,7 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * A Hibernate {@link Service} that provides access to pooled
@@ -40,20 +40,20 @@ public interface ReactiveConnectionPool extends Service {
 	 * Obtain a reactive connection, returning the connection
 	 * via a {@link CompletionStage}.
 	 */
-	CompletionStage<ReactiveConnection> getConnection();
+	InternalStage<ReactiveConnection> getConnection();
 
 	/**
 	 * Obtain a reactive connection, returning the connection
 	 * via a {@link CompletionStage} and overriding the default
 	 * {@link SqlExceptionHelper} for the pool.
 	 */
-	CompletionStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper);
+	InternalStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper);
 
 	/**
 	 * Obtain a reactive connection for the given tenant id,
 	 * returning the connection via a {@link CompletionStage}.
 	 */
-	CompletionStage<ReactiveConnection> getConnection(String tenantId);
+	InternalStage<ReactiveConnection> getConnection(String tenantId);
 
 	/**
 	 * Obtain a reactive connection for the given tenant id,
@@ -61,7 +61,7 @@ public interface ReactiveConnectionPool extends Service {
 	 * and overriding the default {@link SqlExceptionHelper}
 	 * for the pool.
 	 */
-	CompletionStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper);
+	InternalStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper);
 
 	/**
 	 * The shutdown of the pool is actually asynchronous but the
@@ -70,5 +70,5 @@ public interface ReactiveConnectionPool extends Service {
 	 * after closing the SessionFactory you can get the CompletionStage
 	 * instance from this getter.
 	 */
-	CompletionStage<Void> getCloseFuture();
+	InternalStage<Void> getCloseFuture();
 }

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.exec.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.logging.impl.Log;
@@ -52,7 +52,7 @@ public class ReactiveRowProcessingState extends BaseExecutionContext implements 
 		this.jdbcValues = jdbcValues;
 	}
 
-	public CompletionStage<Boolean> next() {
+	public InternalStage<Boolean> next() {
 		return jdbcValues.next();
 	}
 

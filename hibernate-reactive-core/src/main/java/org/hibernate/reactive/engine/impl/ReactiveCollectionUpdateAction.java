@@ -6,7 +6,6 @@
 package org.hibernate.reactive.engine.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -50,7 +49,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() {
+	public InternalStage<Void> reactiveExecute() {
 		final Object key = getKey();
 		final SharedSessionContractImplementor session = getSession();
 		final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
@@ -60,7 +59,7 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 
 		preUpdate();
 
-		final CompletionStage<Void> updateStage;
+		final InternalStage<Void> updateStage;
 		if ( !collection.wasInitialized() ) {
 			// If there were queued operations, they would have been processed
 			// and cleared by now.

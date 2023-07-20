@@ -8,7 +8,7 @@ package org.hibernate.reactive.event.impl;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.Hibernate;
@@ -93,7 +93,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * @param event The merge event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException {
 		final EventSource session = event.getSession();
 		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( session );
 		final MergeContext mergeContext = new MergeContext( session, entityCopyObserver );
@@ -115,7 +115,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * @param event The merge event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException {
+	public InternalStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException {
 
 		final Object original = event.getOriginal();
 		// NOTE : `original` is the value being merged
@@ -159,7 +159,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		return voidFuture();
 	}
 
-	private CompletionStage<Void> doMerge(MergeEvent event, MergeContext copiedAlready, Object entity) {
+	private InternalStage<Void> doMerge(MergeEvent event, MergeContext copiedAlready, Object entity) {
 		if ( copiedAlready.containsKey( entity ) && ( copiedAlready.isOperatedOn( entity ) ) ) {
 			LOG.trace( "Already in merge process" );
 			event.setResult( entity );
@@ -175,7 +175,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		}
 	}
 
-	private CompletionStage<Void> merge(MergeEvent event, MergeContext copiedAlready, Object entity) {
+	private InternalStage<Void> merge(MergeEvent event, MergeContext copiedAlready, Object entity) {
 		switch ( entityState( event, entity ) ) {
 			case DETACHED:
 				return entityIsDetached( event, copiedAlready );
@@ -217,7 +217,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		return getEntityState( entity, event.getEntityName(), entry, source, false );
 	}
 
-	protected CompletionStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
+	protected InternalStage<Void> entityIsPersistent(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		//TODO: check that entry.getIdentifier().equals(requestedId)
 		final Object entity = event.getEntity();
@@ -229,7 +229,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				.thenAccept( v -> event.setResult( entity ) );
 	}
 
-	protected CompletionStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
+	protected InternalStage<Void> entityIsTransient(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Merging transient instance" );
 
 		final Object entity = event.getEntity();
@@ -307,7 +307,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		}
 	}
 
-	private CompletionStage<Void> saveTransientEntity(
+	private InternalStage<Void> saveTransientEntity(
 			Object entity,
 			String entityName,
 			Object requestedId,
@@ -321,7 +321,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 				: reactiveSaveWithRequestedId( entity, requestedId, entityName, copyCache, source );
 	}
 
-	protected CompletionStage<Void> entityIsDetached(MergeEvent event, MergeContext copyCache) {
+	protected InternalStage<Void> entityIsDetached(MergeEvent event, MergeContext copyCache) {
 		LOG.trace( "Merging detached instance" );
 
 		final Object entity = event.getEntity();
@@ -498,7 +498,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		return entry != null && entry.isExistsInDatabase();
 	}
 
-	private CompletionStage<Void> fetchAndCopyValues(
+	private InternalStage<Void> fetchAndCopyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
@@ -523,7 +523,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		}
 	}
 
-	protected CompletionStage<Void> copyValues(
+	protected InternalStage<Void> copyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
@@ -539,7 +539,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		).thenAccept( copiedValues -> persister.setValues( target, copiedValues ) );
 	}
 
-	protected CompletionStage<Void> copyValues(
+	protected InternalStage<Void> copyValues(
 			final EntityPersister persister,
 			final Object entity,
 			final Object target,
@@ -583,7 +583,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * @param entity The entity being copied.
 	 * @param copyCache A cache of already copied instance.
 	 */
-	protected CompletionStage<Void> cascadeOnMerge(
+	protected InternalStage<Void> cascadeOnMerge(
 			final EventSource source,
 			final EntityPersister persister,
 			final Object entity,
@@ -609,7 +609,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
+	protected InternalStage<Void> cascadeAfterSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
 		return voidFuture();
 	}
 
@@ -617,7 +617,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	 * Cascade behavior is redefined by this subclass, disable superclass behavior
 	 */
 	@Override
-	protected CompletionStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
+	protected InternalStage<Void> cascadeBeforeSave(EventSource source, EntityPersister persister, Object entity, MergeContext anything) {
 		return voidFuture();
 	}
 

@@ -10,7 +10,7 @@ import org.hibernate.Incubating;
 import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.Incubating;
 
@@ -39,28 +39,28 @@ public interface ReactiveConnection {
 
 	DatabaseMetadata getDatabaseMetadata();
 
-	CompletionStage<Void> execute(String sql);
+	InternalStage<Void> execute(String sql);
 
-	CompletionStage<Void> executeOutsideTransaction(String sql);
+	InternalStage<Void> executeOutsideTransaction(String sql);
 
 	/**
 	 * Run sql as statement (instead of preparedStatement)
 	 */
-	CompletionStage<Void> executeUnprepared(String sql);
+	InternalStage<Void> executeUnprepared(String sql);
 
-	CompletionStage<Integer> update(String sql);
+	InternalStage<Integer> update(String sql);
 
-	CompletionStage<Integer> update(String sql, Object[] paramValues);
+	InternalStage<Integer> update(String sql, Object[] paramValues);
 
-	CompletionStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation);
+	InternalStage<Void> update(String sql, Object[] paramValues, boolean allowBatching, Expectation expectation);
 
-	CompletionStage<int[]> update(String sql, List<Object[]> paramValues);
+	InternalStage<int[]> update(String sql, List<Object[]> paramValues);
 
-	CompletionStage<Result> select(String sql);
+	InternalStage<Result> select(String sql);
 
-	CompletionStage<Result> select(String sql, Object[] paramValues);
+	InternalStage<Result> select(String sql, Object[] paramValues);
 
-	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
+	InternalStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
 
 	/**
 	 * This method is intended to be used only for queries returning
@@ -75,27 +75,27 @@ public interface ReactiveConnection {
 	 * @param sql - the query to execute outside of a transaction
 	 * @param paramValues - a non-null array of parameter values
 	 *
-	 * @return the CompletionStage<ResultSet> from executing the query.
+	 * @return the InternalStage<ResultSet> from executing the query.
 	 */
-	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
+	InternalStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
-	<T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName);
+	<T> InternalStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName);
 
-	<T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
+	<T> InternalStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
 
 	interface Result extends Iterator<Object[]> {
 		int size();
 	}
 
-	CompletionStage<Void> beginTransaction();
+	InternalStage<Void> beginTransaction();
 
-	CompletionStage<Void> commitTransaction();
+	InternalStage<Void> commitTransaction();
 
-	CompletionStage<Void> rollbackTransaction();
+	InternalStage<Void> rollbackTransaction();
 
 	ReactiveConnection withBatchSize(int batchSize);
 
-	CompletionStage<Void> executeBatch();
+	InternalStage<Void> executeBatch();
 
-	CompletionStage<Void> close();
+	InternalStage<Void> close();
 }

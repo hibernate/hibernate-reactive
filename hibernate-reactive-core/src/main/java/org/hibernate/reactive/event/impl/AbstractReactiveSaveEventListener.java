@@ -7,7 +7,7 @@ package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
@@ -82,7 +82,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 *
 	 * @return The id used to save the entity.
 	 */
-	protected CompletionStage<Void> reactiveSaveWithRequestedId(
+	protected InternalStage<Void> reactiveSaveWithRequestedId(
 			Object entity,
 			Object requestedId,
 			String entityName,
@@ -116,7 +116,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> reactiveSaveWithGeneratedId(
+	protected InternalStage<Void> reactiveSaveWithGeneratedId(
 			Object entity,
 			String entityName,
 			C context,
@@ -145,7 +145,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		}
 	}
 
-	private CompletionStage<Void> performSaveWithId(
+	private InternalStage<Void> performSaveWithId(
 			Object entity,
 			C context,
 			EventSource source,
@@ -187,7 +187,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> reactivePerformSave(
+	protected InternalStage<Void> reactivePerformSave(
 			Object entity,
 			Object id,
 			EntityPersister persister,
@@ -212,7 +212,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 				) );
 	}
 
-	private CompletionStage<EntityKey> entityKey(Object entity, Object id, EntityPersister persister, boolean useIdentityColumn, EventSource source) {
+	private InternalStage<EntityKey> entityKey(Object entity, Object id, EntityPersister persister, boolean useIdentityColumn, EventSource source) {
 		return useIdentityColumn
 				? nullFuture()
 				: generateEntityKey( id, persister, source )
@@ -222,7 +222,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 						} );
 	}
 
-	private CompletionStage<EntityKey> generateEntityKey(Object id, EntityPersister persister, EventSource source) {
+	private InternalStage<EntityKey> generateEntityKey(Object id, EntityPersister persister, EventSource source) {
 		final EntityKey key = source.generateEntityKey( id, persister );
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		final Object old = persistenceContext.getEntity( key );
@@ -257,7 +257,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 * @return The id used to save the entity; may be null depending on the
 	 * type of id generator used and the requiresImmediateIdAccess value
 	 */
-	protected CompletionStage<Void> reactivePerformSaveOrReplicate(
+	protected InternalStage<Void> reactivePerformSaveOrReplicate(
 			Object entity,
 			EntityKey key,
 			EntityPersister persister,
@@ -358,7 +358,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		return null;
 	}
 
-	private CompletionStage<AbstractEntityInsertAction> addInsertAction(
+	private InternalStage<AbstractEntityInsertAction> addInsertAction(
 			Object[] values,
 			Object id,
 			Object entity,
@@ -389,7 +389,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 * @param entity The entity to be saved.
 	 * @param context Generally cascade-specific data
 	 */
-	protected CompletionStage<Void> cascadeBeforeSave(
+	protected InternalStage<Void> cascadeBeforeSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,
@@ -410,7 +410,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 	 * @param entity The entity beng saved.
 	 * @param context Generally cascade-specific data
 	 */
-	protected CompletionStage<Void> cascadeAfterSave(
+	protected InternalStage<Void> cascadeAfterSave(
 			EventSource source,
 			EntityPersister persister,
 			Object entity,

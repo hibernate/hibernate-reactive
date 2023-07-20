@@ -7,7 +7,7 @@ package org.hibernate.reactive.sql.exec.spi;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.cache.spi.QueryKey;
@@ -74,7 +74,7 @@ public class ReactiveValuesResultSet {
 		return new QueryCachePutManagerEnabledImpl( queryCache, factory.getStatistics(), queryCacheKey, queryIdentifier, metadataForCache );
 	}
 
-	public final CompletionStage<Boolean> next() {
+	public final InternalStage<Boolean> next() {
 		return processNext()
 				.thenApply( hadRow -> {
 					if ( hadRow ) {
@@ -84,14 +84,14 @@ public class ReactiveValuesResultSet {
 				} );
 	}
 
-	protected final CompletionStage<Boolean> processNext() {
+	protected final InternalStage<Boolean> processNext() {
 		return advance( () -> resultSetAccess
 				.getReactiveResultSet()
 				.thenCompose( this::doNext )
 		);
 	}
 
-	private CompletionStage<Boolean> doNext(ResultSet resultSet) {
+	private InternalStage<Boolean> doNext(ResultSet resultSet) {
 		try {
 			return completedFuture( resultSet.next() );
 		}
@@ -121,16 +121,16 @@ public class ReactiveValuesResultSet {
 
 	@FunctionalInterface
 	private interface Advancer {
-		CompletionStage<Boolean> advance();
+		InternalStage<Boolean> advance();
 	}
 
-	private CompletionStage<Boolean> advance(Advancer advancer) {
+	private InternalStage<Boolean> advance(Advancer advancer) {
 		return advancer
 				.advance()
 				.thenCompose( this::readCurrentRowValues );
 	}
 
-	private CompletionStage<Boolean> readCurrentRowValues(boolean hasResults) {
+	private InternalStage<Boolean> readCurrentRowValues(boolean hasResults) {
 		if ( !hasResults ) {
 			return falseFuture();
 		}

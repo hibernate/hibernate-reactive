@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.jdbc.env.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
@@ -46,7 +46,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		throw LOG.nonReactiveMethodCall( "executeReactive" );
 	}
 
-	default CompletionStage<Object> executeReactive(
+	default InternalStage<Object> executeReactive(
 			Object modelReference,
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
@@ -58,7 +58,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 				.thenApply( CompletionStages::nullFuture );
 	}
 
-	default CompletionStage<Void> performReactiveNonBatchedOperations(
+	default InternalStage<Void> performReactiveNonBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
@@ -66,14 +66,14 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		return voidFuture();
 	}
 
-	default CompletionStage<Void> performReactiveSelfExecutingOperations(
+	default InternalStage<Void> performReactiveSelfExecutingOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
 
-	default CompletionStage<Void> performReactiveBatchedOperations(
+	default InternalStage<Void> performReactiveBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
@@ -83,7 +83,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 	/**
 	 * Perform a non-batched mutation
 	 */
-	default CompletionStage<Void> performReactiveNonBatchedMutation(
+	default InternalStage<Void> performReactiveNonBatchedMutation(
 			PreparedStatementDetails statementDetails,
 			JdbcValueBindings valueBindings,
 			TableInclusionChecker inclusionChecker,

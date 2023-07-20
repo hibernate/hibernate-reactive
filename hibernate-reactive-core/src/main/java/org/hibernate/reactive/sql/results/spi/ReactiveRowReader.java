@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.results.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -20,7 +20,7 @@ public interface ReactiveRowReader<R> extends RowReader<R> {
 
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	CompletionStage<R> reactiveReadRow(ReactiveRowProcessingState processingState, JdbcValuesSourceProcessingOptions options);
+	InternalStage<R> reactiveReadRow(ReactiveRowProcessingState processingState, JdbcValuesSourceProcessingOptions options);
 
 	@Override
 	default InitializersList getInitializersList() {

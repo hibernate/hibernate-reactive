@@ -13,7 +13,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -103,7 +103,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 	// Pretty much a copy and paste of the method in the super class
 	// We should refactor this
 	@Override
-	public CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		final SqmInsertStatement<?> sqmInsertStatement = getSqmStatement();
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final EntityPersister entityDescriptor = getEntityDescriptor().getEntityPersister();

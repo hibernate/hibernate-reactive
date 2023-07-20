@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.stream.Stream;
 
 import org.hibernate.CacheMode;
@@ -129,27 +129,27 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public CompletionStage<R> reactiveUnique() {
+	public InternalStage<R> reactiveUnique() {
 		return selectionQueryDelegate.reactiveUnique();
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResult() {
+	public InternalStage<R> getReactiveSingleResult() {
 		return selectionQueryDelegate.getReactiveSingleResult();
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResultOrNull() {
+	public InternalStage<R> getReactiveSingleResultOrNull() {
 		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
+	public InternalStage<Optional<R>> reactiveUniqueResultOptional() {
 		return selectionQueryDelegate.reactiveUniqueResultOptional();
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactiveList() {
+	public InternalStage<List<R>> reactiveList() {
 		return selectionQueryDelegate.reactiveList();
 	}
 
@@ -183,7 +183,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		return selectionQueryDelegate.getResultStream();
 	}
 
-	private CompletionStage<List<R>> doReactiveList() {
+	private InternalStage<List<R>> doReactiveList() {
 		verifySelect();
 		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
 
@@ -279,7 +279,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate() {
+	public InternalStage<Integer> executeReactiveUpdate() {
 		verifyUpdate();
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 		beforeQuery();
@@ -291,7 +291,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 				.whenComplete( (rs, throwable) -> afterQuery( throwable == null ) );
 	}
 
-	public CompletionStage<Integer> doExecuteReactiveUpdate() {
+	public InternalStage<Integer> doExecuteReactiveUpdate() {
 		getSession().prepareForQueryExecution( true );
 		return resolveNonSelectQueryPlan().executeReactiveUpdate( this );
 	}

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.MergeContext;
@@ -24,13 +24,13 @@ public interface ReactiveMergeEventListener extends Serializable {
      *
      * @param event The merge event to be handled.
      */
-	CompletionStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException;
+	InternalStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException;
 
     /**
      * Handle the given merge event.
      *
      * @param event The merge event to be handled.
      */
-	CompletionStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException;
+	InternalStage<Void> reactiveOnMerge(MergeEvent event, MergeContext copiedAlready) throws HibernateException;
 
 }

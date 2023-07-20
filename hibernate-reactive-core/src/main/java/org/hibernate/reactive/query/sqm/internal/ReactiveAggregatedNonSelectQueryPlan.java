@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
@@ -24,7 +24,7 @@ public class ReactiveAggregatedNonSelectQueryPlan implements ReactiveNonSelectQu
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		return total( aggregatedQueryPlans, nonSelectQueryPlan -> nonSelectQueryPlan
 				.executeReactiveUpdate( executionContext ) );
 	}

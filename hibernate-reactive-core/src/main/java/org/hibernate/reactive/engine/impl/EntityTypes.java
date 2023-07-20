@@ -6,7 +6,6 @@
 package org.hibernate.reactive.engine.impl;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -51,7 +50,7 @@ public class EntityTypes {
 	/*
 	 * Replacement for {@link EntityType#resolve(Object, SharedSessionContractImplementor, Object)}
 	 */
-	public static CompletionStage<Object> resolve(EntityType entityType, Object idOrUniqueKey, Object owner, SharedSessionContractImplementor session) {
+	public static InternalStage<Object> resolve(EntityType entityType, Object idOrUniqueKey, Object owner, SharedSessionContractImplementor session) {
 		if ( idOrUniqueKey != null && !isNull( entityType, owner, session ) ) {
 			if ( entityType.isReferenceToPrimaryKey() ) {
 				return ReactiveQueryExecutorLookup.extract( session ).reactiveInternalLoad(
@@ -105,7 +104,7 @@ public class EntityTypes {
 	 * @return The loaded entity
 	 * @throws HibernateException generally indicates problems performing the load.
 	 */
-	static CompletionStage<Object> loadByUniqueKey(
+	static InternalStage<Object> loadByUniqueKey(
 			EntityType entityType,
 			Object key,
 			SharedSessionContractImplementor session) throws HibernateException {
@@ -149,7 +148,7 @@ public class EntityTypes {
 	/**
 	 * @see org.hibernate.type.TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map)
 	 */
-	public static CompletionStage<Object[]> replace(
+	public static InternalStage<Object[]> replace(
 			final Object[] original,
 			final Object[] target,
 			final Type[] types,
@@ -185,7 +184,7 @@ public class EntityTypes {
 							 copyCache
 					 ).thenCompose( copy -> {
 						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage<?>) copy )
+							 return ( (InternalStage<?>) copy )
 									 .thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
 						 }
 						 else {
@@ -199,7 +198,7 @@ public class EntityTypes {
 	/**
 	 * @see org.hibernate.type.TypeHelper#replace(Object[], Object[], Type[], SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
 	 */
-	public static CompletionStage<Object[]> replace(
+	public static InternalStage<Object[]> replace(
 			final Object[] original,
 			final Object[] target,
 			final Type[] types,
@@ -238,7 +237,7 @@ public class EntityTypes {
 							 foreignKeyDirection
 					 ).thenCompose( copy -> {
 						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+							 return ( (InternalStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
 						 }
 						 else {
 							 copied[i] = copy;
@@ -251,7 +250,7 @@ public class EntityTypes {
 	/**
 	 * @see org.hibernate.type.AbstractType#replace(Object, Object, SharedSessionContractImplementor, Object, Map, ForeignKeyDirection)
 	 */
-	private static CompletionStage<Object> replace(
+	private static InternalStage<Object> replace(
 			EntityType entityType,
 			Object original,
 			Object target,
@@ -271,7 +270,7 @@ public class EntityTypes {
 	/**
 	 * @see EntityType#replace(Object, Object, SharedSessionContractImplementor, Object, Map)
 	 */
-	private static CompletionStage<Object> replace(
+	private static InternalStage<Object> replace(
 			EntityType entityType,
 			Object original,
 			Object target,
@@ -318,7 +317,7 @@ public class EntityTypes {
 		}
 	}
 
-	private static CompletionStage<Object> resolveIdOrUniqueKey(
+	private static InternalStage<Object> resolveIdOrUniqueKey(
 			EntityType entityType,
 			Object original,
 			SessionImplementor session,
@@ -340,7 +339,7 @@ public class EntityTypes {
 								Object idOrUniqueKey = entityType.getIdentifierOrUniqueKeyType( session.getFactory() )
 										.replace( fetched, null, session, owner, copyCache );
 								if ( idOrUniqueKey instanceof CompletionStage ) {
-									return ( (CompletionStage<?>) idOrUniqueKey )
+									return ( (InternalStage<?>) idOrUniqueKey )
 											.thenCompose( key -> resolve( entityType, key, owner, session ) );
 								}
 
@@ -352,7 +351,7 @@ public class EntityTypes {
 	/**
 	 * see EntityType#getIdentifier(Object, SharedSessionContractImplementor)
 	 */
-	private static CompletionStage<Object> getIdentifier(
+	private static InternalStage<Object> getIdentifier(
 			EntityType entityType,
 			Object value,
 			SessionImplementor session) {
@@ -402,7 +401,7 @@ public class EntityTypes {
 
 	}
 
-	private static CompletionStage<Object> getIdentifierFromHibernateProxy(
+	private static InternalStage<Object> getIdentifierFromHibernateProxy(
 			EntityType entityType,
 			HibernateProxy proxy,
 			SharedSessionContractImplementor session) {
@@ -431,7 +430,7 @@ public class EntityTypes {
 				} );
 	}
 
-	private static CompletionStage<Object> loadHibernateProxyEntity(
+	private static InternalStage<Object> loadHibernateProxyEntity(
 			Object entity,
 			SharedSessionContractImplementor session) {
 		if ( entity instanceof HibernateProxy ) {

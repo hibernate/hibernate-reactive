@@ -5,11 +5,11 @@
  */
 package org.hibernate.reactive.persister.collection.mutation;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.collection.mutation.RemoveCoordinator;
 
 public interface ReactiveRemoveCoordinator extends RemoveCoordinator {
-	CompletionStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session);
+	InternalStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session);
 }

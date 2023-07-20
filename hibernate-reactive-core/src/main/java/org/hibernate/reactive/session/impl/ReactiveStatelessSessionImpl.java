@@ -7,8 +7,7 @@ package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -214,17 +213,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
+	public <T> InternalStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
 		return reactiveGet( entityClass.getName(), id, LockMode.NONE, null );
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(String entityName, Object id) {
+	public <T> InternalStage<T> reactiveGet(String entityName, Object id) {
 		return reactiveGet( entityName, id, LockMode.NONE, null );
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+	public <T> InternalStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		return reactiveGet( entityClass.getName(), id, LockMode.NONE, fetchGraph );
 	}
 
@@ -234,7 +233,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+	public <T> InternalStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		checkOpen();
 
 		// differs from core, because core doesn't let us pass an EntityGraph
@@ -266,7 +265,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsert(Object entity) {
+	public InternalStage<Void> reactiveInsert(Object entity) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object[] state = persister.getValues( entity );
@@ -290,7 +289,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-	private CompletionStage<?> generateId(Object entity, Generator generator) {
+	private InternalStage<?> generateId(Object entity, Generator generator) {
 		return generator instanceof ReactiveIdentifierGenerator
 				? ( (ReactiveIdentifierGenerator<?>) generator ).generate( this, this )
 				: completedFuture( ( (BeforeExecutionGenerator) generator )
@@ -298,7 +297,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDelete(Object entity) {
+	public InternalStage<Void> reactiveDelete(Object entity) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = persister.getIdentifier( entity, this );
@@ -307,7 +306,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdate(Object entity) {
+	public InternalStage<Void> reactiveUpdate(Object entity) {
 		checkOpen();
 		if ( entity instanceof HibernateProxy ) {
 			final LazyInitializer hibernateLazyInitializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
@@ -324,7 +323,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	 *
 	 * @return a void stage
 	 */
-	private CompletionStage<Void> executeReactiveUpdate(Object entity) {
+	private InternalStage<Void> executeReactiveUpdate(Object entity) {
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = persister.getIdentifier( entity, this );
 		final Object[] state = persister.getValues( entity );
@@ -342,12 +341,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object entity) {
+	public InternalStage<Void> reactiveRefresh(Object entity) {
 		return reactiveRefresh( entity, LockMode.NONE );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
+	public InternalStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = persister.getIdentifier( entity, this );
 
@@ -377,39 +376,39 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertAll(Object... entities) {
+	public InternalStage<Void> reactiveInsertAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveInsert )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities) {
+	public InternalStage<Void> reactiveInsertAll(int batchSize, Object... entities) {
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveInsert )
 				.thenCompose( v -> connection.executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateAll(Object... entities) {
+	public InternalStage<Void> reactiveUpdateAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveUpdate )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities) {
+	public InternalStage<Void> reactiveUpdateAll(int batchSize, Object... entities) {
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveUpdate )
 				.thenCompose( v -> connection.executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteAll(Object... entities) {
+	public InternalStage<Void> reactiveDeleteAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveDelete )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities) {
+	public InternalStage<Void> reactiveDeleteAll(int batchSize, Object... entities) {
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveDelete )
 				.thenCompose( v -> connection.executeBatch() );
@@ -417,13 +416,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 
 	@Override
-	public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
+	public InternalStage<Void> reactiveRefreshAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveRefresh )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities) {
+	public InternalStage<Void> reactiveRefreshAll(int batchSize, Object... entities) {
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveRefresh )
 				.thenCompose( v -> connection.executeBatch() );
@@ -441,7 +440,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveInternalLoad(
+	public InternalStage<Object> reactiveInternalLoad(
 			String entityName,
 			Object id,
 			boolean eager,
@@ -525,7 +524,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
+	public <T> InternalStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association == null ) {
 			return nullFuture();
@@ -545,8 +544,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				// This is hard to test because it happens on slower machines like the ones we use on CI.
 				// See AbstractLazyInitializer#initialize, it happens when the object is not initialized and we need to
 				// call session.immediateLoad
-				final CompletionStage<?> stage = initializer.getImplementation() instanceof CompletionStage
-						? (CompletionStage<?>) initializer.getImplementation()
+				final InternalStage<?> stage = initializer.getImplementation() instanceof InternalStage
+						? (InternalStage<?>) initializer.getImplementation()
 						: completedFuture( initializer.getImplementation() );
 
 				return stage.thenCompose( implementation -> persister.reactiveLoad( id, implementation, LockOptions.NONE, this ) )
@@ -1123,7 +1122,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public void close(CompletableFuture<Void> closing) {
+	public void close(InternalStage<Void> closing) {
 		reactiveConnection.close()
 				.thenAccept( v -> super.close() )
 				.whenComplete( (unused, throwable) -> {

@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -126,7 +126,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		final EntityPersister entityDescriptor = sessionFactory.getRuntimeMetamodels()
 				.getMappingMetamodel()
 				.getEntityDescriptor( sqmDelete.getTarget().getEntityName() );
@@ -221,7 +221,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		}
 	}
 
-	private CompletionStage<Integer> executeWithoutIdTable(
+	private InternalStage<Integer> executeWithoutIdTable(
 			Predicate suppliedPredicate,
 			TableGroup tableGroup,
 			Map<SqmParameter<?>, List<List<JdbcParameter>>> restrictionSqmParameterResolutions,
@@ -265,7 +265,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				executionContext.getSession()
 		);
 
-		CompletionStage<Void> cleanUpCollectionTablesStage = ReactiveSqmMutationStrategyHelper.cleanUpCollectionTables(
+		InternalStage<Void> cleanUpCollectionTablesStage = ReactiveSqmMutationStrategyHelper.cleanUpCollectionTables(
 				entityDescriptor,
 				(tableReference, attributeMapping) -> {
 					// No need for a predicate if there is no supplied predicate i.e. this is a full cleanup
@@ -308,7 +308,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				executionContext
 		);
 
-		final CompletionStage<Void>[] deleteFromNonRootStages = new CompletionStage[] { voidFuture() };
+		final InternalStage<Void>[] deleteFromNonRootStages = new InternalStage[] { voidFuture() };
 		if ( rootTableReference instanceof UnionTableReference ) {
 			final MutableInteger rows = new MutableInteger();
 			return cleanUpCollectionTablesStage
@@ -336,7 +336,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 							final QuerySpec idMatchingSubQuerySpec;
 							// No need for a predicate if there is no supplied predicate i.e. this is a full cleanup
 							idMatchingSubQuerySpec = suppliedPredicate == null ? null : matchingIdSubQuerySpec;
-							CompletableFuture<Void> future = new CompletableFuture<>();
+							InternalStage<Void> future = InternalStage.newStage();
 							deleteFromNonRootStages[0] = deleteFromNonRootStages[0]
 									.thenCompose( v -> future );
 							try {
@@ -376,14 +376,14 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		}
 	}
 
-	private CompletionStage<Void> visitUnionTableReferences(
+	private InternalStage<Void> visitUnionTableReferences(
 			Predicate suppliedPredicate,
 			TableGroup tableGroup,
 			SqlExpressionResolver sqlExpressionResolver,
 			ExecutionContext executionContext,
 			QuerySpec matchingIdSubQuerySpec,
 			JdbcParameterBindings jdbcParameterBindings,
-			CompletionStage<Void>[] deleteFromNonRootStages,
+			InternalStage<Void>[] deleteFromNonRootStages,
 			MutableInteger rows) {
 		entityDescriptor.visitConstraintOrderedTables(
 				(tableExpression, tableKeyColumnVisitationSupplier) -> {
@@ -420,7 +420,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		return deleteFromNonRootStages[0];
 	}
 
-	private CompletionStage<Integer> deleteFromRootTableWithoutIdTable(
+	private InternalStage<Integer> deleteFromRootTableWithoutIdTable(
 			NamedTableReference rootTableReference,
 			Predicate predicate,
 			JdbcParameterBindings jdbcParameterBindings,
@@ -432,7 +432,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		);
 	}
 
-	private CompletionStage<Integer> deleteFromNonRootTableWithoutIdTable(
+	private InternalStage<Integer> deleteFromNonRootTableWithoutIdTable(
 			NamedTableReference targetTableReference,
 			Supplier<Consumer<SelectableConsumer>> tableKeyColumnVisitationSupplier,
 			SqlExpressionResolver sqlExpressionResolver,
@@ -500,7 +500,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		} );
 	}
 
-	private static CompletionStage<Integer> executeSqlDelete(
+	private static InternalStage<Integer> executeSqlDelete(
 			DeleteStatement sqlAst,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
@@ -526,7 +526,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				);
 	}
 
-	private CompletionStage<Integer> executeWithIdTable(
+	private InternalStage<Integer> executeWithIdTable(
 			Predicate predicate,
 			TableGroup deletingTableGroup,
 			Map<SqmParameter<?>, List<List<JdbcParameter>>> restrictionSqmParameterResolutions,
@@ -567,7 +567,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				);
 	}
 
-	private CompletionStage<Integer> executeUsingIdTable(
+	private InternalStage<Integer> executeUsingIdTable(
 			Predicate predicate,
 			ExecutionContext executionContext,
 			JdbcParameterBindings jdbcParameterBindings) {
@@ -617,8 +617,8 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				} );
 	}
 
-	private CompletionStage<Void> visitConstraintOrderedTables(QuerySpec idTableIdentifierSubQuery, ExecutionContext executionContext) {
-		final CompletionStage<Integer>[] resultStage = new CompletionStage[]{ completedFuture( -1 ) };
+	private InternalStage<Void> visitConstraintOrderedTables(QuerySpec idTableIdentifierSubQuery, ExecutionContext executionContext) {
+		final InternalStage<Integer>[] resultStage = new CompletionStage[]{ completedFuture( -1 ) };
 		entityDescriptor.visitConstraintOrderedTables(
 				(tableExpression, tableKeyColumnVisitationSupplier) -> {
 					resultStage[0] = resultStage[0].thenCompose( ignore -> deleteFromTableUsingIdTable(
@@ -633,7 +633,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
-	private CompletionStage<Integer> deleteFromTableUsingIdTable(
+	private InternalStage<Integer> deleteFromTableUsingIdTable(
 			String tableExpression,
 			Supplier<Consumer<SelectableConsumer>> tableKeyColumnVisitationSupplier,
 			QuerySpec idTableSubQuery,

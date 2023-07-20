@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
@@ -140,7 +140,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	@Override
-	public CompletionStage<Void> getCloseFuture() {
+	public InternalStage<Void> getCloseFuture() {
 		return closeFuture.toCompletionStage();
 	}
 

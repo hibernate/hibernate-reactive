@@ -12,7 +12,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;

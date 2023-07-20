@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.FlushMode;
 import org.hibernate.LockOptions;
@@ -27,7 +27,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  */
 public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements ReactiveSingleIdEntityLoader<T> {
 
-	private static final CompletionStage<Object[]> EMPTY_ARRAY_STAGE = completedFuture( ArrayHelper.EMPTY_OBJECT_ARRAY );
+	private static final InternalStage<Object[]> EMPTY_ARRAY_STAGE = completedFuture( ArrayHelper.EMPTY_OBJECT_ARRAY );
 
 	private final EntityMappingType entityDescriptor;
 	private final NamedQueryMemento namedQueryMemento;
@@ -43,7 +43,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 	}
 
 	@Override
-	public CompletionStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	public InternalStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		// noinspection unchecked
 		final QueryImplementor<T> query = namedQueryMemento
 				.toQuery( session, (Class<T>) entityDescriptor.getMappedJavaType().getJavaTypeClass() );
@@ -56,7 +56,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 	}
 
 	@Override
-	public CompletionStage<T> load(
+	public InternalStage<T> load(
 			Object pkValue,
 			Object entityInstance,
 			LockOptions lockOptions,
@@ -69,7 +69,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 	}
 
 	@Override
-	public CompletionStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
 		return EMPTY_ARRAY_STAGE;
 	}
 }

@@ -7,7 +7,7 @@ package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -58,7 +58,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveUpdateRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		MODEL_MUTATION_LOGGER.tracef( "Updating collection rows - %s#%s", getMutationTarget().getRolePath(), key );
 
 		// update all the modified entries
@@ -67,7 +67,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 						.debugf( "Updated `%s` collection rows - %s#%s", count, getMutationTarget().getRolePath(), key ) );
 	}
 
-	private CompletionStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	private InternalStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		if ( rowMutationOperations.hasDeleteRow() ) {
 			deleteRows( key, collection, session );
 		}
@@ -79,7 +79,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 		return completedFuture( 0 );
 	}
 
-	private CompletionStage<Integer> insertRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+	private InternalStage<Integer> insertRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
 		final MutationOperationGroupSingle operationGroup = resolveInsertGroup();
 		final PluralAttributeMapping attributeMapping = getMutationTarget().getTargetPart();
 		final CollectionPersister collectionDescriptor = attributeMapping.getCollectionDescriptor();
@@ -115,7 +115,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 		return new BasicBatchKey( getMutationTarget().getRolePath() + "#UPDATE-DELETE" );
 	}
 
-	private CompletionStage<Void> deleteRows(
+	private InternalStage<Void> deleteRows(
 			Object key,
 			PersistentCollection<?> collection,
 			SharedSessionContractImplementor session) {

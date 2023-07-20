@@ -8,7 +8,7 @@ package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
@@ -44,7 +44,7 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 		}
 
-		CompletionStage<Integer> reactiveExecute(ExecutionContext executionContext);
+		InternalStage<Integer> reactiveExecute(ExecutionContext executionContext);
 	}
 
 	public ReactiveTableBasedInsertHandler(
@@ -58,7 +58,7 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef(
 					"Starting multi-table insert execution - %s",

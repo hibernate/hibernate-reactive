@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -31,7 +31,7 @@ public class ReactiveCteInsertStrategy extends CteInsertStrategy implements Reac
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteInsert(
+	public InternalStage<Integer> reactiveExecuteInsert(
 			SqmInsertStatement<?> sqmInsertStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {

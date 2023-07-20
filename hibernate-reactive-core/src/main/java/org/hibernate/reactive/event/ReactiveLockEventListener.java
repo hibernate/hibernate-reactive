@@ -9,7 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.event.spi.LockEvent;
 
 import java.io.Serializable;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Defines the contract for handling of lock events generated from a session.
@@ -23,5 +23,5 @@ public interface ReactiveLockEventListener extends Serializable {
      *
      * @param event The lock event to be handled.
      */
-	CompletionStage<Void> reactiveOnLock(LockEvent event) throws HibernateException;
+	InternalStage<Void> reactiveOnLock(LockEvent event) throws HibernateException;
 }

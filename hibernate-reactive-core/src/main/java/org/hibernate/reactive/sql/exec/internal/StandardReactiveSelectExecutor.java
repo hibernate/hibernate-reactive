@@ -11,7 +11,7 @@ import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -67,7 +67,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	private StandardReactiveSelectExecutor() {
 	}
 
-	public <R> CompletionStage<List<R>> list(
+	public <R> InternalStage<List<R>> list(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
@@ -76,7 +76,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		return list( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, null, uniqueSemantic );
 	}
 
-	public <R> CompletionStage<List<R>> list(
+	public <R> InternalStage<List<R>> list(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
@@ -97,7 +97,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	@Override
-	public <T, R> CompletionStage<T> executeQuery(
+	public <T, R> InternalStage<T> executeQuery(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
@@ -128,7 +128,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				} );
 	}
 
-	private <T, R> CompletionStage<T> doExecuteQuery(
+	private <T, R> InternalStage<T> doExecuteQuery(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
@@ -242,7 +242,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		return rowTransformer;
 	}
 
-	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcOperationQuerySelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
+	public InternalStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcOperationQuerySelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
@@ -332,7 +332,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		else {
 			// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 			final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-			final CompletionStage<JdbcValuesMapping> stage;
+			final InternalStage<JdbcValuesMapping> stage;
 			if ( cachedResults.isEmpty() || !( cachedResults.get( 0 ) instanceof JdbcValuesMetadata ) ) {
 				stage = mappingProducer.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory );
 			}

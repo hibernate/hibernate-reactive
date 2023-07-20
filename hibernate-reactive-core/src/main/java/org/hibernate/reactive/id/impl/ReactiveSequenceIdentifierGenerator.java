@@ -6,7 +6,7 @@
 package org.hibernate.reactive.id.impl;
 
 import java.util.Properties;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.boot.model.naming.Identifier;
@@ -57,7 +57,7 @@ public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGener
 	}
 
 	@Override
-	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
+	protected InternalStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
 		return session.getReactiveConnection()
 				.selectIdentifier( sql, NO_PARAMS, Long.class );
 	}

@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -86,10 +86,10 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * made at a time.
  *
  * <pre>{@code
- * CompletionStage<RecordId> requestIdFromIdServer();
- * CompletionStage<Record> getRecordFromRecordServer(RecordId recordId);
+ * InternalStage<RecordId> requestIdFromIdServer();
+ * InternalStage<Record> getRecordFromRecordServer(RecordId recordId);
  *
- * CompletionStage<List<Response>> responses =
+ * InternalStage<List<Response>> responses =
  *   AsyncIterator.generate(this::requestIdFromIdServer) // source iterator
  *  .thenCompose(this::getRecordFromRecordServer)        // intermediate transformation
  *  .filter(record -> isRelevant(record))                // intermediate transformation
@@ -156,7 +156,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 
 		private static final Either<End, ?> ITERATION_END = Either.left( End.END );
 
-		private static final CompletionStage<? extends Either<AsyncIterator.End, ?>> END_FUTURE =
+		private static final InternalStage<? extends Either<AsyncIterator.End, ?>> END_FUTURE =
 				completedFuture( ITERATION_END );
 
 		/**
@@ -179,8 +179,8 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 		 * org.hibernate.reactive.util.async.impl.Either} containing the {@link End} instance
 		 */
 		@SuppressWarnings("unchecked")
-		public static <T> CompletionStage<Either<AsyncIterator.End, T>> endStage() {
-			return (CompletionStage<Either<AsyncIterator.End, T>>) END_FUTURE;
+		public static <T> InternalStage<Either<AsyncIterator.End, T>> endStage() {
+			return (InternalStage<Either<AsyncIterator.End, T>>) END_FUTURE;
 		}
 
 		@Override
@@ -227,7 +227,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * End} held in the {@link org.hibernate.reactive.util.async.impl.Either#left()} position
 	 * indicating the end of iteration.
 	 */
-	CompletionStage<Either<End, T>> nextStage();
+	InternalStage<Either<End, T>> nextStage();
 
 	/**
 	 * Relinquishes any resources associated with this iterator.
@@ -245,7 +245,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * class SocketBackedIterator implements AsyncIterator<byte[]> {
 	 *  ...
 	 *  {@literal @Override}
-	 *  CompletionStage<Void> close() { return socket.close(); }
+	 *  InternalStage<Void> close() { return socket.close(); }
 	 * }
 	 * AsyncCloseable.tryComposeWith(new SocketBackedIterator(socket), socketIt -> socketIt
 	 *  .thenCompose(this::deserialize)
@@ -267,7 +267,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * iterator have been relinquished.
 	 */
 	@Override
-	default CompletionStage<Void> close() {
+	default InternalStage<Void> close() {
 		return CompletionStages.voidFuture();
 	}
 
@@ -317,7 +317,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * from {@code this} iterator
 	 */
 	default <U> AsyncIterator<U> thenCompose(
-			final Function<? super T, ? extends CompletionStage<U>> fn) {
+			final Function<? super T, ? extends InternalStage<U>> fn) {
 		return AsyncIterators.thenComposeImpl( this, fn );
 	}
 
@@ -342,7 +342,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 
 		return new AsyncIterator<T>() {
 			@Override
-			public CompletionStage<Either<End, T>> nextStage() {
+			public InternalStage<Either<End, T>> nextStage() {
 				return AsyncIterator.this
 						.nextStage()
 						.thenCompose(
@@ -354,7 +354,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 			}
 
 			@Override
-			public CompletionStage<Void> close() {
+			public InternalStage<Void> close() {
 				return AsyncIterator.this.close();
 			}
 		};
@@ -401,7 +401,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 			private Either<End, T> lastAdvance = null;
 
 			@Override
-			public CompletionStage<Either<End, R>> nextStage() {
+			public InternalStage<Either<End, R>> nextStage() {
 				// the first call has no preceding value to start the batch, so draw from iter
 				return this.lastAdvance == null
 						? AsyncIterator.this
@@ -415,11 +415,11 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 			}
 
 			@Override
-			public CompletionStage<Void> close() {
+			public InternalStage<Void> close() {
 				return AsyncIterator.this.close();
 			}
 
-			private CompletionStage<Either<End, R>> collectBatch() {
+			private InternalStage<Either<End, R>> collectBatch() {
 				return this.lastAdvance.fold(
 						end -> End.endStage(),
 						ignoredT -> {
@@ -584,7 +584,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * @return a {@link CompletionStage} containing the resulting U from repeated application of
 	 * accumulator
 	 */
-	default <U> CompletionStage<U> fold(
+	default <U> InternalStage<U> fold(
 			final U identity,
 			final BiFunction<U, ? super T, U> accumulator) {
 		@SuppressWarnings("unchecked") final U[] uarr = (U[]) new Object[] { identity };
@@ -608,7 +608,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 *
 	 * @see Stream#collect(Collector)
 	 */
-	default <R, A> CompletionStage<R> collect(final Collector<? super T, A, R> collector) {
+	default <R, A> InternalStage<R> collect(final Collector<? super T, A, R> collector) {
 		final A container = collector.supplier().get();
 		final BiConsumer<A, ? super T> acc = collector.accumulator();
 		return forEach( t -> acc.accept( container, t ) )
@@ -630,7 +630,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 *
 	 * @see Stream#collect(Supplier, BiConsumer, BiConsumer)
 	 */
-	default <R> CompletionStage<R> collect(
+	default <R> InternalStage<R> collect(
 			final Supplier<R> supplier, final BiConsumer<R, ? super T> accumulator) {
 		final R container = supplier.get();
 		return forEach( t -> accumulator.accept( container, t ) ).thenApply( ig -> container );
@@ -659,7 +659,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 			long counter = start;
 
 			@Override
-			public CompletionStage<Either<End, Long>> nextStage() {
+			public InternalStage<Either<End, Long>> nextStage() {
 				if ( this.counter < end ) {
 					return completedFuture( Either.right( this.counter++ ) );
 				}
@@ -681,7 +681,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * @return a {@link CompletionStage} that returns when there are no elements left to apply {@code
 	 * action} to, or an exception has been encountered.
 	 */
-	default CompletionStage<Void> forEach(final Consumer<? super T> action) {
+	default InternalStage<Void> forEach(final Consumer<? super T> action) {
 		return AsyncTrampoline.asyncWhile(
 				() -> nextStage()
 						.thenApply(
@@ -706,8 +706,8 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 * @return a {@link CompletionStage} that completes with the first T to satisfy predicate, or
 	 * empty if no such T exists
 	 */
-	default CompletionStage<Optional<T>> find(final Predicate<? super T> predicate) {
-		final CompletionStage<Either<End, T>> future = AsyncIterators
+	default InternalStage<Optional<T>> find(final Predicate<? super T> predicate) {
+		final InternalStage<Either<End, T>> future = AsyncIterators
 				.convertSynchronousException( this.filter( predicate )::nextStage );
 		return future.thenApply( (final Either<End, T> e) -> e.right() );
 	}
@@ -742,7 +742,7 @@ public interface AsyncIterator<T> extends AsyncCloseable {
 	 *
 	 * @return AsyncIterator returning values generated from {@code supplier}
 	 */
-	static <T> AsyncIterator<T> generate(final Supplier<? extends CompletionStage<T>> supplier) {
+	static <T> AsyncIterator<T> generate(final Supplier<? extends InternalStage<T>> supplier) {
 		return () -> supplier.get().thenApply( Either::right );
 	}
 }

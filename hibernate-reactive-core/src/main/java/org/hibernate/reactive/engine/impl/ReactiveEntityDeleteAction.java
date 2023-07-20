@@ -6,7 +6,6 @@
 package org.hibernate.reactive.engine.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
@@ -54,7 +53,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() throws HibernateException {
+	public InternalStage<Void> reactiveExecute() throws HibernateException {
 		final Object id = getId();
 		final Object version = getCurrentVersion();
 		final EntityPersister persister = getPersister();
@@ -65,7 +64,7 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 
 		final Object ck = lockCacheItem();
 
-		final CompletionStage<Void> deleteStep = !isCascadeDeleteEnabled() && !veto
+		final InternalStage<Void> deleteStep = !isCascadeDeleteEnabled() && !veto
 				? ( (ReactiveEntityPersister) persister ).deleteReactive( id, version, instance, session )
 				: voidFuture();
 

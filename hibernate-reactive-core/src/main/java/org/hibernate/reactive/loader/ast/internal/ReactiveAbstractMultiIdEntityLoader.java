@@ -7,7 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.spi.EventSource;
@@ -55,7 +55,7 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 	}
 
 	@Override
-	public final <K> CompletionStage<List<T>> load(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
+	public final <K> InternalStage<List<T>> load(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
 		Objects.requireNonNull( ids );
 
 		return loadOptions.isOrderReturnEnabled()
@@ -63,8 +63,8 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 				: performUnorderedMultiLoad( ids, loadOptions, session );
 	}
 
-	protected abstract <K> CompletionStage<List<T>> performOrderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
+	protected abstract <K> InternalStage<List<T>> performOrderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
 
-	protected abstract <K> CompletionStage<List<T>> performUnorderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
+	protected abstract <K> InternalStage<List<T>> performUnorderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
 
 }

@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.util.async.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -28,7 +28,7 @@ class AsyncIterators {
 	private static class EmptyAsyncIterator<T> implements AsyncIterator<T> {
 
 		@Override
-		public CompletionStage<Either<End, T>> nextStage() {
+		public InternalStage<Either<End, T>> nextStage() {
 			return End.endStage();
 		}
 
@@ -47,8 +47,8 @@ class AsyncIterators {
 				: collector.finisher().apply( accumulator );
 	}
 
-	static <T> CompletionStage<T> convertSynchronousException(
-			final Supplier<? extends CompletionStage<T>> supplier) {
+	static <T> InternalStage<T> convertSynchronousException(
+			final Supplier<? extends InternalStage<T>> supplier) {
 		try {
 			return supplier.get();
 		}
@@ -62,8 +62,8 @@ class AsyncIterators {
 			final Function<? super T, ? extends U> f) {
 		return new AsyncIterator<U>() {
 			@Override
-			public CompletionStage<Either<End, U>> nextStage() {
-				final CompletionStage<Either<End, T>> next = it.nextStage();
+			public InternalStage<Either<End, U>> nextStage() {
+				final InternalStage<Either<End, T>> next = it.nextStage();
 
 				return next.thenApply( this::eitherFunction );
 			}
@@ -73,7 +73,7 @@ class AsyncIterators {
 			}
 
 			@Override
-			public CompletionStage<Void> close() {
+			public InternalStage<Void> close() {
 				return it.close();
 			}
 		};
@@ -81,12 +81,12 @@ class AsyncIterators {
 
 	static <T, U> AsyncIterator<U> thenComposeImpl(
 			final AsyncIterator<T> it,
-			final Function<? super T, ? extends CompletionStage<U>> f) {
+			final Function<? super T, ? extends InternalStage<U>> f) {
 
 		return new AsyncIterator<U>() {
 			@Override
-			public CompletionStage<Either<End, U>> nextStage() {
-				final CompletionStage<Either<End, T>> nxt = it.nextStage();
+			public InternalStage<Either<End, U>> nextStage() {
+				final InternalStage<Either<End, T>> nxt = it.nextStage();
 				return nxt.thenCompose( this::eitherFunction );
 			}
 
@@ -94,7 +94,7 @@ class AsyncIterators {
 			 * if there's a value, apply f and wrap the result in an Either, otherwise just return end
 			 * marker
 			 */
-			private CompletionStage<Either<End, U>> eitherFunction(final Either<End, T> either) {
+			private InternalStage<Either<End, U>> eitherFunction(final Either<End, T> either) {
 				return either.fold(
 						end -> End.endStage(),
 						t -> f.apply( t ).thenApply( Either::right )
@@ -102,7 +102,7 @@ class AsyncIterators {
 			}
 
 			@Override
-			public CompletionStage<Void> close() {
+			public InternalStage<Void> close() {
 				return it.close();
 			}
 		};

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.NaturalIdResolutions;
@@ -40,7 +40,7 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 	}
 
 	@Override
-	public CompletionStage<Void> onReactiveResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException {
+	public InternalStage<Void> onReactiveResolveNaturalId(ResolveNaturalIdEvent event) throws HibernateException {
 		return resolveNaturalId( event ).thenAccept( event::setEntityId );
 	}
 
@@ -54,7 +54,7 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 	 *
 	 * @return The loaded entity, or null.
 	 */
-	protected CompletionStage<Object> resolveNaturalId(ResolveNaturalIdEvent event) {
+	protected InternalStage<Object> resolveNaturalId(ResolveNaturalIdEvent event) {
 		final EntityPersister persister = event.getEntityPersister();
 
 		if ( LOG.isTraceEnabled() ) {
@@ -106,7 +106,7 @@ public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUp
 	 *
 	 * @return The object loaded from the datasource, or null if not found.
 	 */
-	protected CompletionStage<Object> loadFromDatasource(ResolveNaturalIdEvent event) {
+	protected InternalStage<Object> loadFromDatasource(ResolveNaturalIdEvent event) {
 		final EventSource session = event.getSession();
 		final EntityPersister entityPersister = event.getEntityPersister();
 		final StatisticsImplementor statistics = session.getFactory().getStatistics();

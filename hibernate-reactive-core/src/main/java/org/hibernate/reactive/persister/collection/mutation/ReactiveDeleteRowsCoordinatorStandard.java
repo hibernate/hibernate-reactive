@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.mutation;
 
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -48,7 +48,7 @@ public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinator
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
 		if ( operationGroup == null ) {
 			operationGroup = createOperationGroup();
 		}

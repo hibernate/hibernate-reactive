@@ -10,7 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.HibernateException;
@@ -45,7 +45,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private final ExecutionContext executionContext;
 
-	private CompletionStage<ResultSet> resultSetStage;
+	private InternalStage<ResultSet> resultSetStage;
 
 
 	private Integer columnCount;
@@ -71,7 +71,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	@Override
-	public CompletionStage<ResultSet> getReactiveResultSet() {
+	public InternalStage<ResultSet> getReactiveResultSet() {
 		if ( resultSetStage == null ) {
 			resultSetStage = executeQuery()
 					.thenApply( this::saveResultSet );
@@ -88,7 +88,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return columnCount;
 	}
 
-	public CompletionStage<Integer> getReactiveColumnCount() {
+	public InternalStage<Integer> getReactiveColumnCount() {
 		return getReactiveResultSet()
 				.thenApply( ReactiveDeferredResultSetAccess::columnCount )
 				.thenApply( this::saveColumnCount );
@@ -109,7 +109,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return super.resolveType( position, explicitJavaType, typeConfiguration );
 	}
 
-	public CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
+	public InternalStage<JdbcValuesMetadata> resolveJdbcValueMetadata() {
 		return getReactiveResultSet().thenApply( this::convertToMetadata );
 	}
 
@@ -118,7 +118,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	@Override
-	public CompletionStage<ResultSetMetaData> getReactiveMetadata() {
+	public InternalStage<ResultSetMetaData> getReactiveMetadata() {
 		return getReactiveResultSet().thenApply( this::reactiveMetadata );
 	}
 
@@ -140,7 +140,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		}
 	}
 
-	private CompletionStage<ResultSet> executeQuery() {
+	private InternalStage<ResultSet> executeQuery() {
 		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator().getLogicalConnection();
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
@@ -199,7 +199,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return resultSet;
 	}
 
-	private CompletionStage<ResultSet> reactiveSkipRows(ResultSet resultSet) {
+	private InternalStage<ResultSet> reactiveSkipRows(ResultSet resultSet) {
 		try {
 			skipRows( resultSet );
 			return completedFuture( resultSet );

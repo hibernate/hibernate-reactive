@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.stream.Stream;
 
 import org.hibernate.CacheMode;
@@ -89,7 +89,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		);
 	}
 
-	private CompletionStage<List<R>> doReactiveList() {
+	private InternalStage<List<R>> doReactiveList() {
 		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions()
 																	.findGreatestLockMode() ) );
 
@@ -177,27 +177,27 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResult() {
+	public InternalStage<R> getReactiveSingleResult() {
 		return selectionQueryDelegate.getReactiveSingleResult();
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactiveList() {
+	public InternalStage<List<R>> reactiveList() {
 		return selectionQueryDelegate.reactiveList();
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResultOrNull() {
+	public InternalStage<R> getReactiveSingleResultOrNull() {
 		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
-	public CompletionStage<R> reactiveUnique() {
+	public InternalStage<R> reactiveUnique() {
 		return selectionQueryDelegate.reactiveUnique();
 	}
 
 	@Override
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
+	public InternalStage<Optional<R>> reactiveUniqueResultOptional() {
 		return selectionQueryDelegate.reactiveUniqueResultOptional();
 	}
 

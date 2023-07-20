@@ -7,18 +7,17 @@ package org.hibernate.reactive.event.impl;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.event.service.spi.EventListenerGroup;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.reactive.event.ReactiveEventListenerGroup;
 
 public final class ReactiveEventListenerGroupAdaptor<T> implements ReactiveEventListenerGroup<T> {
 
-	private static final CompletableFuture COMPLETED = CompletableFuture.completedFuture( null );
+	private static final InternalStage COMPLETED = InternalStage.completedFuture( null );
 	private final T[] listeners;
 
 	public ReactiveEventListenerGroupAdaptor(EventListenerGroup<T> eventListenerGroup) {
@@ -32,10 +31,10 @@ public final class ReactiveEventListenerGroupAdaptor<T> implements ReactiveEvent
 	}
 
 	@Override
-	public <R, U, RL> CompletionStage<R> fireEventOnEachListener(
+	public <R, U, RL> InternalStage<R> fireEventOnEachListener(
 			final U event,
-			final Function<RL, Function<U, CompletionStage<R>>> fun) {
-		CompletionStage<R> ret = COMPLETED;
+			final Function<RL, Function<U, InternalStage<R>>> fun) {
+		InternalStage<R> ret = COMPLETED;
 		final T[] ls = listeners;
 		if ( ls != null && ls.length != 0 ) {
 			for ( T listener : ls ) {
@@ -48,9 +47,9 @@ public final class ReactiveEventListenerGroupAdaptor<T> implements ReactiveEvent
 	}
 
 	@Override
-	public <R, U, RL, X> CompletionStage<R> fireEventOnEachListener(
-			U event, X param, Function<RL, BiFunction<U, X, CompletionStage<R>>> fun) {
-		CompletionStage<R> ret = COMPLETED;
+	public <R, U, RL, X> InternalStage<R> fireEventOnEachListener(
+			U event, X param, Function<RL, BiFunction<U, X, InternalStage<R>>> fun) {
+		InternalStage<R> ret = COMPLETED;
 		final T[] ls = listeners;
 		if ( ls != null && ls.length != 0 ) {
 			for ( T listener : ls ) {
@@ -63,10 +62,10 @@ public final class ReactiveEventListenerGroupAdaptor<T> implements ReactiveEvent
 	}
 
 	@Override
-	public <R, U, RL> CompletionStage<R> fireLazyEventOnEachListener(
+	public <R, U, RL> InternalStage<R> fireLazyEventOnEachListener(
 			final Supplier<U> eventSupplier,
-			final Function<RL, Function<U, CompletionStage<R>>> fun) {
-		CompletionStage<R> ret = COMPLETED;
+			final Function<RL, Function<U, InternalStage<R>>> fun) {
+		InternalStage<R> ret = COMPLETED;
 		final T[] ls = listeners;
 		if ( ls != null && ls.length != 0 ) {
 			final U event = eventSupplier.get();

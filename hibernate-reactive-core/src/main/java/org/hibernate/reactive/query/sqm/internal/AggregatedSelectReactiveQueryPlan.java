@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -30,7 +30,7 @@ public class AggregatedSelectReactiveQueryPlan<R> implements ReactiveSelectQuery
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
+	public InternalStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		final Limit effectiveLimit = executionContext.getQueryOptions().getEffectiveLimit();
 		final int maxRowsJpa = effectiveLimit.getMaxRowsJpa();
 		if ( maxRowsJpa == 0 ) {

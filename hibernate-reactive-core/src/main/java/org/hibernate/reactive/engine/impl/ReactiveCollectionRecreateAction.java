@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
@@ -28,7 +27,7 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() {
+	public InternalStage<Void> reactiveExecute() {
 		// this method is called when a new non-null collection is persisted
 		// or when an existing (non-null) collection is moved to a new owner
 		final PersistentCollection<?> collection = getCollection();

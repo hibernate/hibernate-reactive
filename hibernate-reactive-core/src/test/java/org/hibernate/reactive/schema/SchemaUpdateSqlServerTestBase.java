@@ -7,7 +7,6 @@ package org.hibernate.reactive.schema;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;

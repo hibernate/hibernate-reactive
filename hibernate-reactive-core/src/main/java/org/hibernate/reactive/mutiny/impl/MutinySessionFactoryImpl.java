@@ -28,7 +28,7 @@ import org.hibernate.stat.Statistics;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -68,7 +68,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		this.extensions = new ReactiveSessionFactoryExtensions( delegate );
 	}
 
-	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+	<T> Uni<T> uni(Supplier<InternalStage<T>> stageSupplier) {
 		return Uni.createFrom().completionStage( stageSupplier ).runSubscriptionOn( context );
 	}
 
@@ -138,7 +138,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 				.tenantIdentifier( tenantIdentifier );
 	}
 
-	private CompletionStage<ReactiveConnection> connection(String tenantId) {
+	private InternalStage<ReactiveConnection> connection(String tenantId) {
 		assertUseOnEventLoop();
 		return tenantId == null
 				? connectionPool.getConnection()

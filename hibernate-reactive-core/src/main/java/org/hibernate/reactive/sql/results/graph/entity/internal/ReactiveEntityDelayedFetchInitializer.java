@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.spi.EntityKey;
@@ -45,7 +45,7 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
 		if ( getEntityInstance() != null ) {
 			return voidFuture();
 		}
@@ -61,7 +61,7 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 
 		setIdentifier( getIdentifierAssembler().assemble( rowProcessingState ) );
 
-		CompletionStage<Void> stage = voidFuture();
+		InternalStage<Void> stage = voidFuture();
 		if ( getIdentifier() == null ) {
 			setEntityInstance( null );
 		}
@@ -156,7 +156,7 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
 		return voidFuture();
 	}
 }

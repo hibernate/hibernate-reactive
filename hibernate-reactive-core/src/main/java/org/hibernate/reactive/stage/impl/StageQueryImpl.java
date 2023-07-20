@@ -20,7 +20,7 @@ import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 public class StageQueryImpl<R> implements Query<R> {
 	private final ReactiveQuery<R> delegate;
@@ -35,7 +35,7 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
-	public CompletionStage<List<R>> getResultList() {
+	public InternalStage<List<R>> getResultList() {
 		return delegate.getReactiveResultList();
 	}
 
@@ -63,12 +63,12 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
-	public CompletionStage<R> getSingleResult() {
+	public InternalStage<R> getSingleResult() {
 		return delegate.getReactiveSingleResult();
 	}
 
 	@Override
-	public CompletionStage<R> getSingleResultOrNull() {
+	public InternalStage<R> getSingleResultOrNull() {
 		return delegate.getReactiveSingleResultOrNull();
 	}
 
@@ -203,7 +203,7 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
-	public CompletionStage<Integer> executeUpdate() {
+	public InternalStage<Integer> executeUpdate() {
 		return delegate.executeReactiveUpdate();
 	}
 }

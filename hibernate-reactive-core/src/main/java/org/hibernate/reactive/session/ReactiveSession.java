@@ -7,7 +7,6 @@ package org.hibernate.reactive.session;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -24,6 +23,7 @@ import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
@@ -46,49 +46,49 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	SessionImplementor getSharedContract();
 
-	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
+	<E,T> InternalStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
-	CompletionStage<Void> reactivePersist(Object entity);
+	InternalStage<Void> reactivePersist(Object entity);
 
-	CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready);
+	InternalStage<Void> reactivePersist(Object object, PersistContext copiedAlready);
 
-	CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready);
+	InternalStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready);
 
-	CompletionStage<Void> reactiveRemove(Object entity);
+	InternalStage<Void> reactiveRemove(Object entity);
 
-	CompletionStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientObjects);
+	InternalStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientObjects);
 
-	CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities);
+	InternalStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities);
 
-	<T> CompletionStage<T> reactiveMerge(T object);
+	<T> InternalStage<T> reactiveMerge(T object);
 
-	CompletionStage<Void> reactiveMerge(Object object, MergeContext copiedAlready);
+	InternalStage<Void> reactiveMerge(Object object, MergeContext copiedAlready);
 
-	CompletionStage<Void> reactiveFlush();
+	InternalStage<Void> reactiveFlush();
 
-	CompletionStage<Void> reactiveAutoflush();
+	InternalStage<Void> reactiveAutoflush();
 
-	CompletionStage<Void> reactiveForceFlush(EntityEntry entry);
+	InternalStage<Void> reactiveForceFlush(EntityEntry entry);
 
-	CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
+	InternalStage<Void> reactiveRefresh(Object entity, LockOptions lockMode);
 
-	CompletionStage<Void> reactiveRefresh(Object child, RefreshContext refreshedAlready);
+	InternalStage<Void> reactiveRefresh(Object child, RefreshContext refreshedAlready);
 
-	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
+	InternalStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 
-	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
+	<T> InternalStage<T> reactiveGet(Class<T> entityClass, Object id);
 
-	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockOptions lockOptions, EntityGraph<T> fetchGraph);
+	<T> InternalStage<T> reactiveFind(Class<T> entityClass, Object id, LockOptions lockOptions, EntityGraph<T> fetchGraph);
 
-	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
+	<T> InternalStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
 
-	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> naturalIds);
+	<T> InternalStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> naturalIds);
 
-	CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id);
+	InternalStage<Object> reactiveImmediateLoad(String entityName, Object id);
 
-	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing);
+	InternalStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing);
 
-	CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child);
+	InternalStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child);
 
 	void setHibernateFlushMode(FlushMode flushMode);
 	FlushMode getHibernateFlushMode();
@@ -134,5 +134,5 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 	boolean isOpen();
 
 	// Different approach so that we can overload the method in SessionImpl
-	CompletionStage<Void> reactiveClose();
+	InternalStage<Void> reactiveClose();
 }

@@ -9,7 +9,7 @@ package org.hibernate.reactive.pool;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
@@ -62,7 +62,7 @@ public class BatchingConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public CompletionStage<Void> executeBatch() {
+	public InternalStage<Void> executeBatch() {
 		if ( !hasBatch() ) {
 			return voidFuture();
 		}
@@ -89,7 +89,7 @@ public class BatchingConnection implements ReactiveConnection {
 		}
 	}
 
-	public CompletionStage<Void> update(
+	public InternalStage<Void> update(
 			String sql, Object[] paramValues,
 			boolean allowBatching, Expectation expectation) {
 		if ( allowBatching && batchSize > 0 ) {
@@ -103,7 +103,7 @@ public class BatchingConnection implements ReactiveConnection {
 					return voidFuture();
 				}
 				else {
-					CompletionStage<Void> lastBatch = executeBatch();
+					InternalStage<Void> lastBatch = executeBatch();
 					newBatch( sql, paramValues, expectation );
 					return lastBatch;
 				}
@@ -125,67 +125,67 @@ public class BatchingConnection implements ReactiveConnection {
 		return batchedSql != null;
 	}
 
-	public CompletionStage<Void> execute(String sql) {
+	public InternalStage<Void> execute(String sql) {
 		return delegate.execute( sql );
 	}
 
-	public CompletionStage<Void> executeUnprepared(String sql) {
+	public InternalStage<Void> executeUnprepared(String sql) {
 		return delegate.executeUnprepared( sql );
 	}
 
-	public CompletionStage<Void> executeOutsideTransaction(String sql) {
+	public InternalStage<Void> executeOutsideTransaction(String sql) {
 		return delegate.executeOutsideTransaction( sql );
 	}
 
-	public CompletionStage<Integer> update(String sql) {
+	public InternalStage<Integer> update(String sql) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.update( sql ) ) :
 				delegate.update( sql );
 	}
 
 	@Override
-	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
+	public InternalStage<Integer> update(String sql, Object[] paramValues) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) ) :
 				delegate.update( sql, paramValues );
 	}
 
-	public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
+	public InternalStage<int[]> update(String sql, List<Object[]> paramValues) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) ) :
 				delegate.update( sql, paramValues );
 	}
 
-	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName) {
+	public <T> InternalStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName ) )
 				: delegate.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName );
 	}
 
-	public CompletionStage<ReactiveConnection.Result> select(String sql) {
+	public InternalStage<ReactiveConnection.Result> select(String sql) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.select( sql ) ) :
 				delegate.select( sql );
 	}
 
-	public CompletionStage<ReactiveConnection.Result> select(String sql, Object[] paramValues) {
+	public InternalStage<ReactiveConnection.Result> select(String sql, Object[] paramValues) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.select( sql, paramValues ) ) :
 				delegate.select( sql, paramValues );
 	}
 
-	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
+	public InternalStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
 		return hasBatch() ?
 				executeBatch().thenCompose( v -> delegate.selectJdbc( sql, paramValues ) ) :
 				delegate.selectJdbc( sql, paramValues );
 	}
 
 	@Override
-	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
+	public InternalStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
 		return delegate.selectJdbcOutsideTransaction( sql, paramValues );
 	}
 
-	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
+	public <T> InternalStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		// Do not want to execute the batch here
 		// because we want to be able to select
 		// multiple ids before sending off a batch
@@ -193,19 +193,19 @@ public class BatchingConnection implements ReactiveConnection {
 		return delegate.selectIdentifier( sql, paramValues, idClass );
 	}
 
-	public CompletionStage<Void> beginTransaction() {
+	public InternalStage<Void> beginTransaction() {
 		return delegate.beginTransaction();
 	}
 
-	public CompletionStage<Void> commitTransaction() {
+	public InternalStage<Void> commitTransaction() {
 		return delegate.commitTransaction();
 	}
 
-	public CompletionStage<Void> rollbackTransaction() {
+	public InternalStage<Void> rollbackTransaction() {
 		return delegate.rollbackTransaction();
 	}
 
-	public CompletionStage<Void> close() {
+	public InternalStage<Void> close() {
 		return delegate.close();
 	}
 }

@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
@@ -63,11 +62,11 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() {
+	public InternalStage<Void> reactiveExecute() {
 		preRemove();
 
 		final SharedSessionContractImplementor session = getSession();
-		CompletionStage<Void> removeStage;
+		InternalStage<Void> removeStage;
 		if ( emptySnapshot ) {
 			removeStage = voidFuture();
 		}

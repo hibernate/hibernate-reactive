@@ -7,7 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.lang.reflect.Array;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -50,7 +50,7 @@ public class ReactiveLoaderHelper {
 	 * @param <R> The type of the model part to load
 	 * @param <K> The type of the keys
 	 */
-	public static <R, K> CompletionStage<List<R>> loadByArrayParameter(
+	public static <R, K> InternalStage<List<R>> loadByArrayParameter(
 			K[] idsToInitialize,
 			SelectStatement sqlAst,
 			JdbcOperationQuerySelect jdbcOperation,

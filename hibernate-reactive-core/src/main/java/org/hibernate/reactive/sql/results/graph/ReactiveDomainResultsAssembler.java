@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.graph;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.Incubating;
 import org.hibernate.reactive.logging.impl.Log;
@@ -32,14 +32,14 @@ public interface ReactiveDomainResultsAssembler<J> extends DomainResultAssembler
 				.nonReactiveMethodCall( "reactiveAssemble" );
 	}
 
-	CompletionStage<J> reactiveAssemble(
+	InternalStage<J> reactiveAssemble(
 			ReactiveRowProcessingState rowProcessingState,
 			JdbcValuesSourceProcessingOptions options);
 
 	/**
 	 * Convenience form of {@link #assemble(RowProcessingState, JdbcValuesSourceProcessingOptions)}
 	 */
-	default CompletionStage<J> reactiveAssemble(ReactiveRowProcessingState rowProcessingState) {
+	default InternalStage<J> reactiveAssemble(ReactiveRowProcessingState rowProcessingState) {
 		return reactiveAssemble(
 				rowProcessingState,
 				rowProcessingState.getJdbcValuesSourceProcessingState().getProcessingOptions()

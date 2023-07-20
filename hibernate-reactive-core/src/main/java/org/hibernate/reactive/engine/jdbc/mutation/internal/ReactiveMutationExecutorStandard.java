@@ -6,7 +6,7 @@
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
@@ -49,7 +49,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	}
 
 	@Override
-	public CompletionStage<Void> performReactiveBatchedOperations(
+	public InternalStage<Void> performReactiveBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
@@ -82,7 +82,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	}
 
 	@Override
-	public CompletionStage<Void> performReactiveNonBatchedOperations(
+	public InternalStage<Void> performReactiveNonBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
@@ -105,7 +105,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 		private final SharedSessionContractImplementor session;
 		private final JdbcValueBindings jdbcValueBindings;
 
-		private CompletionStage<Void> loop = voidFuture();
+		private InternalStage<Void> loop = voidFuture();
 
 		public OperationsForEach(
 				TableInclusionChecker inclusionChecker,
@@ -128,12 +128,12 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			) );
 		}
 
-		public CompletionStage<Void> buildLoop() {
+		public InternalStage<Void> buildLoop() {
 			return loop;
 		}
 	}
 	@Override
-	public CompletionStage<Void> performReactiveNonBatchedMutation(
+	public InternalStage<Void> performReactiveNonBatchedMutation(
 			PreparedStatementDetails statementDetails,
 			JdbcValueBindings valueBindings,
 			TableInclusionChecker inclusionChecker,
@@ -168,7 +168,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 				} );
 	}
 
-	private static CompletionStage<Void> checkResult(
+	private static InternalStage<Void> checkResult(
 			SharedSessionContractImplementor session,
 			PreparedStatementDetails statementDetails,
 			OperationResultChecker resultChecker,

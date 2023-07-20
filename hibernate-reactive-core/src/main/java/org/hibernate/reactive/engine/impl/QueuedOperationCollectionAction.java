@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.CollectionAction;
@@ -38,7 +37,7 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() {
+	public InternalStage<Void> reactiveExecute() {
 		// this QueuedOperationCollectionAction has to be executed before any other
 		// CollectionAction involving the same collection.
 

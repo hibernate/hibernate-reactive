@@ -11,7 +11,6 @@ import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
 
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -36,7 +35,7 @@ public class ReactiveEntityVerifyVersionProcess implements ReactiveBeforeTransac
 	}
 
 	@Override
-	public CompletionStage<Void> doBeforeTransactionCompletion(ReactiveSession session) {
+	public InternalStage<Void> doBeforeTransactionCompletion(ReactiveSession session) {
 		final EntityEntry entry = session.getPersistenceContext().getEntry( object );
 		// Don't check version for an entity that is not in the PersistenceContext;
 		if ( entry == null ) {

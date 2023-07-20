@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.CollectionKey;
@@ -32,7 +32,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 
-public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
+public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<InternalStage<T>> {
 
 	public ReactiveSingleIdLoadPlan(
 			Loadable persister,
@@ -45,7 +45,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 	}
 
 	@Override
-	public CompletionStage<T> load(Object restrictedValue, Object entityInstance, Boolean readOnly, Boolean singleResultExpected, SharedSessionContractImplementor session) {
+	public InternalStage<T> load(Object restrictedValue, Object entityInstance, Boolean readOnly, Boolean singleResultExpected, SharedSessionContractImplementor session) {
 		final int jdbcTypeCount = getRestrictivePart().getJdbcTypeCount();
 		assert getJdbcParameters().size() % jdbcTypeCount == 0;
 		final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( jdbcTypeCount );

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -47,7 +47,7 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteUpdate(
+	public InternalStage<Integer> reactiveExecuteUpdate(
 			SqmUpdateStatement<?> sqmUpdateStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {
@@ -63,7 +63,7 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteDelete(
+	public InternalStage<Integer> reactiveExecuteDelete(
 			SqmDeleteStatement<?> sqmDeleteStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {
@@ -79,12 +79,12 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 	}
 
 	@Override
-	public CompletionStage<Void> getDropTableActionStage() {
+	public InternalStage<Void> getDropTableActionStage() {
 		return tableDroppedStage;
 	}
 
 	@Override
-	public CompletionStage<Void> getCreateTableActionStage() {
+	public InternalStage<Void> getCreateTableActionStage() {
 		return tableCreatedStage;
 	}
 

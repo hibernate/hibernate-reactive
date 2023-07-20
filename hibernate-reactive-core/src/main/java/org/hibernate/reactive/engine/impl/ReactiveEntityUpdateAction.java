@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.CacheMode;
@@ -67,7 +66,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() throws HibernateException {
+	public InternalStage<Void> reactiveExecute() throws HibernateException {
 		if ( preUpdate() ) {
 			return voidFuture();
 		}
@@ -113,7 +112,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				} );
 	}
 
-	private CompletionStage<EntityEntry> handleGeneratedProperties(EntityEntry entry) {
+	private InternalStage<EntityEntry> handleGeneratedProperties(EntityEntry entry) {
 		final EntityPersister persister = getPersister();
 		if ( entry.getStatus() == Status.MANAGED || persister.isVersionPropertyGenerated() ) {
 			final SharedSessionContractImplementor session = getSession();
@@ -224,7 +223,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 	}
 
-	private CompletionStage<Void> processGeneratedProperties(
+	private InternalStage<Void> processGeneratedProperties(
 			Object id,
 			ReactiveEntityPersister persister,
 			SharedSessionContractImplementor session,

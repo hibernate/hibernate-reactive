@@ -8,7 +8,7 @@ package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.LockMode;
@@ -64,7 +64,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 	private ReactiveExecuteWithTemporaryTableHelper() {
 	}
 
-	public static CompletionStage<Integer> saveMatchingIdsIntoIdTable(
+	public static InternalStage<Integer> saveMatchingIdsIntoIdTable(
 			MultiTableSqmMutationConverter sqmConverter,
 			Predicate suppliedPredicate,
 			TemporaryTable idTable,
@@ -137,7 +137,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		return saveIntoTemporaryTable( idTableInsert, jdbcParameterBindings, executionContext );
 	}
 
-	public static CompletionStage<Integer> saveIntoTemporaryTable(
+	public static InternalStage<Integer> saveIntoTemporaryTable(
 			InsertSelectStatement temporaryTableInsert,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
@@ -289,7 +289,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		}
 	}
 
-	public static CompletionStage<Void> performBeforeTemporaryTableUseActions(
+	public static InternalStage<Void> performBeforeTemporaryTableUseActions(
 			TemporaryTable temporaryTable,
 			ExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
@@ -305,7 +305,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		return voidFuture();
 	}
 
-	public static CompletionStage<Void> performAfterTemporaryTableUseActions(
+	public static InternalStage<Void> performAfterTemporaryTableUseActions(
 			TemporaryTable temporaryTable,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			AfterUseAction afterUseAction,
@@ -322,7 +322,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		}
 	}
 
-	private static CompletionStage<Void> dropAction(
+	private static InternalStage<Void> dropAction(
 			TemporaryTable temporaryTable,
 			ExecutionContext executionContext,
 			SessionFactoryImplementor factory,

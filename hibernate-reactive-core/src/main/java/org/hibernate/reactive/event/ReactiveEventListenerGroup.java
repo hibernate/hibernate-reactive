@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import org.hibernate.Incubating;
 import org.hibernate.event.service.spi.EventListenerGroup;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 public interface ReactiveEventListenerGroup<T> {
 
@@ -29,7 +30,7 @@ public interface ReactiveEventListenerGroup<T> {
 	 * @return the composite completion stage of invoking fun(event) on each listener.
 	 */
 	@Incubating
-	<R, U, RL> CompletionStage<R> fireEventOnEachListener(final U event, final Function<RL, Function<U, CompletionStage<R>>> fun);
+	<R, U, RL> InternalStage<R> fireEventOnEachListener(final U event, final Function<RL, Function<U, InternalStage<R>>> fun);
 
 	/**
 	 * Similar to {@link #fireEventOnEachListener(Object, Object, Function)}, but Reactive friendly: it chains
@@ -45,7 +46,7 @@ public interface ReactiveEventListenerGroup<T> {
 	 * @return the composite completion stage of invoking fun(event) on each listener.
 	 */
 	@Incubating
-	<R, U, RL, X> CompletionStage<R> fireEventOnEachListener(U event, X param, Function<RL, BiFunction<U, X, CompletionStage<R>>> fun);
+	<R, U, RL, X> InternalStage<R> fireEventOnEachListener(U event, X param, Function<RL, BiFunction<U, X, InternalStage<R>>> fun);
 
 	/**
 	 * Similar to {@link EventListenerGroup#fireLazyEventOnEachListener(Supplier, BiConsumer)}, but Reactive friendly: it chains
@@ -63,6 +64,6 @@ public interface ReactiveEventListenerGroup<T> {
 	 * @return the composite completion stage of invoking fun(event) on each listener.
 	 */
 	@Incubating
-	<R, U, RL> CompletionStage<R> fireLazyEventOnEachListener(final Supplier<U> eventSupplier, final Function<RL, Function<U, CompletionStage<R>>> fun);
+	<R, U, RL> InternalStage<R> fireLazyEventOnEachListener(final Supplier<U> eventSupplier, final Function<RL, Function<U, InternalStage<R>>> fun);
 
 }

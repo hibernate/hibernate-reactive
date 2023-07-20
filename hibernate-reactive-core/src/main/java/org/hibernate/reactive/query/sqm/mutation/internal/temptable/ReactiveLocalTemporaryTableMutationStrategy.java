@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -29,7 +29,7 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteUpdate(
+	public InternalStage<Integer> reactiveExecuteUpdate(
 			SqmUpdateStatement<?> sqmUpdate,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {
@@ -44,7 +44,7 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteDelete(
+	public InternalStage<Integer> reactiveExecuteDelete(
 			SqmDeleteStatement<?> sqmDelete,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {

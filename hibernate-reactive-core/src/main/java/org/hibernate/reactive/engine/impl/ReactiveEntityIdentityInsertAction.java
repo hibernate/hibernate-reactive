@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.engine.impl;
 
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
@@ -47,8 +46,8 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveExecute() throws HibernateException {
-		final CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
+	public InternalStage<Void> reactiveExecute() throws HibernateException {
+		final InternalStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
 
 		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
@@ -95,7 +94,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 		}
 	}
 
-	private CompletionStage<Void> processInsertGeneratedProperties(
+	private InternalStage<Void> processInsertGeneratedProperties(
 			ReactiveEntityPersister persister,
 			Object generatedId,
 			Object instance,

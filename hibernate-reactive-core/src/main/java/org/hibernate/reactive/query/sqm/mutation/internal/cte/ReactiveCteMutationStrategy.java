@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -28,7 +28,7 @@ public class ReactiveCteMutationStrategy extends CteMutationStrategy implements 
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteUpdate(
+	public InternalStage<Integer> reactiveExecuteUpdate(
 			SqmUpdateStatement<?> sqmUpdateStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {
@@ -38,7 +38,7 @@ public class ReactiveCteMutationStrategy extends CteMutationStrategy implements 
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteDelete(
+	public InternalStage<Integer> reactiveExecuteDelete(
 			SqmDeleteStatement<?> sqmDeleteStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {

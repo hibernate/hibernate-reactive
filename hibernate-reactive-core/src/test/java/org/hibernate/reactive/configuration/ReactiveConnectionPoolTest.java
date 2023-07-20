@@ -7,7 +7,6 @@ package org.hibernate.reactive.configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;

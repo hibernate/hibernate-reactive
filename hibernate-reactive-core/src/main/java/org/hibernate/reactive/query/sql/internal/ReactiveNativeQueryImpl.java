@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
@@ -108,7 +108,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				null
 		);
 	}
-	private CompletionStage<List<R>> doReactiveList() {
+	private InternalStage<List<R>> doReactiveList() {
 		return reactiveSelectPlan().reactivePerformList( this );
 	}
 
@@ -147,7 +147,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate() {
+	public InternalStage<Integer> executeReactiveUpdate() {
 		return reactiveNonSelectPlan().executeReactiveUpdate( this );
 	}
 
@@ -157,7 +157,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResult() {
+	public InternalStage<R> getReactiveSingleResult() {
 		return selectionQueryDelegate.getReactiveSingleResult();
 	}
 
@@ -167,17 +167,17 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public CompletionStage<R> getReactiveSingleResultOrNull() {
+	public InternalStage<R> getReactiveSingleResultOrNull() {
 		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
 
 	@Override
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
+	public InternalStage<Optional<R>> reactiveUniqueResultOptional() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public CompletionStage<R> reactiveUnique() {
+	public InternalStage<R> reactiveUnique() {
 		return selectionQueryDelegate.reactiveUnique();
 	}
 
@@ -187,7 +187,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public CompletionStage<List<R>> reactiveList() {
+	public InternalStage<List<R>> reactiveList() {
 		return selectionQueryDelegate.reactiveList();
 	}
 

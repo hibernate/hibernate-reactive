@@ -9,7 +9,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
@@ -47,7 +47,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	protected CompletionStage<Void> performExecutions(EventSource session) {
+	protected InternalStage<Void> performExecutions(EventSource session) {
 		LOG.trace( "Executing flush" );
 
 		// IMPL NOTE : here we alter the flushing flag of the persistence context to allow
@@ -79,7 +79,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * @param event The flush event.
 	 * @throws HibernateException Error flushing caches to execution queues.
 	 */
-	protected CompletionStage<Void> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
+	protected InternalStage<Void> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
 
 		LOG.trace( "Flushing session" );
 
@@ -144,7 +144,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * any newly referenced entity that must be passed to saveOrUpdate(),
 	 * and also apply orphan delete
 	 */
-	private CompletionStage<Void> prepareEntityFlushes(EventSource session, PersistenceContext persistenceContext) throws HibernateException {
+	private InternalStage<Void> prepareEntityFlushes(EventSource session, PersistenceContext persistenceContext) throws HibernateException {
 
 		LOG.debug( "Processing flush-time cascades" );
 
@@ -299,7 +299,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		return count;
 	}
 
-	private CompletionStage<Void> cascadeOnFlush(
+	private InternalStage<Void> cascadeOnFlush(
 			EventSource session,
 			EntityPersister persister,
 			Object object,

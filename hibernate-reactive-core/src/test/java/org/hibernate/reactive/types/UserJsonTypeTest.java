@@ -8,7 +8,6 @@ package org.hibernate.reactive.types;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.annotations.Type;

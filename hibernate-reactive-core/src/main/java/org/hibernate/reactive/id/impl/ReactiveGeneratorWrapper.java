@@ -14,7 +14,7 @@ import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * @author Gavin King
@@ -45,7 +45,7 @@ public class ReactiveGeneratorWrapper
 	}
 
 	@Override
-	public CompletionStage<Object> generate(ReactiveConnectionSupplier session, Object entity) {
+	public InternalStage<Object> generate(ReactiveConnectionSupplier session, Object entity) {
 		return reactiveGenerator.generate( session, entity ).thenApply( id -> id );
 	}
 

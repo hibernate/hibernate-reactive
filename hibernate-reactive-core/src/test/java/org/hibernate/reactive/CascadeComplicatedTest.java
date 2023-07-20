@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;

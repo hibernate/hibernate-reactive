@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.persister.collection.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.MappingException;
 import org.hibernate.cache.CacheException;
@@ -139,7 +139,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveInitialize(Object key, SharedSessionContractImplementor session) {
 		return ( (ReactiveCollectionLoader) determineLoaderToUse( key, session ) )
 				.reactiveLoad( key, session )
 				.thenCompose( CompletionStages::voidFuture );
@@ -149,7 +149,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	 * @see org.hibernate.persister.collection.BasicCollectionPersister#remove(Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveRemove(Object id, SharedSessionContractImplementor session) {
 		return getRemoveCoordinator().reactiveDeleteAllRows( id, session );
 	}
 
@@ -157,22 +157,22 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	 * @see org.hibernate.persister.collection.BasicCollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getCreateEntryCoordinator().reactiveInsertRows( collection, id, collection::includeInRecreate, session );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getCreateEntryCoordinator().reactiveInsertRows( collection, id, collection::includeInInsert, session );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveUpdateRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getUpdateEntryCoordinator().reactiveUpdateRows( id, collection, session );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getRemoveEntryCoordinator().reactiveDeleteRows( collection, id, session );
 	}
 

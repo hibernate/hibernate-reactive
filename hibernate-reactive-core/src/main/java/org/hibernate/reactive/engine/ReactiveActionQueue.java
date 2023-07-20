@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.hibernate.AssertionFailure;
@@ -236,13 +236,13 @@ public class ReactiveActionQueue {
 	 *
 	 * @param action The action representing the entity insertion
 	 */
-	public CompletionStage<Void> addAction(ReactiveEntityInsertAction action) {
+	public InternalStage<Void> addAction(ReactiveEntityInsertAction action) {
 		LOG.tracev( "Adding a ReactiveEntityRegularInsertAction for [{0}] object", action.getEntityName() );
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction( ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret = voidFuture();
+	private InternalStage<Void> addInsertAction( ReactiveEntityInsertAction insert) {
+		InternalStage<Void> ret = voidFuture();
 		if ( insert.isEarlyInsert() ) {
 			// For early inserts, must execute inserts before finding non-nullable transient entities.
 			// TODO: find out why this is necessary
@@ -270,8 +270,8 @@ public class ReactiveActionQueue {
 				} );
 	}
 
-	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret;
+	private InternalStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		InternalStage<Void> ret;
 		if ( insert.isEarlyInsert() ) {
 			LOG.trace( "Executing insertions before resolved early-insert" );
 			ret = executeInserts()
@@ -289,7 +289,7 @@ public class ReactiveActionQueue {
 
 		return ret.thenCompose( v -> {
 			if ( !insert.isVeto() ) {
-				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
+				InternalStage<Void> comp = insert.reactiveMakeEntityManaged();
 				if ( unresolvedInsertions == null ) {
 					return comp;
 				}
@@ -503,7 +503,7 @@ public class ReactiveActionQueue {
 	 *
 	 * @throws HibernateException error executing queued insertion actions.
 	 */
-	public CompletionStage<Void> executeInserts() {
+	public InternalStage<Void> executeInserts() {
 		if ( insertions != null && !insertions.isEmpty() ) {
 			return executeActions( insertions );
 		}
@@ -515,12 +515,12 @@ public class ReactiveActionQueue {
 	 *
 	 * @throws HibernateException error executing queued actions.
 	 */
-	public CompletionStage<Void> executeActions() {
+	public InternalStage<Void> executeActions() {
 		if ( hasUnresolvedEntityInsertActions() ) {
 			return failedFuture( new IllegalStateException( "About to execute actions, but there are unresolved entity insert actions." ) );
 		}
 
-		CompletionStage<Void> ret = voidFuture();
+		InternalStage<Void> ret = voidFuture();
 
 		for ( OrderedActions action : ORDERED_OPERATIONS ) {
 			ret = ret.thenCompose( v -> executeActions( action.getActions( this ) ) );
@@ -554,7 +554,7 @@ public class ReactiveActionQueue {
 	 *
 	 * @param success Was the transaction successful.
 	 */
-	public CompletionStage<Void> afterTransactionCompletion(boolean success) {
+	public InternalStage<Void> afterTransactionCompletion(boolean success) {
 		if ( !isTransactionCoordinatorShared ) {
 			// Execute completion actions only in transaction owner (aka parent session).
 			if ( afterTransactionProcesses != null ) {
@@ -567,7 +567,7 @@ public class ReactiveActionQueue {
 	/**
 	 * Execute any registered {@link org.hibernate.action.spi.BeforeTransactionCompletionProcess}
 	 */
-	public CompletionStage<Void> beforeTransactionCompletion() {
+	public InternalStage<Void> beforeTransactionCompletion() {
 		if ( !isTransactionCoordinatorShared ) {
 			// Execute completion actions only in transaction owner (aka parent session).
 			if ( beforeTransactionProcesses != null ) {
@@ -617,7 +617,7 @@ public class ReactiveActionQueue {
 	 *
 	 * @param list The list of Executable elements to be performed
 	 */
-	private CompletionStage<Void> executeActions(
+	private InternalStage<Void> executeActions(
 			ExecutableList<? extends ReactiveExecutable> list) throws HibernateException {
 		if ( list == null || list.isEmpty() ) {
 			return voidFuture();
@@ -655,7 +655,7 @@ public class ReactiveActionQueue {
 	/**
 	 * @param executable The action to execute
 	 */
-	public <E extends ReactiveExecutable> CompletionStage<Void> execute(E executable) {
+	public <E extends ReactiveExecutable> InternalStage<Void> execute(E executable) {
 		return executable.reactiveExecute()
 				.whenComplete( (v, x) -> registerCleanupActions( executable ) );
 	}
@@ -928,7 +928,7 @@ public class ReactiveActionQueue {
 			super( session );
 		}
 
-		public CompletionStage<Void> beforeTransactionCompletion() {
+		public InternalStage<Void> beforeTransactionCompletion() {
 			while ( !processes.isEmpty() ) {
 				try {
 					processes.poll().doBeforeTransactionCompletion( session.getSharedContract() );
@@ -962,7 +962,7 @@ public class ReactiveActionQueue {
 			querySpacesToInvalidate.add( space );
 		}
 
-		public CompletionStage<Void> afterTransactionCompletion(boolean success) {
+		public InternalStage<Void> afterTransactionCompletion(boolean success) {
 			while ( !processes.isEmpty() ) {
 				try {
 					processes.poll().doAfterTransactionCompletion( success, session.getSharedContract() );

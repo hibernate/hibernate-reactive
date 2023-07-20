@@ -6,7 +6,6 @@
 package org.hibernate.reactive;
 
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;

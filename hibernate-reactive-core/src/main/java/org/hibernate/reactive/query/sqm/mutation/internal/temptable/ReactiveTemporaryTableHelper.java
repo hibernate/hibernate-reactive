@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
@@ -39,7 +39,7 @@ public class ReactiveTemporaryTableHelper {
 	 * @see org.hibernate.jdbc.Work
 	 */
 	public interface ReactiveWork {
-		CompletionStage<Void> reactiveExecute(ReactiveConnection connection);
+		InternalStage<Void> reactiveExecute(ReactiveConnection connection);
 	}
 
 	public static class TemporaryTableCreationWork implements ReactiveWork {
@@ -67,7 +67,7 @@ public class ReactiveTemporaryTableHelper {
 		}
 
 		@Override
-		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
+		public InternalStage<Void> reactiveExecute(ReactiveConnection connection) {
 			final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 
 			try {
@@ -115,7 +115,7 @@ public class ReactiveTemporaryTableHelper {
 		}
 
 		@Override
-		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
+		public InternalStage<Void> reactiveExecute(ReactiveConnection connection) {
 			final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
 
 			try {
@@ -139,7 +139,7 @@ public class ReactiveTemporaryTableHelper {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Clean
 
-	public static CompletionStage<Void> cleanTemporaryTableRows(
+	public static InternalStage<Void> cleanTemporaryTableRows(
 			TemporaryTable temporaryTable,
 			TemporaryTableExporter exporter,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,

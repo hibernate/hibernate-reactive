@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.EnumMap;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.Internal;
@@ -29,7 +29,7 @@ import org.hibernate.sql.exec.spi.JdbcParametersList;
  *
  * @see SingleIdEntityLoaderStandardImpl
  */
-public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityLoaderStandardImpl<CompletionStage<T>> implements ReactiveSingleIdEntityLoader<T> {
+public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityLoaderStandardImpl<InternalStage<T>> implements ReactiveSingleIdEntityLoader<T> {
 
 	private EnumMap<LockMode, ReactiveSingleIdLoadPlan> selectByLockMode = new EnumMap<>( LockMode.class );
 	private EnumMap<CascadingFetchProfile, ReactiveSingleIdLoadPlan> selectByInternalCascadeProfile;
@@ -59,7 +59,7 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 	}
 
 	@Override
-	public CompletionStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
+	public InternalStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
 		if ( databaseSnapshotExecutor == null ) {
 			databaseSnapshotExecutor = new DatabaseSnapshotExecutor( entityDescriptor, sessionFactory );
 		}
@@ -101,13 +101,13 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 	}
 
 	@Override
-	public CompletionStage<T> load(Object key, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	public InternalStage<T> load(Object key, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		final ReactiveSingleIdLoadPlan<T> loadPlan = resolveLoadPlan( lockOptions, session.getLoadQueryInfluencers(), session.getFactory() );
 		return loadPlan.load( key, readOnly, true, session );
 	}
 
 	@Override
-	public CompletionStage<T> load(
+	public InternalStage<T> load(
 			Object key,
 			Object entityInstance,
 			LockOptions lockOptions,

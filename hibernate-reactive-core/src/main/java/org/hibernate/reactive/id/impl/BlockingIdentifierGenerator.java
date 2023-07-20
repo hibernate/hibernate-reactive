@@ -15,8 +15,7 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -50,7 +49,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	/**
 	 * Allocate a new block, by obtaining the next "hi" value from the database
 	 */
-	protected abstract CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session);
+	protected abstract InternalStage<Long> nextHiValue(ReactiveConnectionSupplier session);
 
 	//Not strictly necessary to put these fields into a dedicated class, but it help
 	//to reason about what the current state is and what the CombinerExecutor is
@@ -76,7 +75,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	}
 
 	@Override
-	public CompletionStage<Long> generate(ReactiveConnectionSupplier connectionSupplier, Object ignored) {
+	public InternalStage<Long> generate(ReactiveConnectionSupplier connectionSupplier, Object ignored) {
 		Objects.requireNonNull( connectionSupplier );
 
 		//Before submitting a task to the executor, let's try our luck via the fast-path
@@ -94,8 +93,8 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 					.thenApply( i -> next( i ) );
 		}
 
-		final CompletableFuture<Long> resultForThisEventLoop = new CompletableFuture<>();
-		final CompletableFuture<Long> result = new CompletableFuture<>();
+		final InternalStage<Long> resultForThisEventLoop = InternalStage.newStage();
+		final InternalStage<Long> result = InternalStage.newStage();
 		executor.submit( new GenerateIdAction( connectionSupplier, result ) );
 		final Context context = Vertx.currentContext();
 		result.whenComplete( (id,t) -> {
@@ -123,9 +122,9 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	private final class GenerateIdAction implements Executor.Action<GeneratorState> {
 
 		private final ReactiveConnectionSupplier connectionSupplier;
-		private final CompletableFuture<Long> result;
+		private final InternalStage<Long> result;
 
-		public GenerateIdAction(ReactiveConnectionSupplier connectionSupplier, CompletableFuture<Long> result) {
+		public GenerateIdAction(ReactiveConnectionSupplier connectionSupplier, InternalStage<Long> result) {
 			this.connectionSupplier = Objects.requireNonNull(connectionSupplier);
 			this.result = Objects.requireNonNull(result);
 		}

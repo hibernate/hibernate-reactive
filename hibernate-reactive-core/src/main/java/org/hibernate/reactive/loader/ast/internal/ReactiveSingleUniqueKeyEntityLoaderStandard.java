@@ -7,7 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
@@ -65,7 +65,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 	}
 
 	@Override
-	public CompletionStage<T> load(Object ukValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	public InternalStage<T> load(Object ukValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		final SessionFactoryImplementor sessionFactory = session.getFactory();
 
 		// todo (6.0) : cache the SQL AST and JdbcParameters

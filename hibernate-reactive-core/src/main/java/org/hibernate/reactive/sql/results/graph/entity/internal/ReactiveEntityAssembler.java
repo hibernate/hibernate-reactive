@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
@@ -34,7 +34,7 @@ public class ReactiveEntityAssembler<T> implements ReactiveDomainResultsAssemble
 	}
 
 	@Override
-	public CompletionStage<T> reactiveAssemble(ReactiveRowProcessingState rowProcessingState, JdbcValuesSourceProcessingOptions options) {
+	public InternalStage<T> reactiveAssemble(ReactiveRowProcessingState rowProcessingState, JdbcValuesSourceProcessingOptions options) {
 		// Ensure that the instance really is initialized
 		// This is important for key-many-to-ones that are part of a collection key fk,
 		// as the instance is needed for resolveKey before initializing the instance in RowReader

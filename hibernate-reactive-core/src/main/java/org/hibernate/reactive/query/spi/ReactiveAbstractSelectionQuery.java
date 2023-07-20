@@ -9,7 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -53,7 +53,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	private final Supplier<QueryOptions> queryOptionsSupplier;
 
 	private final SharedSessionContractImplementor session;
-	private final Supplier<CompletionStage<List<R>>> doList;
+	private final Supplier<InternalStage<List<R>>> doList;
 	private final Supplier<SqmStatement<?>> getStatement;
 
 	private final Supplier<TupleMetadata> getTupleMetadata;
@@ -74,7 +74,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	public ReactiveAbstractSelectionQuery(
 			InterpretationsKeySource interpretationKeySource,
 			SharedSessionContractImplementor session,
-			Supplier<CompletionStage<List<R>>> doList,
+			Supplier<InternalStage<List<R>>> doList,
 			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
@@ -102,7 +102,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	public ReactiveAbstractSelectionQuery(
 			Supplier<QueryOptions> queryOptionsSupplier,
 			SharedSessionContractImplementor session,
-			Supplier<CompletionStage<List<R>>> doList,
+			Supplier<InternalStage<List<R>>> doList,
 			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
@@ -126,17 +126,17 @@ public class ReactiveAbstractSelectionQuery<R> {
 		this.interpretationsKeySource = interpretationsKeySource;
 	}
 
-	public CompletionStage<R> reactiveUnique() {
+	public InternalStage<R> reactiveUnique() {
 		return reactiveList()
 				.thenApply( uniqueElement );
 	}
 
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
+	public InternalStage<Optional<R>> reactiveUniqueResultOptional() {
 		return reactiveUnique()
 				.thenApply( Optional::ofNullable );
 	}
 
-	public CompletionStage<R> getReactiveSingleResult() {
+	public InternalStage<R> getReactiveSingleResult() {
 		return reactiveList()
 				.thenApply( this::reactiveSingleResult )
 				.exceptionally( this::convertException );
@@ -149,7 +149,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return uniqueElement.apply( list );
 	}
 
-	public CompletionStage<R> getReactiveSingleResultOrNull() {
+	public InternalStage<R> getReactiveSingleResultOrNull() {
 		return reactiveList()
 				.thenApply( uniqueElement )
 				.exceptionally( this::convertException );
@@ -174,7 +174,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return getQueryOptions().getLockOptions();
 	}
 
-	public CompletionStage<List<R>> reactiveList() {
+	public InternalStage<List<R>> reactiveList() {
 		beforeQuery.run();
 		return doReactiveList()
 				.handle( (list, error) -> {
@@ -260,7 +260,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return session;
 	}
 
-	private CompletionStage<List<R>> doReactiveList() {
+	private InternalStage<List<R>> doReactiveList() {
 		return doList.get();
 	}
 

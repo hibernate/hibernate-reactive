@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -23,7 +23,7 @@ public class ReactiveLocalTemporaryTableInsertStrategy extends LocalTemporaryTab
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteInsert(
+	public InternalStage<Integer> reactiveExecuteInsert(
 			SqmInsertStatement<?> sqmInsertStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {

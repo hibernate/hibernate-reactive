@@ -6,7 +6,7 @@
 package org.hibernate.reactive.event.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.ObjectDeletedException;
@@ -60,7 +60,7 @@ public class DefaultReactivePersistEventListener
 	 * @param event The create event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnPersist(PersistEvent event) {
+	public InternalStage<Void> reactiveOnPersist(PersistEvent event) {
 		return reactiveOnPersist( event, PersistContext.create() );
 	}
 
@@ -75,7 +75,7 @@ public class DefaultReactivePersistEventListener
 	 * @param event The create event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnPersist(PersistEvent event, PersistContext createCache) {
+	public InternalStage<Void> reactiveOnPersist(PersistEvent event, PersistContext createCache) {
 		final Object object = event.getObject();
 		final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( object );
 		if ( lazyInitializer != null ) {
@@ -93,7 +93,7 @@ public class DefaultReactivePersistEventListener
 		}
 	}
 
-	private CompletionStage<Void> persist(PersistEvent event, PersistContext createCache, Object entity) {
+	private InternalStage<Void> persist(PersistEvent event, PersistContext createCache, Object entity) {
 		final SessionImplementor source = event.getSession();
 		final EntityEntry entityEntry = source.getPersistenceContextInternal().getEntry(entity);
 		final String entityName = entityName( event, entity, entityEntry );
@@ -159,7 +159,7 @@ public class DefaultReactivePersistEventListener
 		}
 	}
 
-	protected CompletionStage<Void> entityIsPersistent(PersistEvent event, PersistContext createCache) {
+	protected InternalStage<Void> entityIsPersistent(PersistEvent event, PersistContext createCache) {
 		LOG.trace( "Ignoring persistent instance" );
 		final EventSource source = event.getSession();
 		//TODO: check that entry.getIdentifier().equals(requestedId)
@@ -169,7 +169,7 @@ public class DefaultReactivePersistEventListener
 				: voidFuture();
 	}
 
-	private CompletionStage<Void> justCascade(PersistContext createCache, EventSource source, Object entity, EntityPersister persister) {
+	private InternalStage<Void> justCascade(PersistContext createCache, EventSource source, Object entity, EntityPersister persister) {
 		//TODO: merge into one method!
 		return cascadeBeforeSave( source, persister, entity, createCache )
 				.thenCompose( v -> cascadeAfterSave( source, persister, entity, createCache ) );
@@ -181,7 +181,7 @@ public class DefaultReactivePersistEventListener
 	 * @param event The save event to be handled.
 	 * @param createCache The copy cache of entity instance to merge/copy instance.
 	 */
-	protected CompletionStage<Void> entityIsTransient(PersistEvent event, PersistContext createCache) {
+	protected InternalStage<Void> entityIsTransient(PersistEvent event, PersistContext createCache) {
 		LOG.trace( "Saving transient instance" );
 		final EventSource source = event.getSession();
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
@@ -190,7 +190,7 @@ public class DefaultReactivePersistEventListener
 				: voidFuture();
 	}
 
-	private CompletionStage<Void> entityIsDeleted(PersistEvent event, PersistContext createCache) {
+	private InternalStage<Void> entityIsDeleted(PersistEvent event, PersistContext createCache) {
 		final EventSource source = event.getSession();
 		final Object entity = source.getPersistenceContextInternal().unproxy( event.getObject() );
 		final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );

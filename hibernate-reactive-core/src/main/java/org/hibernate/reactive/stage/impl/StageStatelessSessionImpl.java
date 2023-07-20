@@ -19,8 +19,7 @@ import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -43,95 +42,95 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(Class<T> entityClass, Object id) {
+	public <T> InternalStage<T> get(Class<T> entityClass, Object id) {
 		return delegate.reactiveGet( entityClass, id );
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
+	public <T> InternalStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
 		return delegate.reactiveGet( entityClass, id, lockMode, null );
 	}
 
 	@Override
-	public CompletionStage<Void> insert(Object entity) {
+	public InternalStage<Void> insert(Object entity) {
 		return delegate.reactiveInsert( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> insert(Object... entities) {
+	public InternalStage<Void> insert(Object... entities) {
 		return delegate.reactiveInsertAll( entities );
 	}
 
 	@Override
-	public CompletionStage<Void> insert(int batchSize, Object... entities) {
+	public InternalStage<Void> insert(int batchSize, Object... entities) {
 		return delegate.reactiveInsertAll( batchSize, entities );
 	}
 
 	@Override
-	public CompletionStage<Void> delete(Object entity) {
+	public InternalStage<Void> delete(Object entity) {
 		return delegate.reactiveDelete( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> delete(Object... entities) {
+	public InternalStage<Void> delete(Object... entities) {
 		return delegate.reactiveDeleteAll( entities );
 	}
 
 	@Override
-	public CompletionStage<Void> delete(int batchSize, Object... entities) {
+	public InternalStage<Void> delete(int batchSize, Object... entities) {
 		return delegate.reactiveDeleteAll( batchSize, entities );
 	}
 
 	@Override
-	public CompletionStage<Void> update(Object entity) {
+	public InternalStage<Void> update(Object entity) {
 		return delegate.reactiveUpdate( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> update(Object... entities) {
+	public InternalStage<Void> update(Object... entities) {
 		return delegate.reactiveUpdateAll( entities );
 	}
 
 	@Override
-	public CompletionStage<Void> update(int batchSize, Object... entities) {
+	public InternalStage<Void> update(int batchSize, Object... entities) {
 		return delegate.reactiveUpdateAll( batchSize, entities );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object entity) {
+	public InternalStage<Void> refresh(Object entity) {
 		return delegate.reactiveRefresh( entity );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object... entities) {
+	public InternalStage<Void> refresh(Object... entities) {
 		return delegate.reactiveRefreshAll( entities );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(int batchSize, Object... entities) {
+	public InternalStage<Void> refresh(int batchSize, Object... entities) {
 		return delegate.reactiveRefreshAll( batchSize, entities );
 	}
 
 	@Override
-	public CompletionStage<Void> refresh(Object entity, LockMode lockMode) {
+	public InternalStage<Void> refresh(Object entity, LockMode lockMode) {
 		return delegate.reactiveRefresh( entity, lockMode );
 	}
 
 	@Override
-	public <T> CompletionStage<T> fetch(T association) {
+	public <T> InternalStage<T> fetch(T association) {
 		return delegate.reactiveFetch( association, false );
 	}
 
 	@Override
-	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withTransaction(Function<Stage.Transaction, InternalStage<T>> work) {
 		return currentTransaction == null
 				? new Transaction<T>().execute( work )
 				: work.apply( currentTransaction );
 	}
 
 	@Override
-	public CompletionStage<Void> close() {
-		CompletableFuture<Void> closing = new CompletableFuture<>();
+	public InternalStage<Void> close() {
+		InternalStage<Void> closing = InternalStage.newStage();
 		delegate.close( closing );
 		return closing;
 	}
@@ -157,7 +156,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		boolean rollback;
 		Throwable error;
 
-		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
+		InternalStage<T> execute(Function<Stage.Transaction, InternalStage<T>> work) {
 			currentTransaction = this;
 			return begin()
 					.thenCompose( v -> executeInTransaction( work ) )
@@ -169,7 +168,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
 		 * and an error thrown by the work.
 		 */
-		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+		InternalStage<T> executeInTransaction(Function<Stage.Transaction, InternalStage<T>> work) {
 			return work.apply( this )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
@@ -186,11 +185,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 					);
 		}
 
-		CompletionStage<Void> begin() {
+		InternalStage<Void> begin() {
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
-		CompletionStage<Void> end() {
+		InternalStage<Void> end() {
 			ReactiveConnection c = delegate.getReactiveConnection();
 			return rollback ? c.rollbackTransaction() : c.commitTransaction();
 		}
@@ -220,7 +219,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
+	public <T> InternalStage<T> get(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
 		return delegate.reactiveGet( entityClass, id, null, entityGraph );
 	}

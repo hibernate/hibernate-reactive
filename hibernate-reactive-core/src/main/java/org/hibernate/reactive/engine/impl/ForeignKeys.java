@@ -6,7 +6,6 @@
 package org.hibernate.reactive.engine.impl;
 
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
@@ -79,10 +78,10 @@ public final class ForeignKeys {
 		 *
 		 * @param values The entity attribute values
 		 */
-		public CompletionStage<Void> nullifyTransientReferences(final Object[] values) {
+		public InternalStage<Void> nullifyTransientReferences(final Object[] values) {
 			final String[] propertyNames = persister.getPropertyNames();
 			final Type[] types = persister.getPropertyTypes();
-			CompletionStage<Void> loop = voidFuture();
+			InternalStage<Void> loop = voidFuture();
 			for ( int i = 0; i < values.length; i++ ) {
 				final int index = i;
 				loop = loop
@@ -102,8 +101,8 @@ public final class ForeignKeys {
 		 *
 		 * @return {@code null} if the argument is an unsaved entity; otherwise return the argument.
 		 */
-		private CompletionStage<Object> nullifyTransientReferences(Object value, String propertyName, Type type) {
-			CompletionStage<Object> returnedStage;
+		private InternalStage<Object> nullifyTransientReferences(Object value, String propertyName, Type type) {
+			InternalStage<Object> returnedStage;
 			if ( value == null ) {
 				returnedStage = nullFuture();
 			}
@@ -146,7 +145,7 @@ public final class ForeignKeys {
 				final Object[] subValues = compositeType.getPropertyValues( value, session );
 				final Type[] subtypes = compositeType.getSubtypes();
 				final String[] subPropertyNames = compositeType.getPropertyNames();
-				CompletionStage<Boolean> loop = falseFuture();
+				InternalStage<Boolean> loop = falseFuture();
 				for ( int i = 0; i < subValues.length; i++ ) {
 					final int index = i;
 					loop = loop.thenCompose( substitute -> nullifyTransientReferences(
@@ -204,7 +203,7 @@ public final class ForeignKeys {
 		 * @param entityName The name of the entity
 		 * @param object The entity instance
 		 */
-		private CompletionStage<Boolean> isNullifiable(final String entityName, Object object) {
+		private InternalStage<Boolean> isNullifiable(final String entityName, Object object) {
 			if ( object == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 				// this is the best we can do...
 				return falseFuture();
@@ -269,7 +268,7 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is not transient (meaning it is either detached/persistent)
 	 */
-	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
+	public static InternalStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( isHibernateProxy( entity ) ) {
 			return trueFuture();
 		}
@@ -296,7 +295,7 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is transient (unsaved)
 	 */
-	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
+	public static InternalStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
@@ -346,7 +345,7 @@ public final class ForeignKeys {
 	 *
 	 * @throws TransientObjectException if the entity is transient (does not yet have an identifier)
 	 */
-	public static CompletionStage<Object> getEntityIdentifierIfNotUnsaved(
+	public static InternalStage<Object> getEntityIdentifierIfNotUnsaved(
 			final String entityName,
 			final Object object,
 			final SessionImplementor session) throws TransientObjectException {
@@ -377,7 +376,7 @@ public final class ForeignKeys {
 		}
 	}
 
-	public static CompletionStage<NonNullableTransientDependencies> findNonNullableTransientEntities(
+	public static InternalStage<NonNullableTransientDependencies> findNonNullableTransientEntities(
 			String entityName,
 			Object entity,
 			Object[] values,
@@ -404,7 +403,7 @@ public final class ForeignKeys {
 		).thenApply( r -> nonNullableTransientEntities.isEmpty() ? null : nonNullableTransientEntities );
 	}
 
-	private static CompletionStage<Void> collectNonNullableTransientEntities(
+	private static InternalStage<Void> collectNonNullableTransientEntities(
 			Nullifier nullifier,
 			Object value,
 			String propertyName,

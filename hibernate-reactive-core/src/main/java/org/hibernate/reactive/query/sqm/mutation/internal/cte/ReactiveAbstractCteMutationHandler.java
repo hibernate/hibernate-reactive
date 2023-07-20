@@ -11,7 +11,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -77,7 +77,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 	 * @see org.hibernate.query.sqm.mutation.internal.cte.AbstractCteMutationHandler#execute(DomainQueryExecutionContext)
 	 */
 	@Override
-	default CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
+	default InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		final SqmDeleteOrUpdateStatement<?> sqmMutationStatement = getSqmDeleteOrUpdateStatement();
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final EntityMappingType entityDescriptor = getEntityDescriptor();

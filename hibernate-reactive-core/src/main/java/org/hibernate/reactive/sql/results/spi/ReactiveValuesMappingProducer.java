@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.spi;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -17,7 +17,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
  */
 public interface ReactiveValuesMappingProducer {
 
-	CompletionStage<JdbcValuesMapping> reactiveResolve(
+	InternalStage<JdbcValuesMapping> reactiveResolve(
 			JdbcValuesMetadata jdbcResultsMetadata,
 			LoadQueryInfluencers loadQueryInfluencers,
 			SessionFactoryImplementor sessionFactory);

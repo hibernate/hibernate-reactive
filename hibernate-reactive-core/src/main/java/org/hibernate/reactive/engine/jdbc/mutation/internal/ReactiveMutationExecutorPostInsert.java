@@ -9,7 +9,7 @@ import static org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil.checkResults
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.concurrent.atomic.AtomicReference;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
@@ -36,7 +36,7 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 	}
 
 	@Override
-	public CompletionStage<Object> executeReactive(Object modelReference, ValuesAnalysis valuesAnalysis,
+	public InternalStage<Object> executeReactive(Object modelReference, ValuesAnalysis valuesAnalysis,
 												   TableInclusionChecker inclusionChecker,
 												   OperationResultChecker resultChecker,
 												   SharedSessionContractImplementor session) {
@@ -52,7 +52,7 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 					if (secondaryTablesStatementGroup == null) {
 						return completedFuture(id);
 					}
-					AtomicReference<CompletionStage<Object>>  res = new AtomicReference<>(completedFuture(id));
+					AtomicReference<InternalStage<Object>>  res = new AtomicReference<>(completedFuture(id));
 					secondaryTablesStatementGroup.forEachStatement((tableName, statementDetails) -> {
 						res.set(res.get().thenCompose(i -> reactiveExecuteWithId(i, tableName, statementDetails, inclusionChecker, resultChecker, session)));
 					});
@@ -68,7 +68,7 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 		return identifier;
 	}
 
-	private CompletionStage<Object> reactiveExecuteWithId(
+	private InternalStage<Object> reactiveExecuteWithId(
 			Object id,
 			String tableName,
 			PreparedStatementDetails statementDetails,

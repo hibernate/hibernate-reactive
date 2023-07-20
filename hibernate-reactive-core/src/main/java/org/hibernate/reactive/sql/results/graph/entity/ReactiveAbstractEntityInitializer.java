@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.results.graph.entity;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
@@ -75,13 +75,13 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
 		super.resolveInstance( rowProcessingState );
 		return voidFuture();
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
 		if ( isMissing() || isEntityInitialized() ) {
 			return voidFuture();
 		}
@@ -106,7 +106,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 				} );
 	}
 
-	private CompletionStage<Void> lazyInitialize(
+	private InternalStage<Void> lazyInitialize(
 			ReactiveRowProcessingState rowProcessingState,
 			LazyInitializer lazyInitializer) {
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
@@ -120,7 +120,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		return voidFuture();
 	}
 
-	private CompletionStage<Void> resolveInstance(
+	private InternalStage<Void> resolveInstance(
 			ReactiveRowProcessingState rowProcessingState,
 			LazyInitializer lazyInitializer,
 			PersistenceContext persistenceContext) {
@@ -158,7 +158,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		}
 	}
 
-	private CompletionStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {
+	private InternalStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {
 		if ( !skipInitialization( toInitialize, rowProcessingState ) ) {
 			assert consistentInstance( toInitialize, rowProcessingState );
 			return initializeEntityInstance( toInitialize, rowProcessingState );
@@ -167,7 +167,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 	}
 
 
-	protected CompletionStage<Object[]> reactiveExtractConcreteTypeStateValues(RowProcessingState rowProcessingState) {
+	protected InternalStage<Object[]> reactiveExtractConcreteTypeStateValues(RowProcessingState rowProcessingState) {
 		final Object[] values = new Object[getConcreteDescriptor().getNumberOfAttributeMappings()];
 		final DomainResultAssembler<?>[] concreteAssemblers = getAssemblers()[getConcreteDescriptor().getSubclassId()];
 		return loop( 0, values.length, i -> {
@@ -184,7 +184,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		} ).thenApply( unused -> values );
 	}
 
-	private CompletionStage<Void> initializeEntityInstance(Object toInitialize, RowProcessingState rowProcessingState) {
+	private InternalStage<Void> initializeEntityInstance(Object toInitialize, RowProcessingState rowProcessingState) {
 		final Object entityIdentifier = getEntityKey().getIdentifier();
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
@@ -201,7 +201,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		return reactiveExtractConcreteTypeStateValues( rowProcessingState )
 				.thenCompose( entityState -> loop( 0, entityState.length, i -> {
 								  if ( entityState[i] instanceof CompletionStage ) {
-									  return ( (CompletionStage<Object>) entityState[i] )
+									  return ( (InternalStage<Object>) entityState[i] )
 											  .thenAccept( state -> entityState[i] = state );
 								  }
 								  return voidFuture();

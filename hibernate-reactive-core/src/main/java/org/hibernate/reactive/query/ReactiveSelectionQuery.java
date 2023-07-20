@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
@@ -38,19 +38,19 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	String getQueryString();
 
-	default CompletionStage<List<R>> getReactiveResultList() {
+	default InternalStage<List<R>> getReactiveResultList() {
 		return reactiveList();
 	}
 
-	CompletionStage<List<R>> reactiveList();
+	InternalStage<List<R>> reactiveList();
 
-	CompletionStage<R> getReactiveSingleResult();
+	InternalStage<R> getReactiveSingleResult();
 
-	CompletionStage<R> getReactiveSingleResultOrNull();
+	InternalStage<R> getReactiveSingleResultOrNull();
 
-	CompletionStage<R> reactiveUnique();
+	InternalStage<R> reactiveUnique();
 
-	CompletionStage<Optional<R>> reactiveUniqueResultOptional();
+	InternalStage<Optional<R>> reactiveUniqueResultOptional();
 
 	ReactiveSelectionQuery<R> setHint(String hintName, Object value);
 

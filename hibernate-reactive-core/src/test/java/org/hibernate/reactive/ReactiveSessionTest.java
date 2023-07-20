@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;

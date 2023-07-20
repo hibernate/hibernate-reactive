@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
@@ -79,7 +79,7 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 	 * successfully completed CompletionStage.
 	 */
 	@Override
-	public CompletionStage<Void> getCloseFuture() {
+	public InternalStage<Void> getCloseFuture() {
 		return CompletionStages.voidFuture();
 	}
 }

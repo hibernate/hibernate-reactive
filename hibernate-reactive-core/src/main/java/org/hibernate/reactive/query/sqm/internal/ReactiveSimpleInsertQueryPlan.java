@@ -8,7 +8,7 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -58,7 +58,7 @@ public class ReactiveSimpleInsertQueryPlan implements ReactiveNonSelectQueryPlan
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmInsert );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		SqlAstTranslator<JdbcOperationQueryInsert> insertTranslator = null;

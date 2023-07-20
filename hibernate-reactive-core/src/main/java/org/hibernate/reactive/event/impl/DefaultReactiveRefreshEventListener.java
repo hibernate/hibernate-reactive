@@ -9,8 +9,7 @@ import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -54,7 +53,7 @@ public class DefaultReactiveRefreshEventListener
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnRefresh(RefreshEvent event) throws HibernateException {
 		return reactiveOnRefresh( event, RefreshContext.create() );
 	}
 
@@ -74,7 +73,7 @@ public class DefaultReactiveRefreshEventListener
 	 * @param event The refresh event to be handled.
 	 */
 	@Override
-	public CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready) {
+	public InternalStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready) {
 		final EventSource source = event.getSession();
 
 		boolean detached = event.getEntityName() != null
@@ -89,7 +88,7 @@ public class DefaultReactiveRefreshEventListener
 				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {
+	private InternalStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {
 		final EventSource source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
@@ -151,7 +150,7 @@ public class DefaultReactiveRefreshEventListener
 					evictEntity( entity, persister, id, source );
 					evictCachedCollections( persister, id, source );
 
-					final CompletableFuture<Void> refresh = new CompletableFuture<>();
+					final InternalStage<Void> refresh = InternalStage.newStage();
 					source.getLoadQueryInfluencers()
 							.fromInternalFetchProfile(
 									CascadingFetchProfile.REFRESH,
@@ -191,7 +190,7 @@ public class DefaultReactiveRefreshEventListener
 		}
 	}
 
-	private static CompletionStage<Void> doRefresh(
+	private static InternalStage<Void> doRefresh(
 			RefreshEvent event,
 			EventSource source,
 			Object entity,
@@ -263,7 +262,7 @@ public class DefaultReactiveRefreshEventListener
 				} );
 	}
 
-	private CompletionStage<Void> cascadeRefresh(
+	private InternalStage<Void> cascadeRefresh(
 			EventSource source,
 			EntityPersister persister,
 			Object object,

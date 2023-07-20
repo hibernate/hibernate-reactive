@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.SessionFactory;

@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 

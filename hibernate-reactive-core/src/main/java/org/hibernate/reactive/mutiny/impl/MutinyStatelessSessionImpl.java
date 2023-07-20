@@ -18,7 +18,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -43,7 +43,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 
-	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+	<T> Uni<T> uni(Supplier<InternalStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
 	}
 

@@ -7,7 +7,7 @@ package org.hibernate.reactive.engine;
 
 import org.hibernate.reactive.session.ReactiveSession;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 /**
  * Contract representing some process that needs to occur during before transaction completion.
@@ -21,5 +21,5 @@ public interface ReactiveBeforeTransactionCompletionProcess {
 	 *
 	 * @param session The session on which the transaction is preparing to complete.
 	 */
-	CompletionStage<Void> doBeforeTransactionCompletion(ReactiveSession session);
+	InternalStage<Void> doBeforeTransactionCompletion(ReactiveSession session);
 }

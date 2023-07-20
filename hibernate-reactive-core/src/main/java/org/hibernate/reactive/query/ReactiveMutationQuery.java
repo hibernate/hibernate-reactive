@@ -10,7 +10,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.FlushMode;
 import org.hibernate.query.BindableType;
@@ -24,7 +24,7 @@ import jakarta.persistence.TemporalType;
  * @see org.hibernate.query.MutationQuery
  */
 public interface ReactiveMutationQuery<R> extends CommonQueryContract {
-	CompletionStage<Integer> executeReactiveUpdate();
+	InternalStage<Integer> executeReactiveUpdate();
 
 	@Override
 	ReactiveMutationQuery<R> setParameter(String name, Object value);

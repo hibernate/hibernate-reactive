@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.mutation.internal;
 
 import java.sql.PreparedStatement;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiFunction;
 
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -35,7 +35,7 @@ public class ReactiveSqmMutationStrategyHelper {
 	private ReactiveSqmMutationStrategyHelper() {
 	}
 
-//	public static CompletionStage<Void> visitCollectionTables(EntityMappingType entityDescriptor, Consumer<PluralAttributeMapping> consumer) {
+//	public static InternalStage<Void> visitCollectionTables(EntityMappingType entityDescriptor, Consumer<PluralAttributeMapping> consumer) {
 //		if ( !entityDescriptor.getEntityPersister().hasCollections() ) {
 //			// none to clean-up
 //			return voidFuture();
@@ -70,7 +70,7 @@ public class ReactiveSqmMutationStrategyHelper {
 //		}
 //	}
 
-//	private static CompletionStage<Void> visitCollectionTables(EmbeddedAttributeMapping attributeMapping, Consumer<PluralAttributeMapping> consumer) {
+//	private static InternalStage<Void> visitCollectionTables(EmbeddedAttributeMapping attributeMapping, Consumer<PluralAttributeMapping> consumer) {
 //		final CompletableFuture<Void> stage = new CompletableFuture<>();
 //
 //		try {
@@ -103,7 +103,7 @@ public class ReactiveSqmMutationStrategyHelper {
 //		}
 //	}
 
-	public static CompletionStage<Void> cleanUpCollectionTables(
+	public static InternalStage<Void> cleanUpCollectionTables(
 			EntityMappingType entityDescriptor,
 			BiFunction<TableReference, PluralAttributeMapping, Predicate> restrictionProducer,
 			JdbcParameterBindings jdbcParameterBindings,
@@ -148,7 +148,7 @@ public class ReactiveSqmMutationStrategyHelper {
 		}
 	}
 
-	private static CompletionStage<Void> cleanUpCollectionTables(
+	private static InternalStage<Void> cleanUpCollectionTables(
 			EmbeddedAttributeMapping attributeMapping,
 			EntityMappingType entityDescriptor,
 			BiFunction<TableReference, PluralAttributeMapping, Predicate> restrictionProducer,
@@ -187,7 +187,7 @@ public class ReactiveSqmMutationStrategyHelper {
 		}
 	}
 
-	private static CompletionStage<Void> cleanUpCollectionTable(
+	private static InternalStage<Void> cleanUpCollectionTable(
 			PluralAttributeMapping attributeMapping,
 			EntityMappingType entityDescriptor,
 			BiFunction<TableReference, PluralAttributeMapping, Predicate> restrictionProducer,

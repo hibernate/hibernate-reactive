@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import org.hibernate.reactive.mutiny.Mutiny;

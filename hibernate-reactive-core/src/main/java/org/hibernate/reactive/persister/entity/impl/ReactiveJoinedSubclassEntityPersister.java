@@ -52,7 +52,7 @@ import org.hibernate.type.EntityType;
 
 import java.sql.PreparedStatement;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 
 /**
@@ -185,23 +185,23 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+	public InternalStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
 		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( id, fields, object, session )
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
-	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+	public InternalStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
 		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( null, fields, object, session );
 	}
 
 	@Override
-	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
+	public InternalStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
 		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).coordinateReactiveDelete( object, id, version, session );
 	}
 
 	@Override
-	public CompletionStage<Void> updateReactive(
+	public InternalStage<Void> updateReactive(
 			Object id,
 			Object[] values,
 			int[] dirtyAttributeIndexes,
@@ -219,7 +219,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	public <K> InternalStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 
@@ -264,7 +264,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	 * @see AbstractEntityPersister#processInsertGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
 		return reactiveDelegate.processInsertGeneratedProperties( id, entity, state,
 				getInsertGeneratedValuesProcessor(), session, getEntityName() );
 	}
@@ -275,7 +275,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
 		return reactiveDelegate.processUpdateGeneratedProperties( id, entity, state,
 				getUpdateGeneratedValuesProcessor(), session, getEntityName() );
 	}
@@ -286,7 +286,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
+	public InternalStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, new LockOptions().setLockMode( lockMode ), session );
 	}
 
@@ -296,7 +296,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public InternalStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return doReactiveLoad( id, optionalObject, lockOptions, null, session );
 	}
 
@@ -306,11 +306,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	public InternalStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		return doReactiveLoad( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	private CompletionStage<Object> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	private InternalStage<Object> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		return reactiveDelegate.load( this, id, optionalObject, lockOptions, readOnly, session );
 	}
 
@@ -330,12 +330,12 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session) throws HibernateException {
+	public InternalStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session) throws HibernateException {
 		return reactiveLoadByUniqueKey( propertyName, uniqueKey, null, session );
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, Boolean readOnly, SharedSessionContractImplementor session) throws HibernateException {
+	public InternalStage<Object> reactiveLoadByUniqueKey(String propertyName, Object uniqueKey, Boolean readOnly, SharedSessionContractImplementor session) throws HibernateException {
 		return getReactiveUniqueKeyLoader( propertyName )
 				.load( uniqueKey, LockOptions.NONE, readOnly, session );
 	}
@@ -344,7 +344,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	 * @see AbstractEntityPersister#loadEntityIdByNaturalId(Object[], LockOptions, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public InternalStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		verifyHasNaturalId();
 		return reactiveDelegate.loadEntityIdByNaturalId( orderedNaturalIdValues, lockOptions, session );
 	}

@@ -8,7 +8,7 @@ package org.hibernate.reactive.id.insert;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -23,7 +23,7 @@ public class ReactiveBasicSelectingDelegate extends BasicSelectingDelegate imple
 	}
 
 	@Override
-	public CompletionStage<Object> reactivePerformInsert(
+	public InternalStage<Object> reactivePerformInsert(
 			String insertSQL,
 			SharedSessionContractImplementor session,
 			Binder binder) {

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
@@ -31,7 +31,7 @@ public class ReactiveTableBasedDeleteHandler extends TableBasedDeleteHandler imp
 			throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 		}
 
-		CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext);
+		InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext);
 	}
 
 	public ReactiveTableBasedDeleteHandler(
@@ -45,7 +45,7 @@ public class ReactiveTableBasedDeleteHandler extends TableBasedDeleteHandler imp
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
+	public InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef(
 					"Starting multi-table delete execution - %s",

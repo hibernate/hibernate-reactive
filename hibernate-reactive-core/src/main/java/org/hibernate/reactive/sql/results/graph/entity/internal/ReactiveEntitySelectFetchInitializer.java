@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.FetchNotFoundException;
 import org.hibernate.annotations.NotFoundAction;
@@ -76,13 +76,13 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
 		NavigablePath[] np = { getNavigablePath().getParent() };
 		if ( np[0] == null ) {
 			return voidFuture();
 		}
 		return whileLoop( () -> {
-			CompletionStage<Void> loop = voidFuture();
+			InternalStage<Void> loop = voidFuture();
 			// Defer the select by default to the initialize phase
 			// We only need to select in this phase if this is part of an identifier or foreign key
 			if ( np[0] instanceof EntityIdentifierNavigablePath
@@ -98,7 +98,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
 		if ( getEntityInstance() != null || isEntityInitialized() ) {
 			return voidFuture();
 		}

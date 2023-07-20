@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -30,7 +30,7 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 	private static final Log LOG = make( Log.class, lookup() );
 
 	@Override
-	public CompletionStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException {
+	public InternalStage<Void> reactiveOnFlush(FlushEvent event) throws HibernateException {
 		final EventSource source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 

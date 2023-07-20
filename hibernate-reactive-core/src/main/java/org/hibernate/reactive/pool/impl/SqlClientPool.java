@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
@@ -68,31 +68,31 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	@Override
-	public CompletionStage<ReactiveConnection> getConnection() {
+	public InternalStage<ReactiveConnection> getConnection() {
 		return getConnectionFromPool( getPool() );
 	}
 
 	@Override
-	public CompletionStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper) {
+	public InternalStage<ReactiveConnection> getConnection(SqlExceptionHelper sqlExceptionHelper) {
 		return getConnectionFromPool( getPool(), sqlExceptionHelper );
 	}
 
 	@Override
-	public CompletionStage<ReactiveConnection> getConnection(String tenantId) {
+	public InternalStage<ReactiveConnection> getConnection(String tenantId) {
 		return getConnectionFromPool( getTenantPool( tenantId ) );
 	}
 
 	@Override
-	public CompletionStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper) {
+	public InternalStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper) {
 		return getConnectionFromPool( getTenantPool( tenantId ), sqlExceptionHelper );
 	}
 
-	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
+	private InternalStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
 		return pool.getConnection()
 				.toCompletionStage().thenApply( this::newConnection );
 	}
 
-	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
+	private InternalStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
 		return pool.getConnection()
 				.toCompletionStage().thenApply( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) );
 	}

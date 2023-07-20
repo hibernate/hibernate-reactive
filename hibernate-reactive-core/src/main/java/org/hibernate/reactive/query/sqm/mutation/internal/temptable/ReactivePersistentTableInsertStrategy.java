@@ -5,8 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -20,9 +19,9 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsert
 public class ReactivePersistentTableInsertStrategy extends PersistentTableInsertStrategy
 		implements ReactivePersistentTableStrategy, ReactiveSqmMultiTableInsertStrategy {
 
-	private final CompletableFuture<Void> tableCreatedStage = new CompletableFuture<>();
+	private final InternalStage<Void> tableCreatedStage = InternalStage.newStage();
 
-	private final CompletableFuture<Void> tableDroppedStage = new CompletableFuture<>();
+	private final InternalStage<Void> tableDroppedStage = InternalStage.newStage();
 
 	private boolean prepared;
 
@@ -45,7 +44,7 @@ public class ReactivePersistentTableInsertStrategy extends PersistentTableInsert
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteInsert(
+	public InternalStage<Integer> reactiveExecuteInsert(
 			SqmInsertStatement<?> sqmInsertStatement,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext context) {
@@ -81,12 +80,12 @@ public class ReactivePersistentTableInsertStrategy extends PersistentTableInsert
 	}
 
 	@Override
-	public CompletionStage<Void> getDropTableActionStage() {
+	public InternalStage<Void> getDropTableActionStage() {
 		return tableDroppedStage;
 	}
 
 	@Override
-	public CompletionStage<Void> getCreateTableActionStage() {
+	public InternalStage<Void> getCreateTableActionStage() {
 		return tableCreatedStage;
 	}
 }

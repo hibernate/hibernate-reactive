@@ -7,7 +7,6 @@ package org.hibernate.reactive.engine.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
@@ -50,7 +49,7 @@ public class CascadingActions {
 	 */
 	public static final CascadingAction<DeleteContext> DELETE = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.DELETE ) {
 		@Override
-		public CompletionStage<Void> cascade(
+		public InternalStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -70,7 +69,7 @@ public class CascadingActions {
 	 */
 	public static final CascadingAction<PersistContext> PERSIST = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.PERSIST ) {
 		@Override
-		public CompletionStage<Void> cascade(
+		public InternalStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -89,7 +88,7 @@ public class CascadingActions {
 	 */
 	public static final CascadingAction<PersistContext> PERSIST_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.PERSIST_ON_FLUSH ) {
 		@Override
-		public CompletionStage<Void> cascade(
+		public InternalStage<Void> cascade(
 				EventSource session,
 				Object child,
 				String entityName,
@@ -118,7 +117,7 @@ public class CascadingActions {
 		}
 
 		@Override
-		public CompletionStage<Void> noCascade(
+		public InternalStage<Void> noCascade(
 				EventSource session,
 				Object parent,
 				EntityPersister persister,
@@ -156,7 +155,7 @@ public class CascadingActions {
 	public static final CascadingAction<MergeContext> MERGE =
 			new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.MERGE ) {
 				@Override
-				public CompletionStage<Void> cascade(
+				public InternalStage<Void> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
@@ -174,7 +173,7 @@ public class CascadingActions {
 	 */
 	public static final CascadingAction<RefreshContext> REFRESH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.REFRESH ) {
 				@Override
-				public CompletionStage<Void> cascade(
+				public InternalStage<Void> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
@@ -191,7 +190,7 @@ public class CascadingActions {
 	 */
 	public static final CascadingAction<LockOptions> LOCK = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.LOCK ) {
 				@Override
-				public CompletionStage<Void> cascade(
+				public InternalStage<Void> cascade(
 						EventSource session,
 						Object child,
 						String entityName,
@@ -234,7 +233,7 @@ public class CascadingActions {
 		 * @see BaseCascadingAction#noCascade(EventSource, Object, EntityPersister, Type, int)
 		 */
 		@Override
-		public CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
+		public InternalStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex) {
 			return voidFuture();
 		}
 

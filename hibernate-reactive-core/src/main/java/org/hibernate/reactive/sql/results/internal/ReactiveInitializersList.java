@@ -8,7 +8,7 @@ package org.hibernate.reactive.sql.results.internal;
 
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
@@ -56,7 +56,7 @@ public final class ReactiveInitializersList {
 		}
 	}
 
-	public CompletionStage<Void> initializeInstance(final ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> initializeInstance(final ReactiveRowProcessingState rowProcessingState) {
 		return loop( initializers, initializer -> {
 			if ( initializer instanceof ReactiveInitializer ) {
 				return ( (ReactiveInitializer) initializer ).reactiveInitializeInstance( rowProcessingState );
@@ -80,7 +80,7 @@ public final class ReactiveInitializersList {
 		}
 	}
 
-	public CompletionStage<Void> resolveInstances(final ReactiveRowProcessingState rowProcessingState) {
+	public InternalStage<Void> resolveInstances(final ReactiveRowProcessingState rowProcessingState) {
 		return loop( sortedNonCollectionsFirst, initializer -> {
 			if ( initializer instanceof ReactiveInitializer ) {
 				return ( (ReactiveInitializer) initializer ).reactiveResolveInstance( rowProcessingState );

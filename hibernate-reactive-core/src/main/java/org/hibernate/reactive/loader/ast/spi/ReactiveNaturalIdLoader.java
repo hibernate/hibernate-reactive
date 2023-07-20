@@ -5,16 +5,16 @@
  */
 package org.hibernate.reactive.loader.ast.spi;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.NaturalIdLoader;
 
-public interface ReactiveNaturalIdLoader<T> extends NaturalIdLoader<CompletionStage<T>> {
+public interface ReactiveNaturalIdLoader<T> extends NaturalIdLoader<InternalStage<T>> {
 
     @Override
-    CompletionStage<Object> resolveNaturalIdToId(Object naturalIdValue, SharedSessionContractImplementor session);
+    InternalStage<Object> resolveNaturalIdToId(Object naturalIdValue, SharedSessionContractImplementor session);
 
     @Override
-    CompletionStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session);
+    InternalStage<Object> resolveIdToNaturalId(Object id, SharedSessionContractImplementor session);
 }

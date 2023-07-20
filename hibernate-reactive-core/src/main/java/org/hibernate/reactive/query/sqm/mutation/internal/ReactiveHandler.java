@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 
@@ -22,5 +22,5 @@ public interface ReactiveHandler {
 	 *
 	 * @return The "number of rows affected" count
 	 */
-	CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext);
+	InternalStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext);
 }

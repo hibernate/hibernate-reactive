@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -84,7 +84,7 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 	}
 
 	@Override
-	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
 		final CollectionKey collectionKey = new CollectionKey( attributeMapping.getCollectionDescriptor(), key );
 		final SessionFactoryImplementor sessionFactory = session.getFactory();
 		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();

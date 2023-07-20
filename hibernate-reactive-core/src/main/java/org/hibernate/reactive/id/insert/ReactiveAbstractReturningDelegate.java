@@ -6,7 +6,7 @@
 package org.hibernate.reactive.id.insert;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
@@ -35,7 +35,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	PostInsertIdentityPersister getPersister();
 
 	@Override
-	default CompletionStage<Object> reactivePerformInsert(PreparedStatementDetails insertStatementDetails, JdbcValueBindings jdbcValueBindings, Object entity, SharedSessionContractImplementor session) {
+	default InternalStage<Object> reactivePerformInsert(PreparedStatementDetails insertStatementDetails, JdbcValueBindings jdbcValueBindings, Object entity, SharedSessionContractImplementor session) {
 		final Class<?> idType = getPersister().getIdentifierType().getReturnedClass();
 		final JdbcServices jdbcServices = session.getJdbcServices();
 		final String identifierColumnName = getPersister().getIdentifierColumnNames()[0];
@@ -121,7 +121,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	}
 
 	@Override
-	default CompletionStage<Object> reactivePerformInsert(String insertSQL, SharedSessionContractImplementor session, Binder binder) {
+	default InternalStage<Object> reactivePerformInsert(String insertSQL, SharedSessionContractImplementor session, Binder binder) {
 		throw LOG.notYetImplemented();
 	}
 

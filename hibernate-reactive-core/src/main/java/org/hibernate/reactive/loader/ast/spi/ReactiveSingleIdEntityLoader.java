@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.loader.ast.spi;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
@@ -18,7 +18,7 @@ import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
  * Reactive version of {@link SingleIdEntityLoader}.
  * @param <T> the entity class
  */
-public interface ReactiveSingleIdEntityLoader<T> extends SingleIdEntityLoader<CompletionStage<T>> {
+public interface ReactiveSingleIdEntityLoader<T> extends SingleIdEntityLoader<InternalStage<T>> {
 
 	/**
 	 * @deprecated use {@link #reactiveLoadDatabaseSnapshot(Object, SharedSessionContractImplementor)}
@@ -29,5 +29,5 @@ public interface ReactiveSingleIdEntityLoader<T> extends SingleIdEntityLoader<Co
 		throw make( Log.class, lookup() ).nonReactiveMethodCall( "reactiveLoadDatabaseSnapshot" );
 	}
 
-	CompletionStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session);
+	InternalStage<Object[]> reactiveLoadDatabaseSnapshot(Object id, SharedSessionContractImplementor session);
 }

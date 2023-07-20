@@ -20,7 +20,7 @@ import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	private final ReactiveSelectionQuery<T> delegate;
@@ -35,7 +35,7 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	}
 
 	@Override
-	public CompletionStage<List<T>> getResultList() {
+	public InternalStage<List<T>> getResultList() {
 		return delegate.getReactiveResultList();
 	}
 
@@ -63,12 +63,12 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	}
 
 	@Override
-	public CompletionStage<T> getSingleResult() {
+	public InternalStage<T> getSingleResult() {
 		return delegate.getReactiveSingleResult();
 	}
 
 	@Override
-	public CompletionStage<T> getSingleResultOrNull() {
+	public InternalStage<T> getSingleResultOrNull() {
 		return delegate.getReactiveSingleResultOrNull();
 	}
 

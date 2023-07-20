@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.sql.results.graph;
 
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.Incubating;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
@@ -16,8 +16,8 @@ import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 @Incubating
 public interface ReactiveInitializer {
 
-	CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState);
+	InternalStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState);
 
-	CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState);
+	InternalStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState);
 
 }

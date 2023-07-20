@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Supplier;
 
 import org.hibernate.CacheMode;
@@ -218,7 +218,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	 * This is only called when lazily initializing a proxy. Do NOT return a proxy.
 	 */
 	@Override
-	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id)
+	public InternalStage<Object> reactiveImmediateLoad(String entityName, Object id)
 			throws HibernateException {
 		if ( LOG.isDebugEnabled() ) {
 			final EntityPersister persister = getFactory().getMappingMetamodel()
@@ -239,7 +239,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable) {
+	public InternalStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable) {
 		final LoadEventListener.LoadType type = internalLoadType( eager, nullable );
 		final EffectiveEntityGraph effectiveEntityGraph = getLoadQueryInfluencers().getEffectiveEntityGraph();
 		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
@@ -287,7 +287,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	//Note: when making changes to this method, please also consider
 	//      the similar code in Mutiny.fetch() and Stage.fetch()
-	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
+	public <T> InternalStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association == null ) {
 			return nullFuture();
@@ -341,7 +341,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <E, T> CompletionStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
+	public <E, T> InternalStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
 		return ( (ReactiveEntityPersister) getEntityPersister( null, entity ) )
 				.reactiveInitializeLazyProperty( field, entity, this );
 	}
@@ -798,7 +798,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing) {
+	public InternalStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing) {
 		checkOpenOrWaitingForAutoClose();
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
@@ -822,19 +822,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePersist(Object entity) {
+	public InternalStage<Void> reactivePersist(Object entity) {
 		checkOpen();
 		return firePersist( new PersistEvent( null, entity, this ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready) {
+	public InternalStage<Void> reactivePersist(Object object, PersistContext copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersist( copiedAlready, new PersistEvent( null, object, this ) );
 	}
 
 	// Should be similar to firePersist
-	private CompletionStage<Void> firePersist(PersistEvent event) {
+	private InternalStage<Void> firePersist(PersistEvent event) {
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
@@ -853,7 +853,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
+	private InternalStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_PERSIST
@@ -872,12 +872,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready) {
+	public InternalStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return firePersistOnFlush( copiedAlready, new PersistEvent( null, entity, this ) );
 	}
 
-	private CompletionStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
+	private InternalStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_PERSIST
@@ -886,13 +886,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(Object entity) {
+	public InternalStage<Void> reactiveRemove(Object entity) {
 		checkOpen();
 		return fireRemove( new DeleteEvent( entity, this ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(
+	public InternalStage<Void> reactiveRemove(
 			String entityName,
 			boolean isCascadeDeleteEnabled,
 			DeleteContext transientEntities)
@@ -902,7 +902,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemove(
+	public InternalStage<Void> reactiveRemove(
 			String entityName,
 			Object child,
 			boolean isCascadeDeleteEnabled,
@@ -933,7 +933,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	// Should be similar to fireRemove
-	private CompletionStage<Void> fireRemove(DeleteEvent event) {
+	private InternalStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_DELETE.fireEventOnEachListener(
@@ -957,7 +957,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	private CompletionStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
+	private InternalStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
@@ -981,20 +981,20 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveMerge(T object) throws HibernateException {
+	public <T> InternalStage<T> reactiveMerge(T object) throws HibernateException {
 		checkOpen();
 		return fireMerge( new MergeEvent( null, object, this ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveMerge(Object object, MergeContext copiedAlready)
+	public InternalStage<Void> reactiveMerge(Object object, MergeContext copiedAlready)
 			throws HibernateException {
 		checkOpenOrWaitingForAutoClose();
 		return fireMerge( copiedAlready, new MergeEvent( null, object, this ) );
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> CompletionStage<T> fireMerge(MergeEvent event) {
+	private <T> InternalStage<T> fireMerge(MergeEvent event) {
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
@@ -1017,7 +1017,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
+	private InternalStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_MERGE
@@ -1040,18 +1040,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveFlush() {
+	public InternalStage<Void> reactiveFlush() {
 		checkOpen();
 		return doFlush();
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveAutoflush() {
+	public InternalStage<Void> reactiveAutoflush() {
 		return getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ? voidFuture() : doFlush();
 	}
 
 	@Override
-	public CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
+	public InternalStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
 		checkOpen();
 		// FIXME: Can't we implement this part?
 //		if ( !isTransactionInProgress() ) {
@@ -1066,7 +1066,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveForceFlush(EntityEntry entry) {
+	public InternalStage<Void> reactiveForceFlush(EntityEntry entry) {
 		if ( LOG.isDebugEnabled() ) {
 			LOG.debugf(
 					"Flushing to force deletion of re-saved object: %s",
@@ -1085,7 +1085,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return doFlush();
 	}
 
-	private CompletionStage<Void> doFlush() {
+	private InternalStage<Void> doFlush() {
 		checkTransactionNeededForUpdateOperation( "no transaction is in progress" );
 		pulseTransactionCoordinator();
 
@@ -1116,18 +1116,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockOptions) {
+	public InternalStage<Void> reactiveRefresh(Object entity, LockOptions lockOptions) {
 		checkOpen();
 		return fireRefresh( new RefreshEvent( entity, lockOptions, this ) );
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(Object object, RefreshContext refreshedAlready) {
+	public InternalStage<Void> reactiveRefresh(Object object, RefreshContext refreshedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return fireRefresh( refreshedAlready, new RefreshEvent( null, object, this ) );
 	}
 
-	CompletionStage<Void> fireRefresh(RefreshEvent event) {
+	InternalStage<Void> fireRefresh(RefreshEvent event) {
 		if ( !getSessionFactory().getSessionFactoryOptions().isAllowRefreshDetachedEntity() ) {
 			if ( event.getEntityName() != null ) {
 				if ( !contains( event.getEntityName(), event.getObject() ) ) {
@@ -1162,7 +1162,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	private CompletionStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
+	private InternalStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_REFRESH
@@ -1182,12 +1182,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveLock(Object object, LockOptions lockOptions) {
+	public InternalStage<Void> reactiveLock(Object object, LockOptions lockOptions) {
 		checkOpen();
 		return fireLock( new LockEvent( object, lockOptions, this ) );
 	}
 
-	private CompletionStage<Void> fireLock(LockEvent event) {
+	private InternalStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_LOCK.fireEventOnEachListener(
@@ -1205,14 +1205,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(
+	public <T> InternalStage<T> reactiveGet(
 			Class<T> entityClass,
 			Object id) {
 		return new ReactiveIdentifierLoadAccessImpl<>( entityClass ).load( id );
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveFind(
+	public <T> InternalStage<T> reactiveFind(
 			Class<T> entityClass,
 			Object id,
 			LockOptions lockOptions,
@@ -1275,25 +1275,25 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
+	public <T> InternalStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
 		return new ReactiveMultiIdentifierLoadAccessImpl<>( entityClass ).multiLoad( ids );
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
+	public <T> InternalStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
 		final EntityPersister persister = getFactory().getMetamodel().locateEntityPersister( entityClass );
 		return new NaturalIdLoadAccessImpl<T>( persister ).resolveNaturalId( ids )
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
 
-	private CompletionStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
+	private InternalStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
 		checkOpenOrWaitingForAutoClose();
 
 		return fireLoadNoChecks( event, loadType )
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
 
-	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
+	private InternalStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
 		return extensions.eventListenerGroup_LOAD
@@ -1301,7 +1301,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		);
 	}
 
-	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
+	private InternalStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
 		return extensions.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener(
 						event,
@@ -1369,11 +1369,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return this;
 		}
 
-		public final CompletionStage<T> getReference(Object id) {
+		public final InternalStage<T> getReference(Object id) {
 			return perform( () -> doGetReference( id ) );
 		}
 
-		protected CompletionStage<T> perform(Supplier<CompletionStage<T>> executor) {
+		protected InternalStage<T> perform(Supplier<InternalStage<T>> executor) {
 			if ( graphSemantic != null ) {
 				if ( rootGraph == null ) {
 					throw new IllegalArgumentException( "Graph semantic specified, but no RootGraph was supplied" );
@@ -1408,7 +1408,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@SuppressWarnings("unchecked")
-		protected CompletionStage<T> doGetReference(Object id) {
+		protected InternalStage<T> doGetReference(Object id) {
 			if ( lockOptions != null ) {
 				LoadEvent event = new LoadEvent(
 						id,
@@ -1439,16 +1439,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					} ).whenComplete( (v, x) -> afterOperation( x != null ) );
 		}
 
-		public final CompletionStage<T> load(Object id) {
+		public final InternalStage<T> load(Object id) {
 			return perform( () -> doLoad( id, LoadEventListener.GET ) );
 		}
 
-		//		public final CompletionStage<T> fetch(Object id) {
+		//		public final InternalStage<T> fetch(Object id) {
 //			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
 //		}
 //
 		@SuppressWarnings("unchecked")
-		protected final CompletionStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
+		protected final InternalStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
 			if ( id == null ) {
 				return nullFuture();
 			}
@@ -1569,16 +1569,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@SuppressWarnings("unchecked")
-		public CompletionStage<List<T>> multiLoad(Object... ids) {
+		public InternalStage<List<T>> multiLoad(Object... ids) {
 			Object[] sids = new Object[ids.length];
 			System.arraycopy( ids, 0, sids, 0, ids.length );
 
-			return perform( () -> (CompletionStage)
+			return perform( () -> (InternalStage)
 					( (ReactiveEntityPersister) entityPersister )
 							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
 		}
 
-		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
+		public InternalStage<List<T>> perform(Supplier<InternalStage<List<T>>> executor) {
 			CacheMode sessionCacheMode = getCacheMode();
 			boolean cacheModeChanged = false;
 			if ( cacheMode != null ) {
@@ -1611,8 +1611,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@SuppressWarnings("unchecked")
-		public <K extends Object> CompletionStage<List<T>> multiLoad(List<K> ids) {
-			return perform( () -> (CompletionStage<List<T>>)
+		public <K extends Object> InternalStage<List<T>> multiLoad(List<K> ids) {
+			return perform( () -> (InternalStage<List<T>>)
 					entityPersister.multiLoad( ids.toArray( new Object[0] ), ReactiveSessionImpl.this, this ) );
 		}
 	}
@@ -1639,7 +1639,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			this.synchronizationEnabled = synchronizationEnabled;
 		}
 
-		protected final CompletionStage<Object> resolveNaturalId(Map<String, Object> naturalIdParameters) {
+		protected final InternalStage<Object> resolveNaturalId(Map<String, Object> naturalIdParameters) {
 			performAnyNeededCrossReferenceSynchronizations();
 
 			ResolveNaturalIdEvent event =
@@ -1727,7 +1727,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveClose() {
+	public InternalStage<Void> reactiveClose() {
 		super.close();
 		return reactiveConnection != null
 				? reactiveConnection.close()
@@ -1786,7 +1786,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child) {
+	public InternalStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child) {
 		// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 		// ordering is improved.
 		final StatefulPersistenceContext persistenceContext = (StatefulPersistenceContext) getPersistenceContextInternal();

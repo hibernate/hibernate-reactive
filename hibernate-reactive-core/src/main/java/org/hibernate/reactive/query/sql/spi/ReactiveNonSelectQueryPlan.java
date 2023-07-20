@@ -6,7 +6,7 @@
 package org.hibernate.reactive.query.sql.spi;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.NonSelectQueryPlan;
@@ -25,5 +25,5 @@ public interface ReactiveNonSelectQueryPlan extends NonSelectQueryPlan {
 		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
 	}
 
-	CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext);
+	InternalStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext);
 }

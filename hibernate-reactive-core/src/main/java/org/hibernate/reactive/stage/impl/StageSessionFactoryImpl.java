@@ -27,7 +27,7 @@ import org.hibernate.stat.Statistics;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -77,7 +77,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> openSession() {
+	public InternalStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
 		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection,
@@ -86,7 +86,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.Session> openSession(String tenantId) {
+	public InternalStage<Stage.Session> openSession(String tenantId) {
 		return connection( tenantId )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveSessionImpl( delegate, options( tenantId ), connection, extensions ) ) )
@@ -94,7 +94,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
+	public InternalStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection,
@@ -103,7 +103,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
+	public InternalStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return connection( tenantId )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
@@ -113,7 +113,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	/**
 	 * Close the connection if something goes wrong during the creation of the session
 	 */
-	private <S> CompletionStage<S> create(ReactiveConnection connection, Supplier<S> supplier) {
+	private <S> InternalStage<S> create(ReactiveConnection connection, Supplier<S> supplier) {
 		try {
 			return completedFuture( supplier.get() );
 		}
@@ -135,14 +135,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 				.tenantIdentifier( tenantIdentifier );
 	}
 
-	private CompletionStage<ReactiveConnection> connection(String tenantId) {
+	private InternalStage<ReactiveConnection> connection(String tenantId) {
 		return tenantId == null
 				? connectionPool.getConnection()
 				: connectionPool.getConnection( tenantId );
 	}
 
 	@Override
-	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withSession(Function<Stage.Session, InternalStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get( contextKeyForSession );
 		if ( current != null && current.isOpen() ) {
@@ -156,7 +156,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public <T> CompletionStage<T> withSession(String tenantId, Function<Stage.Session, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withSession(String tenantId, Function<Stage.Session, InternalStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Context.Key<Stage.Session> key = new MultitenantKey<>( this.contextKeyForSession, tenantId );
@@ -172,7 +172,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public <T> CompletionStage<T> withStatelessSession(Function<Stage.StatelessSession, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withStatelessSession(Function<Stage.StatelessSession, InternalStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.StatelessSession current = context.get( contextKeyForStatelessSession );
 		if ( current!=null && current.isOpen() ) {
@@ -186,7 +186,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public <T> CompletionStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withStatelessSession(String tenantId, Function<Stage.StatelessSession, InternalStage<T>> work) {
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Context.Key<Stage.StatelessSession> key = new MultitenantKey<>( this.contextKeyForStatelessSession, tenantId );
@@ -201,13 +201,14 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 	}
 
-	private <T> CompletionStage<T> executeInContext(Function<Void, CompletionStage<T>> fun) {
-		return voidFuture().thenComposeAsync( fun, context );
+	private <T> InternalStage<T> executeInContext(Function<Void, InternalStage<T>> fun) {
+		//return voidFuture().thenComposeAsync( fun, context );
+		throw new IllegalStateException("not implemented");
 	}
 
-	private <S extends Stage.Closeable, T> CompletionStage<T> withSession(
-			CompletionStage<S> sessionStage,
-			Function<S, CompletionStage<T>> work,
+	private <S extends Stage.Closeable, T> InternalStage<T> withSession(
+			InternalStage<S> sessionStage,
+			Function<S, InternalStage<T>> work,
 			Context.Key<S> contextKey) {
 		return sessionStage.thenCompose( session -> {
 			context.put( contextKey, session );
@@ -232,22 +233,22 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public <T> CompletionStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withTransaction(BiFunction<Stage.Session, Stage.Transaction, InternalStage<T>> work) {
 		return withSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
-	public <T> CompletionStage<T> withStatelessTransaction(BiFunction<Stage.StatelessSession, Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withStatelessTransaction(BiFunction<Stage.StatelessSession, Stage.Transaction, InternalStage<T>> work) {
 		return withStatelessSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
-	public <T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Stage.Session, Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withTransaction(String tenantId, BiFunction<Stage.Session, Stage.Transaction, InternalStage<T>> work) {
 		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
 	}
 
 	@Override
-	public <T> CompletionStage<T> withStatelessTransaction(String tenantId, BiFunction<Stage.StatelessSession, Stage.Transaction, CompletionStage<T>> work) {
+	public <T> InternalStage<T> withStatelessTransaction(String tenantId, BiFunction<Stage.StatelessSession, Stage.Transaction, InternalStage<T>> work) {
 		return withStatelessSession( tenantId, s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 

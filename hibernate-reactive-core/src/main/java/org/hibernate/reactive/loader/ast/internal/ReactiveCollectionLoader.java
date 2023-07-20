@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -29,5 +29,5 @@ public interface ReactiveCollectionLoader extends CollectionLoader {
 	/**
 	 * Load a collection by its key (not necessarily the same as its owner's PK).
 	 */
-	CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session);
+	InternalStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session);
 }

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
@@ -26,7 +26,7 @@ final class GeneratorValueUtil {
     }
 
 
-    static CompletionStage<?> generateValue(
+    static InternalStage<?> generateValue(
             SharedSessionContractImplementor session, Object entity, Object currentValue,
             BeforeExecutionGenerator generator, EventType eventType) {
         if (generator instanceof StageGenerator) {

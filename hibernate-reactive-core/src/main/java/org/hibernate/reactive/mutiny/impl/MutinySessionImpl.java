@@ -40,7 +40,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -64,7 +64,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		this.factory = factory;
 	}
 
-	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+	<T> Uni<T> uni(Supplier<InternalStage<T>> stageSupplier) {
 		return factory.uni( stageSupplier );
 	}
 

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -30,7 +30,7 @@ public class ReactiveDeleteRowsCoordinatorNoOp extends DeleteRowsCoordinatorNoOp
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveDeleteRows(PersistentCollection<?> collection, Object key, SharedSessionContractImplementor session) {
 		return voidFuture();
 	}
 }

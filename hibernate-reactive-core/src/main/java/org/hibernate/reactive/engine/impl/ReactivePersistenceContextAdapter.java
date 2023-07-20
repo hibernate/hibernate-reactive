@@ -18,7 +18,6 @@ import org.hibernate.reactive.session.ReactiveSession;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -41,14 +40,14 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 		super( session );
 	}
 
-	public CompletionStage<Void> reactiveInitializeNonLazyCollections() throws HibernateException {
+	public InternalStage<Void> reactiveInitializeNonLazyCollections() throws HibernateException {
 		final NonLazyCollectionInitializer initializer = new NonLazyCollectionInitializer();
 		initializeNonLazyCollections( initializer );
 		return initializer.stage;
 	}
 
 	private class NonLazyCollectionInitializer implements Consumer<PersistentCollection<?>> {
-		CompletionStage<Void> stage = voidFuture();
+		InternalStage<Void> stage = voidFuture();
 
 		@Override
 		public void accept(PersistentCollection<?> nonLazyCollection) {
@@ -76,7 +75,7 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 
 	private static final Object[] NO_ROW = new Object[]{ StatefulPersistenceContext.NO_ROW };
 
-	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister)
+	public InternalStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister)
 			throws HibernateException {
 
 		SessionImplementor session = (SessionImplementor) getSession();

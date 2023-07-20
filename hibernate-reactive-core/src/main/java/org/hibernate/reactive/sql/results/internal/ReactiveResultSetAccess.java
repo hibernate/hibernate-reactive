@@ -8,7 +8,7 @@ package org.hibernate.reactive.sql.results.internal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -26,11 +26,11 @@ import jakarta.persistence.EnumType;
  * @see org.hibernate.sql.results.jdbc.internal.ResultSetAccess
  */
 public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
-	CompletionStage<ResultSet> getReactiveResultSet();
-	CompletionStage<ResultSetMetaData> getReactiveMetadata();
-	CompletionStage<Integer> getReactiveColumnCount();
+	InternalStage<ResultSet> getReactiveResultSet();
+	InternalStage<ResultSetMetaData> getReactiveMetadata();
+	InternalStage<Integer> getReactiveColumnCount();
 
-	CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata();
+	InternalStage<JdbcValuesMetadata> resolveJdbcValueMetadata();
 
 	ResultSet getResultSet();
 

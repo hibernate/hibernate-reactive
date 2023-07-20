@@ -6,7 +6,7 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import java.lang.reflect.Array;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -99,7 +99,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 	}
 
 	@Override
-	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
+	public InternalStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
 		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Batch loading entity `%s#%s`",
@@ -134,7 +134,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 		return keysToInitialize;
 	}
 
-	private CompletionStage<Void> initializeKeys(Object[] keysToInitialize, SharedSessionContractImplementor session) {
+	private InternalStage<Void> initializeKeys(Object[] keysToInitialize, SharedSessionContractImplementor session) {
 		assert jdbcSelectOperation != null;
 		assert jdbcParameter != null;
 

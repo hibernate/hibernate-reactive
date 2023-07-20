@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -99,7 +99,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecute(ExecutionContext executionContext) {
+	public InternalStage<Integer> reactiveExecute(ExecutionContext executionContext) {
 		return performBeforeTemporaryTableUseActions(
 						getIdTable(),
 						executionContext
@@ -120,7 +120,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 							executionContext
 					);
 
-					final CompletionStage<Void>[] resultStage = new CompletionStage[] { voidFuture() };
+					final InternalStage<Void>[] resultStage = new CompletionStage[] { voidFuture() };
 					getEntityDescriptor().visitConstraintOrderedTables(
 							(tableExpression, tableKeyColumnVisitationSupplier) -> resultStage[0] = resultStage[0].thenCompose(
 									v -> reactiveUpdateTable(
@@ -144,7 +144,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 				);
 	}
 
-	private CompletionStage<Void> reactiveUpdateTable(
+	private InternalStage<Void> reactiveUpdateTable(
 			String tableExpression,
 			Supplier<Consumer<SelectableConsumer>> tableKeyColumnVisitationSupplier,
 			int expectedUpdateCount,
@@ -200,7 +200,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 	}
 
 
-	private CompletionStage<Integer> executeUpdate(QuerySpec idTableSubQuery, ExecutionContext executionContext, List<Assignment> assignments, NamedTableReference dmlTableReference, SqlAstTranslatorFactory sqlAstTranslatorFactory, Expression keyExpression) {
+	private InternalStage<Integer> executeUpdate(QuerySpec idTableSubQuery, ExecutionContext executionContext, List<Assignment> assignments, NamedTableReference dmlTableReference, SqlAstTranslatorFactory sqlAstTranslatorFactory, Expression keyExpression) {
 		final UpdateStatement sqlAst = new UpdateStatement(
 				dmlTableReference,
 				assignments,
@@ -224,7 +224,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 		);
 	}
 
-	private CompletionStage<Integer> executeInsert(
+	private InternalStage<Integer> executeInsert(
 			String targetTableExpression,
 			NamedTableReference targetTableReference,
 			Expression targetTableKeyExpression,

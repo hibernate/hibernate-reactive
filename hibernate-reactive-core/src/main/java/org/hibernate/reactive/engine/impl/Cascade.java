@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Hibernate;
@@ -64,7 +63,7 @@ public final class Cascade<C> {
 	private final C context;
 	private CascadePoint cascadePoint;
 
-	private CompletionStage<Void> stage = voidFuture();
+	private InternalStage<Void> stage = voidFuture();
 
 	/**
 	 * 	@param persister The parent's entity persister
@@ -84,13 +83,13 @@ public final class Cascade<C> {
 		this.context = context;
 	}
 
-	public static CompletionStage<?> fetchLazyAssociationsBeforeCascade(
+	public static InternalStage<?> fetchLazyAssociationsBeforeCascade(
 			CascadingAction<?> action,
 			EntityPersister persister,
 			Object entity,
 			EventSource session) {
 
-		CompletionStage<?> beforeDelete = voidFuture();
+		InternalStage<?> beforeDelete = voidFuture();
 		if ( persister.hasCascades() ) {
 			CascadeStyle[] cascadeStyles = persister.getPropertyCascadeStyles();
 			Object[] state = persister.getValues( entity );
@@ -109,7 +108,7 @@ public final class Cascade<C> {
 	/**
 	 * Cascade an action from the parent entity instance to all its children.
 	 */
-	public CompletionStage<Void> cascade() throws HibernateException {
+	public InternalStage<Void> cascade() throws HibernateException {
 		return voidFuture().thenCompose(v -> {
 			CacheMode cacheMode = eventSource.getCacheMode();
 			if ( action==CascadingActions.DELETE ) {
@@ -123,7 +122,7 @@ public final class Cascade<C> {
 		} );
 	}
 
-	private CompletionStage<Void> cascadeInternal() throws HibernateException {
+	private InternalStage<Void> cascadeInternal() throws HibernateException {
 
 		if ( persister.hasCascades() || action.requiresNoCascadeChecking() ) { // performance opt
 			final boolean traceEnabled = LOG.isTraceEnabled();

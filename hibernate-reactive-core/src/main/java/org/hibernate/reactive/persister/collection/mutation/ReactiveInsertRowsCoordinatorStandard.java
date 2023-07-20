@@ -7,7 +7,7 @@ package org.hibernate.reactive.persister.collection.mutation;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
+import org.hibernate.reactive.engine.impl.InternalStage;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -66,7 +66,7 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 	 * @see org.hibernate.persister.collection.mutation.InsertRowsCoordinator#insertRows(PersistentCollection, Object, EntryFilter, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, EntryFilter entryChecker, SharedSessionContractImplementor session) {
+	public InternalStage<Void> reactiveInsertRows(PersistentCollection<?> collection, Object id, EntryFilter entryChecker, SharedSessionContractImplementor session) {
 		if ( operationGroup == null ) {
 			operationGroup = createOperationGroup();
 		}

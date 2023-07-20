@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.cfg.AvailableSettings;
