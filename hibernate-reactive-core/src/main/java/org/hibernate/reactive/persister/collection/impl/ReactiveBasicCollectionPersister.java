@@ -157,7 +157,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	 * @see org.hibernate.persister.collection.BasicCollectionPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) {
+	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) {
 		return getCreateEntryCoordinator().reactiveInsertRows( collection, id, collection::includeInRecreate, session );
 	}
 
