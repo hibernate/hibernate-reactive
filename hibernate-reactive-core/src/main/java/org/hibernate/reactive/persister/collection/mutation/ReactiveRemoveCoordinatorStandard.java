@@ -21,6 +21,7 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.ast.MutatingTableReference;
@@ -40,8 +41,11 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 	private final OperationProducer operationProducer;
 	private MutationOperationGroupSingle operationGroup;
 
-	public ReactiveRemoveCoordinatorStandard(CollectionMutationTarget mutationTarget, OperationProducer operationProducer) {
-		super( mutationTarget, operationProducer );
+	public ReactiveRemoveCoordinatorStandard(
+			CollectionMutationTarget mutationTarget,
+			OperationProducer operationProducer,
+			ServiceRegistry serviceRegistry) {
+		super( mutationTarget, operationProducer, serviceRegistry );
 		this.batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
 		this.operationProducer = operationProducer;
 	}

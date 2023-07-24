@@ -124,7 +124,12 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 			return new ReactiveDeleteRowsCoordinatorNoOp( this );
 		}
 		// never delete by index for one-to-many
-		return new ReactiveDeleteRowsCoordinatorStandard( this, getRowMutationOperations(), false );
+		return new ReactiveDeleteRowsCoordinatorStandard(
+				this,
+				getRowMutationOperations(),
+				false,
+				getFactory().getServiceRegistry()
+		);
 	}
 
 	private ReactiveRemoveCoordinator buildDeleteAllCoordinator() {
@@ -134,7 +139,11 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 			}
 			return new ReactiveRemoveCoordinatorNoOp( this );
 		}
-		return new ReactiveRemoveCoordinatorStandard( this, this::buildDeleteAllOperation );
+		return new ReactiveRemoveCoordinatorStandard(
+				this,
+				this::buildDeleteAllOperation,
+				getFactory().getServiceRegistry()
+		);
 	}
 
 	@Override
