@@ -58,7 +58,7 @@ tasks.withType( Test ).configureEach {
 
 	// We need a to use an instance of PostgreSQL with a specific configuration.
 	// So, for this particular integration-test module, we default to true unless docker is disabled.
-	systemProperty 'docker', project.properties['docker'] ?: true
+	systemProperty 'docker', project.hasProperty('docker')
 	systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
 
 	if ( project.hasProperty( 'includeTests' ) ) {

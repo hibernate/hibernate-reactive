@@ -55,7 +55,7 @@ tasks.withType( Test ).configureEach {
         displayGranularity = 1
         events = ['PASSED', 'FAILED', 'SKIPPED']
     }
-    systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
+    systemProperty 'docker', project.hasProperty( 'docker' )
     systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
 
     if ( project.hasProperty( 'includeTests' ) ) {
