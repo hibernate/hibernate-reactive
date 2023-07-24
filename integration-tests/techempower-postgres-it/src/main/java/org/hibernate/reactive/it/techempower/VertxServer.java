@@ -36,21 +36,12 @@ public class VertxServer {
 	private static final Log LOG = make( Log.class, lookup() );
 
 	// These properties are in DatabaseConfiguration in core
-	public static final boolean USE_DOCKER = isDockerEnabled();
-
-	// If not specify, default to enable docker
-	private static boolean isDockerEnabled() {
-		String enableDocker = System.getProperty( "docker" );
-		if ( enableDocker == null ) {
-			return true;
-		}
-		return Boolean.parseBoolean( enableDocker );
-	}
+	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
 	public static final String IMAGE_NAME = "postgres:15-bullseye";
-	public static final String USERNAME = "benchmarkdbuser";
-	public static final String PASSWORD = "benchmarkdbpass";
-	public static final String DB_NAME = "hello_world";
+	public static final String USERNAME = "hreact";
+	public static final String PASSWORD = "hreact";
+	public static final String DB_NAME = "hreact";
 
 	public static final int VERTICLE_INSTANCES = 10;
 
