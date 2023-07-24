@@ -62,6 +62,7 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
@@ -433,17 +434,24 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		Basic parent = new Basic( "Parent" );
 		Basic basik = new Basic( "Hello World" );
 		basik.cover = Cover.HARD;
-		basik.parent = parent;
+		basik.setParent( parent );
 
+		assertThat( basik.version ).isNull();
 		test(
 				context,
 				openSession()
-						.thenCompose( s -> s.persist( basik.parent ).thenCompose( v -> s.persist( basik ) )
-								.thenAccept( v -> assertTrue( basik.prePersisted && !basik.postPersisted ) )
-								.thenAccept( v -> assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted ) )
+						.thenCompose( s -> s.persist( basik.getParent() ).thenCompose( v -> s.persist( basik ) )
+								.thenAccept( v -> {
+									assertTrue( basik.prePersisted && !basik.postPersisted );
+									assertTrue( basik.getParent().prePersisted && !basik.getParent().postPersisted );
+									assertThat( basik.version ).isEqualTo( 0 );
+								} )
 								.thenCompose( v -> s.flush() )
-								.thenAccept( v -> assertTrue( basik.prePersisted && basik.postPersisted ) )
-								.thenAccept( v -> assertTrue( basik.parent.prePersisted && basik.parent.postPersisted ) )
+								.thenAccept( v -> {
+									assertTrue( basik.prePersisted && basik.postPersisted );
+									assertTrue( basik.getParent().prePersisted && basik.getParent().postPersisted );
+									assertThat( basik.version ).isEqualTo( 0 );
+								} )
 						)
 						.thenCompose( v -> openSession()
 								.thenCompose( s2 -> s2.find( Basic.class, basik.getId() )
@@ -452,19 +460,19 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 											assertTrue( basic.loaded );
 											assertEquals( basic.string, basik.string );
 											assertEquals( basic.cover, basik.cover );
-											assertEquals( basic.version, 0 );
+											assertThat( basic.version ).isEqualTo( 0 );
 
 											basic.string = "Goodbye";
 											basic.cover = Cover.SOFT;
-											basic.parent = new Basic( "New Parent" );
-											return s2.persist( basic.parent )
+											basic.setParent( new Basic( "New Parent" ) );
+											return s2.persist( basic.getParent() )
 													.thenCompose( vv -> s2.flush() )
 													.thenAccept( vv -> {
 														assertNotNull( basic );
 														assertTrue( basic.postUpdated && basic.preUpdated );
 														assertFalse( basic.postPersisted && basic.prePersisted );
-														assertTrue( basic.parent.postPersisted && basic.parent.prePersisted );
-														assertEquals( basic.version, 1 );
+														assertTrue( basic.getParent().postPersisted && basic.getParent().prePersisted );
+														assertThat( basic.version ).isEqualTo( 1 );
 													} );
 										} )
 								) )
@@ -473,12 +481,14 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 										.thenCompose( basic -> {
 											assertFalse( basic.postUpdated && basic.preUpdated );
 											assertFalse( basic.postPersisted && basic.prePersisted );
-											assertEquals( basic.version, 1 );
 											assertEquals( basic.string, "Goodbye" );
-											return s3.remove( basic )
-													.thenAccept( vv -> assertTrue( !basic.postRemoved && basic.preRemoved ) )
-													.thenCompose( vv -> s3.flush() )
-													.thenAccept( vv -> assertTrue( basic.postRemoved && basic.preRemoved ) );
+											assertThat( basic.version ).isEqualTo( 1 );
+											return s3.fetch( basic.getParent() )
+													.thenCompose( fetched -> s3.remove( basic )
+															.thenAccept( vv -> assertTrue( !basic.postRemoved && basic.preRemoved ) )
+															.thenCompose( vv -> s3.flush() )
+															.thenAccept( vv -> assertTrue( basic.postRemoved && basic.preRemoved ) )
+													);
 										} )
 								) )
 						.thenCompose( v -> openSession()
@@ -704,6 +714,14 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 		public void setString(String string) {
 			this.string = string;
+		}
+
+		public Basic getParent() {
+			return parent;
+		}
+
+		public void setParent(Basic parent) {
+			this.parent = parent;
 		}
 
 		@Override
