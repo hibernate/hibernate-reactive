@@ -110,7 +110,12 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			return new ReactiveDeleteRowsCoordinatorNoOp( this );
 		}
 
-		return new ReactiveDeleteRowsCoordinatorStandard( this, getRowMutationOperations(), hasPhysicalIndexColumn() );
+		return new ReactiveDeleteRowsCoordinatorStandard(
+				this,
+				getRowMutationOperations(),
+				hasPhysicalIndexColumn(),
+				getFactory().getServiceRegistry()
+		);
 	}
 
 	private ReactiveRemoveCoordinator buildDeleteAllCoordinator() {
@@ -121,7 +126,11 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 			return new ReactiveRemoveCoordinatorNoOp( this );
 		}
 
-		return new ReactiveRemoveCoordinatorStandard( this, this::buildDeleteAllOperation );
+		return new ReactiveRemoveCoordinatorStandard(
+				this,
+				this::buildDeleteAllOperation,
+				getFactory().getServiceRegistry()
+		);
 	}
 
 	@Override
