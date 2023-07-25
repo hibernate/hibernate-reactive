@@ -18,6 +18,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.session.impl.ReactiveSessionFactoryExtensions;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.reactive.stage.Stage;
@@ -49,6 +50,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	private final Context context;
 	private final BaseKey<Stage.Session> contextKeyForSession;
 	private final BaseKey<Stage.StatelessSession> contextKeyForStatelessSession;
+	private final ReactiveSessionFactoryExtensions extensions;
 
 	public StageSessionFactoryImpl(SessionFactoryImpl delegate) {
 		this.delegate = delegate;
@@ -56,6 +58,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		contextKeyForSession = new BaseKey<>( Stage.Session.class, delegate.getUuid() );
 		contextKeyForStatelessSession = new BaseKey<>( Stage.StatelessSession.class, delegate.getUuid() );
+		this.extensions = new ReactiveSessionFactoryExtensions( delegate );
 	}
 
 	@Override
@@ -78,7 +81,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		SessionCreationOptions options = options();
 		return connection( options.getTenantIdentifier() )
 				.thenCompose( connection -> create( connection,
-						() -> new ReactiveSessionImpl( delegate, options, connection ) ) )
+						() -> new ReactiveSessionImpl( delegate, options, connection, extensions ) ) )
 				.thenApply( StageSessionImpl::new );
 	}
 
@@ -86,7 +89,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public CompletionStage<Stage.Session> openSession(String tenantId) {
 		return connection( tenantId )
 				.thenCompose( connection -> create( connection,
-						() -> new ReactiveSessionImpl( delegate, options( tenantId ), connection ) ) )
+						() -> new ReactiveSessionImpl( delegate, options( tenantId ), connection, extensions ) ) )
 				.thenApply( StageSessionImpl::new );
 	}
 

@@ -20,6 +20,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.session.impl.ReactiveSessionFactoryExtensions;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.service.ServiceRegistry;
@@ -46,6 +47,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	private final SessionFactoryImpl delegate;
 	private final ReactiveConnectionPool connectionPool;
 	private final Context context;
+	private final ReactiveSessionFactoryExtensions extensions;
 
 	/**
 	 * We store the current sessions in the Context for simplified use;
@@ -63,6 +65,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		connectionPool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		contextKeyForSession = new BaseKey<>( Mutiny.Session.class, delegate.getUuid() );
 		contextKeyForStatelessSession = new BaseKey<>( Mutiny.StatelessSession.class, delegate.getUuid() );
+		this.extensions = new ReactiveSessionFactoryExtensions( delegate );
 	}
 
 	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
@@ -89,7 +92,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		SessionCreationOptions options = options();
 		return uni( () -> connection( options.getTenantIdentifier() ) )
 				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
+						() -> new ReactiveSessionImpl( delegate, options, reactiveConnection, extensions ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 
@@ -97,7 +100,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public Uni<Mutiny.Session> openSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
 				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+						() -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection, extensions ) ) )
 				.map( s -> new MutinySessionImpl(s, this) );
 	}
 

@@ -161,6 +161,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
+	private final ReactiveSessionFactoryExtensions extensions;
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
 
@@ -169,8 +170,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	public ReactiveSessionImpl(
 			SessionFactoryImpl delegate, SessionCreationOptions options,
-			ReactiveConnection connection) {
+			ReactiveConnection connection, ReactiveSessionFactoryExtensions extensions) {
 		super( delegate, options );
+		this.extensions = extensions;
 		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
 		//matches configuration property "hibernate.jdbc.batch_size" :
@@ -801,7 +803,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		return fastSessionServices.eventListenerGroup_INIT_COLLECTION
+		return extensions.eventListenerGroup_INIT_COLLECTION
 				.fireEventOnEachListener(
 						event,
 						(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection
@@ -836,7 +838,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return extensions.eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
@@ -854,7 +856,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return extensions.eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -878,7 +880,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return extensions.eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
@@ -934,7 +936,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener(
+		return extensions.eventListenerGroup_DELETE.fireEventOnEachListener(
 						event,
 						(ReactiveDeleteEventListener l) -> l::reactiveOnDelete
 				)
@@ -958,8 +960,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
-																					  (ReactiveDeleteEventListener l) -> l::reactiveOnDelete
+		return extensions.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
+																			 (ReactiveDeleteEventListener l) -> l::reactiveOnDelete
 				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -996,7 +998,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_MERGE
+		return extensions.eventListenerGroup_MERGE
 				.fireEventOnEachListener( event, (ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
@@ -1018,7 +1020,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_MERGE
+		return extensions.eventListenerGroup_MERGE
 				.fireEventOnEachListener( event, copiedAlready,(ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -1058,7 +1060,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //		}
 
 		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
-		return fastSessionServices.eventListenerGroup_AUTO_FLUSH
+		return extensions.eventListenerGroup_AUTO_FLUSH
 				.fireEventOnEachListener( event, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush )
 				.thenApply( v -> event.isFlushRequired() );
 	}
@@ -1091,7 +1093,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw LOG.flushDuringCascadeIsDangerous();
 		}
 
-		return fastSessionServices.eventListenerGroup_FLUSH
+		return extensions.eventListenerGroup_FLUSH
 				.fireEventOnEachListener( new FlushEvent( this ), (ReactiveFlushEventListener l) -> l::reactiveOnFlush )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -1140,7 +1142,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener(
+		return extensions.eventListenerGroup_REFRESH.fireEventOnEachListener(
 						event,
 						(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh
 				)
@@ -1163,7 +1165,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH
+		return extensions.eventListenerGroup_REFRESH
 				.fireEventOnEachListener(
 						event,
 						refreshedAlready,
@@ -1188,7 +1190,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener(
+		return extensions.eventListenerGroup_LOCK.fireEventOnEachListener(
 						event,
 						(ReactiveLockEventListener l) -> l::reactiveOnLock
 				)
@@ -1294,14 +1296,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOAD
+		return extensions.eventListenerGroup_LOAD
 				.fireEventOnEachListener( event, loadType,(ReactiveLoadEventListener l) -> l::reactiveOnLoad
 		);
 	}
 
 	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
 		checkOpenOrWaitingForAutoClose();
-		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener(
+		return extensions.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener(
 						event,
 						(ReactiveResolveNaturalIdEventListener l) -> l::onReactiveResolveNaturalId
 				)
