@@ -196,10 +196,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 		return updateRowsCoordinator;
 	}
 
-	public ReactiveInsertRowsCoordinator getInsertRowsCoordinator() {
-		return insertRowsCoordinator;
-	}
-
 	@Override
 	public ReactiveRemoveCoordinator getRemoveCoordinator() {
 		return removeCoordinator;
@@ -208,13 +204,5 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	@Override
 	protected ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
 		return deleteRowsCoordinator;
-	}
-
-	public ReactiveDeleteRowsCoordinator getDeleteRowsCoordinator() {
-		return deleteRowsCoordinator;
-	}
-
-	public ReactiveUpdateRowsCoordinator getUpdateRowsCoordinator() {
-		return updateRowsCoordinator;
 	}
 }
