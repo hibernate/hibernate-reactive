@@ -6,7 +6,6 @@
 package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -36,26 +35,19 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
+import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
-import org.hibernate.query.IllegalNamedQueryOptionsException;
-import org.hibernate.query.IllegalSelectQueryException;
-import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
-import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
@@ -84,7 +76,6 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Tuple;
@@ -131,6 +122,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		@Override
 		public boolean isFetchProfileEnabled(String name) throws UnknownProfileException {
 			return false;
+		}
+
+		@Override
+		public void setEnabledCascadingFetchProfile(CascadingFetchProfile enabledCascadingFetchProfile) {
 		}
 	};
 
@@ -365,7 +360,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 
 		final String previousFetchProfile = getLoadQueryInfluencers().getInternalFetchProfile();
-		getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
+		CascadingFetchProfile profile = CascadingFetchProfile.fromLegacyName( previousFetchProfile );
 		return persister.reactiveLoad( id, entity, getNullSafeLockMode( lockMode ), this )
 				.thenAccept( result -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
@@ -373,7 +368,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
 				} )
-				.whenComplete( (v, e) -> getLoadQueryInfluencers().setInternalFetchProfile( previousFetchProfile ) );
+				.whenComplete( (v, e) -> getLoadQueryInfluencers().setEnabledCascadingFetchProfile( profile ) );
 	}
 
 	@Override
@@ -466,8 +461,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 			// first, check to see if we can use "bytecode proxies"
 
-			final EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
-			final BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
+			final BytecodeEnhancementMetadata enhancementMetadata = persister.getBytecodeEnhancementMetadata();
 			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
 				// if the entity defines a HibernateProxy factory, see if there is an
@@ -487,7 +481,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 
 					// specialized handling for entities with subclasses with a HibernateProxy factory
-					if ( entityMetamodel.hasSubclasses() ) {
+					if ( persister.hasSubclasses() ) {
 						// entities with subclasses that define a ProxyFactory can create
 						// a HibernateProxy.
 //                        LOG.debugf( "Creating a HibernateProxy for to-one association with subclasses to honor laziness" );
@@ -495,7 +489,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
 				}
-				else if ( !entityMetamodel.hasSubclasses() ) {
+				else if ( !persister.hasSubclasses() ) {
 					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
 				}
 				// If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
@@ -732,17 +726,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-	// TODO: copy and paste from ORM: change the visibility instead
-	private <R> HqlInterpretation interpretHql(String hql, Class<R> resultType) {
-		final QueryEngine queryEngine = getFactory().getQueryEngine();
-		return queryEngine.getInterpretationCache()
-				.resolveHqlInterpretation(
-						hql,
-						resultType,
-						s -> queryEngine.getHqlTranslator().translate( hql, resultType )
-				);
-	}
-
 	@Override
 	public <R> ReactiveNativeQueryImplementor<R> createReactiveNativeQuery(String sqlString) {
 		checkOpen();
@@ -868,28 +851,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return query;
 	}
 
-	// TODO: copy and paste from ORM: change the visibility instead
-	private static void checkSelectionQuery(String hql, HqlInterpretation hqlInterpretation) {
-		if ( !( hqlInterpretation.getSqmStatement() instanceof SqmSelectStatement ) ) {
-			throw new IllegalSelectQueryException( "Expecting a selection query, but found `" + hql + "`", hql);
-		}
-	}
-
-	// TODO: copy and paste from ORM: change the visibility instead
-	private static <R> void checkResultType(Class<R> expectedResultType, SqmSelectionQueryImpl<?> query) {
-		final Class<?> resultType = query.getResultType();
-		if ( !expectedResultType.isAssignableFrom( resultType ) ) {
-			throw new QueryTypeMismatchException(
-					String.format(
-							Locale.ROOT,
-							"Query result-type error - expecting `%s`, but found `%s`",
-							expectedResultType.getName(),
-							resultType.getName()
-					)
-			);
-		}
-	}
-
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
@@ -902,13 +863,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
 		checkMutationQuery( hqlString, sqmStatement );
 		return new ReactiveQuerySqmImpl<>( sqmStatement, null, this );
-	}
-
-	//TODO: change visibility in ORM
-	private static void checkMutationQuery(String hqlString, SqmStatement<?> sqmStatement) {
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException( "Expecting a mutation query, but found `" + hqlString + "`" );
-		}
 	}
 
 	@Override
@@ -956,44 +910,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				memento -> createSqmQueryImplementor( queryName, memento ),
 				memento -> createNativeQueryImplementor( queryName, memento )
 		);
-	}
-
-	// TODO: copy and paste from ORM: change the visibility instead
-	private NativeQueryImplementor<?> createNativeQueryImplementor(String queryName, NamedNativeQueryMemento memento) {
-		final NativeQueryImplementor<?> query = memento.toQuery( this );
-		final Boolean isUnequivocallySelect = query.isSelectQuery();
-		if ( isUnequivocallySelect == TRUE ) {
-			throw new IllegalMutationQueryException(
-					"Expecting named native query (" + queryName + ") to be a mutation query, but found `"
-							+ memento.getSqlString() + "`"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic native-SQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
-	}
-
-	// Copy and paste from ORM: change the visibility instead
-	private SqmQueryImplementor<?> createSqmQueryImplementor(String queryName, NamedSqmQueryMemento memento) {
-		final SqmQueryImplementor<?> query = memento.toQuery( this );
-		final SqmStatement<?> sqmStatement = query.getSqmStatement();
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException(
-					"Expecting a named mutation query (" + queryName + "), but found a select statement"
-			);
-		}
-		if ( memento.getLockOptions() != null && ! memento.getLockOptions().isEmpty() ) {
-			throw new IllegalNamedQueryOptionsException(
-					"Named mutation query `" + queryName + "` specified lock-options"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic HQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
 	}
 
 	@Override
@@ -1105,16 +1021,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		for ( String space : affectedEntities.getAffectedSpaces( getFactory() ) ) {
 			query.addSynchronizedQuerySpace( space );
 		}
-	}
-
-	//TODO: deleteme, call superclass method
-	private NamedResultSetMappingMemento getResultSetMappingMemento(String resultSetMappingName) {
-		final NamedResultSetMappingMemento resultSetMappingMemento = getFactory()
-				.getQueryEngine().getNamedObjectRepository().getResultSetMappingMemento( resultSetMappingName );
-		if ( resultSetMappingMemento == null ) {
-			throw new HibernateException( "Could not resolve specified result-set mapping name: " + resultSetMappingName );
-		}
-		return resultSetMappingMemento;
 	}
 
 	@Override

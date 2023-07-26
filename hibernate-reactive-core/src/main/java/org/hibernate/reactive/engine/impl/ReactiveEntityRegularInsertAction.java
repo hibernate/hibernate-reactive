@@ -11,17 +11,13 @@ import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityInsertAction;
-import org.hibernate.cache.spi.access.EntityDataAccess;
-import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -101,28 +97,6 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			postInsert();
 			markExecuted();
 			return stage;
-		}
-	}
-
-	//TODO: copy/paste from superclass (make it protected)
-	private void putCacheIfNecessary() {
-		final EntityPersister persister = getPersister();
-		final SharedSessionContractImplementor session = getSession();
-		if ( isCachePutEnabled( persister, session ) ) {
-			final SessionFactoryImplementor factory = session.getFactory();
-			final CacheEntry ce = persister.buildCacheEntry( getInstance(), getState(), getVersion(), session );
-			setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final Object ck = cache.generateCacheKey( getId(), persister, factory, session.getTenantIdentifier() );
-			final boolean put = cacheInsert( persister, ck );
-
-			final StatisticsImplementor statistics = factory.getStatistics();
-			if ( put && statistics.isStatisticsEnabled() ) {
-				statistics.entityCachePut(
-						StatsHelper.INSTANCE.getRootEntityRole( persister ),
-						cache.getRegion().getName()
-				);
-			}
 		}
 	}
 

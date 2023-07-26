@@ -8,23 +8,17 @@ package org.hibernate.reactive.engine.impl;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityUpdateAction;
-import org.hibernate.cache.spi.access.EntityDataAccess;
-import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.engine.spi.CachedNaturalIdValueSource;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.metamodel.mapping.NaturalIdMapping;
+import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.TypeHelper;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -99,7 +93,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 					}
 					return entry;
 				} )
-				.thenCompose( this::handleGeneratedProperties )
+				.thenCompose( this::reactiveHandleGeneratedProperties )
 				.thenAccept( entry -> {
 					handleDeleted( entry, persister, instance );
 					updateCacheItem( persister, ck, entry );
@@ -113,7 +107,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				} );
 	}
 
-	private CompletionStage<EntityEntry> handleGeneratedProperties(EntityEntry entry) {
+	private CompletionStage<EntityEntry> reactiveHandleGeneratedProperties(EntityEntry entry) {
 		final EntityPersister persister = getPersister();
 		if ( entry.getStatus() == Status.MANAGED || persister.isVersionPropertyGenerated() ) {
 			final SharedSessionContractImplementor session = getSession();
@@ -141,86 +135,17 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 	}
 
-	// TODO: copy/paste from superclass (make it protected)
 	private void handleDeleted(EntityEntry entry, EntityPersister persister, Object instance) {
 		if ( entry.getStatus() == Status.DELETED ) {
-			final EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
-			final boolean isImpliedOptimisticLocking = !entityMetamodel.isVersioned()
-					&& entityMetamodel.getOptimisticLockStyle().isAllOrDirty();
+			final EntityMappingType entityMappingType = persister.getEntityMappingType();
+			final boolean isImpliedOptimisticLocking = !persister.isVersioned()
+					&& entityMappingType.optimisticLockStyle().isAllOrDirty();
 			if ( isImpliedOptimisticLocking && entry.getLoadedState() != null ) {
 				// The entity will be deleted and because we are going to create a delete statement
 				// that uses all the state values in the where clause, the entry state needs to be
 				// updated otherwise the statement execution will not delete any row (see HHH-15218).
 				entry.postUpdate(instance, getState(), getNextVersion() );
 			}
-		}
-	}
-
-	// TODO: copy/paste from superclass (make it protected)
-	private void handleNaturalIdResolutions(EntityPersister persister, SharedSessionContractImplementor session, Object id) {
-		NaturalIdMapping naturalIdMapping = getNaturalIdMapping();
-		if ( naturalIdMapping != null ) {
-			session.getPersistenceContextInternal().getNaturalIdResolutions().manageSharedResolution(
-					id,
-					naturalIdMapping.extractNaturalIdFromEntityState( getState() ),
-					getPreviousNaturalIdValues(),
-					persister,
-					CachedNaturalIdValueSource.UPDATE
-			);
-		}
-	}
-
-	// TODO: copy/paste from superclass (make it protected)
-	private void updateCacheItem(Object previousVersion, Object ck, EntityEntry entry) {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			final SharedSessionContractImplementor session = getSession();
-			if ( isCacheInvalidationRequired( persister, session ) || entry.getStatus() != Status.MANAGED ) {
-				persister.getCacheAccessStrategy().remove( session, ck );
-			}
-			else if ( session.getCacheMode().isPutEnabled() ) {
-				//TODO: inefficient if that cache is just going to ignore the updated state!
-				final CacheEntry ce = persister.buildCacheEntry( getInstance(), getState(), getNextVersion(), getSession() );
-				setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
-				final boolean put = updateCache( persister, previousVersion, ck );
-
-				final StatisticsImplementor statistics = session.getFactory().getStatistics();
-				if ( put && statistics.isStatisticsEnabled() ) {
-					statistics.entityCachePut(
-							StatsHelper.INSTANCE.getRootEntityRole(persister),
-							getPersister().getCacheAccessStrategy().getRegion().getName()
-					);
-				}
-			}
-		}
-	}
-
-	private static boolean isCacheInvalidationRequired(
-			EntityPersister persister,
-			SharedSessionContractImplementor session) {
-		// the cache has to be invalidated when CacheMode is equal to GET or IGNORE
-		return persister.isCacheInvalidationRequired()
-			|| session.getCacheMode() == CacheMode.GET
-			|| session.getCacheMode() == CacheMode.IGNORE;
-	}
-
-	// TODO: copy/paste from superclass (make it protected)
-	private Object lockCacheItem(Object previousVersion) {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			final SharedSessionContractImplementor session = getSession();
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final Object ck = cache.generateCacheKey(
-					getId(),
-					persister,
-					session.getFactory(),
-					session.getTenantIdentifier()
-			);
-			setLock( cache.lockItem( session, ck, previousVersion ) );
-			return ck;
-		}
-		else {
-			return null;
 		}
 	}
 

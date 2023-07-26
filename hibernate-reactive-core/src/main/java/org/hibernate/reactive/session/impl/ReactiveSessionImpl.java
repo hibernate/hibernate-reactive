@@ -7,7 +7,6 @@ package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -68,21 +67,13 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
-import org.hibernate.query.IllegalNamedQueryOptionsException;
-import org.hibernate.query.IllegalSelectQueryException;
-import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryImplementor;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
-import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
@@ -135,9 +126,6 @@ import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttrib
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.spi.NaturalIdResolutions.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.event.spi.LoadEventListener.IMMEDIATE_LOAD;
-import static org.hibernate.event.spi.LoadEventListener.INTERNAL_LOAD_EAGER;
-import static org.hibernate.event.spi.LoadEventListener.INTERNAL_LOAD_LAZY;
-import static org.hibernate.event.spi.LoadEventListener.INTERNAL_LOAD_NULLABLE;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.internal.util.StringHelper.isNotEmpty;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
@@ -272,16 +260,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				} );
 	}
 
-	//TODO: deleteme, use inherited version
-	private static LoadEventListener.LoadType internalLoadType(boolean eager, boolean nullable) {
-		if ( nullable ) {
-			return INTERNAL_LOAD_NULLABLE;
-		}
-		else {
-			return eager ? INTERNAL_LOAD_EAGER : INTERNAL_LOAD_LAZY;
-		}
-	}
-
 	@Override
 	//Note: when making changes to this method, please also consider
 	//      the similar code in Mutiny.fetch() and Stage.fetch()
@@ -398,16 +376,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			markForRollbackOnly();
 			throw getExceptionConverter().convert( e );
 		}
-	}
-
-	private <R> HqlInterpretation interpretHql(String hql, Class<R> resultType) {
-		final QueryEngine queryEngine = getFactory().getQueryEngine();
-		return queryEngine.getInterpretationCache()
-				.resolveHqlInterpretation(
-						hql,
-						resultType,
-						s -> queryEngine.getHqlTranslator().translate( hql, resultType )
-				);
 	}
 
 	@Override
@@ -536,26 +504,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return query;
 	}
 
-	private static void checkSelectionQuery(String hql, HqlInterpretation hqlInterpretation) {
-		if ( !( hqlInterpretation.getSqmStatement() instanceof SqmSelectStatement ) ) {
-			throw new IllegalSelectQueryException( "Expecting a selection query, but found `" + hql + "`", hql);
-		}
-	}
-
-	private static <R> void checkResultType(Class<R> expectedResultType, SqmSelectionQueryImpl<?> query) {
-		final Class<?> resultType = query.getResultType();
-		if ( !expectedResultType.isAssignableFrom( resultType ) ) {
-			throw new QueryTypeMismatchException(
-					String.format(
-							Locale.ROOT,
-							"Query result-type error - expecting `%s`, but found `%s`",
-							expectedResultType.getName(),
-							resultType.getName()
-					)
-			);
-		}
-	}
-
 	@Override
 	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String name, Class<R> resultType) {
 		return (ReactiveQueryImplementor<R>) buildNamedQuery( name, resultType );
@@ -573,13 +521,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
 		checkMutationQuery( hqlString, sqmStatement );
 		return new ReactiveQuerySqmImpl<>( sqmStatement, null, this );
-	}
-
-	// Change visibility in ORM
-	private static void checkMutationQuery(String hqlString, SqmStatement<?> sqmStatement) {
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException( "Expecting a mutation query, but found `" + hqlString + "`" );
-		}
 	}
 
 	@Override
@@ -622,44 +563,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				memento -> createSqmQueryImplementor( queryName, memento ),
 				memento -> createNativeQueryImplementor( queryName, memento )
 		);
-	}
-
-	// Copy and paste from ORM: change the visibility instead
-	private NativeQueryImplementor<?> createNativeQueryImplementor(String queryName, NamedNativeQueryMemento memento) {
-		final NativeQueryImplementor<?> query = memento.toQuery( this );
-		final Boolean isUnequivocallySelect = query.isSelectQuery();
-		if ( isUnequivocallySelect == TRUE ) {
-			throw new IllegalMutationQueryException(
-					"Expecting named native query (" + queryName + ") to be a mutation query, but found `"
-							+ memento.getSqlString() + "`"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic native-SQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
-	}
-
-	// Copy and paste from ORM: change the visibility instead
-	private SqmQueryImplementor<?> createSqmQueryImplementor(String queryName, NamedSqmQueryMemento memento) {
-		final SqmQueryImplementor<?> query = memento.toQuery( this );
-		final SqmStatement<?> sqmStatement = query.getSqmStatement();
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException(
-					"Expecting a named mutation query (" + queryName + "), but found a select statement"
-			);
-		}
-		if ( memento.getLockOptions() != null && ! memento.getLockOptions().isEmpty() ) {
-			throw new IllegalNamedQueryOptionsException(
-					"Named mutation query `" + queryName + "` specified lock-options"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic HQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
 	}
 
 	@Override
@@ -748,14 +651,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		if ( mapping == null ) {
 			throw new IllegalArgumentException( "result set mapping does not exist: " + mappingName );
 		}
-//
-//		ResultSetMappingImpl resultSetMapping = new ResultSetMappingImpl( "impl" );
-//		if ( resultType != null ) {
-//			Class<?> mappedResultType = resultSetMapping.;
-//			if ( !resultType.equals( mappedResultType ) ) {
-//				throw new IllegalArgumentException( "incorrect result type for result set mapping: " + mappingName + " has type " + mappedResultType.getName() );
-//			}
-//		}
 
 		return new ResultSetMapping<>() {
 			@Override
@@ -767,16 +662,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				return resultType;
 			}
 		};
-	}
-
-	//TODO: deleteme, call superclass method
-	private NamedResultSetMappingMemento getResultSetMappingMemento(String resultSetMappingName) {
-		final NamedResultSetMappingMemento resultSetMappingMemento = getFactory()
-				.getQueryEngine().getNamedObjectRepository().getResultSetMappingMemento( resultSetMappingName );
-		if ( resultSetMappingMemento == null ) {
-			throw new HibernateException( "Could not resolve specified result-set mapping name: " + resultSetMappingName );
-		}
-		return resultSetMappingMemento;
 	}
 
 	/**
