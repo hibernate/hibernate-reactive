@@ -7,7 +7,7 @@ package org.hibernate.reactive.engine.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +26,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -314,7 +315,7 @@ public final class Cascade<C> {
 						// Since the loadedState in the EntityEntry is a flat domain type array
 						// We first have to extract the component object and then ask the component type
 						// recursively to give us the value of the sub-property of that object
-						final Type propertyType = entry.getPersister().getPropertyType( componentPath.get(0) );
+						final AttributeMapping propertyType = entry.getPersister().findAttributeMapping( componentPath.get( 0) );
 						if ( propertyType instanceof ComponentType) {
 							loadedValue = entry.getLoadedValue( componentPath.get( 0 ) );
 							ComponentType componentType = (ComponentType) propertyType;
@@ -462,7 +463,7 @@ public final class Cascade<C> {
 				eventSource.getFactory().getMappingMetamodel()
 						.getCollectionDescriptor( type.getRole() );
 		final Type elemType = persister.getElementType();
-
+		// TODO:  not sure how to get the isEntityType, isAnyType & isComponentType for if(...) below
 		CascadePoint elementsCascadePoint = cascadePoint;
 		if ( cascadePoint == CascadePoint.AFTER_INSERT_BEFORE_DELETE ) {
 			cascadePoint = CascadePoint.AFTER_INSERT_BEFORE_DELETE_VIA_COLLECTION;
@@ -568,16 +569,16 @@ public final class Cascade<C> {
 	 */
 	private void deleteOrphans(String entityName, PersistentCollection<?> pc) throws HibernateException {
 		//TODO: suck this logic into the collection!
-		final Collection<?> orphans;
+		final List<?> orphans;
 		if ( pc.wasInitialized() ) {
 			final CollectionEntry ce = eventSource.getPersistenceContextInternal().getCollectionEntry( pc );
 			if ( ce == null ) {
 				return;
 			}
-			orphans = ce.getOrphans( entityName, pc );
+			orphans = Arrays.asList( ce.getOrphans( entityName, pc ).toArray() );
 		}
 		else {
-			orphans = pc.getQueuedOrphans( entityName );
+			orphans = Arrays.asList( pc.getQueuedOrphans( entityName ).toArray() );
 		}
 
 		ReactiveSession session = (ReactiveSession) eventSource;

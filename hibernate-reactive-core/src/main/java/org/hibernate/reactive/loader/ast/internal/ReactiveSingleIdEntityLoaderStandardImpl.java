@@ -19,7 +19,6 @@ import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.SingleIdEntityLoaderStandardImpl;
 import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.persister.entity.Loadable;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
@@ -210,7 +209,7 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
 
 		return new ReactiveSingleIdLoadPlan<>(
-				(Loadable) getLoadable(),
+				getLoadable(),
 				getLoadable().getIdentifierMapping(),
 				sqlAst,
 				jdbcParameters,
