@@ -6,9 +6,8 @@
 package org.hibernate.reactive.issue;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.BaseReactiveTest;
 
@@ -28,7 +27,6 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.atIndex;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -36,14 +34,7 @@ public class JoinedSubclassInheritanceWithManyToOneTest extends BaseReactiveTest
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return Set.of( ItemInstance.class, ClothingItemInstance.class, ClothingItem.class, Item.class );
-	}
-
-	@Override
-	protected CompletionStage<Void> cleanDb() {
-		// Cleaning the db after the test fails on CI sometimes.
-		// In this particular case is not necessary (there is only one test).
-		return voidFuture();
+		return List.of( ItemInstance.class, ClothingItemInstance.class, ClothingItem.class, Item.class );
 	}
 
 	/**
