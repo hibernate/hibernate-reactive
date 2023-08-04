@@ -93,7 +93,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions()
 																	.findGreatestLockMode() ) );
 
-		final SqmSelectStatement<?> sqmStatement = (SqmSelectStatement<?>) getSqmStatement();
+		final SqmSelectStatement<?> sqmStatement = getSqmStatement();
 		final boolean containsCollectionFetches = sqmStatement.containsCollectionFetches();
 		final boolean hasLimit = hasLimit( sqmStatement, getQueryOptions() );
 		final boolean needsDistinct = containsCollectionFetches

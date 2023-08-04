@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-
-
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
@@ -18,8 +16,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
-
-
 
 /**
  * A Hibernate {@link org.hibernate.SessionFactory} that can be

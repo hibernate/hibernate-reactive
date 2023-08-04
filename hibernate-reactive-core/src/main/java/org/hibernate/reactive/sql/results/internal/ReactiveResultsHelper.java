@@ -102,6 +102,11 @@ public class ReactiveResultsHelper {
 			public SqlAstCreationContext getSqlAstCreationContext() {
 				return sessionFactory;
 			}
+
+			@Override
+			public ExecutionContext getExecutionContext() {
+				return executionContext;
+			}
 		};
 	}
 

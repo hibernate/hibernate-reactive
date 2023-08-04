@@ -24,13 +24,13 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.ValuesAnalysis;
 
 public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInsert implements ReactiveMutationExecutor {
 
 	public ReactiveMutationExecutorPostInsert(
-			MutationOperationGroup mutationOperationGroup,
+			EntityMutationOperationGroup mutationOperationGroup,
 			SharedSessionContractImplementor session) {
 		super( mutationOperationGroup, session );
 	}

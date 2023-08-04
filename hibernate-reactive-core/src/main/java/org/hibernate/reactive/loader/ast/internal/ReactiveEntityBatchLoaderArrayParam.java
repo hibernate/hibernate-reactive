@@ -18,7 +18,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.EntityBatchLoaderArrayParam;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.MultiKeyLoadHelper;
-import org.hibernate.loader.ast.internal.Preparable;
 import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.loader.ast.spi.SqlArrayMultiKeyLoader;
 import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
@@ -31,8 +30,6 @@ import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.type.BasicType;
-import org.hibernate.type.BasicTypeRegistry;
 
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
@@ -41,7 +38,7 @@ import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LO
  * @see EntityBatchLoaderArrayParam
  */
 public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEntityLoaderSupport<T>
-		implements EntityBatchLoader<CompletionStage<T>>, ReactiveSingleIdEntityLoader<T>, SqlArrayMultiKeyLoader, Preparable {
+		implements EntityBatchLoader<CompletionStage<T>>, ReactiveSingleIdEntityLoader<T>, SqlArrayMultiKeyLoader {
 
 	private final int domainBatchSize;
 
@@ -65,6 +62,32 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 					domainBatchSize
 			);
 		}
+
+		identifierMapping = (BasicEntityIdentifierMapping) getLoadable().getIdentifierMapping();
+		final Class<?> arrayClass =
+				Array.newInstance( identifierMapping.getJavaType().getJavaTypeClass(), 0 ).getClass();
+		arrayJdbcMapping = MultiKeyLoadHelper.resolveArrayJdbcMapping(
+				sessionFactory.getTypeConfiguration().getBasicTypeRegistry().getRegisteredType( arrayClass ),
+				identifierMapping.getJdbcMapping(),
+				arrayClass,
+				sessionFactory
+		);
+
+		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
+		sqlAst = LoaderSelectBuilder.createSelectBySingleArrayParameter(
+				getLoadable(),
+				identifierMapping,
+				new LoadQueryInfluencers( sessionFactory ),
+				LockOptions.NONE,
+				jdbcParameter,
+				sessionFactory
+		);
+
+		jdbcSelectOperation = sessionFactory.getJdbcServices()
+				.getJdbcEnvironment()
+				.getSqlAstTranslatorFactory()
+				.buildSelectTranslator( sessionFactory, sqlAst )
+				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 	}
 
 	@Override
@@ -143,39 +166,6 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 						BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, getLoadable(), session );
 					}
 				} );
-	}
-
-	@Override
-	public void prepare() {
-		identifierMapping = (BasicEntityIdentifierMapping) getLoadable().getIdentifierMapping();
-		final Class<?> arrayClass = Array.newInstance( identifierMapping.getJavaType().getJavaTypeClass(), 0 )
-				.getClass();
-
-		final BasicTypeRegistry basicTypeRegistry = sessionFactory.getTypeConfiguration().getBasicTypeRegistry();
-		final BasicType<?> arrayBasicType = basicTypeRegistry.getRegisteredType( arrayClass );
-
-		arrayJdbcMapping = MultiKeyLoadHelper.resolveArrayJdbcMapping(
-				arrayBasicType,
-				identifierMapping.getJdbcMapping(),
-				arrayClass,
-				sessionFactory
-		);
-
-		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
-		sqlAst = LoaderSelectBuilder.createSelectBySingleArrayParameter(
-				getLoadable(),
-				identifierMapping,
-				LoadQueryInfluencers.NONE,
-				LockOptions.NONE,
-				jdbcParameter,
-				sessionFactory
-		);
-
-		jdbcSelectOperation = sessionFactory.getJdbcServices()
-				.getJdbcEnvironment()
-				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( sessionFactory, sqlAst )
-				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 	}
 
 	@Override

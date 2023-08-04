@@ -10,8 +10,10 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.CollectionLoader;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderNamedQuery;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSingleKey;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -26,18 +28,17 @@ public interface ReactiveAbstractCollectionPersister extends ReactiveCollectionP
         return ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
     }
 
-   default boolean isCollectionLoaderReusable(LoadQueryInfluencers loadQueryInfluencers) {
-        // we can reuse it so long as none of the enabled influencers affect it
-        return loadQueryInfluencers == LoadQueryInfluencers.NONE || getAttributeMapping().isNotAffectedByInfluencers( loadQueryInfluencers );
+    /**
+     * See org.hibernate.persister.collection.AbstractCollectionPersister#createNamedQueryCollectionLoader
+     */
+    default CollectionLoader createNamedQueryCollectionLoader(CollectionPersister persister, NamedQueryMemento namedQueryMemento) {
+        return new ReactiveCollectionLoaderNamedQuery(persister, namedQueryMemento);
     }
 
-    default CollectionLoader generateCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-        final int batchSize = getBatchSize();
-        if ( batchSize > 1 ) {
-            return getFactory().getServiceRegistry()
-                    .getService( BatchLoaderFactory.class )
-                    .createCollectionBatchLoader( batchSize, loadQueryInfluencers, getAttributeMapping(), getFactory() );
-        }
+    /**
+     * See org.hibernate.persister.collection.AbstractCollectionPersister#createSingleKeyCollectionLoader
+     */
+    default CollectionLoader createSingleKeyCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
         return new ReactiveCollectionLoaderSingleKey( getAttributeMapping(), loadQueryInfluencers, getFactory() );
     }
 

@@ -44,6 +44,7 @@ import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
 import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
+import org.hibernate.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
 import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
@@ -82,6 +83,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 		jdbcTypeRegistry.addDescriptor( ReactiveArrayJdbcType.INSTANCE );
+		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
 
 		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect || dialect instanceof OracleDialect ) {
 			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
@@ -186,11 +188,6 @@ public class ReactiveTypeContributor implements TypeContributor {
 		@Override
 		public String getRawTypeName() {
 			return "json";
-		}
-
-		@Override
-		public String getTypeNamePattern() {
-			return "";
 		}
 
 		@Override

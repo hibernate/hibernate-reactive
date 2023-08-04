@@ -118,11 +118,10 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 naturalIdMapping().normalizeInput( naturalIdValue ),
                 NaturalIdLoadOptions.NONE,
                 (tableGroup, creationState) -> entityDescriptor().getIdentifierMapping().createDomainResult(
-                        tableGroup.getNavigablePath().append( EntityIdentifierMapping.ROLE_LOCAL_NAME ),
+                        tableGroup.getNavigablePath().append( EntityIdentifierMapping.ID_ROLE_NAME ),
                         tableGroup,
                         null,
-                        creationState
-                ),
+                        creationState ),
                 ReactiveNaturalIdLoaderDelegate::visitFetches,
                 ReactiveNaturalIdLoaderDelegate::statsEnabled,
                 (result, startToken) -> {

@@ -9,11 +9,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.spi.LoadState;
-import jakarta.persistence.spi.PersistenceProvider;
-import jakarta.persistence.spi.PersistenceUnitInfo;
-import jakarta.persistence.spi.ProviderUtil;
 
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
@@ -26,8 +21,16 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
 import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
 
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.spi.LoadState;
+import jakarta.persistence.spi.PersistenceProvider;
+import jakarta.persistence.spi.PersistenceUnitInfo;
+import jakarta.persistence.spi.ProviderUtil;
+
 /**
- * JPA {@link PersistenceProvider} for Hibernate Reactive.
+ * A JPA {@link PersistenceProvider} for Hibernate Reactive.
+ *
+ * @see org.hibernate.jpa.HibernatePersistenceProvider
  */
 public class ReactivePersistenceProvider implements PersistenceProvider {
 
@@ -43,19 +46,22 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 	@Override
 	public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
 		log.tracef( "Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName );
-		final Map immutableProperties = immutable( properties );
+		final Map<?, ?> immutableProperties = immutable( properties );
 		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceUnitName, immutableProperties );
 		if ( builder == null ) {
 			log.trace( "Could not obtain matching EntityManagerFactoryBuilder, returning null" );
 			return null;
 		}
-		else {
-			return builder.build();
-		}
+		return builder.build();
 	}
 
-	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties) {
-		log.tracef( "Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s", persistenceUnitName );
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(
+			String persistenceUnitName,
+			Map<?, ?> properties) {
+		log.tracef(
+				"Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
+				persistenceUnitName
+		);
 
 		final List<ParsedPersistenceXmlDescriptor> units;
 		try {
@@ -80,14 +86,15 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 					persistenceUnitName
 			);
 
-			final boolean matches = persistenceUnitName == null || persistenceUnit.getName().equals( persistenceUnitName );
+			final boolean matches = persistenceUnitName == null || persistenceUnit.getName()
+					.equals( persistenceUnitName );
 			if ( !matches ) {
 				log.debug( "Excluding from consideration due to name mis-match" );
 				continue;
 			}
 
 			// See if we (Hibernate Reactive) are the persistence provider
-			if ( ! ReactiveProviderChecker.isProvider( persistenceUnit, properties ) ) {
+			if ( !ReactiveProviderChecker.isProvider( persistenceUnit, properties ) ) {
 				log.debug( "Excluding from consideration due to provider mis-match" );
 				continue;
 			}
@@ -99,8 +106,7 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static Map immutable(Map properties) {
+	private static Map<?, ?> immutable(Map<?, ?> properties) {
 		return properties == null ? Collections.emptyMap() : Collections.unmodifiableMap( properties );
 	}
 
@@ -137,11 +143,11 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 		return true;
 	}
 
-	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map<?, ?> integration) {
 		return getEntityManagerFactoryBuilder( new PersistenceUnitInfoDescriptor( info ), integration );
 	}
 
-	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitDescriptor persistenceUnitDescriptor, Map integration) {
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitDescriptor persistenceUnitDescriptor, Map<?, ?> integration) {
 		return new ReactiveEntityManagerFactoryBuilder( persistenceUnitDescriptor, integration );
 	}
 
@@ -150,13 +156,15 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 		public LoadState isLoadedWithoutReference(Object proxy, String property) {
 			return PersistenceUtilHelper.isLoadedWithoutReference( proxy, property, cache );
 		}
+
 		@Override
 		public LoadState isLoadedWithReference(Object proxy, String property) {
 			return PersistenceUtilHelper.isLoadedWithReference( proxy, property, cache );
 		}
+
 		@Override
 		public LoadState isLoaded(Object o) {
-			return PersistenceUtilHelper.isLoaded(o);
+			return PersistenceUtilHelper.getLoadState( o );
 		}
 	};
 
