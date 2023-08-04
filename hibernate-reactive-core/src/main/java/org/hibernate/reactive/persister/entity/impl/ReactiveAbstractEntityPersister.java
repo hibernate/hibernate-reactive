@@ -261,10 +261,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	@Override
 	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
-		return getReactiveSingleIdEntityLoader().reactiveLoadDatabaseSnapshot( id, session );
+		ReactiveSingleIdEntityLoader<?> reactiveSingleIdEntityLoader = getReactiveSingleIdEntityLoader();
+		return reactiveSingleIdEntityLoader.reactiveLoadDatabaseSnapshot( id, session );
 	}
 
-	ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader();
+	default ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
+		AbstractEntityPersister delegate = delegate();
+		return (ReactiveSingleIdEntityLoader<?>) delegate.getSingleIdLoader();
+	}
 
 	/**
 	 * @see AbstractEntityPersister#getCurrentVersion(Object, SharedSessionContractImplementor)

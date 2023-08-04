@@ -21,7 +21,7 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.ValuesAnalysis;
 
 import static org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil.checkResults;
@@ -31,7 +31,7 @@ import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER
 public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInsert implements ReactiveMutationExecutor {
 
 	public ReactiveMutationExecutorPostInsert(
-			MutationOperationGroup mutationOperationGroup,
+			EntityMutationOperationGroup mutationOperationGroup,
 			SharedSessionContractImplementor session) {
 		super( mutationOperationGroup, session );
 	}
@@ -49,17 +49,16 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 						session
 				)
 				.thenApply( this::logId )
-				.thenCompose(id -> {
-					if (secondaryTablesStatementGroup == null) {
-						return completedFuture(id);
+				.thenCompose( id -> {
+					if ( secondaryTablesStatementGroup == null ) {
+						return completedFuture( id );
 					}
-					AtomicReference<CompletionStage<Object>>  res = new AtomicReference<>(completedFuture(id));
-					secondaryTablesStatementGroup
-							.forEachStatement( (tableName, statementDetails) -> res
-									.set( res.get().thenCompose( i -> reactiveExecuteWithId( i, tableName, statementDetails, inclusionChecker, resultChecker, session ) ) )
-							);
+					AtomicReference<CompletionStage<Object>> res = new AtomicReference<>( completedFuture( id ) );
+					secondaryTablesStatementGroup.forEachStatement( (tableName, statementDetails) -> {
+						res.set( res.get().thenCompose( i -> reactiveExecuteWithId( i, tableName, statementDetails, inclusionChecker, resultChecker, session ) ) );
+					} );
 					return res.get();
-				});
+				} );
 	}
 
 	private Object logId(Object identifier) {
@@ -91,8 +90,10 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
 			if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
-				MODEL_MUTATION_LOGGER
-						.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
+				MODEL_MUTATION_LOGGER.tracef(
+						"Skipping execution of secondary insert : %s",
+						tableDetails.getTableName()
+				);
 			}
 			return completedFuture( id );
 		}
@@ -137,6 +138,4 @@ public class ReactiveMutationExecutorPostInsert extends MutationExecutorPostInse
 					valueBindings.afterStatement( tableDetails );
 				} );
 	}
-
-
 }

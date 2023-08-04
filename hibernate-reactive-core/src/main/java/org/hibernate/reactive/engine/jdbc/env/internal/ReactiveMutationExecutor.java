@@ -115,7 +115,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 						// the optional table did not have a row
 						return voidFuture();
 					}
-					checkResults( session, statementDetails, resultChecker, affectedRowCount, -1);
+					checkResults( session, statementDetails, resultChecker, affectedRowCount, -1 );
 					return voidFuture();
 				} )
 				.whenComplete( (o, throwable) -> {

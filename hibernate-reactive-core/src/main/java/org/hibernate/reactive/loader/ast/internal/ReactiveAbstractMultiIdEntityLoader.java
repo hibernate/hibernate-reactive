@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.loader.ast.internal.Preparable;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -20,7 +19,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveMultiIdEntityLoader;
 /**
  * @see org.hibernate.loader.ast.internal.AbstractMultiIdEntityLoader
  */
-public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements ReactiveMultiIdEntityLoader<T>, Preparable {
+public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements ReactiveMultiIdEntityLoader<T> {
 
 	private final EntityMappingType entityDescriptor;
 	private final SessionFactoryImplementor sessionFactory;
@@ -30,11 +29,7 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 	public ReactiveAbstractMultiIdEntityLoader(EntityMappingType entityDescriptor, SessionFactoryImplementor sessionFactory) {
 		this.entityDescriptor = entityDescriptor;
 		this.sessionFactory = sessionFactory;
-	}
-
-	@Override
-	public void prepare() {
-		identifierMapping = getLoadable().getIdentifierMapping();
+		this.identifierMapping = getLoadable().getIdentifierMapping();
 	}
 
 	protected EntityMappingType getEntityDescriptor() {
@@ -55,7 +50,7 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 	}
 
 	@Override
-	public final <K> CompletionStage<List<T>> load(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
+	public final <K> CompletionStage<List<T>> reactiveLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
 		Objects.requireNonNull( ids );
 
 		return loadOptions.isOrderReturnEnabled()

@@ -209,7 +209,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 		return factory.getQueryEngine()
 				.getSqmFunctionRegistry()
 				.findFunctionDescriptor( "count" )
-				.generateSqmExpression( arg, null, factory.getQueryEngine(), typeConfiguration )
+				.generateSqmExpression( arg, null, factory.getQueryEngine() )
 				.convertToSqlAst( sqmConverter );
 	}
 }

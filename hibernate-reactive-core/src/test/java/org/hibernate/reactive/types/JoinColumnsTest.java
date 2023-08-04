@@ -10,14 +10,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletionException;
 
 import org.hibernate.TransientPropertyValueException;
 import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Column;
@@ -33,8 +31,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -171,19 +170,13 @@ public class JoinColumnsTest extends BaseReactiveTest {
 		final SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.name = "Joined entity name";
 
-		test( context, getSessionFactory()
+		test( context, assertThrown( IllegalStateException.class, getSessionFactory()
 				.withTransaction( (session, tx) -> {
-							sampleJoinEntity.sampleEntity = sampleEntity;
-							sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
-							return session.persist( sampleJoinEntity );
-						} )
-				.handle( (session, throwable) -> {
-					assertNotNull( throwable );
-					assertEquals( CompletionException.class, throwable.getClass() );
-					assertEquals( IllegalStateException.class, throwable.getCause().getClass() );
-					assertEquals( TransientPropertyValueException.class, throwable.getCause().getCause().getClass() );
-					return null;
-				} )
+					sampleJoinEntity.sampleEntity = sampleEntity;
+					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
+					return session.persist( sampleJoinEntity );
+				} ) )
+				.thenAccept( t -> assertThat( t ).hasCauseInstanceOf( TransientPropertyValueException.class ) )
 		);
 	}
 
@@ -197,19 +190,13 @@ public class JoinColumnsTest extends BaseReactiveTest {
 		final SampleJoinEntity sampleJoinEntity = new SampleJoinEntity();
 		sampleJoinEntity.name = "Joined entity name";
 
-		test( context, getMutinySessionFactory()
-				.withTransaction( (session, tx) -> {
+		test( context, assertThrown( IllegalStateException.class, getMutinySessionFactory()
+				.withTransaction( session -> {
 					sampleJoinEntity.sampleEntity = sampleEntity;
 					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
 					return session.persist( sampleJoinEntity );
-				} )
-				.onItem().invoke( v -> context.failNow( "Expected exception not thrown" ) )
-				.onFailure().recoverWithUni( throwable -> {
-					assertNotNull( throwable );
-					assertEquals( IllegalStateException.class, throwable.getClass() );
-					assertEquals( TransientPropertyValueException.class, throwable.getCause().getClass() );
-					return Uni.createFrom().nullItem();
-				} )
+				} ) )
+				.invoke( t -> assertThat( t ).hasCauseInstanceOf( TransientPropertyValueException.class ) )
 		);
 	}
 

@@ -19,6 +19,8 @@ import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.BasicCollectionPersister;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveDeleteRowsCoordinator;
@@ -47,8 +49,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	private final ReactiveDeleteRowsCoordinator deleteRowsCoordinator;
 	private final ReactiveRemoveCoordinator removeCoordinator;
 
-	private CollectionLoader reusableCollectionLoader;
-
 	public ReactiveBasicCollectionPersister(
 			Collection collectionBinding,
 			CollectionDataAccess cacheAccessStrategy,
@@ -62,17 +62,13 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-		if ( isCollectionLoaderReusable( loadQueryInfluencers ) ) {
-			if ( reusableCollectionLoader == null ) {
-				reusableCollectionLoader = ReactiveAbstractCollectionPersister.super
-						.generateCollectionLoader( LoadQueryInfluencers.NONE );
-			}
-			return reusableCollectionLoader;
-		}
+	public CollectionLoader createNamedQueryCollectionLoader(CollectionPersister persister, NamedQueryMemento namedQueryMemento) {
+		return ReactiveAbstractCollectionPersister.super.createNamedQueryCollectionLoader( persister, namedQueryMemento );
+	}
 
-		// create a one-off
-		return ReactiveAbstractCollectionPersister.super.generateCollectionLoader( loadQueryInfluencers );
+	@Override
+	public CollectionLoader createSingleKeyCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		return ReactiveAbstractCollectionPersister.super.createSingleKeyCollectionLoader( loadQueryInfluencers );
 	}
 
 	private ReactiveUpdateRowsCoordinator buildUpdateRowCoordinator() {
