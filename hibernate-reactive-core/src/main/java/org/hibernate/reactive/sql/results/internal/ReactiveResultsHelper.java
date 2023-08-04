@@ -102,11 +102,16 @@ public class ReactiveResultsHelper {
 			public SqlAstCreationContext getSqlAstCreationContext() {
 				return sessionFactory;
 			}
+
+			@Override
+			public ExecutionContext getExecutionContext() {
+				return executionContext;
+			}
 		};
 	}
 
 	private static void logInitializers(Map<NavigablePath, Initializer> initializerMap) {
-		if ( ! ResultsLogger.DEBUG_ENABLED ) {
+		if ( ! ResultsLogger.RESULTS_MESSAGE_LOGGER.isDebugEnabled() ) {
 			return;
 		}
 

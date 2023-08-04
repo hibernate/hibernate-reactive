@@ -24,7 +24,9 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
 import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
@@ -43,7 +45,6 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
-import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -74,6 +75,16 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
+	}
+
+	@Override
+	protected SingleIdEntityLoader<?> buildSingleIdEntityLoader() {
+		return reactiveDelegate.buildSingleIdEntityLoader();
+	}
+
+	@Override
+	protected MultiIdEntityLoader<Object> buildMultiIdLoader() {
+		return reactiveDelegate.buildMultiIdEntityLoader();
 	}
 
 	@Override
@@ -173,11 +184,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
-	}
-
-	@Override
-	public ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
-		return reactiveDelegate.getSingleIdEntityLoader();
 	}
 
 	@Override

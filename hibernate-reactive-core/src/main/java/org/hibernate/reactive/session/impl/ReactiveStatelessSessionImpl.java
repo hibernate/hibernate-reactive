@@ -6,7 +6,6 @@
 package org.hibernate.reactive.session.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -40,22 +39,14 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
-import org.hibernate.query.IllegalNamedQueryOptionsException;
-import org.hibernate.query.IllegalSelectQueryException;
-import org.hibernate.query.QueryTypeMismatchException;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
-import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
@@ -617,12 +608,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-
 	@Override
 	public <T> RootGraphImplementor<T> createEntityGraph(Class<T> entity) {
-		return new RootGraphImpl<>( null,
-									getFactory().getJpaMetamodel().entity( entity ),
-									getSessionFactory().getJpaMetamodel() );
+		return new RootGraphImpl<>( null, getFactory().getJpaMetamodel().entity( entity ) );
 	}
 
 	@Override
@@ -635,14 +623,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return (RootGraphImplementor<T>) entityGraph;
 	}
 
-	private RootGraphImplementor<?> createEntityGraph(String graphName) {
-		checkOpen();
-		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
-		return named != null
-				? named.makeRootGraph( graphName, true )
-				: null;
-	}
-
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> RootGraphImplementor<T> getEntityGraph(Class<T> entity, String name) {
@@ -651,15 +631,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw LOG.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
-	}
-
-	private RootGraphImplementor<?> getEntityGraph(String graphName) {
-		checkOpen();
-		final RootGraphImplementor<?> named = getFactory().findEntityGraphByName( graphName );
-		if ( named == null ) {
-			throw new IllegalArgumentException( "Could not locate EntityGraph with given name : " + graphName );
-		}
-		return named;
 	}
 
 	@Override
@@ -730,17 +701,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			markForRollbackOnly();
 			throw getExceptionConverter().convert( e );
 		}
-	}
-
-	// TODO: copy and paste from ORM: change the visibility instead
-	private <R> HqlInterpretation interpretHql(String hql, Class<R> resultType) {
-		final QueryEngine queryEngine = getFactory().getQueryEngine();
-		return queryEngine.getInterpretationCache()
-				.resolveHqlInterpretation(
-						hql,
-						resultType,
-						s -> queryEngine.getHqlTranslator().translate( hql, resultType )
-				);
 	}
 
 	@Override
@@ -868,28 +828,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return query;
 	}
 
-	// TODO: copy and paste from ORM: change the visibility instead
-	private static void checkSelectionQuery(String hql, HqlInterpretation hqlInterpretation) {
-		if ( !( hqlInterpretation.getSqmStatement() instanceof SqmSelectStatement ) ) {
-			throw new IllegalSelectQueryException( "Expecting a selection query, but found `" + hql + "`", hql);
-		}
-	}
-
-	// TODO: copy and paste from ORM: change the visibility instead
-	private static <R> void checkResultType(Class<R> expectedResultType, SqmSelectionQueryImpl<?> query) {
-		final Class<?> resultType = query.getResultType();
-		if ( !expectedResultType.isAssignableFrom( resultType ) ) {
-			throw new QueryTypeMismatchException(
-					String.format(
-							Locale.ROOT,
-							"Query result-type error - expecting `%s`, but found `%s`",
-							expectedResultType.getName(),
-							resultType.getName()
-					)
-			);
-		}
-	}
-
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
@@ -902,13 +840,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
 		checkMutationQuery( hqlString, sqmStatement );
 		return new ReactiveQuerySqmImpl<>( sqmStatement, null, this );
-	}
-
-	//TODO: change visibility in ORM
-	private static void checkMutationQuery(String hqlString, SqmStatement<?> sqmStatement) {
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException( "Expecting a mutation query, but found `" + hqlString + "`" );
-		}
 	}
 
 	@Override
@@ -956,44 +887,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				memento -> createSqmQueryImplementor( queryName, memento ),
 				memento -> createNativeQueryImplementor( queryName, memento )
 		);
-	}
-
-	// TODO: copy and paste from ORM: change the visibility instead
-	private NativeQueryImplementor<?> createNativeQueryImplementor(String queryName, NamedNativeQueryMemento memento) {
-		final NativeQueryImplementor<?> query = memento.toQuery( this );
-		final Boolean isUnequivocallySelect = query.isSelectQuery();
-		if ( isUnequivocallySelect == TRUE ) {
-			throw new IllegalMutationQueryException(
-					"Expecting named native query (" + queryName + ") to be a mutation query, but found `"
-							+ memento.getSqlString() + "`"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic native-SQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
-	}
-
-	// Copy and paste from ORM: change the visibility instead
-	private SqmQueryImplementor<?> createSqmQueryImplementor(String queryName, NamedSqmQueryMemento memento) {
-		final SqmQueryImplementor<?> query = memento.toQuery( this );
-		final SqmStatement<?> sqmStatement = query.getSqmStatement();
-		if ( !( sqmStatement instanceof SqmDmlStatement ) ) {
-			throw new IllegalMutationQueryException(
-					"Expecting a named mutation query (" + queryName + "), but found a select statement"
-			);
-		}
-		if ( memento.getLockOptions() != null && ! memento.getLockOptions().isEmpty() ) {
-			throw new IllegalNamedQueryOptionsException(
-					"Named mutation query `" + queryName + "` specified lock-options"
-			);
-		}
-		if ( isEmpty( query.getComment() ) ) {
-			query.setComment( "dynamic HQL query" );
-		}
-		applyQuerySettingsAndHints( query );
-		return query;
 	}
 
 	@Override
@@ -1105,16 +998,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		for ( String space : affectedEntities.getAffectedSpaces( getFactory() ) ) {
 			query.addSynchronizedQuerySpace( space );
 		}
-	}
-
-	//TODO: deleteme, call superclass method
-	private NamedResultSetMappingMemento getResultSetMappingMemento(String resultSetMappingName) {
-		final NamedResultSetMappingMemento resultSetMappingMemento = getFactory()
-				.getQueryEngine().getNamedObjectRepository().getResultSetMappingMemento( resultSetMappingName );
-		if ( resultSetMappingMemento == null ) {
-			throw new HibernateException( "Could not resolve specified result-set mapping name: " + resultSetMappingName );
-		}
-		return resultSetMappingMemento;
 	}
 
 	@Override

@@ -60,7 +60,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private final Supplier<DomainParameterXref> getDomainParameterXref;
 
-	private final Supplier<Class<R>> getResultType;
+	private final Supplier<Class<?>> getResultType;
 	private final Supplier<String> getQueryString;
 
 	private final Runnable beforeQuery;
@@ -78,7 +78,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
-			Supplier<Class<R>> getResultType,
+			Supplier<Class<?>> getResultType,
 			Supplier<String> getQueryString,
 			Runnable beforeQuery,
 			Consumer<Boolean> afterQuery,
@@ -106,7 +106,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			Supplier<SqmStatement<?>> getStatement,
 			Supplier<TupleMetadata> getTupleMetadata,
 			Supplier<DomainParameterXref> getDomainParameterXref,
-			Supplier<Class<R>> getResultType,
+			Supplier<Class<?>> getResultType,
 			Supplier<String> getQueryString,
 			Runnable beforeQuery,
 			Consumer<Boolean> afterQuery,
@@ -264,8 +264,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return doList.get();
 	}
 
-	public SqmStatement<?> getSqmStatement() {
-		return getStatement.get();
+	public SqmStatement<R> getSqmStatement() {
+		return (SqmStatement<R>) getStatement.get();
 	}
 
 	public TupleMetadata getTupleMetadata() {
@@ -273,7 +273,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public Class<R> getResultType() {
-		return getResultType.get();
+		return (Class<R>) getResultType.get();
 	}
 
 	public DomainParameterXref getDomainParameterXref() {

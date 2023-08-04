@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.mutation;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
@@ -23,24 +22,27 @@ import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.model.MutationType;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
+import static org.hibernate.sql.model.MutationType.DELETE;
+import static org.hibernate.sql.model.MutationType.INSERT;
+import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinatorOneToMany implements ReactiveUpdateRowsCoordinator{
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = make( Log.class, lookup() );
 	private final RowMutationOperations rowMutationOperations;
 
-	private MutationOperationGroupSingle deleteOperationGroup;
-	private MutationOperationGroupSingle insertOperationGroup;
+	private MutationOperationGroup deleteOperationGroup;
+	private MutationOperationGroup insertOperationGroup;
 
 	public ReactiveUpdateRowsCoordinatorOneToMany(CollectionMutationTarget mutationTarget, RowMutationOperations rowMutationOperations, SessionFactoryImplementor sessionFactory) {
 		super( mutationTarget, rowMutationOperations, sessionFactory );
@@ -80,7 +82,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 	}
 
 	private CompletionStage<Integer> insertRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
-		final MutationOperationGroupSingle operationGroup = resolveInsertGroup();
+		final MutationOperationGroup operationGroup = resolveInsertGroup();
 		final PluralAttributeMapping attributeMapping = getMutationTarget().getTargetPart();
 		final CollectionPersister collectionDescriptor = attributeMapping.getCollectionDescriptor();
 		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor( session, operationGroup, this::getInsertBatchKey );
@@ -119,14 +121,10 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 			Object key,
 			PersistentCollection<?> collection,
 			SharedSessionContractImplementor session) {
-		final MutationOperationGroupSingle operationGroup = resolveDeleteGroup();
+		final MutationOperationGroup operationGroup = resolveDeleteGroup();
 		final PluralAttributeMapping attributeMapping = getMutationTarget().getTargetPart();
 		final CollectionPersister collectionDescriptor = attributeMapping.getCollectionDescriptor();
-		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor(
-				session,
-				operationGroup,
-				this::getDeleteBatchKey
-		);
+		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor( session, operationGroup, this::getDeleteBatchKey );
 
 		final int[] entryPosition = { -1 };
 		return voidFuture()
@@ -150,7 +148,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 				.thenCompose( CompletionStages::voidFuture );
 	}
 
-	private ReactiveMutationExecutor reactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroupSingle operationGroup, BatchKeyAccess batchKeySupplier) {
+	private ReactiveMutationExecutor reactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroup operationGroup, BatchKeyAccess batchKeySupplier) {
 		final MutationExecutorService mutationExecutorService = session
 				.getFactory()
 				.getServiceRegistry()
@@ -160,12 +158,12 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 	}
 
 	//FIXME: Duplicated form ORM
-	private MutationOperationGroupSingle resolveDeleteGroup() {
+	private MutationOperationGroup resolveDeleteGroup() {
 		if ( deleteOperationGroup == null ) {
 			final JdbcMutationOperation operation = rowMutationOperations.getDeleteRowOperation();
 			assert operation != null;
 
-			deleteOperationGroup = new MutationOperationGroupSingle( MutationType.DELETE, getMutationTarget(), operation );
+			deleteOperationGroup = singleOperation( DELETE, getMutationTarget(), operation );
 		}
 
 		return deleteOperationGroup;
@@ -173,12 +171,12 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 
 
 	//FIXME: Duplicated from ORM
-	private MutationOperationGroupSingle resolveInsertGroup() {
+	private MutationOperationGroup resolveInsertGroup() {
 		if ( insertOperationGroup == null ) {
 			final JdbcMutationOperation operation = rowMutationOperations.getInsertRowOperation();
 			assert operation != null;
 
-			insertOperationGroup = new MutationOperationGroupSingle( MutationType.INSERT, getMutationTarget(), operation );
+			insertOperationGroup = singleOperation( INSERT, getMutationTarget(), operation );
 		}
 
 		return insertOperationGroup;

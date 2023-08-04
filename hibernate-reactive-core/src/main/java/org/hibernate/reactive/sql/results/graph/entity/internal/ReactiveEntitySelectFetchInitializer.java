@@ -30,7 +30,6 @@ import org.hibernate.spi.EntityIdentifierNavigablePath;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 import org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
@@ -41,7 +40,6 @@ import static org.hibernate.internal.log.LoggingHelper.toLoggableString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
-import static org.hibernate.sql.results.graph.entity.EntityLoadingLogging.DEBUG_ENABLED;
 import static org.hibernate.sql.results.graph.entity.EntityLoadingLogging.ENTITY_LOADING_LOGGER;
 
 /**
@@ -113,7 +111,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 			return voidFuture();
 		}
 
-		if ( EntityLoadingLogging.TRACE_ENABLED ) {
+		if ( ENTITY_LOADING_LOGGER.isTraceEnabled() ) {
 			ENTITY_LOADING_LOGGER.tracef(
 					"(%s) Beginning Initializer#resolveInstance process for entity (%s) : %s",
 					StringHelper.collapse( this.getClass().getName() ),
@@ -145,7 +143,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 				.findLoadingEntityEntry( entityKey );
 
 		if ( existingLoadingEntry != null ) {
-			if ( DEBUG_ENABLED ) {
+			if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 				ENTITY_LOADING_LOGGER.debugf(
 						"(%s) Found existing loading entry [%s] - using loading instance",
 						CONCRETE_NAME,
@@ -156,7 +154,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 
 			if ( existingLoadingEntry.getEntityInitializer() != this ) {
 				// the entity is already being loaded elsewhere
-				if ( DEBUG_ENABLED ) {
+				if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 					ENTITY_LOADING_LOGGER.debugf(
 							"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
 							CONCRETE_NAME,
@@ -171,7 +169,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 			}
 		}
 
-		if ( DEBUG_ENABLED ) {
+		if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 			ENTITY_LOADING_LOGGER.debugf(
 					"(%s) Invoking session#internalLoad for entity (%s) : %s",
 					CONCRETE_NAME,
@@ -191,7 +189,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 						}
 					}
 
-					if ( DEBUG_ENABLED ) {
+					if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 						ENTITY_LOADING_LOGGER.debugf(
 								"(%s) Entity [%s] : %s has being loaded by session.internalLoad.",
 								CONCRETE_NAME,

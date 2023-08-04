@@ -193,7 +193,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		final boolean needsDistinct = containsCollectionFetches
 				&& ( sqmStatement.usesDistinct() || hasAppliedGraph( getQueryOptions() ) || hasLimit );
 
-		final DomainQueryExecutionContext executionContextToUse = executionContextFordoList( containsCollectionFetches, hasLimit, needsDistinct );
+		final DomainQueryExecutionContext executionContextToUse = executionContextForDoList( containsCollectionFetches, hasLimit, needsDistinct );
 
 		return resolveSelectReactiveQueryPlan()
 				.reactivePerformList( executionContextToUse )

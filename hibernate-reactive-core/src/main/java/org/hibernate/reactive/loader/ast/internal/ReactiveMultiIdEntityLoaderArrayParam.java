@@ -27,7 +27,6 @@ import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.MultiIdEntityLoaderArrayParam;
-import org.hibernate.loader.ast.internal.MultiKeyLoadHelper;
 import org.hibernate.loader.ast.internal.MultiKeyLoadLogging;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
@@ -46,10 +45,10 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.type.BasicType;
-import org.hibernate.type.BasicTypeRegistry;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.arrayList;
 import static org.hibernate.internal.util.collections.CollectionHelper.isEmpty;
+import static org.hibernate.loader.ast.internal.MultiKeyLoadHelper.resolveArrayJdbcMapping;
 import static org.hibernate.reactive.loader.ast.internal.ReactiveLoaderHelper.loadByArrayParameter;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -60,13 +59,24 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMultiIdEntityLoader<E> {
 
-	private JdbcMapping arrayJdbcMapping;
-	private JdbcParameter jdbcParameter;
+	private final JdbcMapping arrayJdbcMapping;
+	private final JdbcParameter jdbcParameter;
 
 	public ReactiveMultiIdEntityLoaderArrayParam(
 			EntityMappingType entityDescriptor,
 			SessionFactoryImplementor sessionFactory) {
 		super( entityDescriptor, sessionFactory );
+		final Class<?> arrayClass = createTypedArray( 0 ).getClass();
+		JdbcMapping jdbcMapping = getIdentifierMapping().getJdbcMapping();
+		BasicType<?> registeredType = getSessionFactory().getTypeConfiguration()
+				.getBasicTypeRegistry()
+				.getRegisteredType( arrayClass );
+		JdbcMapping arrayJdbcMapping1 = resolveArrayJdbcMapping( registeredType, jdbcMapping, arrayClass, getSessionFactory() );
+//		JavaType<Object> objectJavaType = getSessionFactory().getTypeConfiguration()
+//				.getJavaTypeRegistry()
+//				.resolveDescriptor( ReactiveArrayJdbcType.class );
+		arrayJdbcMapping = arrayJdbcMapping1;
+		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
 	}
 
 	@Override
@@ -79,7 +89,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
-		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_TRACE_ENABLED ) {
+		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performOrderedMultiLoad - %s",
 					getLoadable().getEntityName()
@@ -236,7 +246,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
-		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_TRACE_ENABLED ) {
+		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performUnorderedMultiLoad - %s",
 					getLoadable().getEntityName()
@@ -402,23 +412,4 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 		//noinspection unchecked
 		return (X[]) Array.newInstance( getIdentifierMapping().getJavaType().getJavaTypeClass(), length );
 	}
-
-	@Override
-	public void prepare() {
-		super.prepare();
-
-		final Class<?> arrayClass = createTypedArray( 0 ).getClass();
-
-		final BasicTypeRegistry basicTypeRegistry = getSessionFactory().getTypeConfiguration().getBasicTypeRegistry();
-		final BasicType<?> arrayBasicType = basicTypeRegistry.getRegisteredType( arrayClass );
-
-		arrayJdbcMapping = MultiKeyLoadHelper.resolveArrayJdbcMapping(
-				arrayBasicType,
-				getIdentifierMapping().getJdbcMapping(),
-				arrayClass,
-				getSessionFactory()
-		);
-		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
-	}
-
 }

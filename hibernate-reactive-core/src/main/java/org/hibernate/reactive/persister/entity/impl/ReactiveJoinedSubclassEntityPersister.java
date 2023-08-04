@@ -17,7 +17,9 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.jdbc.Expectation;
+import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
 import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
@@ -36,7 +38,6 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.property.access.spi.PropertyAccess;
-import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
@@ -73,6 +74,15 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
 	}
 
+	@Override
+	protected SingleIdEntityLoader<?> buildSingleIdEntityLoader() {
+		return reactiveDelegate.buildSingleIdEntityLoader();
+	}
+
+	@Override
+	protected MultiIdEntityLoader<Object> buildMultiIdLoader() {
+		return reactiveDelegate.buildMultiIdEntityLoader();
+	}
 
 	@Override
 	protected AttributeMapping buildSingularAssociationAttributeMapping(
@@ -150,11 +160,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
-	}
-
-	@Override
-	public ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
-		return reactiveDelegate.getSingleIdEntityLoader();
 	}
 
 	@Override

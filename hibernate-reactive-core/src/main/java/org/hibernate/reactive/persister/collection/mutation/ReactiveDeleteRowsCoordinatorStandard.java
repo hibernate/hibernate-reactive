@@ -22,18 +22,17 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationType;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
+import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 
 public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinatorStandard implements ReactiveDeleteRowsCoordinator {
 	private final RowMutationOperations rowMutationOperations;
 	private final boolean deleteByIndex;
-	private MutationOperationGroupSingle operationGroup;
+	private MutationOperationGroup operationGroup;
 	private final BasicBatchKey batchKey;
 
 	public ReactiveDeleteRowsCoordinatorStandard(
@@ -53,7 +52,7 @@ public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinator
 			operationGroup = createOperationGroup();
 		}
 
-		if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+		if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 			MODEL_MUTATION_LOGGER
 					.debugf( "Deleting removed collection rows - %s : %s", getMutationTarget().getRolePath(), key );
 		}
@@ -102,12 +101,12 @@ public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinator
 				.createExecutor( this::getBatchKey, operationGroup, session );
 	}
 
-	private MutationOperationGroupSingle createOperationGroup() {
+	private MutationOperationGroup createOperationGroup() {
 		assert getMutationTarget().getTargetPart() != null;
 		assert getMutationTarget().getTargetPart().getKeyDescriptor() != null;
 
 		final JdbcMutationOperation operation = rowMutationOperations.getDeleteRowOperation();
-		return new MutationOperationGroupSingle( MutationType.DELETE, getMutationTarget(), operation );
+		return MutationOperationGroupFactory.singleOperation( MutationType.DELETE, getMutationTarget(), operation );
 	}
 
 	private BasicBatchKey getBatchKey() {

@@ -19,6 +19,8 @@ import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.BasicCollectionPersister;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveDeleteRowsCoordinator;
@@ -36,7 +38,6 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCo
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 
 /**
  * A reactive {@link BasicCollectionPersister}
@@ -47,8 +48,6 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	private final ReactiveUpdateRowsCoordinator updateRowsCoordinator;
 	private final ReactiveDeleteRowsCoordinator deleteRowsCoordinator;
 	private final ReactiveRemoveCoordinator removeCoordinator;
-
-	private CollectionLoader reusableCollectionLoader;
 
 	public ReactiveBasicCollectionPersister(
 			Collection collectionBinding,
@@ -63,17 +62,13 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-		if ( isCollectionLoaderReusable( loadQueryInfluencers ) ) {
-			if ( reusableCollectionLoader == null ) {
-				reusableCollectionLoader = ReactiveAbstractCollectionPersister.super
-						.generateCollectionLoader( LoadQueryInfluencers.NONE );
-			}
-			return reusableCollectionLoader;
-		}
+	public CollectionLoader createNamedQueryCollectionLoader(CollectionPersister persister, NamedQueryMemento namedQueryMemento) {
+		return ReactiveAbstractCollectionPersister.super.createNamedQueryCollectionLoader( persister, namedQueryMemento );
+	}
 
-		// create a one-off
-		return ReactiveAbstractCollectionPersister.super.generateCollectionLoader( loadQueryInfluencers );
+	@Override
+	public CollectionLoader createSingleKeyCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		return ReactiveAbstractCollectionPersister.super.createSingleKeyCollectionLoader( loadQueryInfluencers );
 	}
 
 	private ReactiveUpdateRowsCoordinator buildUpdateRowCoordinator() {
@@ -82,7 +77,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 				&& !isInverse();
 
 		if ( !performUpdates ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row updates - %s", getRolePath() );
 			}
 			return new ReactiveUpdateRowsCoordinatorNoOp( this );
@@ -93,7 +88,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveInsertRowsCoordinator buildInsertRowCoordinator() {
 		if ( isInverse() || !isRowInsertEnabled() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection inserts - %s", getRolePath() );
 			}
 			return new ReactiveInsertRowsCoordinatorNoOp( this );
@@ -104,7 +99,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveDeleteRowsCoordinator buildDeleteRowCoordinator() {
 		if ( ! needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row deletions - %s", getRolePath() );
 			}
 			return new ReactiveDeleteRowsCoordinatorNoOp( this );
@@ -120,7 +115,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveRemoveCoordinator buildDeleteAllCoordinator() {
 		if ( ! needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection removals - %s", getRolePath() );
 			}
 			return new ReactiveRemoveCoordinatorNoOp( this );
