@@ -24,6 +24,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
@@ -73,8 +74,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	@Override
 	public CompletionStage<ResultSet> getReactiveResultSet() {
 		if ( resultSetStage == null ) {
-			resultSetStage = executeQuery()
-					.thenApply( this::saveResultSet );
+			resultSetStage = executeQuery().thenApply( this::saveResultSet );
 		}
 		return resultSetStage;
 	}
@@ -140,6 +140,10 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		}
 	}
 
+	private JdbcSessionContext context() {
+		return executionContext.getSession().getJdbcCoordinator().getJdbcSessionOwner().getJdbcSessionContext();
+	}
+
 	private CompletionStage<ResultSet> executeQuery() {
 		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator().getLogicalConnection();
 		return completedFuture( logicalConnection )
@@ -162,7 +166,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 							.whenComplete( (resultSet, throwable) -> {
 								// FIXME: I don't know if this event makes sense for Vert.x
 								eventListenerManager.jdbcExecuteStatementEnd();
-								sqlStatementLogger.logSlowQuery( getFinalSql(), executeStartNanos );
+								sqlStatementLogger.logSlowQuery( getFinalSql(), executeStartNanos, context() );
 							} )
 							.thenCompose( this::reactiveSkipRows )
 							.handle( this::convertException );

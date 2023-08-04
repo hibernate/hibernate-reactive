@@ -84,7 +84,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 						postInsert();
 
 						final StatisticsImplementor statistics = session.getFactory().getStatistics();
-						if ( statistics.isStatisticsEnabled() && !veto ) {
+						if ( statistics.isStatisticsEnabled() ) {
 							statistics.insertEntity( getPersister().getEntityName() );
 						}
 

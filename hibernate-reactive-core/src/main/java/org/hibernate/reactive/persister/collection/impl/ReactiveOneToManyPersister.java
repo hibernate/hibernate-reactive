@@ -24,8 +24,10 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
+import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
@@ -42,13 +44,13 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCo
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.model.MutationType;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
+import static org.hibernate.sql.model.MutationType.UPDATE;
+import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 /**
  * A reactive {@link OneToManyPersister}
@@ -61,18 +63,27 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	private final ReactiveDeleteRowsCoordinator deleteRowsCoordinator;
 	private final ReactiveRemoveCoordinator removeCoordinator;
 
-	private CollectionLoader reusableCollectionLoader;
-
 	public ReactiveOneToManyPersister(
 			Collection collectionBinding,
 			CollectionDataAccess cacheAccessStrategy,
 			RuntimeModelCreationContext creationContext) throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
-
 		this.insertRowsCoordinator = buildInsertCoordinator();
 		this.updateRowsCoordinator = buildUpdateCoordinator();
 		this.deleteRowsCoordinator = buildDeleteCoordinator();
 		this.removeCoordinator = buildDeleteAllCoordinator();
+	}
+
+	@Override
+	public CollectionLoader createNamedQueryCollectionLoader(
+			CollectionPersister persister,
+			NamedQueryMemento namedQueryMemento) {
+		return ReactiveAbstractCollectionPersister.super.createNamedQueryCollectionLoader( persister, namedQueryMemento );
+	}
+
+	@Override
+	public CollectionLoader createSingleKeyCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
+		return ReactiveAbstractCollectionPersister.super.createSingleKeyCollectionLoader( loadQueryInfluencers );
 	}
 
 	@Override
@@ -143,28 +154,6 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 				this::buildDeleteAllOperation,
 				getFactory().getServiceRegistry()
 		);
-	}
-
-	@Override
-	protected CollectionLoader createCollectionLoader(LoadQueryInfluencers loadQueryInfluencers) {
-		if ( isCollectionLoaderReusable( loadQueryInfluencers ) ) {
-			if ( reusableCollectionLoader == null ) {
-				reusableCollectionLoader = ReactiveAbstractCollectionPersister.super
-						.generateCollectionLoader( LoadQueryInfluencers.NONE );
-			}
-			return reusableCollectionLoader;
-		}
-
-		// create a one-off
-		return ReactiveAbstractCollectionPersister.super.generateCollectionLoader( loadQueryInfluencers );
-	}
-
-	@Override
-	public boolean isAffectedByEnabledFetchProfiles(LoadQueryInfluencers influencers) {
-		if ( influencers == LoadQueryInfluencers.NONE ) {
-			return false;
-		}
-		return super.isAffectedByEnabledFetchProfiles( influencers );
 	}
 
 	@Override
@@ -240,7 +229,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		return (ReactiveMutationExecutor) mutationExecutorService
 				.createExecutor(
 						this::getBasicBatchKey,
-						new MutationOperationGroupSingle( MutationType.UPDATE, this, updateRowOperation ),
+						singleOperation( UPDATE, this, updateRowOperation ),
 						session
 				);
 	}
@@ -253,7 +242,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return getInsertRowsCoordinator()
 				.reactiveInsertRows( collection, id, collection::includeInRecreate, session )
 				.thenCompose( unused -> writeIndex( collection, collection.entries( this ), id, true, session ) );

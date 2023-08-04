@@ -231,7 +231,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final GraphSemantic semantic = effectiveEntityGraph.getSemantic();
 		final RootGraphImplementor<?> graph = effectiveEntityGraph.getGraph();
 		boolean clearedEffectiveGraph;
-		if ( semantic == null || graph.appliesTo( entityName ) ) {
+		if ( semantic == null || graph.appliesTo( getFactory().getJpaMetamodel().entity( entityName ) ) ) {
 			clearedEffectiveGraph = false;
 		}
 		else {
@@ -1585,8 +1585,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			}
 		}
 
-		protected final ReactiveIdentifierLoadAccessImpl getIdentifierLoadAccess() {
-			final ReactiveIdentifierLoadAccessImpl identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl(
+		protected final ReactiveIdentifierLoadAccessImpl<T> getIdentifierLoadAccess() {
+			final ReactiveIdentifierLoadAccessImpl<T> identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl<>(
 					entityPersister );
 			if ( this.lockOptions != null ) {
 				identifierLoadAccess.with( lockOptions );

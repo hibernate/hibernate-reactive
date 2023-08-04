@@ -28,7 +28,7 @@ public final class ReactiveEntityInsertActionHolder implements Executable, React
 	}
 
 	@Override
-	public Serializable[] getPropertySpaces() {
+	public String[] getPropertySpaces() {
 		return delegate.getPropertySpaces();
 	}
 

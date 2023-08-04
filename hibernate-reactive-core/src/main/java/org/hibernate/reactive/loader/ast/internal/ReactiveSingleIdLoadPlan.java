@@ -15,6 +15,7 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.SingleIdLoadPlan;
+import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.persister.entity.Loadable;
 import org.hibernate.query.internal.SimpleQueryOptions;
@@ -35,7 +36,7 @@ import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
 	public ReactiveSingleIdLoadPlan(
-			Loadable persister,
+			EntityMappingType persister,
 			ModelPart restrictivePart,
 			SelectStatement sqlAst,
 			JdbcParametersList jdbcParameters,

@@ -11,10 +11,12 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.FetchMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.CascadeStyle;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
@@ -38,6 +40,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderArrayParam;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderStandard;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderStandardImpl;
@@ -55,8 +58,10 @@ import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
+import org.hibernate.type.BasicType;
 import org.hibernate.type.EntityType;
 
+import static org.hibernate.loader.ast.internal.MultiKeyLoadHelper.supportsSqlArrayType;
 import static org.hibernate.pretty.MessageHelper.infoString;
 
 /**
@@ -66,8 +71,11 @@ public class ReactiveAbstractPersisterDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final ReactiveSingleIdEntityLoader<Object> singleIdEntityLoader;
-	private final ReactiveMultiIdEntityLoader<?> multiIdEntityLoader;
+	private final Supplier<ReactiveSingleIdEntityLoader<Object>> singleIdEntityLoaderSupplier;
+	private final Supplier<ReactiveMultiIdEntityLoader<Object>> multiIdEntityLoaderSupplier;
+
+	private ReactiveSingleIdEntityLoader<Object> singleIdEntityLoader;
+	private ReactiveMultiIdEntityLoader<Object> multiIdEntityLoader;
 
 	private final EntityPersister entityDescriptor;
 
@@ -78,21 +86,20 @@ public class ReactiveAbstractPersisterDelegate {
 			final PersistentClass persistentClass,
 			final RuntimeModelCreationContext creationContext) {
 		SessionFactoryImplementor factory = creationContext.getSessionFactory();
-		singleIdEntityLoader = createReactiveSingleIdEntityLoader(
-				entityPersister,
-				persistentClass,
-				creationContext,
-				factory,
-				entityPersister.getEntityName()
-		);
-		multiIdEntityLoader = new ReactiveMultiIdEntityLoaderStandard<>( entityPersister, persistentClass, factory );
+		singleIdEntityLoaderSupplier = () -> buildSingleIdEntityLoader( entityPersister, persistentClass, creationContext, factory, entityPersister.getEntityName() );
+		multiIdEntityLoaderSupplier = () -> buildMultiIdEntityLoader( entityPersister, persistentClass, factory );
 		entityDescriptor = entityPersister;
 	}
 
-	public ReactiveSingleIdEntityLoader<Object> getSingleIdEntityLoader() {
+	public ReactiveSingleIdEntityLoader<Object> buildSingleIdEntityLoader() {
+		singleIdEntityLoader = singleIdEntityLoaderSupplier.get();
 		return singleIdEntityLoader;
 	}
 
+	public ReactiveMultiIdEntityLoader<Object> buildMultiIdEntityLoader() {
+		multiIdEntityLoader = multiIdEntityLoaderSupplier.get();
+		return multiIdEntityLoader;
+	}
 
 	public <T> DomainResult<T> createDomainResult(
 			EntityValuedModelPart assemblerCreationState,
@@ -109,35 +116,42 @@ public class ReactiveAbstractPersisterDelegate {
 	/**
 	 * @see org.hibernate.persister.entity.AbstractEntityPersister#multiLoad(Object[], EventSource, MultiIdLoadOptions)`
 	 */
-	public <K> CompletionStage<? extends List<?>> multiLoad(
-			K[] ids,
-			EventSource session,
-			MultiIdLoadOptions loadOptions) {
-		return multiIdEntityLoader.load( ids, loadOptions, session );
+	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+		return multiIdEntityLoader.reactiveLoad( ids, loadOptions, session );
 	}
 
-	private static ReactiveSingleIdEntityLoader<Object> createReactiveSingleIdEntityLoader(
-			EntityMappingType entityDescriptor,
+	private static ReactiveMultiIdEntityLoader<Object> buildMultiIdEntityLoader(
+			EntityPersister entityDescriptor,
+			PersistentClass persistentClass,
+			SessionFactoryImplementor factory) {
+		return entityDescriptor.getIdentifierType() instanceof BasicType
+				&& supportsSqlArrayType( factory.getJdbcServices().getDialect() )
+				? new ReactiveMultiIdEntityLoaderArrayParam<>( entityDescriptor, factory )
+				: new ReactiveMultiIdEntityLoaderStandard<>( entityDescriptor, persistentClass, factory );
+	}
+
+	private static ReactiveSingleIdEntityLoader<Object> buildSingleIdEntityLoader(
+			EntityPersister entityDescriptor,
 			PersistentClass bootDescriptor,
 			RuntimeModelCreationContext creationContext,
 			SessionFactoryImplementor factory,
 			String entityName) {
-		int batchSize = batchSize( bootDescriptor, factory );
 		if ( bootDescriptor.getLoaderName() != null ) {
 			// We must resolve the named query on-demand through the boot model because it isn't initialized yet
-			final NamedQueryMemento namedQueryMemento = factory.getQueryEngine().getNamedObjectRepository().resolve(
-					factory,
-					creationContext.getBootModel(),
-					bootDescriptor.getLoaderName()
-			);
+			final NamedQueryMemento namedQueryMemento = factory.getQueryEngine().getNamedObjectRepository()
+					.resolve( factory, creationContext.getBootModel(), bootDescriptor.getLoaderName() );
 			if ( namedQueryMemento == null ) {
 				throw new IllegalArgumentException( "Could not resolve named load-query [" + entityName + "] : " + bootDescriptor.getLoaderName() );
 			}
 			return new ReactiveSingleIdEntityLoaderProvidedQueryImpl<>( entityDescriptor, namedQueryMemento );
 		}
 
-		if ( batchSize > 1 ) {
-			return createBatchingIdEntityLoader( entityDescriptor, batchSize, factory );
+		LoadQueryInfluencers loadQueryInfluencers = new LoadQueryInfluencers( factory );
+		if ( loadQueryInfluencers.effectivelyBatchLoadable( entityDescriptor ) ) {
+			final int batchSize = loadQueryInfluencers.effectiveBatchSize( entityDescriptor );
+			if ( batchSize > 1 ) {
+				return createBatchingIdEntityLoader( entityDescriptor, batchSize, factory );
+			}
 		}
 
 		return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, factory );
@@ -150,14 +164,6 @@ public class ReactiveAbstractPersisterDelegate {
 		return (ReactiveSingleIdEntityLoader) factory.getServiceRegistry()
 				.getService( BatchLoaderFactory.class )
 				.createEntityBatchLoader( domainBatchSize, entityDescriptor, factory );
-	}
-
-	private static int batchSize(PersistentClass bootDescriptor, SessionFactoryImplementor factory) {
-		int batchSize = bootDescriptor.getBatchSize();
-		if ( batchSize == -1 ) {
-			batchSize = factory.getSessionFactoryOptions().getDefaultBatchFetchSize();
-		}
-		return batchSize;
 	}
 
 	public CompletionStage<Void> processInsertGeneratedProperties(
@@ -214,10 +220,7 @@ public class ReactiveAbstractPersisterDelegate {
 		}
 		return uniqueKeyLoadersNew.computeIfAbsent(
 				attribute,
-				key -> new ReactiveSingleUniqueKeyEntityLoaderStandard<>(
-						entityDescriptor,
-						key
-				)
+				key -> new ReactiveSingleUniqueKeyEntityLoaderStandard<>( entityDescriptor, key )
 		);
 	}
 
@@ -249,10 +252,8 @@ public class ReactiveAbstractPersisterDelegate {
 			);
 		}
 
-		return ( (ReactiveNaturalIdLoader) entityDescriptor.getNaturalIdLoader() ).resolveNaturalIdToId(
-				orderedNaturalIdValues,
-				session
-		);
+		return ( (ReactiveNaturalIdLoader) entityDescriptor.getNaturalIdLoader() )
+				.resolveNaturalIdToId( orderedNaturalIdValues, session );
 	}
 
 	public AttributeMapping buildSingularAssociationAttributeMapping(

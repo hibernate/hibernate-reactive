@@ -421,7 +421,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			EntityPersister persister,
 			EntityKey keyToLoad,
 			EventSource session) {
-		if ( keyToLoad.isBatchLoadable() ) {
+		if ( keyToLoad.isBatchLoadable( session.getLoadQueryInfluencers() ) ) {
 			// Add a batch-fetch entry into the queue for this entity
 			session.getPersistenceContextInternal().getBatchFetchQueue().addBatchLoadableEntityKey( keyToLoad );
 		}
