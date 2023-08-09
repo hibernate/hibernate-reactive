@@ -46,12 +46,15 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
  * <p>
  * Note that the tests below do not use ORM's annotations below to calculate
  * if a Dialect supports Format or Timezone types:
- *    @RequiresDialectFeature(feature = DialectFeatureChecks.SupportsFormat.class)
- *    @RequiresDialectFeature(feature = DialectFeatureChecks.SupportsTimezoneTypes.class....)
+ *
+ * <pre>{@code
+ * @RequiresDialectFeature(feature = DialectFeatureChecks.SupportsFormat.class)
+ * @RequiresDialectFeature(feature = DialectFeatureChecks.SupportsTimezoneTypes.class....)
+ * }</pre>
  * </p>
  * <p>
  * It appears that DB2, SQLServer and Oracle do not yet support FORMAT and none of reactive's supported Dialects
- * support Timezone Types via Offset, so the ORM's testNormalizeOffset(...) method is not included in these tests.
+ * support Timezone Types via Offset, so the ORM's {@code testNormalizeOffset(...)} method is not included in these tests.
  * </p>
  */
 @Timeout(value = 10, timeUnit = MINUTES)
@@ -62,36 +65,22 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 	public DBSelectionExtension selectionRule = DBSelectionExtension.skipTestsFor( SQLSERVER );
 
 	private static final ZoneOffset JVM_TIMEZONE_OFFSET = OffsetDateTime.now().getOffset();
+
 	private static final OffsetTime OFFSET_TIME = OffsetTime.of(
-			LocalTime.of(
-					12,
-					0,
-					0
-			),
+			LocalTime.of( 12, 0, 0 ),
 			ZoneOffset.ofHoursMinutes( 5, 45 )
 	);
+
 	private static final OffsetDateTime OFFSET_DATE_TIME = OffsetDateTime.of(
-			LocalDateTime.of(
-					2022,
-					3,
-					1,
-					12,
-					0,
-					0
-			),
+			LocalDateTime.of( 2022, 3, 1, 12, 0, 0 ),
 			ZoneOffset.ofHoursMinutes( 5, 45 )
 	);
+
 	private static final ZonedDateTime ZONED_DATE_TIME = ZonedDateTime.of(
-			LocalDateTime.of(
-					2022,
-					3,
-					1,
-					12,
-					0,
-					0
-			),
+			LocalDateTime.of( 2022, 3, 1, 12, 0, 0 ),
 			ZoneOffset.ofHoursMinutes( 5, 45 )
 	);
+
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern( "HH:mm:ssxxx" );
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern( "dd/MM/yyyy 'at' HH:mm:ssxxx" );
 
@@ -108,8 +97,7 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 
 	@BeforeEach
 	public void populateDb(VertxTestContext context) {
-		TimeZoneStorageEntity entity =  new TimeZoneStorageEntity( 1, OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME );
-
+		TimeZoneStorageEntity entity = new TimeZoneStorageEntity( 1, OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME );
 		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( entity ) ) );
 	}
 
@@ -136,58 +124,56 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 	public void testOffsetRetained(VertxTestContext context, String suffix) {
 		test( context, openSession()
 				.thenCompose( session -> session.createQuery(
-							  "select " +
-									  "e.offsetTime" + suffix + ", " +
-									  "e.offsetDateTime" + suffix + ", " +
-									  "e.zonedDateTime" + suffix + ", " +
-									  "extract(offset from e.offsetTime" + suffix + "), " +
-									  "extract(offset from e.offsetDateTime" + suffix + "), " +
-									  "extract(offset from e.zonedDateTime" + suffix + "), " +
-									  "e.offsetTime" + suffix + " + 1 hour, " +
-									  "e.offsetDateTime" + suffix + " + 1 hour, " +
-									  "e.zonedDateTime" + suffix + " + 1 hour, " +
-									  "e.offsetTime" + suffix + " + 1 hour - e.offsetTime" + suffix + ", " +
-									  "e.offsetDateTime" + suffix + " + 1 hour - e.offsetDateTime" + suffix + ", " +
-									  "e.zonedDateTime" + suffix + " + 1 hour - e.zonedDateTime" + suffix + ", " +
-									  "1 from TimeZoneStorageEntity e " +
-									  "where e.offsetDateTime" + suffix + " = e.offsetDateTime" + suffix,
-							  Tuple.class
-					  ).getSingleResult()
-					  .thenAccept( result -> {
-						  assertThat( result.get( 0, OffsetTime.class ) ).isEqualTo( OFFSET_TIME );
-						  assertThat( result.get( 1, OffsetDateTime.class ) ).isEqualTo( OFFSET_DATE_TIME );
-						  assertThat( result.get( 2, ZonedDateTime.class ) ).isEqualTo( ZONED_DATE_TIME );
-						  assertThat( result.get( 3, ZoneOffset.class ) ).isEqualTo( OFFSET_TIME.getOffset() );
-						  assertThat( result.get( 4, ZoneOffset.class ) ).isEqualTo( OFFSET_DATE_TIME.getOffset() );
-						  assertThat( result.get( 5, ZoneOffset.class ) ).isEqualTo( ZONED_DATE_TIME.getOffset() );
-						  assertThat( result.get( 6, OffsetTime.class ) ).isEqualTo( OFFSET_TIME.plusHours( 1L ) );
-						  assertThat( result.get( 7, OffsetDateTime.class ) ).isEqualTo( OFFSET_DATE_TIME.plusHours( 1L ) );
-						  assertThat( result.get( 8, ZonedDateTime.class ) ).isEqualTo( ZONED_DATE_TIME.plusHours( 1L ) );
-						  assertThat( result.get( 9, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
-						  assertThat( result.get( 10, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
-						  assertThat( result.get( 11, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
-					  } )
-				)
+						"select " +
+								"e.offsetTime" + suffix + ", " +
+								"e.offsetDateTime" + suffix + ", " +
+								"e.zonedDateTime" + suffix + ", " +
+								"extract(offset from e.offsetTime" + suffix + "), " +
+								"extract(offset from e.offsetDateTime" + suffix + "), " +
+								"extract(offset from e.zonedDateTime" + suffix + "), " +
+								"e.offsetTime" + suffix + " + 1 hour, " +
+								"e.offsetDateTime" + suffix + " + 1 hour, " +
+								"e.zonedDateTime" + suffix + " + 1 hour, " +
+								"e.offsetTime" + suffix + " + 1 hour - e.offsetTime" + suffix + ", " +
+								"e.offsetDateTime" + suffix + " + 1 hour - e.offsetDateTime" + suffix + ", " +
+								"e.zonedDateTime" + suffix + " + 1 hour - e.zonedDateTime" + suffix + ", " +
+								"1 from TimeZoneStorageEntity e " +
+								"where e.offsetDateTime" + suffix + " = e.offsetDateTime" + suffix,
+						Tuple.class
+				).getSingleResult() )
+				.thenAccept( result -> {
+					assertThat( result.get( 0, OffsetTime.class ) ).isEqualTo( OFFSET_TIME );
+					assertThat( result.get( 1, OffsetDateTime.class ) ).isEqualTo( OFFSET_DATE_TIME );
+					assertThat( result.get( 2, ZonedDateTime.class ) ).isEqualTo( ZONED_DATE_TIME );
+					assertThat( result.get( 3, ZoneOffset.class ) ).isEqualTo( OFFSET_TIME.getOffset() );
+					assertThat( result.get( 4, ZoneOffset.class ) ).isEqualTo( OFFSET_DATE_TIME.getOffset() );
+					assertThat( result.get( 5, ZoneOffset.class ) ).isEqualTo( ZONED_DATE_TIME.getOffset() );
+					assertThat( result.get( 6, OffsetTime.class ) ).isEqualTo( OFFSET_TIME.plusHours( 1L ) );
+					assertThat( result.get( 7, OffsetDateTime.class ) ).isEqualTo( OFFSET_DATE_TIME.plusHours( 1L ) );
+					assertThat( result.get( 8, ZonedDateTime.class ) ).isEqualTo( ZONED_DATE_TIME.plusHours( 1L ) );
+					assertThat( result.get( 9, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
+					assertThat( result.get( 10, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
+					assertThat( result.get( 11, Duration.class ) ).isEqualTo( Duration.ofHours( 1L ) );
+				} )
 		);
 	}
 
 	public void testOffsetRetainedFormat(VertxTestContext context, String suffix) {
 		test( context, openSession()
 				.thenCompose( session -> session.createQuery(
-							  "select " +
-									  "format(e.offsetTime" + suffix + " as 'HH:mm:ssxxx'), " +
-									  "format(e.offsetDateTime" + suffix + " as 'dd/MM/yyyy ''at'' HH:mm:ssxxx'), " +
-									  "format(e.zonedDateTime" + suffix + " as 'dd/MM/yyyy ''at'' HH:mm:ssxxx'), " +
-									  "1 from TimeZoneStorageEntity e " +
-									  "where e.offsetDateTime" + suffix + " = e.offsetDateTime" + suffix,
-							  Tuple.class
-					  ).getSingleResult()
-					  .thenAccept( result -> {
-						  assertThat( result.get( 0, String.class ) ).isEqualTo( TIME_FORMATTER.format( OFFSET_TIME ) );
-						  assertThat( result.get( 1, String.class ) ).isEqualTo( FORMATTER.format( OFFSET_DATE_TIME ) );
-						  assertThat( result.get( 2, String.class ) ).isEqualTo( FORMATTER.format( ZONED_DATE_TIME ) );
-					  } )
-				)
+						"select " +
+								"format(e.offsetTime" + suffix + " as 'HH:mm:ssxxx'), " +
+								"format(e.offsetDateTime" + suffix + " as 'dd/MM/yyyy ''at'' HH:mm:ssxxx'), " +
+								"format(e.zonedDateTime" + suffix + " as 'dd/MM/yyyy ''at'' HH:mm:ssxxx'), " +
+								"1 from TimeZoneStorageEntity e " +
+								"where e.offsetDateTime" + suffix + " = e.offsetDateTime" + suffix,
+						Tuple.class
+				).getSingleResult() )
+				.thenAccept( result -> {
+					assertThat( result.get( 0, String.class ) ).isEqualTo( TIME_FORMATTER.format( OFFSET_TIME ) );
+					assertThat( result.get( 1, String.class ) ).isEqualTo( FORMATTER.format( OFFSET_DATE_TIME ) );
+					assertThat( result.get( 2, String.class ) ).isEqualTo( FORMATTER.format( ZONED_DATE_TIME ) );
+				} )
 		);
 	}
 
@@ -195,28 +181,32 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 	public void testNormalize(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( session -> session.createQuery(
-							"select " +
-									"e.offsetTimeNormalized, " +
-									"e.offsetDateTimeNormalized, " +
-									"e.zonedDateTimeNormalized, " +
-									"e.offsetTimeNormalizedUtc, " +
-									"e.offsetDateTimeNormalizedUtc, " +
-									"e.zonedDateTimeNormalizedUtc " +
-									"from TimeZoneStorageEntity e",
-							Tuple.class
-					).getSingleResult()
-					.thenAccept( result -> {
-						assertThat( result.get( 0, OffsetTime.class ).toLocalTime()).isEqualTo( OFFSET_TIME.withOffsetSameInstant( JVM_TIMEZONE_OFFSET ).toLocalTime() );
-						assertThat( result.get( 0, OffsetTime.class ).getOffset()).isEqualTo( JVM_TIMEZONE_OFFSET );
-						assertThat( result.get( 1, OffsetDateTime.class ).toInstant()).isEqualTo( OFFSET_DATE_TIME.toInstant() );
-						assertThat( result.get( 2, ZonedDateTime.class ).toInstant()).isEqualTo( ZONED_DATE_TIME.toInstant() );
-						assertThat( result.get( 3, OffsetTime.class ).toLocalTime()).isEqualTo( OFFSET_TIME.withOffsetSameInstant( ZoneOffset.UTC ).toLocalTime() );
-						assertThat( result.get( 3, OffsetTime.class ).getOffset()).isEqualTo( ZoneOffset.UTC );
-						assertThat( result.get( 4, OffsetDateTime.class ).toInstant()).isEqualTo( OFFSET_DATE_TIME.toInstant() );
-						assertThat( result.get( 5, ZonedDateTime.class ).toInstant()).isEqualTo( ZONED_DATE_TIME.toInstant() );
-					}
-				)
-			)
+						"select " +
+								"e.offsetTimeNormalized, " +
+								"e.offsetDateTimeNormalized, " +
+								"e.zonedDateTimeNormalized, " +
+								"e.offsetTimeNormalizedUtc, " +
+								"e.offsetDateTimeNormalizedUtc, " +
+								"e.zonedDateTimeNormalizedUtc " +
+								"from TimeZoneStorageEntity e",
+						Tuple.class
+				).getSingleResult() )
+				.thenAccept( result -> {
+					assertThat( result.get( 0, OffsetTime.class ).toLocalTime() )
+							.isEqualTo( OFFSET_TIME.withOffsetSameInstant( JVM_TIMEZONE_OFFSET ).toLocalTime() );
+					assertThat( result.get( 0, OffsetTime.class ).getOffset() ).isEqualTo( JVM_TIMEZONE_OFFSET );
+					assertThat( result.get( 1, OffsetDateTime.class ).toInstant() )
+							.isEqualTo( OFFSET_DATE_TIME.toInstant() );
+					assertThat( result.get( 2, ZonedDateTime.class ).toInstant() )
+							.isEqualTo( ZONED_DATE_TIME.toInstant() );
+					assertThat( result.get( 3, OffsetTime.class ).toLocalTime() )
+							.isEqualTo( OFFSET_TIME.withOffsetSameInstant( ZoneOffset.UTC ).toLocalTime() );
+					assertThat( result.get( 3, OffsetTime.class ).getOffset() ).isEqualTo( ZoneOffset.UTC );
+					assertThat( result.get( 4, OffsetDateTime.class ).toInstant() )
+							.isEqualTo( OFFSET_DATE_TIME.toInstant() );
+					assertThat( result.get( 5, ZonedDateTime.class ).toInstant() )
+							.isEqualTo( ZONED_DATE_TIME.toInstant() );
+				} )
 		);
 	}
 
@@ -226,7 +216,6 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 		@Id
 		public Integer id;
 
-		//tag::time-zone-column-examples-mapping-example[]
 		@TimeZoneStorage(TimeZoneStorageType.COLUMN)
 		@TimeZoneColumn(name = "birthtime_offset_offset")
 		@Column(name = "birthtime_offset")
@@ -241,7 +230,6 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 		@TimeZoneColumn(name = "birthday_zoned_offset")
 		@Column(name = "birthday_zoned")
 		public ZonedDateTime zonedDateTimeColumn;
-		//end::time-zone-column-examples-mapping-example[]
 
 		@TimeZoneStorage
 		@Column(name = "birthtime_offset_auto")
