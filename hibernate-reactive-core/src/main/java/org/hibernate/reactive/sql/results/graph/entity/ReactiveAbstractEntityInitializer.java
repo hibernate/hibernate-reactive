@@ -26,10 +26,12 @@ import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.Fetch;
+import org.hibernate.sql.results.graph.basic.BasicFetch;
 import org.hibernate.sql.results.graph.entity.AbstractEntityInitializer;
 import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
 import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
+import org.hibernate.sql.results.graph.entity.internal.EntityResultInitializer;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -41,7 +43,7 @@ import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityInitializer implements ReactiveInitializer {
+public abstract class ReactiveAbstractEntityInitializer extends EntityResultInitializer implements ReactiveInitializer {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -58,7 +60,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 				navigablePath,
 				lockMode,
 				identifierFetch,
-				discriminatorFetch,
+				(BasicFetch<?>) discriminatorFetch,
 				rowIdResult,
 				creationState
 		);
