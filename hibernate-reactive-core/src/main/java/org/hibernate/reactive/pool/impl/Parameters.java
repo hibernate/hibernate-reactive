@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.util.function.IntConsumer;
+
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.DialectDelegateWrapper;
@@ -19,7 +21,9 @@ import org.hibernate.dialect.SQLServerDialect;
  */
 public abstract class Parameters {
 
-	private static final Parameters NO_PARSING = new Parameters() {
+	private final String paramPrefix;
+
+	private static final Parameters NO_PARSING = new Parameters( null ) {
 		@Override
 		public String process(String sql) {
 			return sql;
@@ -29,12 +33,11 @@ public abstract class Parameters {
 		public String process(String sql, int parameterCount) {
 			return sql;
 		}
-
-		@Override
-		public String processLimit(String sql, Object[] parameterArray, boolean hasOffset) {
-			return sql;
-		}
 	};
+
+	protected Parameters(String paramPrefix) {
+		this.paramPrefix = paramPrefix;
+	}
 
 	public static Parameters instance(Dialect dialect) {
 		if ( dialect instanceof DialectDelegateWrapper ) {
@@ -55,9 +58,100 @@ public abstract class Parameters {
 				|| sql.indexOf( '?' ) == -1;
 	}
 
-	public abstract String process(String sql);
+	public String process(String sql) {
+		if ( isProcessingNotRequired( sql ) ) {
+			return sql;
+		}
+		return new Parser( sql, paramPrefix ).result();
+	}
 
-	public abstract String process(String sql, int parameterCount);
+	/**
+	 * Replace all JDBC-style {@code ?} parameters with Postgres-style
+	 * {@code $n} parameters in the given SQL string.
+	 */
+	public String process(String sql, int parameterCount) {
+		if ( isProcessingNotRequired( sql ) ) {
+			return sql;
+		}
+		return new Parser( sql, parameterCount, paramPrefix ).result();
+	}
 
-	public abstract String processLimit(String sql, Object[] parameterArray, boolean hasOffset);
+	private static class Parser {
+
+		private boolean inString;
+		private boolean inQuoted;
+		private boolean inSqlComment;
+		private boolean inCComment;
+		private boolean escaped;
+		private int count = 0;
+		private StringBuilder result;
+		private int previous;
+
+		private Parser(String sql, String paramPrefix) {
+			this( sql, 10, paramPrefix );
+		}
+
+		private Parser(String sql, int parameterCount, final String paramPrefix) {
+			result = new StringBuilder( sql.length() + parameterCount );
+			// We aren't using lambdas or method reference because of a bug in the JVM:
+			// https://bugs.openjdk.java.net/browse/JDK-8161588
+			// Please, don't change this unless you've tested it with Quarkus
+			sql.codePoints().forEach( new IntConsumer() {
+				@Override
+				public void accept(int codePoint) {
+					if ( escaped ) {
+						escaped = false;
+					}
+					else {
+						switch ( codePoint ) {
+							case '\\':
+								escaped = true;
+								return;
+							case '"':
+								if ( !inString && !inSqlComment && !inCComment ) {
+									inQuoted = !inQuoted;
+								}
+								break;
+							case '\'':
+								if ( !inQuoted && !inSqlComment && !inCComment ) {
+									inString = !inString;
+								}
+								break;
+							case '-':
+								if ( !inQuoted && !inString && !inCComment && previous == '-' ) {
+									inSqlComment = true;
+								}
+								break;
+							case '\n':
+								inSqlComment = false;
+								break;
+							case '*':
+								if ( !inQuoted && !inString && !inSqlComment && previous == '/' ) {
+									inCComment = true;
+								}
+								break;
+							case '/':
+								if ( previous == '*' ) {
+									inCComment = false;
+								}
+								break;
+							//TODO: $$-quoted strings
+							case '?':
+								if ( !inQuoted && !inString ) {
+									result.append( paramPrefix ).append( ++count );
+									previous = '?';
+									return;
+								}
+						}
+					}
+					previous = codePoint;
+					result.appendCodePoint( codePoint );
+				}
+			} );
+		}
+
+		public String result() {
+			return result.toString();
+		}
+	}
 }
