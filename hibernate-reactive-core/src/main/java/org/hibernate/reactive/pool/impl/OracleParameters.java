@@ -75,7 +75,7 @@ public class OracleParameters extends Parameters {
 				switch ( codePoint ) {
 					case '\\':
 						escaped = true;
-						break;
+						return;
 					case '"':
 						if ( !inString && !inSqlComment && !inCComment ) {
 							inQuoted = !inQuoted;
