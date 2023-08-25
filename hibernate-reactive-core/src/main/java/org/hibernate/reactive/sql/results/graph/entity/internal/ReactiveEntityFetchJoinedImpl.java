@@ -29,6 +29,7 @@ public class ReactiveEntityFetchJoinedImpl extends EntityFetchJoinedImpl {
 			LockMode lockMode,
 			NotFoundAction notFoundAction,
 			DomainResult<?> keyResult,
+			DomainResult<Object> rowIdResult,
 			Fetch identifierFetch,
 			Fetch discriminatorFetch,
 			AssemblerCreationState creationState) {
@@ -39,6 +40,7 @@ public class ReactiveEntityFetchJoinedImpl extends EntityFetchJoinedImpl {
 				lockMode,
 				notFoundAction,
 				keyResult,
+				rowIdResult,
 				identifierFetch,
 				discriminatorFetch,
 				creationState

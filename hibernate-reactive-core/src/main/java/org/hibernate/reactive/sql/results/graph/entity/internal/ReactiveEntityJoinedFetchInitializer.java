@@ -46,6 +46,7 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 			LockMode lockMode,
 			NotFoundAction notFoundAction,
 			DomainResult<?> keyResult,
+			DomainResult<Object> rowIdResult,
 			Fetch identifierFetch,
 			Fetch discriminatorFetch,
 			AssemblerCreationState creationState) {
@@ -55,7 +56,7 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 				lockMode,
 				identifierFetch,
 				discriminatorFetch,
-				null,
+				rowIdResult,
 				creationState
 		);
 		this.referencedFetchable = referencedFetchable;

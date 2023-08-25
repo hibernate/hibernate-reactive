@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.hibernate.engine.jdbc.BlobProxy;
@@ -847,12 +848,31 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public RowId getRowId(int columnIndex) {
-		throw new UnsupportedOperationException();
+		Buffer buffer = row.getBuffer( columnIndex - 1 );
+		wasNull = buffer == null;
+		return wasNull ? null : new RowIdAdaptor( buffer );
 	}
 
 	@Override
 	public RowId getRowId(String columnLabel) {
-		throw new UnsupportedOperationException();
+		Buffer buffer = row.getBuffer( columnLabel );
+		wasNull = buffer == null;
+		return wasNull ? null : new RowIdAdaptor( buffer );
+	}
+
+	private static class RowIdAdaptor implements RowId {
+
+		private final Buffer buffer;
+
+		private RowIdAdaptor(Buffer buffer) {
+			Objects.requireNonNull( buffer );
+			this.buffer = buffer;
+		}
+
+		@Override
+		public byte[] getBytes() {
+			return buffer.getBytes();
+		}
 	}
 
 	@Override
