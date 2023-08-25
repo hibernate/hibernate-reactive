@@ -6,12 +6,7 @@
 package org.hibernate.reactive.mutiny;
 
 import io.smallrye.mutiny.Uni;
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.Parameter;
+import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -19,11 +14,7 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
 import org.hibernate.Cache;
-import org.hibernate.CacheMode;
-import org.hibernate.Filter;
-import org.hibernate.FlushMode;
-import org.hibernate.Incubating;
-import org.hibernate.LockMode;
+import org.hibernate.*;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -32,6 +23,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.Page;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -48,9 +40,7 @@ import java.util.function.Function;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.internal.util.LockModeConverter.convertToLockMode;
-import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheMode;
-import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheRetrieveMode;
-import static org.hibernate.jpa.internal.util.CacheModeHelper.interpretCacheStoreMode;
+import static org.hibernate.jpa.internal.util.CacheModeHelper.*;
 
 /**
  * An API for Hibernate Reactive where non-blocking operations are
@@ -140,6 +130,16 @@ public interface Mutiny {
 		 * 0.
 		 */
 		SelectionQuery<R> setFirstResult(int firstResult);
+
+		/**
+		 * Set the {@linkplain Page page} of results to return.
+		 *
+		 * @see Page
+		 *
+		 * @since 2.1
+		 */
+		@Incubating
+		SelectionQuery<R> setPage(Page page);
 
 		/**
 		 * @return the maximum number results, or {@link Integer#MAX_VALUE}
