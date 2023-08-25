@@ -24,6 +24,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
  * Check {@link #registerService(StandardServiceRegistryBuilder)} to register an instance of this class.
  * It's not thread-safe.
  * </p>
+ * @see #registerService(StandardServiceRegistryBuilder)
  */
 public class SqlStatementTracker extends SqlStatementLogger {
 
