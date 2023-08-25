@@ -123,7 +123,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
 
-	void enableFetchProfile(String profileName);
+	ReactiveSelectionQuery<R> enableFetchProfile(String profileName);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Object value);
