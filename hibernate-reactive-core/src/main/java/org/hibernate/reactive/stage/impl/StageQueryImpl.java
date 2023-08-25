@@ -5,23 +5,25 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.CacheMode;
+import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.Page;
+import org.hibernate.reactive.query.ReactiveQuery;
+import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.Stage.Query;
+
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
-import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
-import org.hibernate.LockMode;
-import org.hibernate.graph.GraphSemantic;
-import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.reactive.query.ReactiveQuery;
-import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.Stage.Query;
-
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 public class StageQueryImpl<R> implements Query<R> {
 	private final ReactiveQuery<R> delegate;
@@ -110,6 +112,13 @@ public class StageQueryImpl<R> implements Query<R> {
 	@Override
 	public Query<R> setFirstResult(int startPosition) {
 		delegate.setFirstResult( startPosition );
+		return this;
+	}
+
+	@Override
+	public Stage.SelectionQuery<R> setPage(Page page) {
+		setFirstResult( page.getFirstResult() );
+		setMaxResults( page.getMaxResults() );
 		return this;
 	}
 
