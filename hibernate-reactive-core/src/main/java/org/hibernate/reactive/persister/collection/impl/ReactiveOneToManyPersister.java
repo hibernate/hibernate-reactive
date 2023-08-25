@@ -49,7 +49,6 @@ import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 import static org.hibernate.sql.model.MutationType.UPDATE;
 import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
@@ -109,7 +108,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 
 	private ReactiveInsertRowsCoordinator buildInsertCoordinator() {
 		if ( isInverse() || !isRowInsertEnabled() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection (re)creation - %s", getRolePath() );
 			}
 			return new ReactiveInsertRowsCoordinatorNoOp( this );
@@ -119,7 +118,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 
 	private ReactiveUpdateRowsCoordinator buildUpdateCoordinator() {
 		if ( !isRowDeleteEnabled() && !isRowInsertEnabled() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row updates - %s", getRolePath() );
 			}
 			return new ReactiveUpdateRowsCoordinatorNoOp( this );
@@ -129,7 +128,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 
 	private ReactiveDeleteRowsCoordinator buildDeleteCoordinator() {
 		if ( !needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row deletions - %s", getRolePath() );
 			}
 			return new ReactiveDeleteRowsCoordinatorNoOp( this );
@@ -145,7 +144,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 
 	private ReactiveRemoveCoordinator buildDeleteAllCoordinator() {
 		if ( ! needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection removals - %s", getRolePath() );
 			}
 			return new ReactiveRemoveCoordinatorNoOp( this );
@@ -243,7 +242,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	 * @see OneToManyPersister#recreate(PersistentCollection, Object, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveRecreate(PersistentCollection collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
+	public CompletionStage<Void> reactiveRecreate(PersistentCollection<?> collection, Object id, SharedSessionContractImplementor session) throws HibernateException {
 		return getInsertRowsCoordinator()
 				.reactiveInsertRows( collection, id, collection::includeInRecreate, session )
 				.thenCompose( unused -> writeIndex( collection, collection.entries( this ), id, true, session ) );

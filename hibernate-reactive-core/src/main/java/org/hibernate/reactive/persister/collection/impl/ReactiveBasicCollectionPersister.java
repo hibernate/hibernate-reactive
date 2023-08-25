@@ -38,7 +38,6 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCo
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 
 /**
  * A reactive {@link BasicCollectionPersister}
@@ -78,7 +77,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 				&& !isInverse();
 
 		if ( !performUpdates ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row updates - %s", getRolePath() );
 			}
 			return new ReactiveUpdateRowsCoordinatorNoOp( this );
@@ -89,7 +88,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveInsertRowsCoordinator buildInsertRowCoordinator() {
 		if ( isInverse() || !isRowInsertEnabled() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection inserts - %s", getRolePath() );
 			}
 			return new ReactiveInsertRowsCoordinatorNoOp( this );
@@ -100,7 +99,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveDeleteRowsCoordinator buildDeleteRowCoordinator() {
 		if ( ! needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection row deletions - %s", getRolePath() );
 			}
 			return new ReactiveDeleteRowsCoordinatorNoOp( this );
@@ -116,7 +115,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 	private ReactiveRemoveCoordinator buildDeleteAllCoordinator() {
 		if ( ! needsRemove() ) {
-			if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 				MODEL_MUTATION_LOGGER.debugf( "Skipping collection removals - %s", getRolePath() );
 			}
 			return new ReactiveRemoveCoordinatorNoOp( this );

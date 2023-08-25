@@ -30,7 +30,6 @@ import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
 
 /**
  * @see InsertRowsCoordinatorStandard
@@ -71,7 +70,7 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 			operationGroup = createOperationGroup();
 		}
 
-		if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+		if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 			MODEL_MUTATION_LOGGER
 					.debugf( "Inserting collection rows - %s : %s", mutationTarget.getRolePath(), id );
 		}

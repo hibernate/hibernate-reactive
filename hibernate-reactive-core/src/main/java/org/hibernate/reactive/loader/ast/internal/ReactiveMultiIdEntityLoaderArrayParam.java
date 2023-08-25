@@ -89,7 +89,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
-		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_TRACE_ENABLED ) {
+		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performOrderedMultiLoad - %s",
 					getLoadable().getEntityName()
@@ -246,7 +246,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
 			EventSource session) {
-		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_TRACE_ENABLED ) {
+		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performUnorderedMultiLoad - %s",
 					getLoadable().getEntityName()
