@@ -275,7 +275,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setRowId(int parameterIndex, RowId x) {
-		throw new UnsupportedOperationException();
+		put( parameterIndex, Buffer.buffer( x.getBytes() ) );
 	}
 
 	@Override
