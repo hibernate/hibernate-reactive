@@ -564,10 +564,10 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		Byte fieldByte;
 
 		@Convert(converter = org.hibernate.type.YesNoConverter.class)
-		Boolean booleanTrueFalse;
+		Boolean booleanYesNo;
 
 		@Convert(converter = org.hibernate.type.TrueFalseConverter.class)
-		Boolean booleanYesNo;
+		Boolean booleanTrueFalse;
 
 		@Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
 		Boolean booleanNumeric;
