@@ -41,8 +41,8 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( Boolean.class, "bit" );
 
 		expectedDBTypeForClass.put( NumericBooleanConverter.class, "int" );
-		expectedDBTypeForClass.put( YesNoConverter.class, "enum" );
-		expectedDBTypeForClass.put( TrueFalseConverter.class, "enum" );
+		expectedDBTypeForClass.put( YesNoConverter.class, "char" );
+		expectedDBTypeForClass.put( TrueFalseConverter.class, "char" );
 	 	expectedDBTypeForClass.put( byte[].class, "varbinary" );
 		// expectedDBTypeForClass.put( TextType.class, "text" );
 
