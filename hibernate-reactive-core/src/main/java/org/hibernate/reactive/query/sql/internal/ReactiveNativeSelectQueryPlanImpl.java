@@ -60,7 +60,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 			resultSetMapping.addAffectedTableNames( affectedTableNames, sessionFactory );
 		}
 		this.affectedTableNames = affectedTableNames;
-		this.sql = sql;
+		this.sql = parser.process();
 		this.parameterList = parameterList;
 
 	}
