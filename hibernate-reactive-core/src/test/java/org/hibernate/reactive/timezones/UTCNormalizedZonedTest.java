@@ -14,8 +14,10 @@ import java.util.List;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -26,12 +28,17 @@ import jakarta.persistence.Id;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.AvailableSettings.TIMEZONE_DEFAULT_STORAGE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.hibernate.type.descriptor.DateTimeUtils.roundToDefaultPrecision;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
 public class UTCNormalizedZonedTest extends BaseReactiveTest {
+
+	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
+	@RegisterExtension
+	public final DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
