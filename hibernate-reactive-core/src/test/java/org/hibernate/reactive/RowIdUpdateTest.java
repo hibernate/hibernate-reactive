@@ -11,10 +11,12 @@ import java.util.List;
 import org.hibernate.annotations.RowId;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
@@ -26,11 +28,17 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 
 /**
  * Adapted from the test with the same name in Hibernate ORM: {@literal org.hibernate.orm.test.rowid.RowIdUpdateTest}
  */
 public class RowIdUpdateTest extends BaseReactiveTest {
+
+	//Db2: testUUIDType throws NoStackTraceThrowable: parameter of type BufferImpl cannot be coerced to ByteBuf
+	@RegisterExtension
+	public final DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	private static SqlStatementTracker sqlTracker;
 
