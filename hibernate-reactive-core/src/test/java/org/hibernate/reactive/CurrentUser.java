@@ -91,8 +91,7 @@ public class CurrentUser {
 	public static abstract class AbstractLoggedUserGeneratorWithMutiny extends MutinyGenerator {
 
 		@Override
-		public Uni<Object> generate(Mutiny.Session session, Object owner, Object currentValue,
-										 EventType eventType) {
+		public Uni<Object> generate(Mutiny.Session session, Object owner, Object currentValue, EventType eventType) {
 			Objects.requireNonNull( session );
 			String value = CurrentUser.INSTANCE.get();
 			return Uni.createFrom().item( value );

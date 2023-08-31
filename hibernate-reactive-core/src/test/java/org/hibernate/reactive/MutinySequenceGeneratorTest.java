@@ -34,50 +34,48 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testSequenceGenerator(VertxTestContext context) {
-
 		SequenceId b = new SequenceId();
 		b.string = "Hello World";
 
-		test( context,
-				getMutinySessionFactory()
-						.withSession( s -> s.persist(b).call( s::flush ) )
-						.call( () -> getMutinySessionFactory().withSession(
-								s2 -> s2.find( SequenceId.class, b.getId() )
-										.map( bb -> {
-											assertNotNull( bb );
-											assertEquals( bb.id, 5 );
-											assertEquals( bb.string, b.string );
-											assertEquals( bb.version, 0 );
+		test( context, getMutinySessionFactory()
+				.withSession( s -> s.persist( b ).call( s::flush ) )
+				.call( () -> getMutinySessionFactory().withSession(
+						s2 -> s2.find( SequenceId.class, b.getId() )
+								.map( bb -> {
+									assertNotNull( bb );
+									assertEquals( bb.id, 5 );
+									assertEquals( bb.string, b.string );
+									assertEquals( bb.version, 0 );
 
-											bb.string = "Goodbye";
-											return null;
-										} )
-										.call( s2::flush )
-										.chain( () -> s2.find( SequenceId.class, b.getId() ) )
-										.map( bt -> {
-											assertEquals( bt.version, 1 );
-											return null;
-										} )
-						) )
-						.call( () -> getMutinySessionFactory().withSession(
-								s3 -> s3.find( SequenceId.class, b.getId() )
-										.map( bb -> {
-											assertEquals( bb.version, 1 );
-											assertEquals( bb.string, "Goodbye" );
-											return null;
-										} )
-						) )
+									bb.string = "Goodbye";
+									return null;
+								} )
+								.call( s2::flush )
+								.chain( () -> s2.find( SequenceId.class, b.getId() ) )
+								.map( bt -> {
+									assertEquals( bt.version, 1 );
+									return null;
+								} )
+				) )
+				.call( () -> getMutinySessionFactory().withSession(
+						s3 -> s3.find( SequenceId.class, b.getId() )
+								.map( bb -> {
+									assertEquals( bb.version, 1 );
+									assertEquals( bb.string, "Goodbye" );
+									return null;
+								} )
+				) )
 		);
 	}
 
 	@Entity
-	@SequenceGenerator(name = "seq",
-			sequenceName = "test_id_seq",
-			initialValue = 5)
+	@SequenceGenerator(name = "seq", sequenceName = "test_id_seq", initialValue = 5)
 	public static class SequenceId {
-		@Id @GeneratedValue(generator = "seq")
+		@Id
+		@GeneratedValue(generator = "seq")
 		Integer id;
-		@Version Integer version;
+		@Version
+		Integer version;
 		String string;
 
 		public SequenceId() {
@@ -118,12 +116,12 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 				return false;
 			}
 			SequenceId sequenceId = (SequenceId) o;
-			return Objects.equals(string, sequenceId.string);
+			return Objects.equals( string, sequenceId.string );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(string);
+			return Objects.hash( string );
 		}
 	}
 }
