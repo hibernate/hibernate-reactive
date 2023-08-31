@@ -21,6 +21,5 @@ public abstract class MutinyGenerator implements BeforeExecutionGenerator {
         throw new UnsupportedOperationException( "Use generate(Mutiny.Session, Object, Object, EventType) instead" );
     }
 
-    public abstract Uni<Object> generate(Mutiny.Session session, Object owner, Object currentValue,
-                                         EventType eventType);
+    public abstract Uni<?> generate(Mutiny.Session session, Object owner, Object currentValue, EventType eventType);
 }
