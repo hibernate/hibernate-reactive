@@ -363,6 +363,28 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public int getFetchBatchSize() {
+		return delegate.getFetchBatchSize();
+	}
+
+	@Override
+	public Stage.Session setFetchBatchSize(int batchSize) {
+		delegate.setFetchBatchSize( batchSize );
+		return this;
+	}
+
+	@Override
+	public boolean isSubselectFetchingEnabled() {
+		return delegate.isSubselectFetchingEnabled();
+	}
+
+	@Override
+	public Stage.Session setSubselectFetchingEnabled(boolean enabled) {
+		delegate.setSubselectFetchingEnabled( enabled );
+		return this;
+	}
+
+	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
 		return currentTransaction==null ? new Transaction<T>().execute(work) : work.apply(currentTransaction);
 	}

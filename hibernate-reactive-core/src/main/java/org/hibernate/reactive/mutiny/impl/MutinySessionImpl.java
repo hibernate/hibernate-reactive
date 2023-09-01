@@ -438,6 +438,28 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public int getFetchBatchSize() {
+		return delegate.getFetchBatchSize();
+	}
+
+	@Override
+	public Mutiny.Session setFetchBatchSize(int batchSize) {
+		delegate.setFetchBatchSize( batchSize );
+		return this;
+	}
+
+	@Override
+	public boolean isSubselectFetchingEnabled() {
+		return delegate.isSubselectFetchingEnabled();
+	}
+
+	@Override
+	public Mutiny.Session setSubselectFetchingEnabled(boolean enabled) {
+		delegate.setSubselectFetchingEnabled( enabled );
+		return this;
+	}
+
+	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
 		return currentTransaction == null
 				? new Transaction<T>().execute( work )

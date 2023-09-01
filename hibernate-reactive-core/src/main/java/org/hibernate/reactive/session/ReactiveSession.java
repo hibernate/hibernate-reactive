@@ -128,6 +128,11 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 	void enableFetchProfile(String name) throws UnknownProfileException;
 	void disableFetchProfile(String name) throws UnknownProfileException;
 
+	int getFetchBatchSize();
+	void setFetchBatchSize(int batchSize);
+	boolean isSubselectFetchingEnabled();
+	void setSubselectFetchingEnabled(boolean enabled);
+
 	void clear();
 
 	boolean isDirty();
