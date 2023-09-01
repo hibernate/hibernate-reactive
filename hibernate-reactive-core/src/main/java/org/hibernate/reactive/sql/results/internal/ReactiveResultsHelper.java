@@ -106,7 +106,7 @@ public class ReactiveResultsHelper {
 	}
 
 	private static void logInitializers(Map<NavigablePath, Initializer> initializerMap) {
-		if ( ! ResultsLogger.DEBUG_ENABLED ) {
+		if ( ! ResultsLogger.RESULTS_MESSAGE_LOGGER.isDebugEnabled() ) {
 			return;
 		}
 

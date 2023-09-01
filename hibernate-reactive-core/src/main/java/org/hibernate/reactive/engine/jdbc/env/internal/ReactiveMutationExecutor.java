@@ -27,7 +27,6 @@ import org.hibernate.sql.model.ValuesAnalysis;
 import static org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil.checkResults;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
 
 /**
  * @see org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor
@@ -95,7 +94,7 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 
 		final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
-			if ( MODEL_MUTATION_LOGGER_TRACE_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
 				MODEL_MUTATION_LOGGER.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
 			}
 			return voidFuture();

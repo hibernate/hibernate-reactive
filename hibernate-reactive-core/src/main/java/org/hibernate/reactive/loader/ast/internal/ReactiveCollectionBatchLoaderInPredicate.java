@@ -26,7 +26,6 @@ import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
-import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
 
 /**
@@ -54,7 +53,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 				.getDialect()
 				.getBatchLoadSizingStrategy()
 				.determineOptimalBatchLoadSize( keyColumnCount, domainBatchSize, false );
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Using IN-predicate batch fetching strategy for collection `%s` : %s (%s)",
 					attributeMapping.getNavigableRole().getFullPath(),
@@ -90,7 +89,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 
 	@Override
 	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Loading collection `%s#%s` by batch-fetch",
 					getLoadable().getNavigableRole().getFullPath(),
@@ -139,7 +138,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 			T[] keysToInitialize,
 			int nonNullKeysToInitializeCount,
 			SharedSessionContractImplementor session) {
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Collection keys to batch-fetch initialize (`%s#%s`) %s",
 					getLoadable().getNavigableRole().getFullPath(),
@@ -175,7 +174,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 				},
 				ReactiveCollectionBatchLoaderInPredicate::doNothing,
 				startIndex -> {
-					if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+					if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 						MULTI_KEY_LOAD_LOGGER.debugf(
 								"Processing collection batch-fetch chunk (`%s#%s`) %s - %s",
 								getLoadable().getNavigableRole().getFullPath(),
@@ -186,7 +185,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 					}
 				},
 				(startIndex, nonNullElementCount) -> {
-					if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+					if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 						MULTI_KEY_LOAD_LOGGER.debugf(
 								"Finishing collection batch-fetch chunk (`%s#%s`) %s - %s (%s)",
 								getLoadable().getNavigableRole().getFullPath(),

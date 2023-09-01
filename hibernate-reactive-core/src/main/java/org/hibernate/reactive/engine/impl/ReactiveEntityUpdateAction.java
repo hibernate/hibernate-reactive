@@ -8,21 +8,15 @@ package org.hibernate.reactive.engine.impl;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityUpdateAction;
-import org.hibernate.cache.spi.access.EntityDataAccess;
-import org.hibernate.cache.spi.entry.CacheEntry;
-import org.hibernate.engine.spi.CachedNaturalIdValueSource;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.stat.internal.StatsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.TypeHelper;
@@ -156,82 +150,13 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 	}
 
-	// TODO: copy/paste from superclass (make it protected)
-	private void handleNaturalIdResolutions(EntityPersister persister, SharedSessionContractImplementor session, Object id) {
-		NaturalIdMapping naturalIdMapping = getNaturalIdMapping();
-		if ( naturalIdMapping != null ) {
-			session.getPersistenceContextInternal().getNaturalIdResolutions().manageSharedResolution(
-					id,
-					naturalIdMapping.extractNaturalIdFromEntityState( getState() ),
-					getPreviousNaturalIdValues(),
-					persister,
-					CachedNaturalIdValueSource.UPDATE
-			);
-		}
-	}
-
-	// TODO: copy/paste from superclass (make it protected)
-	private void updateCacheItem(Object previousVersion, Object ck, EntityEntry entry) {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			final SharedSessionContractImplementor session = getSession();
-			if ( isCacheInvalidationRequired( persister, session ) || entry.getStatus() != Status.MANAGED ) {
-				persister.getCacheAccessStrategy().remove( session, ck );
-			}
-			else if ( session.getCacheMode().isPutEnabled() ) {
-				//TODO: inefficient if that cache is just going to ignore the updated state!
-				final CacheEntry ce = persister.buildCacheEntry( getInstance(), getState(), getNextVersion(), getSession() );
-				setCacheEntry( persister.getCacheEntryStructure().structure( ce ) );
-				final boolean put = updateCache( persister, previousVersion, ck );
-
-				final StatisticsImplementor statistics = session.getFactory().getStatistics();
-				if ( put && statistics.isStatisticsEnabled() ) {
-					statistics.entityCachePut(
-							StatsHelper.INSTANCE.getRootEntityRole(persister),
-							getPersister().getCacheAccessStrategy().getRegion().getName()
-					);
-				}
-			}
-		}
-	}
-
-	private static boolean isCacheInvalidationRequired(
-			EntityPersister persister,
-			SharedSessionContractImplementor session) {
-		// the cache has to be invalidated when CacheMode is equal to GET or IGNORE
-		return persister.isCacheInvalidationRequired()
-			|| session.getCacheMode() == CacheMode.GET
-			|| session.getCacheMode() == CacheMode.IGNORE;
-	}
-
-	// TODO: copy/paste from superclass (make it protected)
-	private Object lockCacheItem(Object previousVersion) {
-		final EntityPersister persister = getPersister();
-		if ( persister.canWriteToCache() ) {
-			final SharedSessionContractImplementor session = getSession();
-			final EntityDataAccess cache = persister.getCacheAccessStrategy();
-			final Object ck = cache.generateCacheKey(
-					getId(),
-					persister,
-					session.getFactory(),
-					session.getTenantIdentifier()
-			);
-			setLock( cache.lockItem( session, ck, previousVersion ) );
-			return ck;
-		}
-		else {
-			return null;
-		}
-	}
-
 	private CompletionStage<Void> processGeneratedProperties(
 			Object id,
 			ReactiveEntityPersister persister,
 			SharedSessionContractImplementor session,
 			Object instance) {
 		if ( persister.hasUpdateGeneratedProperties() ) {
-			// this entity defines property generation, so process those generated
-			// values...
+			// this entity defines property generation, so process those generated values...
 			if ( persister.isVersionPropertyGenerated() ) {
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setNextVersion( Versioning.getVersion( getState(), persister ) );
