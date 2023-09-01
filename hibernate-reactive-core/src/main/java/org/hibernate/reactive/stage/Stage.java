@@ -5,7 +5,12 @@
  */
 package org.hibernate.reactive.stage;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Parameter;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -1332,6 +1337,53 @@ public interface Stage {
 		 * overridden.
 		 */
 		Integer getBatchSize();
+
+		/**
+		 * Get the maximum batch size for batch fetching associations by
+		 * id in this session.
+		 *
+		 * @since 2.1
+		 */
+		int getFetchBatchSize();
+
+		/**
+		 * Set the maximum batch size for batch fetching associations by
+		 * id in this session.
+		 * Override the default controlled by the configuration property
+		 * {@code hibernate.default_batch_fetch_size}.
+		 * <p>
+		 * <ul>
+		 * <li>If {@code batchSize>1}, then batch fetching is enabled.
+		 * <li>If {@code batchSize<0}, the batch size is inherited from
+		 *     the factory-level setting.
+		 * <li>Otherwise, batch fetching is disabled.
+		 * </ul>
+		 *
+		 * @param batchSize the maximum batch size for batch fetching
+		 *
+		 * @since 2.1
+		 */
+		Stage.Session setFetchBatchSize(int batchSize);
+
+		/**
+		 * Determine if subselect fetching is enabled in this session.
+		 *
+		 * @return {@code true} if subselect fetching is enabled
+		 *
+		 * @since 2.1
+		 */
+		boolean isSubselectFetchingEnabled();
+
+		/**
+		 * Enable or disable subselect fetching in this session.
+		 * Override the default controlled by the configuration property
+		 * {@code hibernate.use_subselect_fetch}.
+		 *
+		 * @param enabled {@code true} to enable subselect fetching
+		 *
+		 * @since 2.1
+		 */
+		Stage.Session setSubselectFetchingEnabled(boolean enabled);
 
 		/**
 		 * Enable the named filter for this session.

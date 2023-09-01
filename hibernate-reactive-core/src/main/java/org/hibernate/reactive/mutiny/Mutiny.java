@@ -1337,6 +1337,53 @@ public interface Mutiny {
 		Filter getEnabledFilter(String filterName);
 
 		/**
+		 * Get the maximum batch size for batch fetching associations by
+		 * id in this session.
+		 *
+		 * @since 2.1
+		 */
+		int getFetchBatchSize();
+
+		/**
+		 * Set the maximum batch size for batch fetching associations by
+		 * id in this session.
+		 * Override the default controlled by the configuration property
+		 * {@code hibernate.default_batch_fetch_size}.
+		 * <p>
+		 * <ul>
+		 * <li>If {@code batchSize>1}, then batch fetching is enabled.
+		 * <li>If {@code batchSize<0}, the batch size is inherited from
+		 *     the factory-level setting.
+		 * <li>Otherwise, batch fetching is disabled.
+		 * </ul>
+		 *
+		 * @param batchSize the maximum batch size for batch fetching
+		 *
+		 * @since 2.1
+		 */
+		Session setFetchBatchSize(int batchSize);
+
+		/**
+		 * Determine if subselect fetching is enabled in this session.
+		 *
+		 * @return {@code true} if subselect fetching is enabled
+		 *
+		 * @since 2.1
+		 */
+		boolean isSubselectFetchingEnabled();
+
+		/**
+		 * Enable or disable subselect fetching in this session.
+		 * Override the default controlled by the configuration property
+		 * {@code hibernate.use_subselect_fetch}.
+		 *
+		 * @param enabled {@code true} to enable subselect fetching
+		 *
+		 * @since 2.1
+		 */
+		Session setSubselectFetchingEnabled(boolean enabled);
+
+		/**
 		 * Performs the given work within the scope of a database transaction,
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
