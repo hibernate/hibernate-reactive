@@ -146,7 +146,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		}
 		else {
 			// the entity is already being loaded elsewhere
-			if ( EntityLoadingLogging.DEBUG_ENABLED ) {
+			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 						"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
 						getSimpleConcreteImplName(),
@@ -189,7 +189,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 
-		if ( EntityLoadingLogging.TRACE_ENABLED ) {
+		if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isTraceEnabled() ) {
 			EntityLoadingLogging.ENTITY_LOADING_LOGGER.tracef(
 					"(%s) Beginning Initializer#initializeInstance process for entity %s",
 					getSimpleConcreteImplName(),
@@ -249,7 +249,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 					registerNaturalIdResolution( persistenceContext, entityIdentifier );
 					takeSnapshot( rowProcessingState, session, persistenceContext, entityEntry );
 					getConcreteDescriptor().afterInitialize( toInitialize, session );
-					if ( EntityLoadingLogging.DEBUG_ENABLED ) {
+					if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 						EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 								"(%s) Done materializing entityInstance : %s",
 								getSimpleConcreteImplName(),

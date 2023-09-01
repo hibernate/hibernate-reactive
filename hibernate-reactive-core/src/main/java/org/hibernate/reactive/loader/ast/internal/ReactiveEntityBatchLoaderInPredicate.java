@@ -30,7 +30,6 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 import static org.hibernate.internal.util.collections.CollectionHelper.arrayList;
-import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
 
 /**
@@ -59,7 +58,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 		this.domainBatchSize = domainBatchSize;
 		this.sqlBatchSize = sqlBatchSize;
 
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Batch fetching `%s` entity using padded IN-list : %s (%s)",
 					entityDescriptor.getEntityName(),
@@ -86,12 +85,12 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 			LockOptions lockOptions,
 			Boolean readOnly,
 			SharedSessionContractImplementor session) {
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf( "Batch loading entity `%s#%s`", getLoadable().getEntityName(), pkValue );
 		}
 
 		final Object[] idsToInitialize = resolveIdsToLoad( pkValue, session );
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Ids to batch-fetch initialize (`%s#%s`) %s",
 					getLoadable().getEntityName(),
@@ -161,7 +160,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 					}
 				},
 				(startIndex) -> {
-					if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+					if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 						MULTI_KEY_LOAD_LOGGER.debugf(
 								"Processing entity batch-fetch chunk (`%s#%s`) %s - %s",
 								getLoadable().getEntityName(),

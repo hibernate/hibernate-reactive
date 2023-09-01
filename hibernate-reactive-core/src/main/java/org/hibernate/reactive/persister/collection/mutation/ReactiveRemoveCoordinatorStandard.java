@@ -30,8 +30,6 @@ import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
 import static org.hibernate.persister.collection.mutation.RowMutationOperations.DEFAULT_RESTRICTOR;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_DEBUG_ENABLED;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
 
 public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard implements ReactiveRemoveCoordinator {
 
@@ -56,7 +54,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 
 	@Override
 	public CompletionStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session) {
-		if ( MODEL_MUTATION_LOGGER_DEBUG_ENABLED ) {
+		if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
 			MODEL_MUTATION_LOGGER
 					.debugf( "Deleting collection - %s : %s", getMutationTarget().getRolePath(), key );
 		}
@@ -98,7 +96,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 		assert getMutationTarget().getTargetPart() != null;
 		assert getMutationTarget().getTargetPart().getKeyDescriptor() != null;
 
-		if ( MODEL_MUTATION_LOGGER_TRACE_ENABLED ) {
+		if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
 			MODEL_MUTATION_LOGGER.tracef( "Starting RemoveCoordinator#buildOperationGroup - %s", getMutationTarget().getRolePath() );
 		}
 

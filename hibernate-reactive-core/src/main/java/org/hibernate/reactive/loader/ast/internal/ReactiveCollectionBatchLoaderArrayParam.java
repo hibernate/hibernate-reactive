@@ -36,7 +36,6 @@ import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.type.BasicType;
 
-import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_DEBUG_ENABLED;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
 
 /**
@@ -58,7 +57,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 			SessionFactoryImplementor sessionFactory) {
 		super( domainBatchSize, loadQueryInfluencers, attributeMapping, sessionFactory );
 
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Using ARRAY batch fetching strategy for collection `%s` : %s",
 					attributeMapping.getNavigableRole().getFullPath(),
@@ -100,7 +99,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 
 	@Override
 	public CompletionStage<PersistentCollection<?>> reactiveLoad(Object key, SharedSessionContractImplementor session) {
-		if ( MULTI_KEY_LOAD_DEBUG_ENABLED ) {
+		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
 			MULTI_KEY_LOAD_LOGGER.debugf(
 					"Batch loading entity `%s#%s`",
 					getLoadable().getNavigableRole().getFullPath(),

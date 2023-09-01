@@ -5,10 +5,8 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER_TRACE_ENABLED;
 import java.util.concurrent.CompletionStage;
+
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
@@ -25,6 +23,9 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
 public class ReactiveMutationExecutorSingleBatched extends MutationExecutorSingleBatched implements
 		ReactiveMutationExecutor {
@@ -53,7 +54,7 @@ public class ReactiveMutationExecutorSingleBatched extends MutationExecutorSingl
 
 		final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
-			if ( MODEL_MUTATION_LOGGER_TRACE_ENABLED ) {
+			if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
 				MODEL_MUTATION_LOGGER.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
 			}
 			return voidFuture();
