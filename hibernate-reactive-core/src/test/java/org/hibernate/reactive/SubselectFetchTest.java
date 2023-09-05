@@ -14,7 +14,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -43,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // see https://github.com/hibernate/hibernate-reactive/issues/1502
 @Timeout(value = 10, timeUnit = MINUTES)
 public class SubselectFetchTest extends BaseReactiveTest {
 
