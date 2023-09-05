@@ -129,6 +129,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 	@Override
 	@SuppressWarnings("ForLoopReplaceableByForEach")
 	public void finishUp(JdbcValuesSourceProcessingState processingState) {
+		processingState.registerSubselect();
 		initializers.endLoading( processingState.getExecutionContext() );
 	}
 
