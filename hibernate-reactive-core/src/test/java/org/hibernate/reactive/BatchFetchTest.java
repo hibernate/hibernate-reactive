@@ -15,7 +15,6 @@ import org.hibernate.LockMode;
 import org.hibernate.annotations.BatchSize;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -60,7 +59,6 @@ public class BatchFetchTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@Disabled// See https://github.com/hibernate/hibernate-reactive/issues/1501
 	public void testQuery(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
