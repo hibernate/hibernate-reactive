@@ -339,6 +339,22 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public CompletionStage<Void> mergeReactive(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) {
+		return ((ReactiveUpdateCoordinator) getMergeCoordinator())
+				.makeScopedCoordinator()
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+	}
+
+	@Override
 	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}

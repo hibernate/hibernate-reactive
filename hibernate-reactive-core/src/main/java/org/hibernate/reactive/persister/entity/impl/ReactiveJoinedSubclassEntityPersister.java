@@ -224,6 +224,20 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
+	public CompletionStage<Void> mergeReactive(
+			Object id,
+			Object[] fields,
+			int[] dirtyFields,
+			boolean hasDirtyCollection,
+			Object[] oldFields,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) {
+		return CompletionStages.nullFuture();
+	}
+
+	@Override
 	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}

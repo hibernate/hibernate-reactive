@@ -40,6 +40,8 @@ public interface ReactiveStatelessSession extends ReactiveQueryProducer, Reactiv
 
 	CompletionStage<Void> reactiveUpdate(Object entity);
 
+	CompletionStage<Void> reactiveUpsert(Object entity);
+
 	CompletionStage<Void> reactiveRefresh(Object entity);
 
 	CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode);

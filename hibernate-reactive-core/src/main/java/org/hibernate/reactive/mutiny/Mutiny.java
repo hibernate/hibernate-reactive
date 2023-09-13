@@ -1690,6 +1690,23 @@ public interface Mutiny {
 		Uni<Void> refresh(Object entity);
 
 		/**
+		 *
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(String, Object)
+		 */
+		Uni<Void> upsert(Object entity);
+
+		/**
+		 *
+		 * @param entityName The entityName for the entity to be merged
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(String, Object)
+		 */
+		Uni<Void> upsert(String entityName, Object entity);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entities The entities to be refreshed.

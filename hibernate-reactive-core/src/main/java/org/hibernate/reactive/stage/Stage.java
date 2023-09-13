@@ -1763,6 +1763,23 @@ public interface Stage {
 		}
 
 		/**
+		 *
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		CompletionStage<Void> upsert(Object entity);
+
+		/**
+		 *
+		 * @param entityName The entityName for the entity to be merged
+		 * @param entity a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(String, Object)
+		 */
+		CompletionStage<Void> upsert(String entityName, Object entity);
+
+		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
 		 *
 		 * <pre>

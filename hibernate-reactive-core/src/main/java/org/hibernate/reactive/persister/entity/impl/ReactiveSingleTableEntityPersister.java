@@ -103,6 +103,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	protected UpdateCoordinator buildMergeCoordinator() {
+		return ReactiveCoordinatorFactory.buildMergeCoordinator( this, getFactory() );
+	}
+
+	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
 	}
@@ -311,6 +316,22 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
 				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
 				// multiple update operations
+				.makeScopedCoordinator()
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+	}
+
+	@Override
+	public CompletionStage<Void> mergeReactive(
+			final Object id,
+			final Object[] values,
+			int[] dirtyAttributeIndexes,
+			final boolean hasDirtyCollection,
+			final Object[] oldValues,
+			final Object oldVersion,
+			final Object object,
+			final Object rowId,
+			SharedSessionContractImplementor session) {
+		return ((ReactiveUpdateCoordinator) getMergeCoordinator())
 				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
