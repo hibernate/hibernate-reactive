@@ -11,12 +11,10 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
-import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metamodel.mapping.EntityRowIdMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
@@ -25,6 +23,7 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
@@ -51,7 +50,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 			super.coordinateDelete( entity, id, version, session );
 			return stage != null ? stage : voidFuture();
 		}
-		catch (Throwable t) {
+		catch (RuntimeException t) {
 			if ( stage == null ) {
 				return failedFuture( t );
 			}
@@ -61,17 +60,18 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 	}
 
 	@Override
-	protected void doDynamicDelete(Object entity, Object id, Object rowId, Object[] loadedState, SharedSessionContractImplementor session) {
+	protected void doDynamicDelete(Object entity, Object id, Object[] loadedState, SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
-		final MutationOperationGroup operationGroup = generateOperationGroup( loadedState, true, session );
+		final MutationOperationGroup operationGroup = generateOperationGroup( null, loadedState, true, session );
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroup );
 
-		operationGroup.forEachOperation( (position, mutation) -> {
+		for ( int i = 0; i < operationGroup.getNumberOfOperations(); i++ ) {
+			final MutationOperation mutation = operationGroup.getOperation( i );
 			if ( mutation != null ) {
 				final String tableName = mutation.getTableDetails().getTableName();
 				mutationExecutor.getPreparedStatementDetails( tableName );
 			}
-		} );
+		}
 
 		applyLocking( null, loadedState, mutationExecutor, session );
 		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
@@ -102,25 +102,29 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 			MutationOperationGroup operationGroup,
 			SharedSessionContractImplementor session) {
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
-		final EntityRowIdMapping rowIdMapping = entityPersister().getRowIdMapping();
 
-		operationGroup.forEachOperation( (position, jdbcMutation) -> {
+		for ( int position = 0; position < operationGroup.getNumberOfOperations(); position++ ) {
+			final MutationOperation jdbcMutation = operationGroup.getOperation( position );
 			final EntityTableMapping tableDetails = (EntityTableMapping) jdbcMutation.getTableDetails();
-			breakDownIdJdbcValues( id, rowId, session, jdbcValueBindings, rowIdMapping, tableDetails );
+			breakDownKeyJdbcValues( id, rowId, session, jdbcValueBindings, tableDetails );
 			final PreparedStatementDetails statementDetails = mutationExecutor.getPreparedStatementDetails( tableDetails.getTableName() );
 			if ( statementDetails != null ) {
 				PreparedStatementAdaptor.bind( statement -> {
-					PrepareStatementDetailsAdaptor detailsAdaptor = new PrepareStatementDetailsAdaptor( statementDetails, statement, session.getJdbcServices() );
+					PrepareStatementDetailsAdaptor detailsAdaptor = new PrepareStatementDetailsAdaptor(
+							statementDetails,
+							statement,
+							session.getJdbcServices()
+					);
 					// force creation of the PreparedStatement
 					//noinspection resource
 					detailsAdaptor.resolveStatement();
 				} );
 			}
-		} );
+		}
 	}
 
 	@Override
-	protected void doStaticDelete(Object entity, Object id, Object[] loadedState, Object version, SharedSessionContractImplementor session) {
+	protected void doStaticDelete(Object entity, Object id, Object rowId, Object[] loadedState, Object version, SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
 		final boolean applyVersion = entity != null;
 		final MutationOperationGroup operationGroupToUse = entity == null
@@ -128,18 +132,19 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 				: getStaticDeleteGroup();
 
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroupToUse );
-		getStaticDeleteGroup().forEachOperation( (position, mutation) -> {
+		for ( int position = 0; position < getStaticDeleteGroup().getNumberOfOperations(); position++ ) {
+			final MutationOperation mutation = getStaticDeleteGroup().getOperation( position );
 			if ( mutation != null ) {
 				mutationExecutor.getPreparedStatementDetails( mutation.getTableDetails().getTableName() );
 			}
-		} );
+		}
 
 		if ( applyVersion ) {
 			applyLocking( version, null, mutationExecutor, session );
 		}
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 		bindPartitionColumnValueBindings( loadedState, session, jdbcValueBindings );
-		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
+		applyId( id, rowId, mutationExecutor, getStaticDeleteGroup(), session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,
@@ -156,38 +161,6 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 				)
 				.thenAccept( v -> mutationExecutor.release() )
 				.whenComplete( this::complete );
-	}
-
-	/**
-	 * Copy and paste of the on in ORM
-	 */
-	private static void breakDownIdJdbcValues(
-			Object id,
-			Object rowId,
-			SharedSessionContractImplementor session,
-			JdbcValueBindings jdbcValueBindings,
-			EntityRowIdMapping rowIdMapping,
-			EntityTableMapping tableDetails) {
-		if ( rowId != null && rowIdMapping != null && tableDetails.isIdentifierTable() ) {
-			jdbcValueBindings.bindValue(
-					rowId,
-					tableDetails.getTableName(),
-					rowIdMapping.getRowIdName(),
-					ParameterUsage.RESTRICT
-			);
-		}
-		else {
-			tableDetails.getKeyMapping().breakDownKeyJdbcValues(
-					id,
-					(jdbcValue, columnMapping) -> jdbcValueBindings.bindValue(
-							jdbcValue,
-							tableDetails.getTableName(),
-							columnMapping.getColumnName(),
-							ParameterUsage.RESTRICT
-					),
-					session
-			);
-		}
 	}
 
 	private void complete(Object o, Throwable throwable) {
