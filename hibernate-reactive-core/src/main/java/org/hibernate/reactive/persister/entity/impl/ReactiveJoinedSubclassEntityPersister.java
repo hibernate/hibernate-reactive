@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
+import java.sql.PreparedStatement;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -36,8 +40,8 @@ import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
-import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
@@ -50,11 +54,6 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.entity.internal.EntityResultJoinedSubclassImpl;
 import org.hibernate.type.EntityType;
-
-import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link JoinedSubclassEntityPersister}
@@ -223,6 +222,29 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
+	/**
+	 * Merge an Object
+	 *
+	 * @see #merge(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Void> mergeReactive(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) {
+		// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
+		// multiple update operations
+		return ( (ReactiveUpdateCoordinator) getMergeCoordinator() )
+				.makeScopedCoordinator()
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+	}
+
 	@Override
 	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
@@ -246,6 +268,23 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
 		throw LOG.nonReactiveMethodCall( "updateReactive" );
+	}
+
+	/**
+	 * @see #mergeReactive(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	@Override
+	public void merge(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) throws HibernateException {
+		throw LOG.nonReactiveMethodCall( "mergeReactive" );
 	}
 
 	@Override

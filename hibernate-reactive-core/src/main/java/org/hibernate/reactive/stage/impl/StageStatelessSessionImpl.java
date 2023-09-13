@@ -118,6 +118,16 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public CompletionStage<Void> upsert(Object entity) {
+		return delegate.reactiveUpsert( entity );
+	}
+
+	@Override
+	public CompletionStage<Void> upsert(String entityName, Object entity) {
+		return delegate.reactiveUpsert( entityName, entity );
+	}
+
+	@Override
 	public <T> CompletionStage<T> fetch(T association) {
 		return delegate.reactiveFetch( association, false );
 	}

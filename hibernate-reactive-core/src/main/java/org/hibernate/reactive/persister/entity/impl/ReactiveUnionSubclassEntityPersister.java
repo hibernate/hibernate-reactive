@@ -246,6 +246,23 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	/**
+	 * @see #mergeReactive(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	@Override
+	public void merge(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) throws HibernateException {
+		throw LOG.nonReactiveMethodCall( "mergeReactive" );
+	}
+
+	/**
 	 * Process properties generated with an insert
 	 *
 	 * @see AbstractEntityPersister#processInsertGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
@@ -334,6 +351,27 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
 				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
 				// multiple update operations
+				.makeScopedCoordinator()
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+	}
+
+	/**
+	 * @see #merge(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Void> mergeReactive(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) {
+		// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
+		// multiple update operations
+		return ( (ReactiveUpdateCoordinator) getMergeCoordinator() )
 				.makeScopedCoordinator()
 				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}

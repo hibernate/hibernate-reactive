@@ -64,6 +64,22 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			final SharedSessionContractImplementor session);
 
 	/**
+	 * Update the given instance state without blocking.
+	 *
+	 * @see EntityPersister#merge(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	CompletionStage<Void> mergeReactive(
+			final Object id,
+			final Object[] fields,
+			final int[] dirtyFields,
+			final boolean hasDirtyCollection,
+			final Object[] oldFields,
+			final Object oldVersion,
+			final Object object,
+			final Object rowId,
+			final SharedSessionContractImplementor session);
+
+	/**
 	 * Obtain a pessimistic lock without blocking
 	 */
 	CompletionStage<Void> reactiveLock(

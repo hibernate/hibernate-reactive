@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.TransientObjectException;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.UnresolvableObjectException;
@@ -365,6 +366,57 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
 				} )
 				.whenComplete( (v, e) -> getLoadQueryInfluencers().setInternalFetchProfile( previousFetchProfile ) );
+	}
+
+
+	/**
+	 * @see StatelessSessionImpl#upsert(Object)
+	 */
+	@Override
+	public CompletionStage<Void> reactiveUpsert(Object entity) {
+		checkOpen();
+		return reactiveUpsert( null, entity );
+	}
+
+	/**
+	 * @see StatelessSessionImpl#upsert(String, Object)
+	 */
+	@Override
+	public CompletionStage<Void> reactiveUpsert(String entityName, Object entity) {
+		checkOpen();
+		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
+		Object id = persister.getIdentifier( entity, this );
+		Boolean knownTransient = persister.isTransient( entity, this );
+		if ( knownTransient != null && knownTransient ) {
+			throw new TransientObjectException(
+					"Object passed to upsert() has a null identifier: "
+							+ persister.getEntityName() );
+//			final Generator generator = persister.getGenerator();
+//			if ( !generator.generatedOnExecution() ) {
+//				id = ( (BeforeExecutionGenerator) generator).generate( this, entity, null, INSERT );
+//			}
+		}
+		final Object[] state = persister.getValues( entity );
+		final Object oldVersion;
+		if ( persister.isVersioned() ) {
+			oldVersion = persister.getVersion( entity );
+			if ( oldVersion == null ) {
+				if ( seedVersion( entity, state, persister, this ) ) {
+					persister.setValues( entity, state );
+				}
+			}
+			else {
+				final Object newVersion = incrementVersion( entity, oldVersion, persister, this );
+				setVersion( state, newVersion, persister );
+				persister.setValues( entity, state );
+			}
+		}
+		else {
+			oldVersion = null;
+		}
+
+		return persister
+				.mergeReactive( id, state, null, false, null, oldVersion, entity, null, this );
 	}
 
 	@Override
