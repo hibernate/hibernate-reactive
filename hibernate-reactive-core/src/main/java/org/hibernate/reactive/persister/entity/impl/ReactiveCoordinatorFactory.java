@@ -44,4 +44,20 @@ public final class ReactiveCoordinatorFactory {
 			SessionFactoryImplementor factory) {
 		return new ReactiveDeleteCoordinator( entityPersister, factory );
 	}
+
+	public static ReactiveUpdateCoordinator buildMergeCoordinator(
+			AbstractEntityPersister entityPersister,
+			SessionFactoryImplementor factory) {
+		// we only have updates to issue for entities with one or more singular attributes
+		final AttributeMappingsList attributeMappings = entityPersister.getAttributeMappings();
+		for ( int i = 0; i < attributeMappings.size(); i++ ) {
+			AttributeMapping attributeMapping = attributeMappings.get( i );
+			if ( attributeMapping instanceof SingularAttributeMapping ) {
+				return new ReactiveMergeCoordinatorStandardScopeFactory( entityPersister, factory );
+			}
+		}
+
+		// otherwise, nothing to update
+		return new ReactiveUpdateCoordinatorNoOp( entityPersister );
+	}
 }

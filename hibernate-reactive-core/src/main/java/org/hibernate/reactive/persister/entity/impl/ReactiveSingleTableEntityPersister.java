@@ -103,6 +103,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	protected UpdateCoordinator buildMergeCoordinator() {
+		return ReactiveCoordinatorFactory.buildMergeCoordinator( this, getFactory() );
+	}
+
+	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
 	}
@@ -218,6 +223,20 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		throw LOG.nonReactiveMethodCall( "updateReactive" );
 	}
 
+	@Override
+	public void merge(
+			Object id,
+			Object[] values,
+			int[] dirtyAttributeIndexes,
+			boolean hasDirtyCollection,
+			Object[] oldValues,
+			Object oldVersion,
+			Object object,
+			Object rowId,
+			SharedSessionContractImplementor session) throws HibernateException {
+		throw LOG.nonReactiveMethodCall( "mergeReactive" );
+	}
+
 	/**
 	 * Process properties generated with an insert
 	 *
@@ -309,6 +328,29 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final Object rowId,
 			final SharedSessionContractImplementor session) throws HibernateException {
 		return ( (ReactiveUpdateCoordinator) getUpdateCoordinator() )
+				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
+				// multiple update operations
+				.makeScopedCoordinator()
+				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+	}
+
+	/**
+	 * Merge an object
+	 *
+	 * @see SingleTableEntityPersister#merge(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
+	 */
+	@Override
+	public CompletionStage<Void> mergeReactive(
+			final Object id,
+			final Object[] values,
+			int[] dirtyAttributeIndexes,
+			final boolean hasDirtyCollection,
+			final Object[] oldValues,
+			final Object oldVersion,
+			final Object object,
+			final Object rowId,
+			SharedSessionContractImplementor session) {
+		return ( (ReactiveUpdateCoordinator) getMergeCoordinator() )
 				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
 				// multiple update operations
 				.makeScopedCoordinator()
