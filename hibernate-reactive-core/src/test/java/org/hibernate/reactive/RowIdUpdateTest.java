@@ -33,9 +33,9 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORA
 import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 
 /**
- * Adapted from the test with the same name in Hibernate ORM: {@literal org.hibernate.orm.test.rowid.RowIdUpdateAndDeleteTest}
+ * Adapted from the test with the same name in Hibernate ORM: {@literal org.hibernate.orm.test.rowid.RowIdUpdateTest}
  */
-public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
+public class RowIdUpdateTest extends BaseReactiveTest {
 
 	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
 	// Oracle: Vert.x driver doesn't support RowId type parameters
@@ -52,7 +52,7 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		sqlTracker = new SqlStatementTracker( RowIdUpdateAndDeleteTest::isRowIdQuery, configuration.getProperties() );
+		sqlTracker = new SqlStatementTracker( RowIdUpdateTest::isUsingRowId, configuration.getProperties() );
 		return configuration;
 	}
 
@@ -61,17 +61,15 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 		sqlTracker.registerService( builder );
 	}
 
-	private static boolean isRowIdQuery(String s) {
-		return s.toLowerCase().startsWith( "update" ) || s.toLowerCase().startsWith( "delete" );
+	private static boolean isUsingRowId(String s) {
+		return s.toLowerCase().startsWith( "update" );
 	}
 
 	@BeforeEach
 	public void prepareDb(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( session -> session.persistAll(
 				new SimpleEntity( 1L, "initial_status" ),
-				new ParentEntity( 2L, new SimpleEntity( 2L, "initial_status" ) ),
-				new SimpleEntity( 11L, "to_delete" ),
-				new ParentEntity( 12L, new SimpleEntity( 12L, "to_delete" ) )
+				new ParentEntity( 2L, new SimpleEntity( 2L, "initial_status" ) )
 		) ) );
 	}
 
@@ -88,27 +86,8 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( SimpleEntity.class, 3L ) ) )
 				// the update should have used the primary key, as the row-id value is not available
-				.invoke( RowIdUpdateAndDeleteTest::shouldUsePrimaryKeyForUpdate )
+				.invoke( RowIdUpdateTest::shouldUsePrimaryKey )
 				.invoke( entity -> assertThat( entity ).hasFieldOrPropertyWithValue( "status", "new_status" ) )
-		);
-	}
-
-	@Test
-	public void testSimpleDeleteSameTransaction(VertxTestContext context) {
-		sqlTracker.clear();
-		test( context, getMutinySessionFactory()
-				.withTransaction( session -> {
-					final SimpleEntity simpleEntity = new SimpleEntity( 13L, "to_delete" );
-					return session.persist( simpleEntity )
-							.call( session::flush )
-							.call( () -> session.remove( simpleEntity ) )
-							.invoke( () -> simpleEntity.setStatus( "new_status" ) );
-				} )
-				.chain( () -> getMutinySessionFactory()
-						.withSession( session -> session.find( SimpleEntity.class, 13L ) ) )
-				// the update should have used the primary key, as the row-id value is not available
-				.invoke( RowIdUpdateAndDeleteTest::shouldUsePrimaryKeyForDelete )
-				.invoke( entity -> assertThat( entity ).isNull() )
 		);
 	}
 
@@ -126,23 +105,8 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( SimpleEntity.class, 4L ) ) )
 				// the update should have used the primary key, as the row-id value is not available
-				.invoke( RowIdUpdateAndDeleteTest::shouldUsePrimaryKeyForUpdate )
+				.invoke( RowIdUpdateTest::shouldUsePrimaryKey )
 				.invoke( entity -> assertThat( entity ).hasFieldOrPropertyWithValue( "status", "new_status" ) )
-		);
-	}
-
-	@Test
-	public void testSimpleDeleteDifferentTransaction(VertxTestContext context) {
-		sqlTracker.clear();
-		test( context, getMutinySessionFactory()
-				.withTransaction( session -> session
-						.find( SimpleEntity.class, 11L )
-						.call( session::remove )
-				)
-				.chain( () -> getMutinySessionFactory()
-						.withSession( session -> session.find( SimpleEntity.class, 11L ) ) )
-				.invoke( RowIdUpdateAndDeleteTest::shouldUseRowIdForDelete )
-				.invoke( entity -> assertThat( entity ).isNull() )
 		);
 	}
 
@@ -156,7 +120,7 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 				)
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( SimpleEntity.class, 1L ) ) )
-				.invoke( RowIdUpdateAndDeleteTest::shouldUseRowIdForUpdate )
+				.invoke( RowIdUpdateTest::shouldUseRowId )
 				.invoke( entity -> assertThat( entity ).hasFieldOrPropertyWithValue( "status", "new_status" ) )
 		);
 	}
@@ -169,7 +133,7 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 						.find( ParentEntity.class, 2L )
 						.invoke( entity -> entity.getChild().setStatus( "new_status" ) )
 				)
-				.invoke( RowIdUpdateAndDeleteTest::shouldUseRowIdForUpdate )
+				.invoke( RowIdUpdateTest::shouldUseRowId )
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session.find( SimpleEntity.class, 2L ) ) )
 				.invoke( entity -> assertThat( entity )
@@ -178,34 +142,19 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 		);
 	}
 
-	private static void shouldUsePrimaryKeyForUpdate() {
+	private static void shouldUsePrimaryKey() {
 		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
 				.matches( "update SimpleEntity set status=.+ where primary_key=.+" );
 	}
 
-	private static void shouldUsePrimaryKeyForDelete() {
-		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
-		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-				.matches( "delete from SimpleEntity where primary_key=.+" );
-	}
-
-	private static void shouldUseRowIdForUpdate() {
+	private static void shouldUseRowId() {
 		// Not all databases have a rowId column
 		String rowId = getDialect().rowId( "" );
 		String column = rowId == null ? "primary_key" : rowId;
 		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
 				.matches( "update SimpleEntity set status=.+ where " + column + "=.+" );
-	}
-
-	private static void shouldUseRowIdForDelete() {
-		// Not all databases have a rowId column
-		String rowId = getDialect().rowId( "" );
-		String column = rowId == null ? "primary_key" : rowId;
-		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
-		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-				.matches( "delete from SimpleEntity where " + column + "=.+" );
 	}
 
 	@Entity(name = "SimpleEntity")
