@@ -64,14 +64,12 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 		final boolean veto = isInstanceLoaded() && preDelete();
 
 		final Object ck = lockCacheItem();
-		return deleteStep(
-				veto,
-				(ReactiveEntityPersister) persister,
-				id,
-				version,
-				instance,
-				session
-		).thenAccept( v -> {
+
+		final CompletionStage<Void> deleteStep = !isCascadeDeleteEnabled() && !veto
+				? ( (ReactiveEntityPersister) persister ).deleteReactive( id, version, instance, session )
+				: voidFuture();
+
+		return deleteStep.thenAccept( v -> {
 			if ( isInstanceLoaded() ) {
 				postDeleteLoaded( id, persister, session, instance, ck );
 			}
@@ -85,17 +83,5 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 				statistics.deleteEntity( getPersister().getEntityName() );
 			}
 		} );
-	}
-
-	private CompletionStage<Void> deleteStep(
-			boolean veto,
-			ReactiveEntityPersister persister,
-			Object id,
-			Object version,
-			Object instance,
-			SharedSessionContractImplementor session) {
-		return !isCascadeDeleteEnabled() && !veto
-				? persister.deleteReactive( id, version, instance, session )
-				: voidFuture();
 	}
 }
