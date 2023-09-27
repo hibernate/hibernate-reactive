@@ -50,7 +50,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test( context, getSessionFactory().withTransaction( s -> s
 				.persist( semolina )
-				.thenCompose( v -> s.createQuery( "from Flour where id = " + semolina.getId() ).getSingleResult() )
+				.thenCompose( v -> s.createSelectionQuery( "from Flour where id = " + semolina.getId(), Flour.class ).getSingleResult() )
 				.thenAccept( found -> assertEquals( semolina, found ) ) )
 		);
 	}
@@ -60,7 +60,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 		Flour semolina = new Flour( 678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
 		test( context, getSessionFactory().withTransaction( s -> s
 				.persist( semolina )
-				.thenCompose( v -> s.createQuery( "from Flour order by name" ).getResultList() )
+				.thenCompose( v -> s.createSelectionQuery( "from Flour order by name", Flour.class ).getResultList() )
 				.thenAccept( results -> assertThat( results ).containsExactly( almond, rye, semolina, spelt ) )
 		) );
 	}
@@ -68,7 +68,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSelectScalarString(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-			Stage.Query<Object> qr = s.createQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId() );
+			Stage.SelectionQuery<String> qr = s.createSelectionQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId(), String.class );
 			assertNotNull( qr );
 			return qr.getSingleResult();
 		} ).thenAccept( found -> assertEquals( "Prova", found ) ) );
@@ -77,7 +77,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSelectScalarCount(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-			Stage.SelectionQuery<Long> qr = s.createQuery( "SELECT count(*) FROM Flour", Long.class );
+			Stage.SelectionQuery<Long> qr = s.createSelectionQuery( "SELECT count(*) FROM Flour", Long.class );
 			assertNotNull( qr );
 			return qr.getSingleResult();
 		} ).thenAccept( found -> assertEquals( 3L, found ) ) );
@@ -86,7 +86,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSelectWithMultipleScalarValues(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.Query<?> qr = s.createQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId() );
+				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId(), Object[].class );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
 			  } ).thenAccept( found -> {
@@ -100,7 +100,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSingleResultQueryOnId(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.Query<?> qr = s.createQuery( "FROM Flour WHERE id = 1" );
+				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "FROM Flour WHERE id = 1", Flour.class );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
 			  } ).thenAccept( flour -> assertEquals( spelt, flour ) )
@@ -110,7 +110,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSingleResultQueryOnName(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.Query<?> qr = s.createQuery( "FROM Flour WHERE name = 'Almond'" );
+				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "FROM Flour WHERE name = 'Almond'", Flour.class );
 				  assertNotNull( qr );
 				  return qr.getSingleResult();
 			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
@@ -121,7 +121,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testFromQuery(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withSession( s -> {
-					Stage.Query<Flour> qr = s.createQuery( "FROM Flour ORDER BY name" );
+					Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour ORDER BY name", Flour.class );
 					assertNotNull( qr );
 					return qr.getResultList();
 				} )

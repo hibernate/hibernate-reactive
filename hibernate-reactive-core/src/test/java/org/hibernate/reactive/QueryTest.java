@@ -415,12 +415,12 @@ public class QueryTest extends BaseReactiveTest {
 				} )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session
-						.createQuery( "select title from Book", String.class )
+						.createSelectionQuery( "select title from Book", String.class )
 						.getResultList()
 						.thenAccept( list -> assertThat( list )
 								.containsExactlyInAnyOrder( book1.title, book2.title, book3.title ) )
 						.thenCompose( vv -> session
-								.createQuery( "select title, isbn, id from Book", Object[].class )
+								.createSelectionQuery( "select title, isbn, id from Book", Object[].class )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
@@ -496,7 +496,7 @@ public class QueryTest extends BaseReactiveTest {
 						} )
 
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createQuery( "update Book set title = ?1 where title = ?2" )
+						.thenCompose( session -> session.createMutationQuery( "update Book set title = ?1 where title = ?2" )
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
@@ -558,7 +558,7 @@ public class QueryTest extends BaseReactiveTest {
 	@Test
 	public void testSingleResultQueryNull(VertxTestContext context) {
 		test( context, openSession()
-				.thenCompose( s -> s.createQuery( "from Book" ).getSingleResultOrNull() )
+				.thenCompose( s -> s.createSelectionQuery( "from Book", Book.class ).getSingleResultOrNull() )
 				.thenAccept( Assertions::assertNull )
 		);
 	}
@@ -566,7 +566,7 @@ public class QueryTest extends BaseReactiveTest {
 	@Test
 	public void testSingleResultQueryException(VertxTestContext context) {
 		test( context, openSession()
-				.thenCompose( s -> s.createQuery( "from Book" ).getSingleResult() )
+				.thenCompose( s -> s.createSelectionQuery( "from Book", Book.class ).getSingleResult() )
 				.whenComplete( (r, x) -> {
 					assertNull( r );
 					assertNotNull( x );
@@ -588,7 +588,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> assertThrown(
 						jakarta.persistence.NonUniqueResultException.class,
-						s.createQuery( "from Author" ).getSingleResult()
+						s.createSelectionQuery( "from Author", Author.class ).getSingleResult()
 				) )
 		);
 	}
@@ -602,7 +602,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> assertThrown(
 						jakarta.persistence.NonUniqueResultException.class,
-						s.createQuery( "from Author" ).getSingleResultOrNull()
+						s.createSelectionQuery( "from Author", Author.class ).getSingleResultOrNull()
 				) )
 		);
 	}

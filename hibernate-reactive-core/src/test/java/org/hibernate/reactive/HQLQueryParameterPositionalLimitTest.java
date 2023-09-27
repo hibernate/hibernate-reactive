@@ -61,7 +61,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testNoResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where id = ?1" ).setMaxResults( 0 )
+						.createSelectionQuery( "from Flour where id = ?1", Flour.class ).setMaxResults( 0 )
 						.setParameter( 1, rye.getId() )
 						.getResultList()
 						.thenAccept( list -> assertEquals( 0, list.size() ) )
@@ -73,7 +73,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultNoResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour" )
+						.createSelectionQuery( "from Flour", Flour.class )
 						.setMaxResults( 0 )
 						.setFirstResult( 1 )
 						.getResultList()
@@ -86,7 +86,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name != ?1 order by id" )
+						.createSelectionQuery( "from Flour where name != ?1 order by id", Flour.class )
 						.setParameter( 1, spelt.getName() )
 						.setFirstResult( 1 )
 						.getSingleResult()
@@ -99,7 +99,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMultipleResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.getResultList()
 						.thenAccept( results -> assertThat( results ).containsExactly( rye, almond ) )
@@ -111,7 +111,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.setMaxResults( 1 )
 						.getSingleResult()
@@ -127,7 +127,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultZeroAndMaxResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name = ?1 order by id" )
+						.createSelectionQuery( "from Flour where name = ?1 order by id", Flour.class )
 						.setParameter( 1, almond.getName() )
 						.setFirstResult( 0 )
 						.setMaxResults( 10 )
@@ -145,7 +145,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultZeroAndMaxResultsWithoutOrder(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name = ?1" )
+						.createSelectionQuery( "from Flour where name = ?1", Flour.class )
 						.setParameter( 1, almond.getName() )
 						.setFirstResult( 0 )
 						.setMaxResults( 10 )
@@ -159,7 +159,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsMultipleResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.setMaxResults( 2 )
 						.getResultList()
@@ -174,7 +174,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 				context,
 				openSession()
 						.thenCompose( s ->
-											  s.createQuery( "from Flour order by id" )
+											  s.createSelectionQuery( "from Flour order by id", Flour.class )
 													  .setFirstResult( 1 )
 													  .setMaxResults( 3 )
 													  .getResultList()

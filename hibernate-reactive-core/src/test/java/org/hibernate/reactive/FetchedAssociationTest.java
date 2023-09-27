@@ -78,7 +78,7 @@ public class FetchedAssociationTest extends BaseReactiveTest {
 				} )
 				.call( () -> getMutinySessionFactory()
 						.withTransaction( s -> s
-								.createQuery( "From Parent", Parent.class )
+								.createSelectionQuery( "From Parent", Parent.class )
 								.getSingleResult()
 								.call( parent -> {
 									Child child = new Child();

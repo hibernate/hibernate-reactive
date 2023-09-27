@@ -154,7 +154,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( s -> s.persist( spells ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s
-						.createQuery( "update Book set title=title||' II' where title='Necronomicon'" )
+						.createMutationQuery( "update Book set title=title||' II' where title='Necronomicon'" )
 						.executeUpdate() )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
@@ -164,7 +164,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 					assertEquals( book.getTitle(), "Necronomicon II" );
 				} )
 				.thenCompose( v -> openSession() ).thenCompose( s -> s
-						.createQuery( "delete Book where title='Necronomicon II'" )
+						.createMutationQuery( "delete Book where title='Necronomicon II'" )
 						.executeUpdate() )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
@@ -179,7 +179,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 		test( context, openSession()
 				.thenCompose( s -> s.persist( spells ).thenCompose( v -> s.flush() ) )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "update Book set title=title||:sfx where title=:tit" )
+				.thenCompose( s -> s.createMutationQuery( "update Book set title=title||:sfx where title=:tit" )
 						.setParameter( "sfx", " II" )
 						.setParameter( "tit", "Necronomicon" )
 						.executeUpdate() )
@@ -191,7 +191,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 					assertEquals( book.getTitle(), "Necronomicon II" );
 				} )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "delete Book where title=:tit" )
+				.thenCompose( s -> s.createMutationQuery( "delete Book where title=:tit" )
 						.setParameter( "tit", "Necronomicon II" )
 						.executeUpdate() )
 				.thenCompose( v -> openSession() )

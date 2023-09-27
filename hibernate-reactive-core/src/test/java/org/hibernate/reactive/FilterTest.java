@@ -59,8 +59,8 @@ public class FilterTest extends BaseReactiveTest {
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() )
+				.withTransaction( s -> s.createMutationQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createMutationQuery( "delete from Node" ).executeUpdate() )
 						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
@@ -80,18 +80,18 @@ public class FilterTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
 									s.enableFilter( "current" );
-									return s.createQuery( "select distinct n from Node n left join fetch n.elements order by n.id" )
+									return s.createSelectionQuery( "select distinct n from Node n left join fetch n.elements order by n.id", Node.class )
 											.setComment( "Hello World!" )
 											.getResultList();
 								} ) )
 						.thenAccept( list -> {
 							assertEquals( list.size(), 2 );
-							assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
+							assertEquals( list.get( 0 ).elements.size(), 2 );
 						} )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
 									s.enableFilter( "current" );
-									return s.createQuery( "select distinct n, e from Node n join n.elements e" )
+									return s.createSelectionQuery( "select distinct n, e from Node n join n.elements e", Object[].class )
 											.getResultList();
 								} ) )
 						.thenAccept( list -> assertEquals( list.size(), 2 ) )
@@ -119,8 +119,8 @@ public class FilterTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
 									s.enableFilter( "region" ).setParameter( "region", "oceania" );
-									return s.createQuery(
-													"select distinct n from Node n left join fetch n.elements order by n.id" )
+									return s.createSelectionQuery(
+													"select distinct n from Node n left join fetch n.elements order by n.id", Node.class )
 											.setComment( "Hello World!" )
 											.getResultList();
 								} ) )
@@ -131,7 +131,7 @@ public class FilterTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
 									s.enableFilter( "region" ).setParameter( "region", "oceania" );
-									return s.createQuery( "select distinct n, e from Node n join n.elements e" )
+									return s.createSelectionQuery( "select distinct n, e from Node n join n.elements e", Object[].class )
 											.getResultList();
 								} ) )
 						.thenAccept( list -> assertEquals( list.size(), 2 ) )

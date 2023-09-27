@@ -195,7 +195,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 								.thenCompose( v -> s.persist( terryPratchett ) )
 								.thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "from Tome b where b.id=?1", Book.class )
+						.thenCompose( s -> s.createSelectionQuery( "from Tome b where b.id=?1", Book.class )
 								.setPlan( s.getEntityGraph( Book.class, "withAuthors" ) )
 								.setParameter( 1, goodOmens.getId() )
 								.getSingleResult() )
@@ -210,7 +210,7 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						.thenCompose( s -> {
 							EntityGraph<Author> graph = s.createEntityGraph( Author.class );
 							graph.addAttributeNodes( "book" );
-							return s.createQuery( "from Writer w where w.id=?1", Author.class )
+							return s.createSelectionQuery( "from Writer w where w.id=?1", Author.class )
 									.setPlan( graph )
 									.setParameter( 1, neilGaiman.getId() )
 									.getSingleResult();

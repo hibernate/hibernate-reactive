@@ -54,8 +54,8 @@ public class BatchFetchTest extends BaseReactiveTest {
 	@AfterEach
 	public void cleanDb(VertxTestContext context) {
 		test( context, getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() ) ) );
+				.withTransaction( s -> s.createMutationQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createMutationQuery( "delete from Node" ).executeUpdate() ) ) );
 	}
 
 	@Test
@@ -71,7 +71,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 		test( context, getSessionFactory()
 				.withTransaction( s -> s.persist( basik ) )
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "from Node n order by id", Node.class )
+				.thenCompose( s -> s.createSelectionQuery( "from Node n order by id", Node.class )
 						.getResultList()
 						.thenCompose( list -> {
 							assertEquals( list.size(), 2 );
@@ -88,7 +88,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 						} )
 				)
 				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createQuery( "from Element e order by id", Element.class )
+				.thenCompose( s -> s.createSelectionQuery( "from Element e order by id", Element.class )
 						.getResultList()
 						.thenCompose( list -> {
 							assertEquals( list.size(), 5 );
@@ -147,7 +147,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 				.withTransaction( s -> s.persist( node ) )
 				.thenCompose( v -> getSessionFactory()
 						.withTransaction( s -> s
-								.createQuery( "from Node n order by id", Node.class )
+								.createSelectionQuery( "from Node n order by id", Node.class )
 								.getResultList()
 								.thenCompose( list -> {
 									assertEquals( list.size(), 1 );

@@ -70,13 +70,13 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 						) )
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( session -> session
-										.createQuery( "select count(*) from Product", Long.class )
+										.createSelectionQuery( "select count(*) from Product", Long.class )
 										.getSingleResult()
 										.thenAccept( result -> assertEquals( 3L, result ) )
 						) )
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( session -> session
-										.createQuery( "select name from Product" )
+										.createSelectionQuery( "select name from Product", String.class )
 										.getResultList()
 										.thenAccept( list -> assertThat( list )
 												.containsExactlyInAnyOrder( "bp5", "bp6", "bp7" ) )

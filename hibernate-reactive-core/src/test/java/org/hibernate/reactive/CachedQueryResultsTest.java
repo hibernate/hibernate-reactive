@@ -139,7 +139,7 @@ public class CachedQueryResultsTest extends BaseReactiveTest {
 	}
 
 	private static Uni<List<Fruit>> findAllWithCacheableQuery(Mutiny.Session session) {
-		return session.createQuery( "FROM Fruit f ORDER BY f.name ASC", Fruit.class )
+		return session.createSelectionQuery( "FROM Fruit f ORDER BY f.name ASC", Fruit.class )
 				.setCacheable( true )
 				.getResultList();
 	}

@@ -90,7 +90,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						// If the previous clear doesn't work, this will cause a duplicated entity exception
 						.thenCompose( v -> session.persist( guineaPig ) )
 						.thenCompose( v -> session.flush() )
-						.thenCompose( v -> session.createQuery( "FROM GuineaPig", GuineaPig.class )
+						.thenCompose( v -> session.createSelectionQuery( "FROM GuineaPig", GuineaPig.class )
 								// By not using .find() we check that there is only one entity in the db with getSingleResult()
 								.getSingleResult() )
 						.thenAccept( result -> assertThatPigsAreEqual( guineaPig, result ) )
@@ -271,7 +271,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									);
 									assertEquals( actualPig.version, 1 );
 								} )
-								.thenCompose( v -> session.createQuery( "select version from GuineaPig" )
+								.thenCompose( v -> session.createSelectionQuery( "select version from GuineaPig", Integer.class )
 										.getSingleResult() )
 								.thenAccept( version -> assertEquals( 1, version ) )
 						)
@@ -287,7 +287,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 									);
 									assertEquals( actualPig.version, 2 );
 								} )
-								.thenCompose( v -> session.createQuery( "select version from GuineaPig" )
+								.thenCompose( v -> session.createSelectionQuery( "select version from GuineaPig", Integer.class )
 										.getSingleResult() )
 								.thenAccept( version -> assertEquals( 2, version ) )
 						)
@@ -540,7 +540,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				populateDB()
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( (session, tx) -> session
-										.createQuery( "from GuineaPig pig", GuineaPig.class )
+										.createSelectionQuery( "from GuineaPig pig", GuineaPig.class )
 										.setLockMode( LockModeType.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.thenAccept( actualPig -> {
@@ -558,7 +558,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test( context, populateDB()
 				.thenCompose(
 						v -> getSessionFactory().withTransaction(
-								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class )
+								(session, tx) -> session.createSelectionQuery( "from GuineaPig pig", GuineaPig.class )
 										.setLockMode( "pig", LockMode.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.thenAccept( actualPig -> {
@@ -784,7 +784,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	@Test
 	public void testTransactionPropagation(VertxTestContext context) {
 		test( context, getSessionFactory().withTransaction(
-				(session, transaction) -> session.createQuery( "from GuineaPig" ).getResultList()
+				(session, transaction) -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList()
 						.thenCompose( list -> {
 							assertNotNull( session.currentTransaction() );
 							assertFalse( session.currentTransaction().isMarkedForRollback() );
@@ -794,7 +794,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 							return session.withTransaction( t -> {
 								assertEquals( t, transaction );
 								assertTrue( t.isMarkedForRollback() );
-								return session.createQuery( "from GuineaPig" ).getResultList();
+								return session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 							} );
 						} )
 		) );
@@ -805,10 +805,10 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( session -> {
 			assertFalse( session.isDefaultReadOnly() );
 			session.setDefaultReadOnly( true );
-			return session.createQuery( "from GuineaPig" ).getResultList()
+			return session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList()
 					.thenCompose( list -> getSessionFactory().withSession( s -> {
 						assertTrue( s.isDefaultReadOnly() );
-						return s.createQuery( "from GuineaPig" ).getResultList();
+						return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 					} ) );
 		} ) );
 	}
@@ -880,7 +880,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 		test( context, openSession()
 				.thenCompose( s -> s.withTransaction( t -> s.persist( aloiPig, bloiPig ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
+						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 								.getResultList()
 								.thenAccept( resultList -> assertThat( resultList ).containsExactlyInAnyOrder( aloiPig, bloiPig ) )
 						)
@@ -899,13 +899,13 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				.thenCompose( s -> s
 						.withTransaction( t -> s.persist( new GuineaPig( 10, "Aloi" ) ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
+						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResult()
 								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, actualPig ) ) )
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResult()
-								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, (GuineaPig) actualPig ) ) )
+								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, actualPig ) ) )
 				)
 		);
 	}
@@ -913,7 +913,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	@Test
 	public void testCreateSelectionQueryNull(VertxTestContext context) {
 		test( context, openSession()
-				.thenCompose( session -> session.createQuery( "from GuineaPig", GuineaPig.class )
+				.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 						.getSingleResultOrNull()
 						.thenAccept( Assertions::assertNull ) )
 				.thenCompose( v -> openSession() )

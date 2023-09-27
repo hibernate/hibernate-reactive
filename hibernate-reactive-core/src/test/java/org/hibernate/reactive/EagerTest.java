@@ -63,8 +63,8 @@ public class EagerTest extends BaseReactiveTest {
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from Element" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Node" ).executeUpdate() )
+				.withTransaction( s -> s.createMutationQuery( "delete from Element" ).executeUpdate()
+						.thenCompose( v -> s.createMutationQuery( "delete from Node" ).executeUpdate() )
 						.thenCompose( CompletionStages::voidFuture ) );
 	}
 
@@ -127,7 +127,7 @@ public class EagerTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery( "from Element", Element.class ).getResultList())
+						.thenCompose(s -> s.createSelectionQuery( "from Element", Element.class ).getResultList())
 						.thenAccept( elements -> {
 							for (Element element: elements) {
 								assertTrue( Hibernate.isInitialized( element.getNode() ) );
@@ -151,7 +151,7 @@ public class EagerTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose(s -> s.persist(basik).thenCompose(v -> s.flush()))
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery("from Node order by id", Node.class).getResultList())
+						.thenCompose(s -> s.createSelectionQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
 							assertEquals(list.size(), 2);
 							assertTrue( Hibernate.isInitialized( list.get(0).getElements() ) );
@@ -159,10 +159,10 @@ public class EagerTest extends BaseReactiveTest {
 							assertEquals(list.get(1).getElements().size(), 0);
 						})
 						.thenCompose( v -> openSession() )
-						.thenCompose(s -> s.createQuery("select distinct n, e from Node n join n.elements e order by n.id").getResultList())
+						.thenCompose(s -> s.createSelectionQuery("select distinct n, e from Node n join n.elements e order by n.id", Object[].class).getResultList())
 						.thenAccept(list -> {
 							assertEquals(list.size(), 3);
-							Object[] tup = (Object[]) list.get(0);
+							Object[] tup = list.get(0);
 							assertTrue( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) );
 							assertEquals(((Node) tup[0]).getElements().size(), 3);
 						})

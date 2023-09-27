@@ -64,7 +64,7 @@ public class CacheTest extends BaseReactiveTest {
 						} )
 						//populate the cache
 						.thenCompose( v -> getSessionFactory().withSession(
-								s -> s.createQuery( "from Named" ).getResultList()
+								s -> s.createSelectionQuery( "from Named", Named.class ).getResultList()
 										.thenAccept( list -> assertEquals( 3, list.size() ) )
 						) )
 						.thenAccept( v -> {
@@ -83,7 +83,7 @@ public class CacheTest extends BaseReactiveTest {
 						) )
 						//change the database
 						.thenCompose( v -> getSessionFactory().withSession(
-								s -> s.createQuery( "update Named set name='x'||name" ).executeUpdate()
+								s -> s.createMutationQuery( "update Named set name='x'||name" ).executeUpdate()
 						) )
 						.thenAccept( v -> {
 							assertFalse( cache.contains( Named.class, 1 ) );
@@ -111,7 +111,7 @@ public class CacheTest extends BaseReactiveTest {
 						} )
 						//repopulate the cache
 						.thenCompose( v -> getSessionFactory().withSession(
-								s -> s.createQuery( "from Named" ).getResultList()
+								s -> s.createSelectionQuery( "from Named", Named.class ).getResultList()
 										.thenAccept( list -> assertEquals( 3, list.size() ) )
 						) )
 						.thenAccept( v -> {
@@ -125,7 +125,7 @@ public class CacheTest extends BaseReactiveTest {
 						) )
 						//change the database
 						.thenCompose( v -> getSessionFactory().withSession(
-								s -> s.createQuery( "delete Named" ).executeUpdate()
+								s -> s.createMutationQuery( "delete Named" ).executeUpdate()
 						) )
 						.thenAccept( v -> {
 							assertFalse( cache.contains( Named.class, 1 ) );

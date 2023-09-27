@@ -26,7 +26,6 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -75,7 +74,7 @@ public class OneToManyTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
+						.createSelectionQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResult()
 						.invoke( a -> assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
 						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
@@ -94,7 +93,7 @@ public class OneToManyTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.createQuery( "select distinct a from Author a left join fetch a.books", Author.class )
+						.createSelectionQuery( "select distinct a from Author a left join fetch a.books", Author.class )
 						.getSingleResultOrNull()
 						.invoke( a -> assertTrue( Hibernate.isInitialized( a.getBooks() ) ) )
 						.invoke( a -> assertThat( a.getBooks() ).containsExactlyInAnyOrder( book1, book2 ) )
@@ -113,7 +112,7 @@ public class OneToManyTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
 				.chain( () -> getMutinySessionFactory().withTransaction( session -> session
-						.createQuery( "select a from Author a left join fetch a.books where 1=0", Author.class )
+						.createSelectionQuery( "select a from Author a left join fetch a.books where 1=0", Author.class )
 						.getSingleResultOrNull()
 						.invoke( Assertions::assertNull )
 				) )

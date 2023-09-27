@@ -55,7 +55,7 @@ public class UnicodeCharsTest extends BaseReactiveTest {
 		test( context, getSessionFactory()
 				.withTransaction( s -> s.persist( original ) )
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
-						.createQuery( "select unicodeString from UnicodeString" ).getSingleResultOrNull() ) )
+						.createSelectionQuery( "select unicodeString from UnicodeString", String.class ).getSingleResultOrNull() ) )
 				.thenAccept( found -> assertEquals( expected, found ) )
 		);
 	}

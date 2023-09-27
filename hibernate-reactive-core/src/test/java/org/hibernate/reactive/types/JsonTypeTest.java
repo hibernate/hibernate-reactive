@@ -56,7 +56,7 @@ public class JsonTypeTest extends BaseReactiveTest {
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
 		return getSessionFactory()
 				.withTransaction( s -> loop( entities, entityClass -> s
-						.createQuery( "from JsonEntity", entityClass )
+						.createSelectionQuery( "from JsonEntity", entityClass )
 						.getResultList()
 						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
 	}

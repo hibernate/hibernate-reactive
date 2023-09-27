@@ -54,7 +54,7 @@ public class CompositeIdManyToOneTest extends BaseReactiveTest {
                         .thenCompose( s -> s.persist( gl )
                                 .thenCompose( v -> s.flush() )
                         ).thenCompose( v -> openSession() )
-                        .thenCompose( s -> s.createQuery("from ShoppingItem si where si.groceryList.id = :gl")
+                        .thenCompose( s -> s.createSelectionQuery("from ShoppingItem si where si.groceryList.id = :gl", ShoppingItem.class)
                                 .setParameter("gl", gl.id)
                                 .getResultList() )
                         .thenAccept( list -> assertEquals( 1, list.size() ) )

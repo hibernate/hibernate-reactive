@@ -45,7 +45,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		GuineaPig pig = new GuineaPig( "Aloi" );
 		test( context, getSessionFactory().withStatelessSession( ss -> ss
 				.insert( pig )
-				.thenCompose( v -> ss.createQuery( "from GuineaPig where name=:n", GuineaPig.class )
+				.thenCompose( v -> ss.createSelectionQuery( "from GuineaPig where name=:n", GuineaPig.class )
 						.setParameter( "n", pig.name )
 						.getResultList() )
 				.thenAccept( list -> {
@@ -61,11 +61,11 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 				} )
 				.thenCompose( v -> ss.refresh( pig ) )
 				.thenAccept( v -> assertEquals( pig.name, "X" ) )
-				.thenCompose( v -> ss.createQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
+				.thenCompose( v -> ss.createMutationQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
 				.thenCompose( v -> ss.refresh( pig ) )
 				.thenAccept( v -> assertEquals( pig.name, "Y" ) )
 				.thenCompose( v -> ss.delete( pig ) )
-				.thenCompose( v -> ss.createQuery( "from GuineaPig" ).getResultList() )
+				.thenCompose( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
 				.thenAccept( list -> assertTrue( list.isEmpty() ) ) )
 		);
 	}
@@ -173,7 +173,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testTransactionPropagation(VertxTestContext context) {
 		test( context, getSessionFactory().withStatelessSession(
-				session -> session.withTransaction( transaction -> session.createQuery( "from GuineaPig" )
+				session -> session.withTransaction( transaction -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 						.getResultList()
 						.thenCompose( list -> {
 							assertNotNull( session.currentTransaction() );
@@ -183,7 +183,7 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 							assertTrue( transaction.isMarkedForRollback() );
 							return session.withTransaction( t -> {
 								assertTrue( t.isMarkedForRollback() );
-								return session.createQuery( "from GuineaPig" ).getResultList();
+								return session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 							} );
 						} ) )
 		) );
@@ -192,10 +192,10 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testSessionPropagation(VertxTestContext context) {
 		test( context, getSessionFactory().withStatelessSession(
-				session -> session.createQuery( "from GuineaPig" ).getResultList()
+				session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList()
 						.thenCompose( list -> getSessionFactory().withStatelessSession( s -> {
 							assertEquals( session, s );
-							return s.createQuery( "from GuineaPig" ).getResultList();
+							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )
 		) );
 	}
