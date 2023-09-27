@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.mutation;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -18,26 +17,22 @@ import org.hibernate.persister.collection.mutation.CollectionTableMapping;
 import org.hibernate.persister.collection.mutation.OperationProducer;
 import org.hibernate.persister.collection.mutation.RemoveCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.ast.MutatingTableReference;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
 
 import static org.hibernate.persister.collection.mutation.RowMutationOperations.DEFAULT_RESTRICTOR;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
+import static org.hibernate.sql.model.MutationType.DELETE;
+import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard implements ReactiveRemoveCoordinator {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
 	private final BasicBatchKey batchKey;
 	private final OperationProducer operationProducer;
-	private MutationOperationGroupSingle operationGroup;
+	private MutationOperationGroup operationGroup;
 
 	public ReactiveRemoveCoordinatorStandard(
 			CollectionMutationTarget mutationTarget,
@@ -92,7 +87,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 	}
 
 	// FIXME: Update ORM and inherit this
-	protected MutationOperationGroupSingle buildOperationGroup() {
+	private MutationOperationGroup buildOperationGroup() {
 		assert getMutationTarget().getTargetPart() != null;
 		assert getMutationTarget().getTargetPart().getKeyDescriptor() != null;
 
@@ -103,10 +98,6 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 		final CollectionTableMapping tableMapping = getMutationTarget().getCollectionTableMapping();
 		final MutatingTableReference tableReference = new MutatingTableReference( tableMapping );
 
-		return new MutationOperationGroupSingle(
-				MutationType.DELETE,
-				getMutationTarget(),
-				operationProducer.createOperation( tableReference )
-		);
+		return singleOperation( DELETE, getMutationTarget(), operationProducer.createOperation( tableReference ) );
 	}
 }

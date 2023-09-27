@@ -10,12 +10,12 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
+import org.hibernate.engine.jdbc.mutation.internal.EntityMutationOperationGroup;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorPostInsertSingleTable;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
-import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.ValuesAnalysis;
 
@@ -28,10 +28,11 @@ public class ReactiveMutationExecutorPostInsertSingleTable extends MutationExecu
 	private final EntityMutationTarget mutationTarget;
 	private final PreparedStatementDetails identityInsertStatementDetails;
 
-	public ReactiveMutationExecutorPostInsertSingleTable(MutationOperationGroup mutationOperationGroup, SharedSessionContractImplementor session) {
+	public ReactiveMutationExecutorPostInsertSingleTable(EntityMutationOperationGroup mutationOperationGroup, SharedSessionContractImplementor session) {
 		super( mutationOperationGroup, session );
-		this.mutationTarget = (EntityMutationTarget) mutationOperationGroup.getMutationTarget();
-		final PreparableMutationOperation operation = mutationOperationGroup.getOperation( mutationTarget.getIdentifierTableName() );
+		this.mutationTarget = mutationOperationGroup.getMutationTarget();
+		final PreparableMutationOperation operation = (PreparableMutationOperation) mutationOperationGroup
+				.getOperation( mutationTarget.getIdentifierTableName() );
 		this.identityInsertStatementDetails = identityPreparation( operation, session );
 	}
 

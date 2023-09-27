@@ -42,13 +42,13 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCo
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.model.MutationType;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
+import static org.hibernate.sql.model.MutationType.UPDATE;
+import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 /**
  * A reactive {@link OneToManyPersister}
@@ -63,16 +63,18 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 
 	private CollectionLoader reusableCollectionLoader;
 
+	private final MutationExecutorService mutationExecutorService;
+
 	public ReactiveOneToManyPersister(
 			Collection collectionBinding,
 			CollectionDataAccess cacheAccessStrategy,
 			RuntimeModelCreationContext creationContext) throws MappingException, CacheException {
 		super( collectionBinding, cacheAccessStrategy, creationContext );
-
 		this.insertRowsCoordinator = buildInsertCoordinator();
 		this.updateRowsCoordinator = buildUpdateCoordinator();
 		this.deleteRowsCoordinator = buildDeleteCoordinator();
 		this.removeCoordinator = buildDeleteAllCoordinator();
+		this.mutationExecutorService = creationContext.getServiceRegistry().getService( MutationExecutorService.class );
 	}
 
 	@Override
@@ -234,13 +236,10 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 	private ReactiveMutationExecutor reactiveMutationExecutor(
 			SharedSessionContractImplementor session,
 			JdbcMutationOperation updateRowOperation) {
-		final MutationExecutorService mutationExecutorService = getFactory()
-				.getServiceRegistry()
-				.getService( MutationExecutorService.class );
 		return (ReactiveMutationExecutor) mutationExecutorService
 				.createExecutor(
 						this::getBasicBatchKey,
-						new MutationOperationGroupSingle( MutationType.UPDATE, this, updateRowOperation ),
+						singleOperation( UPDATE, this, updateRowOperation ),
 						session
 				);
 	}

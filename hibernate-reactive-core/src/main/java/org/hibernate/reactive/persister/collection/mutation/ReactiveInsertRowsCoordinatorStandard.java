@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.collection.mutation;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
@@ -21,12 +20,13 @@ import org.hibernate.persister.collection.mutation.InsertRowsCoordinatorStandard
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationType;
-import org.hibernate.sql.model.internal.MutationOperationGroupSingle;
+import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
@@ -36,14 +36,14 @@ import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER
  */
 public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRowsCoordinator {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private final CollectionMutationTarget mutationTarget;
 	private final RowMutationOperations rowMutationOperations;
 
 	private final BasicBatchKey batchKey;
 
-	private MutationOperationGroupSingle operationGroup;
+	private MutationOperationGroup operationGroup;
 
 	public ReactiveInsertRowsCoordinatorStandard(CollectionMutationTarget mutationTarget, RowMutationOperations rowMutationOperations) {
 		this.mutationTarget = mutationTarget;
@@ -111,12 +111,12 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 		return batchKey;
 	}
 
-	private MutationOperationGroupSingle createOperationGroup() {
+	private MutationOperationGroup createOperationGroup() {
 		assert mutationTarget.getTargetPart() != null;
 		assert mutationTarget.getTargetPart().getKeyDescriptor() != null;
 
 		final JdbcMutationOperation operation = rowMutationOperations.getInsertRowOperation();
-		return new MutationOperationGroupSingle( MutationType.INSERT, mutationTarget, operation );
+		return MutationOperationGroupFactory.singleOperation( MutationType.INSERT, mutationTarget, operation );
 	}
 
 	private ReactiveMutationExecutor reactiveMutationExecutor(SharedSessionContractImplementor session, MutationOperationGroup operationGroup) {

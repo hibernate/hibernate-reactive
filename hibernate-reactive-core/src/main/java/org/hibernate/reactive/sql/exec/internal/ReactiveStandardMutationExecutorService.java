@@ -10,12 +10,11 @@ import java.util.Map;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
+import org.hibernate.engine.jdbc.mutation.internal.EntityMutationOperationGroup;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorPostInsert;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorPostInsertSingleTable;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleBatched;
@@ -24,7 +23,6 @@ import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExec
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorStandard;
 import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.sql.model.MutationTarget;
 import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.SelfExecutingUpdateOperation;
@@ -60,18 +58,16 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 
 		final int numberOfOperations = operationGroup.getNumberOfOperations();
 		final MutationType mutationType = operationGroup.getMutationType();
-		final MutationTarget<?> mutationTarget = operationGroup.getMutationTarget();
+		final EntityMutationOperationGroup entityMutationOperationGroup = operationGroup.asEntityMutationOperationGroup();
 
 		if ( mutationType == MutationType.INSERT
-				&& mutationTarget instanceof EntityMutationTarget
-				&& ( (EntityMutationTarget) mutationTarget ).getIdentityInsertDelegate() != null ) {
-			assert mutationTarget instanceof EntityMappingType;
-
+				&& entityMutationOperationGroup != null
+				&& entityMutationOperationGroup.getMutationTarget().getIdentityInsertDelegate() != null ) {
 			if ( numberOfOperations > 1 ) {
-				return new ReactiveMutationExecutorPostInsert( operationGroup, session );
+				return new ReactiveMutationExecutorPostInsert( entityMutationOperationGroup, session );
 			}
 
-			return new ReactiveMutationExecutorPostInsertSingleTable( operationGroup, session );
+			return new ReactiveMutationExecutorPostInsertSingleTable( entityMutationOperationGroup, session );
 		}
 
 		if ( numberOfOperations == 1 ) {
