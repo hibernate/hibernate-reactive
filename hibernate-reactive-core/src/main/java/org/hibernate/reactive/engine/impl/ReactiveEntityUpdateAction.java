@@ -95,7 +95,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				} )
 				.thenCompose( this::handleGeneratedProperties )
 				.thenAccept( entry -> {
-					handleDeleted( entry );
+					handleDeleted( entry, persister, instance );
 					updateCacheItem( persister, ck, entry );
 					handleNaturalIdResolutions( persister, session, id );
 					postUpdate();
@@ -135,8 +135,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 		}
 	}
 
-	// TODO: copy/paste from superclass (make it protected)
-	private void handleDeleted(EntityEntry entry) {
+	private void handleDeleted(EntityEntry entry, EntityPersister persister, Object instance) {
 		if ( entry.getStatus() == Status.DELETED ) {
 			final EntityMetamodel entityMetamodel = getPersister().getEntityMetamodel();
 			final boolean isImpliedOptimisticLocking = !entityMetamodel.isVersioned()
@@ -145,7 +144,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				// The entity will be deleted and because we are going to create a delete statement
 				// that uses all the state values in the where clause, the entry state needs to be
 				// updated otherwise the statement execution will not delete any row (see HHH-15218).
-				entry.postUpdate( getInstance(), getState(), getNextVersion() );
+				entry.postUpdate( instance, getState(), getNextVersion() );
 			}
 		}
 	}

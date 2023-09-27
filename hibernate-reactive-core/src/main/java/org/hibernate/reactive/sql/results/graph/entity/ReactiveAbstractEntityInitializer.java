@@ -219,7 +219,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 									.injectInterceptor( toInitialize, entityIdentifier, session );
 						}
 					}
-					getConcreteDescriptor().setPropertyValues( toInitialize, getResolvedEntityState() );
+					getConcreteDescriptor().setValues( toInitialize, getResolvedEntityState() );
 					persistenceContext.addEntity( getEntityKey(), toInitialize );
 
 					// Also register possible unique key entries

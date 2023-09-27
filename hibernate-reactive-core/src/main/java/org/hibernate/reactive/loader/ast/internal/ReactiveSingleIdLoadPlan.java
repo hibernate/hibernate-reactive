@@ -17,7 +17,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.SingleIdLoadPlan;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.ModelPart;
-import org.hibernate.persister.entity.Loadable;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
@@ -36,13 +35,13 @@ import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
 	public ReactiveSingleIdLoadPlan(
-			EntityMappingType persister,
+			EntityMappingType entityMappingType,
 			ModelPart restrictivePart,
 			SelectStatement sqlAst,
 			JdbcParametersList jdbcParameters,
 			LockOptions lockOptions,
 			SessionFactoryImplementor sessionFactory) {
-		super( persister, restrictivePart, sqlAst, jdbcParameters, lockOptions, sessionFactory );
+		super( entityMappingType, restrictivePart, sqlAst, jdbcParameters, lockOptions, sessionFactory );
 	}
 
 	@Override
@@ -77,7 +76,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 
 	private <T> void invokeAfterLoadActions(Callback callback, SharedSessionContractImplementor session, T entity) {
 		if ( entity != null && getLoadable() != null) {
-			callback.invokeAfterLoadActions( session, entity, (Loadable) getLoadable() );
+			callback.invokeAfterLoadActions( entity, (EntityMappingType) getLoadable(), session );
 		}
 	}
 

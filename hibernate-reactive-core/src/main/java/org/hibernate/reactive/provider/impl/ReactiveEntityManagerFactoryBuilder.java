@@ -55,7 +55,13 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
         int batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, getConfigurationValues(), 0 );
         optionsBuilder.applyJdbcBatchSize(batchSize);
 
-        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl( metadata, optionsBuilder );
+        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl(
+                metadata,
+                optionsBuilder,
+                metadata.getTypeConfiguration()
+                        .getMetadataBuildingContext()
+                        .getBootstrapContext()
+        );
         final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
         populateSfBuilder( reactiveSessionFactoryBuilder, getStandardServiceRegistry() );
 

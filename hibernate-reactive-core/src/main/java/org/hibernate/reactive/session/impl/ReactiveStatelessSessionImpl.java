@@ -76,7 +76,6 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Tuple;
@@ -509,8 +508,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 			// first, check to see if we can use "bytecode proxies"
 
-			final EntityMetamodel entityMetamodel = persister.getEntityMetamodel();
-			final BytecodeEnhancementMetadata enhancementMetadata = entityMetamodel.getBytecodeEnhancementMetadata();
+			final BytecodeEnhancementMetadata enhancementMetadata = persister.getBytecodeEnhancementMetadata();
 			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
 
 				// if the entity defines a HibernateProxy factory, see if there is an
@@ -530,7 +528,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 
 					// specialized handling for entities with subclasses with a HibernateProxy factory
-					if ( entityMetamodel.hasSubclasses() ) {
+					if ( persister.hasSubclasses() ) {
 						// entities with subclasses that define a ProxyFactory can create
 						// a HibernateProxy.
 //                        LOG.debugf( "Creating a HibernateProxy for to-one association with subclasses to honor laziness" );
@@ -538,7 +536,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
 				}
-				else if ( !entityMetamodel.hasSubclasses() ) {
+				else if ( !persister.hasSubclasses() ) {
 					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
 				}
 				// If we get here, then the entity class has subclasses and there is no HibernateProxy factory.

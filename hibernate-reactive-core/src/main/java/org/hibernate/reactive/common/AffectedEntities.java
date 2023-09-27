@@ -50,12 +50,9 @@ public class AffectedEntities {
 	}
 
 	public String[] getAffectedSpaces(SessionFactoryImplementor factory) {
-		List<String> spaces = new ArrayList<>();
-		for ( String table : getAffectedTables() ) {
-			spaces.add( table );
-		}
+		List<String> spaces = new ArrayList<>( Arrays.asList( getAffectedTables() ) );
 		for ( Class<?> entity : getAffectedEntities() ) {
-			Serializable[] querySpaces = factory.getMetamodel().entityPersister( entity ).getQuerySpaces();
+			Serializable[] querySpaces = factory.getMappingMetamodel().getEntityDescriptor( entity.getName() ).getQuerySpaces();
 			spaces.addAll( Arrays.asList( (String[]) querySpaces ) );
 		}
 		return spaces.toArray( ArrayHelper.EMPTY_STRING_ARRAY );

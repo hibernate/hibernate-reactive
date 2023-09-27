@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -126,7 +125,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			if ( lazyInitializer != null ) {
 				if ( lazyInitializer.isUninitialized() ) {
 					LOG.trace( "Ignoring uninitialized proxy" );
-					event.setResult( source.load( lazyInitializer.getEntityName(), lazyInitializer.getInternalIdentifier() ) );
+					event.setResult( source.getReference( lazyInitializer.getEntityName(), lazyInitializer.getInternalIdentifier() ) );
 					return voidFuture();
 				}
 				else {
@@ -140,7 +139,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					final EnhancementAsProxyLazinessInterceptor proxyInterceptor = (EnhancementAsProxyLazinessInterceptor) interceptor;
 					LOG.trace( "Ignoring uninitialized enhanced-proxy" );
 					//no need to go async, AFAICT ?
-					event.setResult( source.load( proxyInterceptor.getEntityName(), (Serializable) proxyInterceptor.getIdentifier() ) );
+					event.setResult( source.getReference( proxyInterceptor.getEntityName(), proxyInterceptor.getIdentifier() ) );
 					//EARLY EXIT!
 					return voidFuture();
 				}

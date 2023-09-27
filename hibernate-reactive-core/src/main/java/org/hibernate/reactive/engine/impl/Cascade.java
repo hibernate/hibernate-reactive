@@ -26,6 +26,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
@@ -314,7 +315,7 @@ public final class Cascade<C> {
 						// Since the loadedState in the EntityEntry is a flat domain type array
 						// We first have to extract the component object and then ask the component type
 						// recursively to give us the value of the sub-property of that object
-						final Type propertyType = entry.getPersister().getPropertyType( componentPath.get(0) );
+						final AttributeMapping propertyType = entry.getPersister().findAttributeMapping( componentPath.get( 0) );
 						if ( propertyType instanceof ComponentType) {
 							loadedValue = entry.getLoadedValue( componentPath.get( 0 ) );
 							ComponentType componentType = (ComponentType) propertyType;
