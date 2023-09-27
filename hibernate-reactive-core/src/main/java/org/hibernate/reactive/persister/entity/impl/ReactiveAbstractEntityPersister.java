@@ -36,8 +36,6 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.mapping.*;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.Lockable;
-import org.hibernate.persister.entity.OuterJoinLoadable;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
@@ -85,7 +83,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ReactiveUnionSubclassEntityPersister
  * @see ReactiveSingleTableEntityPersister
  */
-public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister, OuterJoinLoadable, Lockable {
+public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister {
 
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -117,11 +115,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		final SessionFactoryImplementor factory = getFactory();
 		final SimpleSelect select = new SimpleSelect( factory )
 				.setLockOptions( lockOptions )
-				.setTableName( getRootTableName() )
-				.addColumn( getRootTableIdentifierColumnNames()[0] )
-				.addRestriction( getRootTableIdentifierColumnNames() );
+				.setTableName( getEntityMappingType().getMappedTableDetails().getTableName() )
+				.addColumn( getIdentifierPropertyName() )
+				.addRestriction( getIdentifierPropertyName() );
 		if ( isVersioned() ) {
-			select.addRestriction( getVersionColumnName() );
+			select.addRestriction( getVersionMapping().getVersionAttribute().getAttributeName() );
 		}
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
@@ -132,10 +130,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	default String generateUpdateLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
 		final Update update = new Update( factory );
-		update.setTableName( getRootTableName() );
-		update.addAssignment( getVersionColumnName() );
-		update.addRestriction( getRootTableIdentifierColumnNames() );
-		update.addRestriction( getVersionColumnName() );
+		update.setTableName( getEntityMappingType().getMappedTableDetails().getTableName()  );
+		update.addAssignment( getVersionMapping().getVersionAttribute().getAttributeName() );
+		update.addRestriction( getIdentifierPropertyName() );
+		update.addRestriction( getVersionMapping().getVersionAttribute().getAttributeName() );
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
@@ -261,8 +259,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	@Override
 	default CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, SharedSessionContractImplementor session) {
-		ReactiveSingleIdEntityLoader<?> reactiveSingleIdEntityLoader = getReactiveSingleIdEntityLoader();
-		return reactiveSingleIdEntityLoader.reactiveLoadDatabaseSnapshot( id, session );
+		return getReactiveSingleIdEntityLoader().reactiveLoadDatabaseSnapshot( id, session );
 	}
 
 	default ReactiveSingleIdEntityLoader<?> getReactiveSingleIdEntityLoader() {
@@ -327,7 +324,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final String[] propertyNames = getPropertyNames();
 			for ( int index=0; index<propertyNames.length; index++ ) {
 				if ( propertyNames[index].equals( field ) ) {
-					setPropertyValue( entity, index, result );
+					setValue( entity, index, result );
 					break;
 				}
 			}
@@ -367,10 +364,10 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		LOG.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
-		final String fetchGroup = getEntityMetamodel().getBytecodeEnhancementMetadata()
+		final String fetchGroup = getEntityPersister().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
 				.getFetchGroupName( fieldName );
-		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityMetamodel().getBytecodeEnhancementMetadata()
+		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityPersister().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
 				.getFetchGroupAttributeDescriptors( fetchGroup );
 
@@ -455,7 +452,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			String nameOfAttributeBeingAccessed,
 			SharedSessionContractImplementor session) {
 
-		final BytecodeEnhancementMetadata enhancementMetadata = getEntityMetamodel().getBytecodeEnhancementMetadata();
+		final BytecodeEnhancementMetadata enhancementMetadata = getEntityPersister().getBytecodeEnhancementMetadata();
 		final BytecodeLazyAttributeInterceptor currentInterceptor = enhancementMetadata.extractLazyInterceptor( entity );
 		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor) {
 			final EnhancementAsProxyLazinessInterceptor proxyInterceptor =
@@ -540,11 +537,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		//noinspection AssertWithSideEffects
 		assert bootEntityDescriptor.hasNaturalId();
 
-		final int[] naturalIdAttributeIndexes = getEntityMetamodel().getNaturalIdentifierProperties();
+		final int[] naturalIdAttributeIndexes = getEntityPersister().getNaturalIdentifierProperties();
 		assert naturalIdAttributeIndexes.length > 0;
 
 		if ( naturalIdAttributeIndexes.length == 1 ) {
-			final String propertyName = getEntityMetamodel().getPropertyNames()[naturalIdAttributeIndexes[0]];
+			final String propertyName = getEntityPersister().getAttributeMappings().get(naturalIdAttributeIndexes[0]).getAttributeName();
 			final AttributeMapping attributeMapping = findAttributeMapping( propertyName );
 			final SingularAttributeMapping singularAttributeMapping = (SingularAttributeMapping) attributeMapping;
 			return new ReactiveSimpleNaturalIdMapping( singularAttributeMapping, this, creationProcess );
@@ -584,7 +581,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 * @see AbstractEntityPersister#getLazyLoadPlanByFetchGroup()
 	 */
 	default Map<String, ReactiveSingleIdArrayLoadPlan> getLazyLoadPlanByFetchGroup(String[] subclassPropertyNameClosure ) {
-		final BytecodeEnhancementMetadata metadata = delegate().getEntityMetamodel().getBytecodeEnhancementMetadata();
+		final BytecodeEnhancementMetadata metadata = delegate().getEntityPersister().getBytecodeEnhancementMetadata();
 		return metadata.isEnhancedForLazyLoading() && metadata.getLazyAttributesMetadata().hasLazyAttributes()
 				? createLazyLoadPlanByFetchGroup( metadata, subclassPropertyNameClosure )
 				: emptyMap();
@@ -626,7 +623,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					getIdentifierMapping(),
 					null,
 					1,
-					LoadQueryInfluencers.NONE,
+					new LoadQueryInfluencers( factory ),
 					LockOptions.NONE,
 					jdbcParametersListBuilder::add,
 					factory
