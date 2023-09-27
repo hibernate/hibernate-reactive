@@ -78,7 +78,7 @@ class DatabaseSnapshotExecutor {
 				LockOptions.NONE,
 				DatabaseSnapshotExecutor::visitEmptyFetchList,
 				true,
-				LoadQueryInfluencers.NONE,
+				new LoadQueryInfluencers( sessionFactory ),
 				sessionFactory
 		);
 

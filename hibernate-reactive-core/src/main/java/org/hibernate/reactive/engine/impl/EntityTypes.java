@@ -18,6 +18,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -394,8 +395,8 @@ public class EntityTypes {
 		// We now have the value of the property-ref we reference. However,
 		// we need to dig a little deeper, as that property might also be
 		// an entity type, in which case we need to resolve its identifier
-		final Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
-		if ( type.isEntityType() ) {
+		final AttributeMapping type = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
+		if ( type.isEntityIdentifierMapping() ) {
 			propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
 		}
 		return completedFuture( propertyValue );
@@ -421,8 +422,8 @@ public class EntityTypes {
 						// We now have the value of the property-ref we reference. However,
 						// we need to dig a little deeper, as that property might also be
 						// an entity type, in which case we need to resolve its identifier
-						final Type type = entityPersister.getPropertyType( uniqueKeyPropertyName );
-						if ( type.isEntityType() ) {
+						final AttributeMapping type = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
+						if ( type.isEntityIdentifierMapping() ) {
 							propertyValue = getIdentifier( (EntityType) type, propertyValue, (SessionImplementor) session );
 						}
 						return completedFuture( propertyValue );

@@ -1046,8 +1046,8 @@ public class ReactiveActionQueue {
 						actionDelegate.getEntityName(),
 						actionDelegate.getSession()
 								.getFactory()
-								.getMetamodel()
-								.entityPersister( actionDelegate.getEntityName() )
+								.getMappingMetamodel()
+								.getEntityDescriptor( actionDelegate.getEntityName() )
 								.getRootEntityName()
 				);
 

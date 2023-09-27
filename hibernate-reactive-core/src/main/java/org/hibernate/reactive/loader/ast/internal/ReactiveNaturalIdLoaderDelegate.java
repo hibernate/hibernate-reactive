@@ -237,7 +237,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 lockOptions,
                 fetchProcessor,
                 true,
-                LoadQueryInfluencers.NONE,
+                new LoadQueryInfluencers( sessionFactory ),
                 sessionFactory
         );
 

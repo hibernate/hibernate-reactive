@@ -5,14 +5,16 @@
  */
 package org.hibernate.reactive.common;
 
-import org.hibernate.Incubating;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.util.collections.ArrayHelper;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.hibernate.Incubating;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.internal.util.collections.ArrayHelper;
+
+import static java.util.Collections.addAll;
 
 /**
  * A description of the entities and tables affected by a native query.
@@ -25,7 +27,6 @@ import java.util.List;
  */
 @Incubating
 public class AffectedEntities {
-	private static final Class<?>[] NO_ENTITIES = new Class[0];
 	private static final String[] NO_TABLES = new String[0];
 
 	private final String[] queryTables;
@@ -34,11 +35,6 @@ public class AffectedEntities {
 	public AffectedEntities(Class<?>... queryEntities) {
 		this.queryTables = NO_TABLES;
 		this.queryEntities = queryEntities;
-	}
-
-	public AffectedEntities(String... queryTables) {
-		this.queryTables = queryTables;
-		this.queryEntities = NO_ENTITIES;
 	}
 
 	public String[] getAffectedTables() {
@@ -51,11 +47,11 @@ public class AffectedEntities {
 
 	public String[] getAffectedSpaces(SessionFactoryImplementor factory) {
 		List<String> spaces = new ArrayList<>();
-		for ( String table : getAffectedTables() ) {
-			spaces.add( table );
-		}
+		addAll( spaces, getAffectedTables() );
 		for ( Class<?> entity : getAffectedEntities() ) {
-			Serializable[] querySpaces = factory.getMetamodel().entityPersister( entity ).getQuerySpaces();
+			Serializable[] querySpaces = factory.getMappingMetamodel()
+					.getEntityDescriptor( entity.getName() )
+					.getQuerySpaces();
 			spaces.addAll( Arrays.asList( (String[]) querySpaces ) );
 		}
 		return spaces.toArray( ArrayHelper.EMPTY_STRING_ARRAY );

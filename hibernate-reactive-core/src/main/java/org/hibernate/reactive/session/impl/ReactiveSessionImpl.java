@@ -1167,7 +1167,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
-		final EntityPersister persister = getFactory().getMetamodel().locateEntityPersister( entityClass );
+		final EntityPersister persister = getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
 		return new NaturalIdLoadAccessImpl<T>( persister ).resolveNaturalId( ids )
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
 	}
@@ -1232,11 +1232,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		public ReactiveIdentifierLoadAccessImpl(String entityName) {
-			this( getFactory().getMetamodel().locateEntityPersister( entityName ) );
+			this( getFactory().getMappingMetamodel().getEntityDescriptor( entityName ) );
 		}
 
 		public ReactiveIdentifierLoadAccessImpl(Class<T> entityClass) {
-			this( getFactory().getMetamodel().locateEntityPersister( entityClass ) );
+			this( getFactory().getMappingMetamodel().getEntityDescriptor( entityClass ) );
 		}
 
 		public final ReactiveIdentifierLoadAccessImpl<T> with(LockOptions lockOptions) {
@@ -1380,7 +1380,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		public ReactiveMultiIdentifierLoadAccessImpl(Class<T> entityClass) {
-			this( getFactory().getMetamodel().locateEntityPersister( entityClass ) );
+			this( getFactory().getMappingMetamodel().getEntityDescriptor( entityClass ) );
 		}
 
 		@Override

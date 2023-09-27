@@ -158,7 +158,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			// now update the object
 			// has to be outside the main if block above (because of collections)
 			if ( substitute ) {
-				persister.setPropertyValues( entity, values );
+				persister.setValues( entity, values );
 			}
 
 			// Search for collections by reachability, updating their role.
@@ -266,7 +266,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 						dirtyProperties,
 						event.hasDirtyCollection(),
 						status == Status.DELETED && !entry.isModifiableEntity()
-								? persister.getPropertyValues( entity )
+								? persister.getValues( entity )
 								: entry.getLoadedState(),
 						entry.getVersion(),
 						nextVersion,

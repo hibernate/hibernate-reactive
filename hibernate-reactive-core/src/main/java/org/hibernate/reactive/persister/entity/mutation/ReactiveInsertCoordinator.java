@@ -70,7 +70,7 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 					stage = stage.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, INSERT )
 							.thenAccept( generatedValue -> {
 								currentValues[index] = generatedValue;
-								entityPersister().setPropertyValue( entity, index, generatedValue );
+								entityPersister().setValue( entity, index, generatedValue );
 							} ) );
 				}
 			}

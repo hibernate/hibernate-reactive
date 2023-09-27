@@ -75,7 +75,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				Collections.emptyList(),
 				uniqueKeyAttribute,
 				null,
-				LoadQueryInfluencers.NONE,
+				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParametersListBuilder::add,
 				sessionFactory
@@ -131,7 +131,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				Collections.singletonList( entityDescriptor.getIdentifierMapping() ),
 				uniqueKeyAttribute,
 				null,
-				LoadQueryInfluencers.NONE,
+				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParametersListBuilder::add,
 				sessionFactory
