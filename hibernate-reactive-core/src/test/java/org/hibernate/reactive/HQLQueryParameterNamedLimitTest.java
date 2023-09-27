@@ -59,7 +59,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testNoResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where id = :id" )
+						.createSelectionQuery( "from Flour where id = :id", Flour.class )
 						.setMaxResults( 0 )
 						.setParameter( "id", rye.getId() )
 						.getResultList()
@@ -72,7 +72,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultNoResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour" )
+						.createSelectionQuery( "from Flour", Flour.class )
 						.setMaxResults( 0 )
 						.setFirstResult( 1 )
 						.getResultList()
@@ -87,7 +87,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	@Test
 	public void testFirstResultWithoutOrderBy(VertxTestContext context) {
 		test( context, openSession()
-				.thenCompose( s -> s.createQuery( "from Flour where id > :id" )
+				.thenCompose( s -> s.createSelectionQuery( "from Flour where id > :id", Flour.class )
 						.setParameter( "id", 1 )
 						.setMaxResults( 1 )
 						.setFirstResult( 1 )
@@ -101,7 +101,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name != :name order by id" )
+						.createSelectionQuery( "from Flour where name != :name order by id", Flour.class )
 						.setParameter( "name", spelt.getName() )
 						.setFirstResult( 1 )
 						.getSingleResult()
@@ -114,7 +114,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultMultipleResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.getResultList()
 						.thenAccept( results -> {
@@ -130,7 +130,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.setMaxResults( 1 )
 						.getSingleResult()
@@ -146,7 +146,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultZeroAndMaxResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name = :name order by id" )
+						.createSelectionQuery( "from Flour where name = :name order by id", Flour.class )
 						.setParameter( "name", almond.getName() )
 						.setFirstResult( 0 )
 						.setMaxResults( 10 )
@@ -167,7 +167,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultZeroAndMaxResultsWithoutOrder(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour where name = :name" )
+						.createSelectionQuery( "from Flour where name = :name", Flour.class )
 						.setParameter( "name", almond.getName() )
 						.setFirstResult( 0 )
 						.setMaxResults( 10 )
@@ -181,7 +181,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsMultipleResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.setMaxResults( 2 )
 						.getResultList()
@@ -194,7 +194,7 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 	public void testFirstResultMaxResultsExtra(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
-						.createQuery( "from Flour order by id" )
+						.createSelectionQuery( "from Flour order by id", Flour.class )
 						.setFirstResult( 1 )
 						.setMaxResults( 3 )
 						.getResultList()

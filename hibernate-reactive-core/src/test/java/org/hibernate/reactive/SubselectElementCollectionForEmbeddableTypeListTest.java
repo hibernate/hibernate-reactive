@@ -111,7 +111,7 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test (
 				context,
 				getMutinySessionFactory()
-						.withTransaction( session -> session.createQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
+						.withTransaction( session -> session.createSelectionQuery("select distinct p from Person p join fetch p.phones where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> {
@@ -127,7 +127,7 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 		test (
 				context,
 				getMutinySessionFactory()
-						.withTransaction( session -> session.createQuery("from Person p where p.name='Claude'", Person.class)
+						.withTransaction( session -> session.createSelectionQuery("from Person p where p.name='Claude'", Person.class)
 								.getResultList()
 								.invoke( all -> assertEquals( 2, all.size() ) )
 								.invoke( all -> all.forEach( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) ) )

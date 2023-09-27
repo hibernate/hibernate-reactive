@@ -141,7 +141,7 @@ public class UTCTest extends BaseReactiveTest {
 				)
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session
-								.createQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
+								.createSelectionQuery( "from ThingInUTC where " + columnName + "=:dt", Thing.class )
 								.setParameter( "dt", fieldValue.apply( thing ) )
 								.getSingleResultOrNull() )
 						.invoke( result -> {

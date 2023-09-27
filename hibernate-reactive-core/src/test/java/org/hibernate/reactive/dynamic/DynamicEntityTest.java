@@ -43,7 +43,7 @@ public class DynamicEntityTest extends BaseReactiveTest {
 				getMutinySessionFactory()
 						.withTransaction( session -> session.persist( book ) )
 						.chain( v -> getMutinySessionFactory()
-								.withSession( session -> session.createQuery( "from Book", Map.class ).getSingleResult() )
+								.withSession( session -> session.createSelectionQuery( "from Book", Map.class ).getSingleResult() )
 								.invoke( map -> assertEquals( "Christian Bauer and Gavin King", map.get( "author" ) ) ) )
 		);
 	}

@@ -53,7 +53,7 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 	public void testNonNullableSuccess(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session
-						.createQuery( "from Artist", Artist.class )
+						.createSelectionQuery( "from Artist", Artist.class )
 						.getSingleResult().chain( a -> session.fetch( a.getPaintings() ) )
 						.invoke( paintings -> {
 							assertNotNull( paintings );
@@ -62,7 +62,7 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 						} ) )
 				.chain( () -> getMutinySessionFactory()
 						.withTransaction( s1 -> s1
-								.createQuery( "from Dealer", Dealer.class )
+								.createSelectionQuery( "from Dealer", Dealer.class )
 								.getSingleResult().chain( d -> s1.fetch( d.getPaintings() ) )
 								.invoke( paintings -> {
 									assertNotNull( paintings );

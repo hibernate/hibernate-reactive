@@ -66,7 +66,7 @@ public class ManyToManySetTest extends BaseReactiveTest {
 								)
 						)
 						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.createQuery(
+								.withTransaction( (session, transaction) -> session.createSelectionQuery(
 																  "select distinct a from Author a left join fetch a.books",
 																  Author.class
 														  )

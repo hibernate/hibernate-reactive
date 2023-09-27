@@ -35,8 +35,8 @@ public class OneToOnePrimaryKeyJoinColumnTest  extends BaseReactiveTest {
 	@AfterEach
 	public void cleanDb(VertxTestContext context) {
 		test( context, getSessionFactory()
-				.withTransaction( s -> s.createQuery( "delete from PersonDetails" ).executeUpdate()
-						.thenCompose( v -> s.createQuery( "delete from Person" ).executeUpdate() ) ) );
+				.withTransaction( s -> s.createMutationQuery( "delete from PersonDetails" ).executeUpdate()
+						.thenCompose( v -> s.createMutationQuery( "delete from Person" ).executeUpdate() ) ) );
 	}
 
 	@Test

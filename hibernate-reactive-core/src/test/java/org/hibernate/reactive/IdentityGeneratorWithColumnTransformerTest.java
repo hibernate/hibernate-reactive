@@ -88,7 +88,7 @@ public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest
 		test( context, populateDb()
 				.thenCompose( v -> openSession() )
 				.thenCompose( session ->
-					  session.createQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
+					  session.createSelectionQuery( "FROM EntityWithIdentity ORDER BY position ASC", EntityWithIdentity.class )
 					  .getResultList() )
 				.thenAccept( list -> {
 					assertEquals( ENTITY_NUMBER, list.size() );

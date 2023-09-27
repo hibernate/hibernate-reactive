@@ -85,7 +85,7 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 						.call( session::flush ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
-						.createQuery( query, Endpoint.class )
+						.createSelectionQuery( query, Endpoint.class )
 						.setParameter( "id", endpoint.getId() )
 						.setParameter( "accountId", endpoint.getAccountId() )
 						.getSingleResultOrNull()

@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MultilineImportsTest extends BaseReactiveTest {
 
 	private static CompletionStage<List<Object>> runQuery(Stage.Session s) {
-		return s.createQuery( "from Hero h where h.heroName = :name" )
+		return s.createSelectionQuery( "from Hero h where h.heroName = :name", Object.class )
 				.setParameter( "name", "Galadriel" )
 				.getResultList();
 	}

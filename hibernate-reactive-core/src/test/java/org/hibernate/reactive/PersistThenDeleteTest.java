@@ -39,15 +39,15 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 				.withTransaction( s -> s
 						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
-						.createQuery( "from Person" ).getResultList()
+						.createSelectionQuery( "from Person", Person.class ).getResultList()
 						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
 						.persist( newPerson( "critical" ) )
-						.thenCompose( vo -> s.createQuery( "delete from Person" ).executeUpdate() )
+						.thenCompose( vo -> s.createMutationQuery( "delete from Person" ).executeUpdate() )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
-						.createQuery( "from Person" ).getResultList()
+						.createSelectionQuery( "from Person", Person.class ).getResultList()
 						.thenAccept( l -> assertThat( l ).isEmpty() )
 				) )
 		);
@@ -59,17 +59,17 @@ public class PersistThenDeleteTest extends BaseReactiveTest {
 				.withTransaction( s -> s
 						.persist( newPerson( "foo" ), newPerson( "bar" ), newPerson( "baz" ) ) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
-						.createQuery( "from Person" )
+						.createSelectionQuery( "from Person", Person.class )
 						.getResultList()
 						.thenAccept( l -> assertThat( l ).hasSize( 3 ) )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
-						.createQuery( "delete from Person" )
+						.createMutationQuery( "delete from Person" )
 						.executeUpdate()
 						.thenCompose( vo -> s.persist( newPerson( "critical" ) ) )
 				) )
 				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
-						.createQuery( "from Person" )
+						.createSelectionQuery( "from Person", Person.class )
 						.getResultList()
 						.thenAccept( l -> assertThat( l ).hasSize( 1 ) )
 				) )

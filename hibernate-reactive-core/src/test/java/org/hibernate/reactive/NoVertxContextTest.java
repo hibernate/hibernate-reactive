@@ -71,7 +71,7 @@ public class NoVertxContextTest {
 	public void deleteEntries() {
 		mutinyFactory()
 				.withTransaction( session -> session
-				.createQuery( "delete from " + GameCharacter.ENTITY_NAME )
+				.createMutationQuery( "delete from " + GameCharacter.ENTITY_NAME )
 				.executeUpdate() )
 				.await().indefinitely();
 	}
@@ -91,7 +91,7 @@ public class NoVertxContextTest {
 					assertThat( found.name ).isEqualTo( namePrefix + ENTRIES_NUM );
 				} )
 				.thenCompose( v -> stageFactory().withSession( session -> session
-						.createQuery( "select count(*) from " + GameCharacter.ENTITY_NAME )
+						.createSelectionQuery( "select count(*) from " + GameCharacter.ENTITY_NAME, Long.class )
 						.getSingleResult() ) )
 				.thenAccept( count -> assertThat( count ).isEqualTo( Long.valueOf( ENTRIES_NUM ) ) )
 				.toCompletableFuture().join();
@@ -122,7 +122,7 @@ public class NoVertxContextTest {
 					assertThat( found.name ).isEqualTo( namePrefix + ENTRIES_NUM );
 				} )
 				.chain( () -> mutinyFactory().withSession( session -> session
-						.createQuery( "select count(*) from " + GameCharacter.ENTITY_NAME ).getSingleResult() ) )
+						.createSelectionQuery( "select count(*) from " + GameCharacter.ENTITY_NAME, Long.class ).getSingleResult() ) )
 				.invoke( count -> assertThat( count ).isEqualTo( Long.valueOf( ENTRIES_NUM ) ) )
 				.await().indefinitely();
 	}

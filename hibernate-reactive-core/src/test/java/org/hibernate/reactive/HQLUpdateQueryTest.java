@@ -47,7 +47,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		test(
 				context,
 				openSession()
-						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = '" + updatedDescription + "' WHERE id = " + rye.getId()  ) )
+						.thenApply( s -> s.createMutationQuery( "UPDATE Flour SET description = '" + updatedDescription + "' WHERE id = " + rye.getId()  ) )
 						.thenCompose( qr -> {
 							assertNotNull( qr );
 							return qr.executeUpdate();
@@ -65,7 +65,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		test(
 				context,
 				openSession()
-						.thenApply( s -> s.createQuery( "UPDATE Flour SET description = :updatedDescription WHERE id = :id" )
+						.thenApply( s -> s.createMutationQuery( "UPDATE Flour SET description = :updatedDescription WHERE id = :id" )
 								.setParameter("updatedDescription", updatedDescription)
 								.setParameter("id", rye.getId()) )
 						.thenCompose( qr -> {
@@ -112,7 +112,7 @@ public class HQLUpdateQueryTest extends BaseReactiveTest {
 		test(
 				context,
 				openSession()
-						.thenApply( s -> s.createQuery( "DELETE FROM Flour WHERE id = " + rye.getId() ) )
+						.thenApply( s -> s.createMutationQuery( "DELETE FROM Flour WHERE id = " + rye.getId() ) )
 						.thenCompose( qr -> {
 							assertNotNull( qr );
 							return qr.executeUpdate();

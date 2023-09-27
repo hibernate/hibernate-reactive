@@ -76,7 +76,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 						)
 						// Auto-flush
 						.thenCompose( v -> s
-								.createQuery( "select name from GuineaPig" )
+								.createSelectionQuery( "select name from GuineaPig", String.class )
 								.getResultList()
 								.thenAccept( names -> {
 									assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
@@ -101,7 +101,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 								.thenCompose( v -> s.persist( new GuineaPig(22, "Two") ) )
 								.thenCompose( v -> s.persist( new GuineaPig(33, "Three") ) )
 								// Auto-flush
-								.thenCompose( v -> s.createQuery("select name from GuineaPig")
+								.thenCompose( v -> s.createSelectionQuery("select name from GuineaPig", String.class )
 										.getResultList()
 										.thenAccept( names -> {
 											assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
@@ -114,10 +114,10 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 								)
 						)
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
+						.thenCompose( s -> s.createSelectionQuery("from GuineaPig", GuineaPig.class)
 								.getResultList()
 								.thenAccept( list -> list.forEach( pig -> pig.setName("Zero") ) )
-								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig where name='Zero'")
+								.thenCompose( v -> s.createSelectionQuery("select count(*) from GuineaPig where name='Zero'", Long.class)
 										.getSingleResult()
 										.thenAccept( count -> {
 											assertEquals( 3L, count);
@@ -130,10 +130,10 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 										} )
 								) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.<GuineaPig>createQuery("from GuineaPig")
+						.thenCompose( s -> s.createSelectionQuery("from GuineaPig", GuineaPig.class)
 								.getResultList()
 								.thenCompose( list -> loop( list, s::remove ) )
-								.thenCompose( v -> s.<Long>createQuery("select count(*) from GuineaPig")
+								.thenCompose( v -> s.createSelectionQuery("select count(*) from GuineaPig", Long.class)
 										.getSingleResult()
 										.thenAccept( count -> {
 											assertEquals( 0L, count);

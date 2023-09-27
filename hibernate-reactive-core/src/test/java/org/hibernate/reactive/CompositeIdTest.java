@@ -50,17 +50,17 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<String> selectNameFromId(Stage.Session session, Integer id) {
-		return session.createQuery( "SELECT name FROM GuineaPig WHERE id = " + id )
+		return session.createSelectionQuery( "SELECT name FROM GuineaPig WHERE id = " + id, String.class )
 				.getResultList()
 				.thenApply( CompositeIdTest::nameFromResult );
 	}
 
-	private static String nameFromResult(List<Object> rowSet) {
+	private static String nameFromResult(List<String> rowSet) {
 		switch ( rowSet.size() ) {
 			case 0:
 				return null;
 			case 1:
-				return (String) rowSet.get( 0 );
+				return rowSet.get( 0 );
 			default:
 				throw new AssertionError( "More than one result returned: " + rowSet.size() );
 		}
@@ -68,18 +68,18 @@ public class CompositeIdTest extends BaseReactiveTest {
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
 		return getSessionFactory().withSession(
-				session -> session.createQuery("SELECT weight FROM GuineaPig WHERE id = " + id )
+				session -> session.createSelectionQuery("SELECT weight FROM GuineaPig WHERE id = " + id, Double.class )
 						.getResultList()
 						.thenApply( CompositeIdTest::weightFromResult )
 		);
 	}
 
-	private static Double weightFromResult(List<Object> rowSet) {
+	private static Double weightFromResult(List<Double> rowSet) {
 		switch ( rowSet.size() ) {
 			case 0:
 				return null;
 			case 1:
-				return (Double) rowSet.get(0);
+				return rowSet.get(0);
 			default:
 				throw new AssertionError("More than one result returned: " + rowSet.size());
 		}

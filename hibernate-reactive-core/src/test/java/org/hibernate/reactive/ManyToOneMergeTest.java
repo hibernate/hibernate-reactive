@@ -58,7 +58,7 @@ public class ManyToOneMergeTest extends BaseReactiveTest {
 	@Test
 	public void test(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withSession( session -> session
-						.createQuery( "select dbo from AcademicYearDetailsDBO dbo", AcademicYearDetailsDBO.class )
+						.createSelectionQuery( "select dbo from AcademicYearDetailsDBO dbo", AcademicYearDetailsDBO.class )
 						.getSingleResult() )
 				.invoke( dbo -> dbo.setRecordStatus( 'A' ) )
 				.chain( dbo -> getMutinySessionFactory().withTransaction( session -> {

@@ -90,7 +90,7 @@ public class LazyOrderedElementCollectionForEmbeddableTypeListTest extends BaseR
 	public void joinFetch(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withTransaction( (session, tx) -> session
-						.createQuery( "from Person p join fetch p.phones", Person.class )
+						.createSelectionQuery( "from Person p join fetch p.phones", Person.class )
 						.getSingleResult().invoke( result -> {
 							assertTrue( Hibernate.isInitialized( result.phones ) );
 							assertPhones( result.phones, "111-111-1111", "999-999-9999" );

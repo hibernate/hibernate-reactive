@@ -72,7 +72,7 @@ public class StatisticsTest extends BaseReactiveTest {
 							assertEquals( 0, statistics.getQueries().length );
 						} )
 						.chain( () -> getMutinySessionFactory()
-								.withTransaction( s -> s.createQuery( "from Named" ).getResultList() ) )
+								.withTransaction( s -> s.createSelectionQuery( "from Named", Named.class ).getResultList() ) )
 						.invoke( v -> {
 							assertEquals( 3L, statistics.getEntityInsertCount() );
 							assertEquals( 3L, statistics.getEntityLoadCount() );
@@ -127,7 +127,7 @@ public class StatisticsTest extends BaseReactiveTest {
 						} )
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( s -> s
-										.createQuery( "from Named" ).getResultList() ) )
+										.createSelectionQuery( "from Named", Named.class ).getResultList() ) )
 						.thenAccept( v -> {
 							assertEquals( 3L, statistics.getEntityInsertCount() );
 							assertEquals( 3L, statistics.getEntityLoadCount() );

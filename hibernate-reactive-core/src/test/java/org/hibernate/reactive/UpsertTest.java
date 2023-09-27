@@ -57,7 +57,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .call( () -> ss.upsert( new Record( 456L, "hello mars" ) ) )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "hello earth" ),
 									  new Record( 456L, "hello mars" )
@@ -67,7 +67,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )
@@ -83,7 +83,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .call( () -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "hello earth" ),
 									  new Record( 456L, "hello mars" )
@@ -93,7 +93,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )
@@ -109,7 +109,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .thenCompose( v -> ss.upsert( new Record( 456L, "hello mars" ) ) )
 					  )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "hello earth" ),
 									  new Record( 456L, "hello mars" )
@@ -119,7 +119,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )
@@ -135,7 +135,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .thenCompose( v -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
 					  )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "hello earth" ),
 									  new Record( 456L, "hello mars" )
@@ -145,7 +145,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )

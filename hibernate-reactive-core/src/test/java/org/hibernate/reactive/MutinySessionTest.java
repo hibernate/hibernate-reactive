@@ -79,7 +79,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 						// If the previous clear doesn't work, this will cause a duplicated entity exception
 						.chain( () -> session.persist( guineaPig ) )
 						.call( session::flush )
-						.chain( () -> session.createQuery( "FROM GuineaPig", GuineaPig.class )
+						.chain( () -> session.createSelectionQuery( "FROM GuineaPig", GuineaPig.class )
 								// By not using .find() we check that there is only one entity in the db with getSingleResult()
 								.getSingleResult() )
 						.invoke( result -> assertThatPigsAreEqual( guineaPig, result ) )
@@ -456,7 +456,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				context,
 				populateDB()
 						.call( () -> getMutinySessionFactory().withTransaction(
-								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+								(session, tx) -> session.createSelectionQuery( "from GuineaPig pig", GuineaPig.class)
 										.setLockMode( LockModeType.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.invoke( actualPig -> {
@@ -474,7 +474,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				context,
 				populateDB()
 						.call( () -> getMutinySessionFactory().withTransaction(
-								(session, tx) -> session.createQuery( "from GuineaPig pig", GuineaPig.class)
+								(session, tx) -> session.createSelectionQuery( "from GuineaPig pig", GuineaPig.class)
 										.setLockMode("pig", LockMode.PESSIMISTIC_WRITE )
 										.getSingleResult()
 										.invoke( actualPig -> {
@@ -496,7 +496,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 				getMutinySessionFactory()
 						.withTransaction( (session, transaction) -> session.persistAll(foo, bar, baz) )
 						.call( () -> getMutinySessionFactory().withSession(
-								session -> session.createQuery("from GuineaPig", GuineaPig.class)
+								session -> session.createSelectionQuery("from GuineaPig", GuineaPig.class)
 										.getResultList().onItem().disjoint()
 										.invoke( pig -> {
 											assertNotNull(pig);
@@ -541,7 +541,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 	@Test
 	public void testTransactionPropagation(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction(
-				(session, transaction) -> session.createQuery("from GuineaPig").getResultList()
+				(session, transaction) -> session.createSelectionQuery("from GuineaPig", GuineaPig.class).getResultList()
 						.chain( list -> {
 							assertNotNull( session.currentTransaction() );
 							assertFalse( session.currentTransaction().isMarkedForRollback() );
@@ -550,7 +550,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 							assertTrue( transaction.isMarkedForRollback() );
 							return session.withTransaction( t -> {
 								assertTrue( t.isMarkedForRollback() );
-								return session.createQuery("from GuineaPig").getResultList();
+								return session.createSelectionQuery("from GuineaPig", GuineaPig.class).getResultList();
 							} );
 						} )
 		) );
@@ -561,10 +561,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withSession( session -> {
 			assertFalse( session.isDefaultReadOnly() );
 			session.setDefaultReadOnly(true);
-			return session.createQuery("from GuineaPig").getResultList()
+			return session.createSelectionQuery("from GuineaPig", GuineaPig.class).getResultList()
 					.chain( list -> getMutinySessionFactory().withSession(s -> {
 						assertTrue( s.isDefaultReadOnly() );
-						return s.createQuery("from GuineaPig").getResultList();
+						return s.createSelectionQuery("from GuineaPig", GuineaPig.class).getResultList();
 					} ) );
 		} ) );
 	}

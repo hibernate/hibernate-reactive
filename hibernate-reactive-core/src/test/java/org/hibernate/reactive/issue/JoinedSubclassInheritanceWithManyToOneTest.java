@@ -53,7 +53,7 @@ public class JoinedSubclassInheritanceWithManyToOneTest extends BaseReactiveTest
 				.withTransaction( session -> session.persistAll( clothingItem, itemInstance ) )
 				.chain( () -> getMutinySessionFactory()
 						.withSession( session -> session
-								.createQuery( "from ItemInstance", ItemInstance.class ).getResultList()
+								.createSelectionQuery( "from ItemInstance", ItemInstance.class ).getResultList()
 								.invoke( list -> assertThat( list ).hasSize( 1 )
 										.satisfies( entry -> assertThat( entry )
 														.isInstanceOf( ClothingItemInstance.class )
