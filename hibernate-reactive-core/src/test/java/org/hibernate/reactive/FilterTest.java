@@ -38,6 +38,7 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout(value = 10, timeUnit = MINUTES)
@@ -125,8 +126,8 @@ public class FilterTest extends BaseReactiveTest {
 											.getResultList();
 								} ) )
 						.thenAccept( list -> {
-							assertEquals( list.size(), 2 );
-							assertEquals( ( (Node) list.get( 0 ) ).elements.size(), 2 );
+							assertThat( list ).hasSize( 2 );
+							assertThat( list.get( 0 ).elements ).hasSize( 2 );
 						} )
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> {
@@ -134,7 +135,7 @@ public class FilterTest extends BaseReactiveTest {
 									return s.createSelectionQuery( "select distinct n, e from Node n join n.elements e", Object[].class )
 											.getResultList();
 								} ) )
-						.thenAccept( list -> assertEquals( list.size(), 2 ) )
+						.thenAccept( list -> assertThat( list ).hasSize( 2 ) )
 		);
 	}
 

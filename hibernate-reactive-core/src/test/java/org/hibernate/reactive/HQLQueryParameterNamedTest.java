@@ -21,8 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests queries using named parameters like ":name",
@@ -49,7 +48,12 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 
 	@Test
 	public void testAutoFlushOnSingleResult(VertxTestContext context) {
-		Flour semolina = new Flour(678, "Semoline", "the coarse, purified wheat middlings of durum wheat used in making pasta.", "Wheat flour" );
+		Flour semolina = new Flour(
+				678,
+				"Semoline",
+				"the coarse, purified wheat middlings of durum wheat used in making pasta.",
+				"Wheat flour"
+		);
 		test( context, getSessionFactory()
 				.withSession( s -> s
 						.persist( semolina )
@@ -57,7 +61,7 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 								.setParameter( "id", semolina.getId() )
 								.getSingleResult()
 						)
-						.thenAccept( found -> assertEquals( semolina, found ) )
+						.thenAccept( found -> assertThat( found ).isEqualTo( semolina ) )
 				)
 		);
 	}
@@ -65,36 +69,42 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 	@Test
 	public void testSelectScalarValues(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<String> qr = s.createSelectionQuery( "SELECT 'Prova' FROM Flour WHERE id = :id", String.class )
+				  Stage.SelectionQuery<String> qr = s.createSelectionQuery(
+								  "SELECT 'Prova' FROM Flour WHERE id = :id",
+								  String.class
+						  )
 						  .setParameter( "id", rye.getId() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( found -> assertEquals( "Prova", found ) )
+			  } ).thenAccept( found -> assertThat( found ).isEqualTo( "Prova" ) )
 		);
 	}
 
 	@Test
 	public void testSelectWithMultipleScalarValues(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = :id", Object[].class )
-						  .setParameter( "id", rye.getId() );
-				  assertNotNull( qr );
-				  return qr.getSingleResult();
-			  } ).thenAccept( found -> {
-				  assertEquals( "Prova", ( (Object[]) found )[0] );
-				  assertEquals( rye.getId(), ( (Object[]) found )[1] );
-			  } )
+						  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery(
+										  "SELECT 'Prova', f.id FROM Flour f WHERE f.id = :id",
+										  Object[].class
+								  )
+								  .setParameter( "id", rye.getId() );
+						  assertThat( qr ).isNotNull();
+						  return qr.getSingleResult();
+					  } )
+					  .thenAccept( found -> assertThat( found )
+							  .containsExactly( "Prova", rye.getId() ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultQueryOnId(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE id = :id", Flour.class )
+				  Stage.SelectionQuery<Flour> qr = s
+						  .createSelectionQuery( "FROM Flour WHERE id = :id", Flour.class )
 						  .setParameter( "id", 1 );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( spelt, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( spelt ) )
 		);
 	}
 
@@ -103,76 +113,81 @@ public class HQLQueryParameterNamedTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = :name", Flour.class )
 						  .setParameter( "name", "Almond" );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParameters(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = :name and description = :desc", Flour.class )
+				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery(
+								  "FROM Flour WHERE name = :name and description = :desc",
+								  Flour.class
+						  )
 						  .setParameter( "name", almond.getName() )
 						  .setParameter( "desc", almond.getDescription() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParametersReversed(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = :name and description = :desc", Flour.class )
+				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery(
+								  "FROM Flour WHERE name = :name and description = :desc",
+								  Flour.class
+						  )
 						  .setParameter( "desc", almond.getDescription() )
 						  .setParameter( "name", almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
 	@Test
 	public void testSingleResultMultipleParametersReused(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = :name or cast(:name as string) is null", Flour.class )
+				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery(
+								  "FROM Flour WHERE name = :name or cast(:name as string) is null",
+								  Flour.class
+						  )
 						  .setParameter( "name", almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
 	@Test
 	public void testPlaceHolderInString(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "select ':', ':name', f FROM Flour f WHERE f.name = :name", Object[].class )
+				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery(
+								  "select ':', ':name', f FROM Flour f WHERE f.name = :name",
+								  Object[].class
+						  )
 						  .setParameter( "name", almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( result -> {
-				  assertEquals( 3, result.length );
-				  assertEquals( ":", result[0] );
-				  assertEquals( ":name", result[1] );
-				  assertEquals( almond, result[2] );
-			  } )
+			  } ).thenAccept( result -> assertThat( result ).containsExactly( ":", ":name", almond ) )
 		);
 	}
 
 	@Test
 	public void testPlaceHolderAndSingleQuoteInString(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "select ''':', ''':name''', f FROM Flour f WHERE f.name = :name", Object[].class )
+				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery(
+								  "select ''':', ''':name''', f FROM Flour f WHERE f.name = :name",
+								  Object[].class
+						  )
 						  .setParameter( "name", almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( result -> {
-				  assertEquals( 3, result.length );
-				  assertEquals( "':", result[0] );
-				  assertEquals( "':name'", result[1] );
-				  assertEquals( almond, result[2] );
-			  } )
+			  } ).thenAccept( result -> assertThat( result ).containsExactly( "':", "':name'", almond ) )
 		);
 	}
 
