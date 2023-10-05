@@ -1,16 +1,16 @@
 # Run the build using the latest ORM 5.x snapshots
 # so that we can spot integration issues early
-name: Latest ORM 6.x
+name: Latest ORM 6.2.x
 
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
   push:
     branches:
-      - main
+      - 2.0
   pull_request:
     branches:
-      - main
+      - 2.0
   schedule:
     # * is a special character in YAML, so you have to quote this string
     # Run every hour at minute 25
