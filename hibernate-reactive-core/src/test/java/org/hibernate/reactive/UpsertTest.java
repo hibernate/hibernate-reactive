@@ -9,41 +9,62 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.assertj.core.api.Condition;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 /**
  * Same as Hibernate ORM org.hibernate.orm.test.stateless.UpsertTest
  * <p>
- *     These tests are in a separate class because we need to skip the execution on some databases,
- *     but once this has been resolved, they could be in {@link ReactiveStatelessSessionTest}.
+ * These tests are in a separate class because we need to skip the execution on some databases,
+ * but once this has been resolved, they could be in {@link ReactiveStatelessSessionTest}.
  * </p>
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 public class UpsertTest extends BaseReactiveTest {
 
-	/**
-	 * Something is missing in HR to make it work for these databases.
- 	 */
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = skipTestsFor( COCKROACHDB, DB2, MARIA, MYSQL, ORACLE );
+	private static SqlStatementTracker sqlTracker;
+
+	// A condition to check that entities are persisted using a merge operator when the database actually supports it.
+	private final static Condition<String> IS_USING_MERGE = new Condition<>(
+			s -> s.toLowerCase().startsWith( "merge into" ),
+			"insertions or updates without using the merge operator"
+	);
+
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		sqlTracker = new SqlStatementTracker( UpsertTest::filter, configuration.getProperties() );
+		return configuration;
+	}
+
+	@Override
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+		sqlTracker.registerService( builder );
+	}
+
+	private static boolean filter(String s) {
+		String[] accepted = {"insert ", "update ", "merge "};
+		for ( String valid : accepted ) {
+			if ( s.toLowerCase().startsWith( valid ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -55,19 +76,26 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "hello earth" ) )
 							  .call( () -> ss.upsert( new Record( 456L, "hello mars" ) ) )
+							  .invoke( this::assertQueries )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
-							  .invoke( results -> assertThat( results ).containsExactly(
-									  new Record( 123L, "hello earth" ),
-									  new Record( 456L, "hello mars" )
-							  ) )
+									  .createSelectionQuery( "from Record order by id", Record.class )
+									  .getResultList() )
+							  .invoke( results -> {
+								  assertThat( results ).containsExactly(
+										  new Record( 123L, "hello earth" ),
+										  new Record( 456L, "hello mars" )
+								  );
+							  } )
 					  )
 					  .call( () -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
-					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
+					  .invoke( this::assertQueries )
+					  .call( v -> getMutinySessionFactory()
+							  .withStatelessTransaction( ss -> ss
+									  .createSelectionQuery( "from Record order by id", Record.class )
+									  .getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )
@@ -81,6 +109,7 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
 							  .call( () -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
+							  .invoke( this::assertQueries )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
@@ -92,6 +121,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .call( () -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .invoke( this::assertQueries )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
@@ -108,6 +138,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( new Record( 123L, "hello earth" ) )
 							  .thenCompose( v -> ss.upsert( new Record( 456L, "hello mars" ) ) )
 					  )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -118,6 +149,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -134,6 +166,7 @@ public class UpsertTest extends BaseReactiveTest {
 							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
 							  .thenCompose( v -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
 					  )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -144,6 +177,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -152,6 +186,28 @@ public class UpsertTest extends BaseReactiveTest {
 							  ) )
 					  )
 		);
+	}
+
+	private void assertQueries() {
+		if ( hasMergeOperator() ) {
+			assertThat( sqlTracker.getLoggedQueries() ).have( IS_USING_MERGE );
+		}
+		else {
+			// This might be overkill, but it's still helpful in case more databases are going to support
+			// the merge operator, and we need to update the documentation or warn people about it.
+			assertThat( sqlTracker.getLoggedQueries() ).doNotHave( IS_USING_MERGE );
+		}
+	}
+
+	private boolean hasMergeOperator() {
+		switch ( dbType() ) {
+			case SQLSERVER:
+			case ORACLE:
+			case POSTGRESQL:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	@Entity(name = "Record")
