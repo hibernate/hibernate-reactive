@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -69,7 +70,8 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 
 	private static String createInsert(PreparedStatementDetails insertStatementDetails, String identifierColumnName, Dialect dialect) {
 		final String sqlEnd = " returning " + identifierColumnName;
-		if ( dialect instanceof MySQLDialect ) {
+		Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
+		if ( realDialect instanceof MySQLDialect ) {
 			// For some reasons ORM generates a query with an invalid syntax
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );
@@ -77,7 +79,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 					? sql.substring( 0, index )
 					: sql;
 		}
-		if ( dialect instanceof SQLServerDialect ) {
+		if ( realDialect instanceof SQLServerDialect ) {
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );
 			// FIXME: this is a hack for HHH-16365
@@ -94,12 +96,12 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			}
 			return sql;
 		}
-		if ( dialect instanceof DB2Dialect ) {
+		if ( realDialect instanceof DB2Dialect ) {
 			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
 			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
 			return insertStatementDetails.getSqlString().replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
 		}
-		if ( dialect instanceof OracleDialect ) {
+		if ( realDialect instanceof OracleDialect ) {
 			final String valuesStr = " values ( )";
 			String sql = insertStatementDetails.getSqlString();
 			int index = sql.lastIndexOf( sqlEnd );

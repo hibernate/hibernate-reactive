@@ -11,6 +11,8 @@ import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.model.ValuesAnalysis;
+import org.hibernate.sql.model.ast.MutationGroup;
 import org.hibernate.sql.model.ast.builder.AbstractTableUpdateBuilder;
 import org.hibernate.sql.model.ast.builder.TableMergeBuilder;
 
@@ -33,4 +35,10 @@ public class ReactiveMergeCoordinator extends ReactiveUpdateCoordinatorStandard 
 	protected <O extends MutationOperation> AbstractTableUpdateBuilder<O> newTableUpdateBuilder(EntityTableMapping tableMapping) {
 		return new TableMergeBuilder<>( entityPersister(), tableMapping, factory() );
 	}
+
+	@Override
+	protected MutationOperationGroup createOperationGroup(ValuesAnalysis valuesAnalysis, MutationGroup mutationGroup) {
+		return super.createOperationGroup( valuesAnalysis, mutationGroup );
+	}
+
 }

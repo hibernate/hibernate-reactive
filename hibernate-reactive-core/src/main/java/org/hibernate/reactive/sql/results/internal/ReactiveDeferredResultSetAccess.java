@@ -15,6 +15,7 @@ import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -150,7 +151,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
 
-					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
+					Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
 					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
 					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
