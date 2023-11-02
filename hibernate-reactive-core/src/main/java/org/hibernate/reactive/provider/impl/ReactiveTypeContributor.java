@@ -21,6 +21,7 @@ import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
@@ -99,7 +100,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 	}
 
 	private Dialect dialect(ServiceRegistry serviceRegistry) {
-		return serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
+		return DialectDelegateWrapper.extractRealDialect( serviceRegistry.getService( JdbcEnvironment.class ).getDialect() );
 	}
 
 	/**
