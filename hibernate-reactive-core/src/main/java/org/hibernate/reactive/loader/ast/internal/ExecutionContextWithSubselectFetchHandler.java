@@ -6,7 +6,6 @@
 package org.hibernate.reactive.loader.ast.internal;
 
 import org.hibernate.engine.spi.EntityHolder;
-import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;

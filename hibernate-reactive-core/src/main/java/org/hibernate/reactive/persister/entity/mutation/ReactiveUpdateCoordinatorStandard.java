@@ -294,6 +294,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		this.updateResultStage = new CompletableFuture<>();
 		// Create the JDBC operation descriptors
 		final MutationOperationGroup dynamicUpdateGroup = generateDynamicUpdateGroup(
+				entity,
 				id,
 				rowId,
 				oldValues,

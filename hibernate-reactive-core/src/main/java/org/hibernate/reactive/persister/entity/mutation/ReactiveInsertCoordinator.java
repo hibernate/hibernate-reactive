@@ -46,9 +46,12 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
+		final boolean needsDynamicInsert = preInsertInMemoryValueGeneration( currentValues, entity, session );
+		final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
 		return reactivePreInsertInMemoryValueGeneration( currentValues, entity, session )
 				.thenCompose( v -> entityPersister().getEntityMetamodel().isDynamicInsert()
-						? doDynamicInserts( id, currentValues, entity, session )
+								|| needsDynamicInsert || forceIdentifierBinding
+						? doDynamicInserts( id, currentValues, entity, session, forceIdentifierBinding )
 						: doStaticInserts( id, currentValues, entity, session )
 				);
 	}
@@ -126,9 +129,14 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	@Override
-	protected CompletionStage<Object> doDynamicInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
+	protected CompletionStage<Object> doDynamicInserts(
+			Object id,
+			Object[] values,
+			Object object,
+			SharedSessionContractImplementor session,
+			boolean forceIdentifierBinding) {
 		final boolean[] insertability = getPropertiesToInsert( values );
-		final MutationOperationGroup insertGroup = generateDynamicInsertSqlGroup( insertability );
+		final MutationOperationGroup insertGroup = generateDynamicInsertSqlGroup( insertability, object, session, forceIdentifierBinding );
 		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, insertGroup );
 
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );

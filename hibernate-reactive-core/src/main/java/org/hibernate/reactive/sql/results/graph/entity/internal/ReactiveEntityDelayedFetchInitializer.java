@@ -8,6 +8,7 @@ package org.hibernate.reactive.sql.results.graph.entity.internal;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -24,7 +25,6 @@ import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
 import org.hibernate.sql.results.graph.entity.EntityInitializer;
-import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 import org.hibernate.sql.results.graph.entity.internal.EntityDelayedFetchInitializer;
 import org.hibernate.type.Type;
 
@@ -72,10 +72,9 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 				final EntityKey entityKey = new EntityKey( getIdentifier(), concreteDescriptor );
 				final PersistenceContext persistenceContext = session.getPersistenceContext();
 
-				final LoadingEntityEntry loadingEntityLocally = persistenceContext.getLoadContexts()
-						.findLoadingEntityEntry( entityKey );
-				if ( loadingEntityLocally != null ) {
-					setEntityInstance( loadingEntityLocally.getEntityInstance() );
+				final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+				if ( holder != null && holder.getEntity() != null ) {
+					setEntityInstance( persistenceContext.proxyFor( holder ) );
 				}
 				if ( getEntityInstance() == null ) {
 					setEntityInstance( persistenceContext.getEntity( entityKey ) );

@@ -60,7 +60,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 	}
 
 	@Override
-	protected void doDynamicDelete(Object entity, Object id, Object[] loadedState, SharedSessionContractImplementor session) {
+	protected void doDynamicDelete(Object entity, Object id, Object rowId, Object[] loadedState, SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
 		final MutationOperationGroup operationGroup = generateOperationGroup( null, loadedState, true, session );
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroup );
@@ -72,10 +72,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 				mutationExecutor.getPreparedStatementDetails( tableName );
 			}
 		}
-
-		applyLocking( null, loadedState, mutationExecutor, session );
-		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
-
+		applyDynamicDeleteTableDetails( id, rowId, loadedState, mutationExecutor, operationGroup, session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,

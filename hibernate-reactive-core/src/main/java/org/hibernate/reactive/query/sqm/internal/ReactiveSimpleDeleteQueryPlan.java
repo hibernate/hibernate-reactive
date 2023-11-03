@@ -6,6 +6,7 @@
 package org.hibernate.reactive.query.sqm.internal;
 
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -16,9 +17,9 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
 import org.hibernate.metamodel.mapping.MappingModelExpressible;
+import org.hibernate.metamodel.mapping.SoftDeleteMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationHelper;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryParameterImplementor;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SimpleDeleteQueryPlan;
@@ -27,7 +28,6 @@ import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.spi.SqmParameterMappingModelResolutionAccess;
 import org.hibernate.query.sqm.sql.SqmTranslation;
 import org.hibernate.query.sqm.sql.SqmTranslator;
-import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
@@ -35,13 +35,18 @@ import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveSqmMutationStr
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.tree.delete.DeleteStatement;
+import org.hibernate.sql.ast.tree.AbstractUpdateOrDeleteStatement;
+import org.hibernate.sql.ast.tree.MutationStatement;
+import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.ast.tree.expression.Expression;
+import org.hibernate.sql.ast.tree.expression.JdbcLiteral;
 import org.hibernate.sql.ast.tree.from.MutatingTableReferenceGroupWrapper;
 import org.hibernate.sql.ast.tree.from.NamedTableReference;
 import org.hibernate.sql.ast.tree.predicate.InSubQueryPredicate;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryDelete;
+import org.hibernate.sql.ast.tree.update.Assignment;
+import org.hibernate.sql.ast.tree.update.UpdateStatement;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
@@ -49,14 +54,13 @@ import org.hibernate.sql.results.internal.SqlSelectionImpl;
 import static org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter.usingLockingAndPaging;
 
 public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan implements ReactiveNonSelectQueryPlan {
-
-	private JdbcOperationQueryDelete jdbcDelete;
 	private final EntityMappingType entityDescriptor;
 	private final SqmDeleteStatement<?> sqmDelete;
 	private final DomainParameterXref domainParameterXref;
 
-	private SqmTranslation<DeleteStatement> sqmInterpretation;
+	private JdbcOperationQueryMutation jdbcOperation;
 
+	private SqmTranslation<? extends AbstractUpdateOrDeleteStatement> sqmInterpretation;
 	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref;
 
 	public ReactiveSimpleDeleteQueryPlan(
@@ -70,12 +74,9 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 	}
 
 	@Override
-	protected SqlAstTranslator<JdbcOperationQueryDelete> createDeleteTranslator(DomainQueryExecutionContext executionContext) {
+	protected SqlAstTranslator<? extends JdbcOperationQueryMutation> createTranslator(DomainQueryExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
-		final QueryEngine queryEngine = factory.getQueryEngine();
-
-		final SqmTranslatorFactory translatorFactory = queryEngine.getSqmTranslatorFactory();
-		final SqmTranslator<DeleteStatement> translator = translatorFactory.createSimpleDeleteTranslator(
+		final SqmTranslator<? extends MutationStatement> translator = factory.getQueryEngine().getSqmTranslatorFactory().createMutationTranslator(
 				sqmDelete,
 				executionContext.getQueryOptions(),
 				domainParameterXref,
@@ -84,15 +85,39 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 				factory
 		);
 
-		sqmInterpretation = translator.translate();
+		sqmInterpretation = (SqmTranslation<? extends AbstractUpdateOrDeleteStatement>) translator.translate();
 
 		this.jdbcParamsXref = SqmUtil.generateJdbcParamsXref(
 				domainParameterXref,
 				sqmInterpretation::getJdbcParamsBySqmParam
 		);
 
-		return factory.getJdbcServices().getJdbcEnvironment().getSqlAstTranslatorFactory()
-				.buildDeleteTranslator( factory, sqmInterpretation.getSqlAst() );
+		return factory.getJdbcServices()
+				.getJdbcEnvironment()
+				.getSqlAstTranslatorFactory()
+				.buildMutationTranslator( factory, mutationStatement() );
+	}
+
+	private MutationStatement mutationStatement() {
+		if ( entityDescriptor.getSoftDeleteMapping() == null ) {
+			return sqmInterpretation.getSqlAst();
+		}
+		final AbstractUpdateOrDeleteStatement sqlDeleteAst = sqmInterpretation.getSqlAst();
+		final NamedTableReference targetTable = sqlDeleteAst.getTargetTable();
+		final SoftDeleteMapping columnMapping = getEntityDescriptor().getSoftDeleteMapping();
+		final ColumnReference columnReference = new ColumnReference( targetTable, columnMapping );
+		//noinspection rawtypes,unchecked
+		final JdbcLiteral jdbcLiteral = new JdbcLiteral(
+				columnMapping.getDeletedLiteralValue(),
+				columnMapping.getJdbcMapping()
+		);
+		final Assignment assignment = new Assignment( columnReference, jdbcLiteral );
+
+		return new UpdateStatement(
+				targetTable,
+				Collections.singletonList( assignment ),
+				sqlDeleteAst.getRestriction()
+		);
 	}
 
 	@Override
@@ -100,9 +125,9 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
-		SqlAstTranslator<JdbcOperationQueryDelete> deleteTranslator = null;
-		if ( jdbcDelete == null ) {
-			deleteTranslator = createDeleteTranslator( executionContext );
+		SqlAstTranslator<? extends JdbcOperationQueryMutation> sqlAstTranslator = null;
+		if ( jdbcOperation == null ) {
+			sqlAstTranslator = createTranslator( executionContext );
 		}
 
 		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
@@ -122,13 +147,13 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 				session
 		);
 
-		if ( jdbcDelete != null
-				&& !jdbcDelete.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
-			deleteTranslator = createDeleteTranslator( executionContext );
+		if ( jdbcOperation != null
+				&& !jdbcOperation.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
+			sqlAstTranslator = createTranslator( executionContext );
 		}
 
-		if ( deleteTranslator != null ) {
-			jdbcDelete = deleteTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
+		if ( sqlAstTranslator != null ) {
+			jdbcOperation = sqlAstTranslator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		}
 
 		final boolean missingRestriction = sqmDelete.getWhereClause() == null
@@ -188,7 +213,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 				)
 				.thenCompose( unused -> StandardReactiveJdbcMutationExecutor.INSTANCE
 						.executeReactive(
-								jdbcDelete,
+								jdbcOperation,
 								jdbcParameterBindings,
 								session.getJdbcCoordinator().getStatementPreparer()::prepareStatement,
 								ReactiveSimpleDeleteQueryPlan::doNothing,

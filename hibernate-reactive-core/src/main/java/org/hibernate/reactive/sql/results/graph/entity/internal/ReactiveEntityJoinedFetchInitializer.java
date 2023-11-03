@@ -5,16 +5,9 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
-import java.lang.invoke.MethodHandles;
-
 import org.hibernate.FetchNotFoundException;
 import org.hibernate.LockMode;
 import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.metamodel.mapping.ModelPart;
-import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.results.graph.entity.ReactiveAbstractEntityInitializer;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
@@ -33,11 +26,9 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 
 	private static final String CONCRETE_NAME = ReactiveEntityJoinedFetchInitializer.class.getSimpleName();
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 	private final EntityValuedFetchable referencedFetchable;
 	private final DomainResultAssembler<?> keyAssembler;
 	private final NotFoundAction notFoundAction;
-	private final boolean isEnhancedForLazyLoading;
 
 	public ReactiveEntityJoinedFetchInitializer(
 			EntityResultGraphNode resultDescriptor,
@@ -61,17 +52,7 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 		);
 		this.referencedFetchable = referencedFetchable;
 		this.notFoundAction = notFoundAction;
-
 		this.keyAssembler = keyResult == null ? null : keyResult.createResultAssembler( this, creationState );
-
-		if ( getConcreteDescriptor() != null ) {
-			this.isEnhancedForLazyLoading = getConcreteDescriptor()
-					.getBytecodeEnhancementMetadata()
-					.isEnhancedForLazyLoading();
-		}
-		else {
-			this.isEnhancedForLazyLoading = false;
-		}
 	}
 
 	@Override
@@ -111,18 +92,6 @@ public class ReactiveEntityJoinedFetchInitializer extends ReactiveAbstractEntity
 				}
 			}
 		}
-	}
-
-	@Override
-	protected Object getProxy(PersistenceContext persistenceContext) {
-		ModelPart referencedModelPart = getInitializedPart();
-		if ( referencedModelPart instanceof ToOneAttributeMapping ) {
-			final boolean unwrapProxy = ( (ToOneAttributeMapping) referencedModelPart ).isUnwrapProxy() && isEnhancedForLazyLoading;
-			if ( unwrapProxy ) {
-				return null;
-			}
-		}
-		return super.getProxy( persistenceContext );
 	}
 
 	@Override

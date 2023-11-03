@@ -14,7 +14,6 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.TransientObjectException;
 import org.hibernate.UnknownEntityTypeException;
-import org.hibernate.UnknownProfileException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -109,23 +108,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
  */
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implements ReactiveStatelessSession {
 
-	private static final LoadQueryInfluencers NO_INFLUENCERS = new LoadQueryInfluencers() {
-		@Override
-		public String getInternalFetchProfile() {
-			return null;
-		}
-
-		@Override
-		public void setInternalFetchProfile(String internalFetchProfile) {
-		}
-
-		@Override
-		public boolean isFetchProfileEnabled(String name) throws UnknownProfileException {
-			return false;
-		}
-	};
-
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
+	private final LoadQueryInfluencers influencers;
 
 	private final ReactiveConnection reactiveConnection;
 
@@ -138,6 +123,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( this );
 		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, reactiveConnection, persistenceContext );
+		influencers = new LoadQueryInfluencers( factory );
 	}
 
 	/**
@@ -155,6 +141,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				? connection
 				: new BatchingConnection( connection, batchSize );
 		batchingHelperSession = this;
+		influencers = new LoadQueryInfluencers( factory );
 	}
 
 	private LockMode getNullSafeLockMode(LockMode lockMode) {
@@ -221,7 +208,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public LoadQueryInfluencers getLoadQueryInfluencers() {
-		return NO_INFLUENCERS;
+		return influencers;
 	}
 
 	@Override
