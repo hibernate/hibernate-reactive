@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -85,9 +86,6 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 		if ( isMissing() || isEntityInitialized() ) {
 			return voidFuture();
 		}
-
-		preLoad( rowProcessingState );
-
 		final LazyInitializer lazyInitializer = extractLazyInitializer( getEntityInstance() );
 		return voidFuture()
 				.thenCompose( v -> {
@@ -126,7 +124,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 			PersistenceContext persistenceContext) {
 		final Object instance = resolveInstance(
 				getEntityKey().getIdentifier(),
-				persistenceContext.getLoadContexts().findLoadingEntityEntry( getEntityKey() ),
+				persistenceContext.getEntityHolder( getEntityKey() ),
 				rowProcessingState
 		);
 		return initializeEntity( instance, rowProcessingState )
@@ -138,7 +136,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 
 	private Object resolveInstance(
 			Object entityIdentifier,
-			LoadingEntityEntry existingLoadingEntry,
+			EntityHolder holder,
 			RowProcessingState rowProcessingState) {
 		if ( isOwningInitializer() ) {
 			assert existingLoadingEntry == null || existingLoadingEntry.getEntityInstance() == null;

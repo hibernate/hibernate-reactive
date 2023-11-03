@@ -16,7 +16,7 @@ import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.DeleteCoordinatorStandard;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -30,7 +30,7 @@ import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.id
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveDeleteCoordinator extends DeleteCoordinator {
+public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
