@@ -29,6 +29,7 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
+import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 @Internal
@@ -46,20 +47,18 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 	}
 
 	public CompletionStage<Object> coordinateReactiveInsert(Object id, Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
-		final boolean needsDynamicInsert = preInsertInMemoryValueGeneration( currentValues, entity, session );
-		final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
 		return reactivePreInsertInMemoryValueGeneration( currentValues, entity, session )
-				.thenCompose( v -> entityPersister().getEntityMetamodel().isDynamicInsert()
-								|| needsDynamicInsert || forceIdentifierBinding
+				.thenCompose( needsDynamicInsert -> {
+					final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
+					return entityPersister().getEntityMetamodel().isDynamicInsert() || needsDynamicInsert || forceIdentifierBinding
 						? doDynamicInserts( id, currentValues, entity, session, forceIdentifierBinding )
-						: doStaticInserts( id, currentValues, entity, session )
-				);
+						: doStaticInserts( id, currentValues, entity, session );
+				} );
 	}
 
-	private CompletionStage<Void> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
-		CompletionStage<Void> stage = voidFuture();
-
+	private CompletionStage<Boolean> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
 		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
+		CompletionStage<Boolean> stage = falseFuture();
 		if ( entityMetamodel.hasPreInsertGeneratedValues() ) {
 			final Generator[] generators = entityMetamodel.getGenerators();
 			for ( int i = 0; i < generators.length; i++ ) {
@@ -70,11 +69,20 @@ public class ReactiveInsertCoordinator extends InsertCoordinator {
 						&& generator.generatesOnInsert() ) {
 					final Object currentValue = currentValues[i];
 					final BeforeExecutionGenerator beforeGenerator = (BeforeExecutionGenerator) generator;
-					stage = stage.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, INSERT )
-							.thenAccept( generatedValue -> {
-								currentValues[index] = generatedValue;
-								entityPersister().setValue( entity, index, generatedValue );
-							} ) );
+					stage = stage
+							.thenCompose( foundStateDependentGenerator -> generateValue(
+												  session,
+												  entity,
+												  currentValue,
+												  beforeGenerator,
+												  INSERT
+										  )
+												  .thenApply( generatedValue -> {
+													  currentValues[index] = generatedValue;
+													  entityPersister().setValue( entity, index, generatedValue );
+													  return foundStateDependentGenerator || beforeGenerator.generatedOnExecution();
+												  } )
+							);
 				}
 			}
 		}
