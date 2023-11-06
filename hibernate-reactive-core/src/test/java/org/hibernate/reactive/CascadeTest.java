@@ -55,7 +55,6 @@ public class CascadeTest extends BaseReactiveTest {
 
 	@Test
 	public void testQuery(VertxTestContext context) {
-
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
