@@ -115,7 +115,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			persistenceContext.setDefaultReadOnly( readOnly );
 		}
 
-		return doExecuteQuery( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, domainResultType, statementCreator, resultsConsumer )
+ 		return doExecuteQuery( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, domainResultType, statementCreator, resultsConsumer )
 				.thenCompose( list -> ( (ReactivePersistenceContextAdapter) persistenceContext )
 						// only initialize non-lazy collections after everything else has been refreshed
 						.reactiveInitializeNonLazyCollections()
