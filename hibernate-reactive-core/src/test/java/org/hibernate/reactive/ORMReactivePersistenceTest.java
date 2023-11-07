@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -24,23 +23,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PostLoad;
-import jakarta.persistence.PostPersist;
-import jakarta.persistence.PostRemove;
-import jakarta.persistence.PostUpdate;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreRemove;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
-import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
@@ -122,107 +107,23 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity(name = "Element")
-	@Table(name = "Element")
-	public static class Element {
+	@Entity(name = "Flour")
+	@Table(name = "Flour")
+	public static class Flour {
 		@Id
-		@GeneratedValue
-		Integer id;
+		private Integer id;
+		private String name;
+		private String description;
+		private String type;
 
-		@ManyToOne
-		CascadeTest.Node node;
-
-		public Element(CascadeTest.Node node) {
-			this.node = node;
+		public Flour() {
 		}
 
-		Element() {
-		}
-	}
-
-	@Entity(name = "Node")
-	@Table(name = "Node")
-	public static class Node {
-
-		@Id
-		@GeneratedValue
-		Integer id;
-		@Version
-		Integer version;
-		String string;
-
-		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REFRESH,
-						CascadeType.MERGE,
-						CascadeType.REMOVE
-				})
-		CascadeTest.Node parent;
-
-		@OneToMany(fetch = FetchType.EAGER,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REMOVE
-				},
-				mappedBy = "node")
-		List<CascadeTest.Element> elements = new ArrayList<>();
-
-		@Transient
-		boolean prePersisted;
-		@Transient
-		boolean postPersisted;
-		@Transient
-		boolean preUpdated;
-		@Transient
-		boolean postUpdated;
-		@Transient
-		boolean postRemoved;
-		@Transient
-		boolean preRemoved;
-		@Transient
-		boolean loaded;
-
-		public Node(String string) {
-			this.string = string;
-		}
-
-		Node() {
-		}
-
-		@PrePersist
-		void prePersist() {
-			prePersisted = true;
-		}
-
-		@PostPersist
-		void postPersist() {
-			postPersisted = true;
-		}
-
-		@PreUpdate
-		void preUpdate() {
-			preUpdated = true;
-		}
-
-		@PostUpdate
-		void postUpdate() {
-			postUpdated = true;
-		}
-
-		@PreRemove
-		void preRemove() {
-			preRemoved = true;
-		}
-
-		@PostRemove
-		void postRemove() {
-			postRemoved = true;
-		}
-
-		@PostLoad
-		void postLoad() {
-			loaded = true;
+		public Flour(Integer id, String name, String description, String type) {
+			this.id = id;
+			this.name = name;
+			this.description = description;
+			this.type = type;
 		}
 
 		public Integer getId() {
@@ -233,17 +134,33 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			this.id = id;
 		}
 
-		public String getString() {
-			return string;
+		public String getName() {
+			return name;
 		}
 
-		public void setString(String string) {
-			this.string = string;
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
 		}
 
 		@Override
 		public String toString() {
-			return id + ": " + string;
+			return name;
 		}
 
 		@Override
@@ -254,13 +171,15 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 			if ( o == null || getClass() != o.getClass() ) {
 				return false;
 			}
-			CascadeTest.Node node = (CascadeTest.Node) o;
-			return Objects.equals( string, node.string );
+			Flour flour = (Flour) o;
+			return Objects.equals( name, flour.name ) &&
+					Objects.equals( description, flour.description ) &&
+					Objects.equals( type, flour.type );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash( string );
+			return Objects.hash( name, description, type );
 		}
 	}
 }
