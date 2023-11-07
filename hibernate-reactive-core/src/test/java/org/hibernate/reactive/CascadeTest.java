@@ -17,9 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
@@ -35,7 +33,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+import static jakarta.persistence.CascadeType.*;
+import static jakarta.persistence.FetchType.*;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,8 +82,30 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testCascade(VertxTestContext context) {
+	public void testManyToOneCascadeRefresh(VertxTestContext context) {
+		Node child = new Node( "child" );
+		child.parent = new Node( "parent" );
 
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( child ) )
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( s -> s
+								.find( Node.class, child.getId() )
+								.chain( node -> s
+										.fetch( node.parent )
+										.chain( parent -> s
+												.createMutationQuery( "update Node set string = upper(string)" )
+												.executeUpdate()
+												.chain( () -> s.refresh( node ) )
+												.invoke( () -> {
+													assertThat( node.getString() ).isEqualTo( "CHILD" );
+													assertThat( parent.getString() ).isEqualTo( "PARENT" );
+												} ) ) ) ) )
+		);
+	}
+
+	@Test
+	public void testCascade(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
@@ -95,18 +118,12 @@ public class CascadeTest extends BaseReactiveTest {
 						.thenCompose( s -> s.persist( basik )
 								.thenApply( v -> {
 									assertTrue( basik.prePersisted && !basik.postPersisted );
-									return s;
-								} )
-								.thenApply( v -> {
 									assertTrue( basik.parent.prePersisted && !basik.parent.postPersisted );
 									return s;
 								} )
 								.thenCompose( v -> s.flush() )
 								.thenApply( v -> {
 									assertTrue( basik.prePersisted && basik.postPersisted );
-									return s;
-								} )
-								.thenApply( v -> {
 									assertTrue( basik.parent.prePersisted && basik.parent.postPersisted );
 									return s;
 								} )
@@ -208,21 +225,10 @@ public class CascadeTest extends BaseReactiveTest {
 		Integer version;
 		String string;
 
-		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REFRESH,
-						CascadeType.MERGE,
-						CascadeType.REMOVE
-				})
+		@ManyToOne(fetch = LAZY, cascade = {PERSIST, REFRESH, MERGE, REMOVE})
 		Node parent;
 
-		@OneToMany(fetch = FetchType.EAGER,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REMOVE
-				},
-				mappedBy = "node")
+		@OneToMany(fetch = EAGER, cascade = {PERSIST, REMOVE}, mappedBy = "node")
 		List<Element> elements = new ArrayList<>();
 
 		@Transient
