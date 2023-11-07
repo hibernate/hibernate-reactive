@@ -10,9 +10,15 @@ import java.util.List;
 import java.util.Objects;
 
 import org.hibernate.Hibernate;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -37,6 +43,9 @@ import static jakarta.persistence.CascadeType.*;
 import static jakarta.persistence.FetchType.*;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.cfg.JdbcSettings.DIALECT;
+import static org.hibernate.cfg.JdbcSettings.DRIVER;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,12 +55,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(value = 10, timeUnit = MINUTES)
 public class CascadeTest extends BaseReactiveTest {
 
+	private SessionFactory ormFactory;
+
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( Node.class );
 		configuration.addAnnotatedClass( Element.class );
 		return configuration;
+	}
+
+
+	@BeforeEach
+	public void prepareOrmFactory() {
+		Configuration configuration = constructConfiguration();
+		configuration.setProperty( DRIVER, dbType().getJdbcDriver() );
+		configuration.setProperty( DIALECT, dbType().getDialectClass().getName() );
+
+		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
+				.applySettings( configuration.getProperties() );
+
+		StandardServiceRegistry registry = builder.build();
+		ormFactory = configuration.buildSessionFactory( registry );
+	}
+
+	@AfterEach
+	public void closeOrmFactory() {
+		ormFactory.close();
 	}
 
 	@Test
@@ -81,6 +111,7 @@ public class CascadeTest extends BaseReactiveTest {
 		);
 	}
 
+
 	@Test
 	public void testManyToOneCascadeRefresh(VertxTestContext context) {
 		Node child = new Node( "child" );
@@ -102,6 +133,29 @@ public class CascadeTest extends BaseReactiveTest {
 													assertThat( parent.getString() ).isEqualTo( "PARENT" );
 												} ) ) ) ) )
 		);
+	}
+
+	@Test
+	public void testManyToOneCascadeRefreshWithORM() {
+		Node child = new Node( "child" );
+		child.parent = new Node( "parent" );
+
+		try (Session s = ormFactory.openSession()) {
+			s.beginTransaction();
+			s.persist( child );
+			s.getTransaction().commit();
+		}
+
+		try (Session s = ormFactory.openSession()) {
+			s.beginTransaction();
+			Node node = s.find( Node.class, child.getId() );
+			Node parent = node.parent;
+			s.createMutationQuery( "update Node set string = upper(string)" ).executeUpdate();
+			s.refresh( node );
+			assertThat( node.getString() ).isEqualTo( "CHILD" );
+			assertThat( parent.getString() ).isEqualTo( "PARENT" );
+			s.getTransaction().commit();
+		}
 	}
 
 	@Test
