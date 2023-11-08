@@ -111,9 +111,9 @@ public final class Cascade<C> {
 	 * Cascade an action from the parent entity instance to all its children.
 	 */
 	public CompletionStage<Void> cascade() throws HibernateException {
-		return voidFuture().thenCompose(v -> {
+		return voidFuture().thenCompose( v -> {
 			CacheMode cacheMode = eventSource.getCacheMode();
-			if ( action==CascadingActions.DELETE ) {
+			if ( action == CascadingActions.DELETE ) {
 				eventSource.setCacheMode( CacheMode.GET );
 			}
 			eventSource.getPersistenceContextInternal().incrementCascadeLevel();

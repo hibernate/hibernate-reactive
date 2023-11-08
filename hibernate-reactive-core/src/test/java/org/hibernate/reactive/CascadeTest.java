@@ -65,7 +65,6 @@ public class CascadeTest extends BaseReactiveTest {
 		return configuration;
 	}
 
-
 	@BeforeEach
 	public void prepareOrmFactory() {
 		Configuration configuration = constructConfiguration();
@@ -111,11 +110,10 @@ public class CascadeTest extends BaseReactiveTest {
 		);
 	}
 
-
 	@Test
 	public void testManyToOneCascadeRefresh(VertxTestContext context) {
 		Node child = new Node( "child" );
-		child.parent = new Node( "parent" );
+		child.setParent( new Node( "parent" ) );
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persist( child ) )
@@ -123,7 +121,7 @@ public class CascadeTest extends BaseReactiveTest {
 						.withTransaction( s -> s
 								.find( Node.class, child.getId() )
 								.chain( node -> s
-										.fetch( node.parent )
+										.fetch( node.getParent() )
 										.chain( parent -> s
 												.createMutationQuery( "update Node set string = upper(string)" )
 												.executeUpdate()
@@ -131,14 +129,15 @@ public class CascadeTest extends BaseReactiveTest {
 												.invoke( () -> {
 													assertThat( node.getString() ).isEqualTo( "CHILD" );
 													assertThat( parent.getString() ).isEqualTo( "PARENT" );
-												} ) ) ) ) )
+												} ) ) ) )
+				)
 		);
 	}
 
 	@Test
 	public void testManyToOneCascadeRefreshWithORM() {
 		Node child = new Node( "child" );
-		child.parent = new Node( "parent" );
+		child.setParent( new Node( "parent" ) );
 
 		try (Session s = ormFactory.openSession()) {
 			s.beginTransaction();
@@ -149,7 +148,7 @@ public class CascadeTest extends BaseReactiveTest {
 		try (Session s = ormFactory.openSession()) {
 			s.beginTransaction();
 			Node node = s.find( Node.class, child.getId() );
-			Node parent = node.parent;
+			Node parent = node.getParent();
 			s.createMutationQuery( "update Node set string = upper(string)" ).executeUpdate();
 			s.refresh( node );
 			assertThat( node.getString() ).isEqualTo( "CHILD" );
@@ -356,6 +355,22 @@ public class CascadeTest extends BaseReactiveTest {
 
 		public void setString(String string) {
 			this.string = string;
+		}
+
+		public Node getParent() {
+			return parent;
+		}
+
+		public void setParent(Node parent) {
+			this.parent = parent;
+		}
+
+		public List<Element> getElements() {
+			return elements;
+		}
+
+		public void setElements(List<Element> elements) {
+			this.elements = elements;
 		}
 
 		@Override
