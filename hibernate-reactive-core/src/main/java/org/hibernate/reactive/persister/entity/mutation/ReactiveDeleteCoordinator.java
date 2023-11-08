@@ -16,7 +16,7 @@ import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.DeleteCoordinatorStandard;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -30,7 +30,7 @@ import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.id
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveDeleteCoordinator extends DeleteCoordinator {
+public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -60,7 +60,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 	}
 
 	@Override
-	protected void doDynamicDelete(Object entity, Object id, Object[] loadedState, SharedSessionContractImplementor session) {
+	protected void doDynamicDelete(Object entity, Object id, Object rowId, Object[] loadedState, SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
 		final MutationOperationGroup operationGroup = generateOperationGroup( null, loadedState, true, session );
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroup );
@@ -72,10 +72,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinator {
 				mutationExecutor.getPreparedStatementDetails( tableName );
 			}
 		}
-
-		applyLocking( null, loadedState, mutationExecutor, session );
-		applyId( id, null, mutationExecutor, getStaticDeleteGroup(), session );
-
+		applyDynamicDeleteTableDetails( id, rowId, loadedState, mutationExecutor, operationGroup, session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,

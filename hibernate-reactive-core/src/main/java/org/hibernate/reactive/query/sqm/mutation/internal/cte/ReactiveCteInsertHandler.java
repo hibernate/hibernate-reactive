@@ -10,7 +10,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -143,7 +142,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 		final int size = getSqmStatement().getInsertionTargetPaths().size();
 		final List<Map.Entry<List<CteColumn>, Assignment>> targetPathColumns = new ArrayList<>( size );
 		final List<CteColumn> targetPathCteColumns = new ArrayList<>( size );
-		final Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions = new LinkedHashMap<>();
 		final NamedTableReference entityTableReference = new NamedTableReference(
 				getCteTable().getTableExpression(),
 				TemporaryTable.DEFAULT_ALIAS,
@@ -178,14 +176,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				},
 				sqmInsertStatement,
 				entityDescriptor,
-				insertingTableGroup,
-				(sqmParameter, mappingType, jdbcParameters) -> {
-					parameterResolutions.computeIfAbsent(
-							sqmParameter,
-							k -> new ArrayList<>( 1 )
-					).add( jdbcParameters );
-					paramTypeResolutions.put( sqmParameter, mappingType );
-				}
+				insertingTableGroup
 		);
 
 		final boolean assignsId = targetPathCteColumns.contains( getCteTable().getCteColumns().get( 0 ) );
@@ -576,9 +567,9 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				factory.getRuntimeMetamodels().getMappingMetamodel(),
 				navigablePath -> sqmConverter.getMutatingTableGroup(),
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override @SuppressWarnings("unchecked")
+					@Override
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) paramTypeResolutions.get(parameter);
+						return (MappingModelExpressible<T>) sqmConverter.getSqmParameterMappingModelExpressibleResolutions().get( parameter );
 					}
 				},
 				executionContext.getSession()

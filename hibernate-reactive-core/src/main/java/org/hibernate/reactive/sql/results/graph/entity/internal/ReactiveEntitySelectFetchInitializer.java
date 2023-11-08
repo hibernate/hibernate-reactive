@@ -9,11 +9,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.FetchNotFoundException;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
@@ -30,12 +30,11 @@ import org.hibernate.spi.EntityIdentifierNavigablePath;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
+import org.hibernate.sql.results.graph.entity.EntityInitializer;
+import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
-import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
-import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.internal.log.LoggingHelper.toLoggableString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -65,6 +64,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 
 	@Override
 	public void resolveInstance(RowProcessingState rowProcessingState) {
+		// super.resolveInstance is also correct for Hibernate Reactive
 		super.resolveInstance( rowProcessingState );
 	}
 
@@ -101,6 +101,12 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 			return voidFuture();
 		}
 
+		final EntityInitializer parentEntityInitializer = parentAccess.findFirstEntityInitializer();
+		if ( parentEntityInitializer != null && parentEntityInitializer.isEntityInitialized() ) {
+			isInitialized = true;
+			return voidFuture();
+		}
+
 		if ( !isAttributeAssignableToConcreteDescriptor() ) {
 			return voidFuture();
 		}
@@ -125,45 +131,39 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 		final EntityKey entityKey = new EntityKey( entityIdentifier, concreteDescriptor );
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		entityInstance = persistenceContext.getEntity( entityKey );
-		if ( entityInstance != null ) {
-			if ( isPersistentAttributeInterceptable( entityInstance ) ) {
-				final PersistentAttributeInterceptor interceptor = asPersistentAttributeInterceptable( entityInstance ).$$_hibernate_getInterceptor();
-				if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-					( (EnhancementAsProxyLazinessInterceptor) interceptor ).forceInitialize( entityInstance, null );
-				}
-			}
-			isInitialized = true;
-			return voidFuture();
-		}
-
-		final LoadingEntityEntry existingLoadingEntry = session
-				.getPersistenceContext()
-				.getLoadContexts()
-				.findLoadingEntityEntry( entityKey );
-
-		if ( existingLoadingEntry != null ) {
-			if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
-				ENTITY_LOADING_LOGGER.debugf(
+		final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+		if ( holder != null ) {
+			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 						"(%s) Found existing loading entry [%s] - using loading instance",
 						CONCRETE_NAME,
-						toLoggableString( getNavigablePath(), entityIdentifier )
+						toLoggableString(
+								getNavigablePath(),
+								entityIdentifier
+						)
 				);
 			}
-			this.entityInstance = existingLoadingEntry.getEntityInstance();
-
-			if ( existingLoadingEntry.getEntityInitializer() != this ) {
+			entityInstance = holder.getEntity();
+			if ( holder.getEntityInitializer() == null ) {
+				if ( entityInstance != null && Hibernate.isInitialized( entityInstance ) ) {
+					isInitialized = true;
+					return voidFuture();
+				}
+			}
+			else if ( holder.getEntityInitializer() != this ) {
 				// the entity is already being loaded elsewhere
-				if ( ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
-					ENTITY_LOADING_LOGGER.debugf(
+				if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+					EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 							"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
 							CONCRETE_NAME,
 							toLoggableString( getNavigablePath(), entityIdentifier ),
-							existingLoadingEntry.getEntityInitializer()
+							holder.getEntityInitializer()
 					);
 				}
-
-				// EARLY EXIT!!!
+				isInitialized = true;
+				return voidFuture();
+			}
+			else if ( entityInstance == null ) {
 				isInitialized = true;
 				return voidFuture();
 			}

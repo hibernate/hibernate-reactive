@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -29,7 +30,6 @@ import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.entity.AbstractEntityInitializer;
 import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
-import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
@@ -82,36 +82,32 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 
 	@Override
 	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
-		if ( isMissing() || isEntityInitialized() ) {
-			return voidFuture();
+		if ( !isMissing() && !isEntityInitialized() ) {
+			final LazyInitializer lazyInitializer = extractLazyInitializer( getEntityInstance() );
+			return voidFuture()
+					.thenCompose( v -> {
+						if ( lazyInitializer != null ) {
+							return lazyInitialize( rowProcessingState, lazyInitializer );
+						}
+						else {
+							// FIXME: Read from cache if possible
+							return initializeEntity( getEntityInstance(), rowProcessingState )
+									.thenAccept( ignore -> setEntityInstanceForNotify( getEntityInstance() ) );
+						}
+					} )
+					.thenAccept( o -> {
+						notifyResolutionListeners( getEntityInstanceForNotify() );
+						setEntityInitialized( true );
+					} );
 		}
-
-		preLoad( rowProcessingState );
-
-		final LazyInitializer lazyInitializer = extractLazyInitializer( getEntityInstance() );
-		return voidFuture()
-				.thenCompose( v -> {
-					if ( lazyInitializer != null ) {
-						return lazyInitialize( rowProcessingState, lazyInitializer );
-					}
-					else {
-						// FIXME: Read from cache if possible
-						return initializeEntity( getEntityInstance(), rowProcessingState )
-								.thenAccept( ignore -> setEntityInstanceForNotify( getEntityInstance() ) );
-					}
-				} )
-				.thenAccept( o -> {
-					notifyResolutionListeners( getEntityInstanceForNotify() );
-					setEntityInitialized( true );
-				} );
+		return voidFuture();
 	}
 
-	private CompletionStage<Void> lazyInitialize(
-			ReactiveRowProcessingState rowProcessingState,
-			LazyInitializer lazyInitializer) {
+	private CompletionStage<Void> lazyInitialize(ReactiveRowProcessingState rowProcessingState, LazyInitializer lazyInitializer) {
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		Object instance = persistenceContext.getEntity( getEntityKey() );
+		final EntityHolder holder = persistenceContext.getEntityHolder( getEntityKey() );
+		Object instance = holder.getEntity();
 		if ( instance == null ) {
 			return resolveInstance( rowProcessingState, lazyInitializer, persistenceContext );
 		}
@@ -124,9 +120,9 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 			ReactiveRowProcessingState rowProcessingState,
 			LazyInitializer lazyInitializer,
 			PersistenceContext persistenceContext) {
-		final Object instance = resolveInstance(
+		final Object instance = super.resolveInstance(
 				getEntityKey().getIdentifier(),
-				persistenceContext.getLoadContexts().findLoadingEntityEntry( getEntityKey() ),
+				persistenceContext.getEntityHolder( getEntityKey() ),
 				rowProcessingState
 		);
 		return initializeEntity( instance, rowProcessingState )
@@ -134,28 +130,6 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 					lazyInitializer.setImplementation( instance );
 					setEntityInstanceForNotify( instance );
 				} );
-	}
-
-	private Object resolveInstance(
-			Object entityIdentifier,
-			LoadingEntityEntry existingLoadingEntry,
-			RowProcessingState rowProcessingState) {
-		if ( isOwningInitializer() ) {
-			assert existingLoadingEntry == null || existingLoadingEntry.getEntityInstance() == null;
-			return resolveEntityInstance( entityIdentifier, rowProcessingState );
-		}
-		else {
-			// the entity is already being loaded elsewhere
-			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
-				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
-						"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
-						getSimpleConcreteImplName(),
-						toLoggableString( getNavigablePath(), entityIdentifier ),
-						existingLoadingEntry.getEntityInitializer()
-				);
-			}
-			return existingLoadingEntry.getEntityInstance();
-		}
 	}
 
 	private CompletionStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {

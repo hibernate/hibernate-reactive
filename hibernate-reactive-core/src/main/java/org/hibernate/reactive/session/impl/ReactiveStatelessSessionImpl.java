@@ -5,16 +5,15 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.TransientObjectException;
 import org.hibernate.UnknownEntityTypeException;
-import org.hibernate.UnknownProfileException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
@@ -36,6 +35,7 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
+import org.hibernate.loader.ast.spi.CascadingFetchProfile;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -60,7 +60,6 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
@@ -84,6 +83,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.Versioning.incrementVersion;
@@ -92,14 +92,18 @@ import static org.hibernate.engine.internal.Versioning.setVersion;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.internal.util.StringHelper.isNotEmpty;
+import static org.hibernate.loader.ast.spi.CascadingFetchProfile.REFRESH;
+import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * An {@link ReactiveStatelessSession} implemented by extension of
@@ -109,23 +113,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
  */
 public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implements ReactiveStatelessSession {
 
-	private static final LoadQueryInfluencers NO_INFLUENCERS = new LoadQueryInfluencers() {
-		@Override
-		public String getInternalFetchProfile() {
-			return null;
-		}
+	private static final Log LOG = make( Log.class, lookup() );
 
-		@Override
-		public void setInternalFetchProfile(String internalFetchProfile) {
-		}
-
-		@Override
-		public boolean isFetchProfileEnabled(String name) throws UnknownProfileException {
-			return false;
-		}
-	};
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private final LoadQueryInfluencers influencers;
 
 	private final ReactiveConnection reactiveConnection;
 
@@ -138,6 +128,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( this );
 		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, reactiveConnection, persistenceContext );
+		influencers = new LoadQueryInfluencers( factory );
 	}
 
 	/**
@@ -155,6 +146,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				? connection
 				: new BatchingConnection( connection, batchSize );
 		batchingHelperSession = this;
+		influencers = new LoadQueryInfluencers( factory );
 	}
 
 	private LockMode getNullSafeLockMode(LockMode lockMode) {
@@ -221,7 +213,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public LoadQueryInfluencers getLoadQueryInfluencers() {
-		return NO_INFLUENCERS;
+		return influencers;
 	}
 
 	@Override
@@ -334,13 +326,27 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity) {
-		return reactiveRefresh( entity, LockMode.NONE );
+		return reactiveRefresh( bestGuessEntityName( entity ), entity, LockMode.NONE );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRefresh(String entityName, Object entity) {
+		return reactiveRefresh( entityName, entity, LockMode.NONE );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
-		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
+		return reactiveRefresh( bestGuessEntityName( entity ), entity, LockMode.NONE );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveRefresh(String entityName, Object entity, LockMode lockMode) {
+		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
 		final Object id = persister.getIdentifier( entity, this );
+
+		if ( LOG.isTraceEnabled() ) {
+			LOG.tracev( "Refreshing transient {0}", infoString( persister, id, getFactory() ) );
+		}
 
 		if ( persister.canWriteToCache() ) {
 			final EntityDataAccess cacheAccess = persister.getCacheAccessStrategy();
@@ -355,18 +361,26 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			}
 		}
 
-		final String previousFetchProfile = getLoadQueryInfluencers().getInternalFetchProfile();
-		getLoadQueryInfluencers().setInternalFetchProfile( "refresh" );
-		return persister.reactiveLoad( id, entity, getNullSafeLockMode( lockMode ), this )
+		return fromInternalFetchProfile( REFRESH, () -> persister.reactiveLoad( id, entity, getNullSafeLockMode( lockMode ), this ) )
 				.thenAccept( result -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
 					}
 					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
-				} )
-				.whenComplete( (v, e) -> getLoadQueryInfluencers().setInternalFetchProfile( previousFetchProfile ) );
+				} );
 	}
 
+	private CompletionStage<Object> fromInternalFetchProfile(
+			CascadingFetchProfile cascadingFetchProfile,
+			Supplier<CompletionStage<Object>> supplier) {
+		CascadingFetchProfile previous = getLoadQueryInfluencers().getEnabledCascadingFetchProfile();
+		return voidFuture()
+				.thenCompose( v -> {
+					getLoadQueryInfluencers().setEnabledCascadingFetchProfile( cascadingFetchProfile );
+					return supplier.get();
+				} )
+				.whenComplete( (o, throwable) -> getLoadQueryInfluencers().setEnabledCascadingFetchProfile( previous ) );
+	}
 
 	/**
 	 * @see StatelessSessionImpl#upsert(Object)
