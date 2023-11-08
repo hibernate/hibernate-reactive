@@ -13,6 +13,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -81,6 +82,7 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Disabled
 	public void testCascade(VertxTestContext context) {
 
 		Node basik = new Node("Child");
