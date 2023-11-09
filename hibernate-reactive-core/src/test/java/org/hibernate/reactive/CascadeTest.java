@@ -15,7 +15,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(value = 10, timeUnit = MINUTES)
 public class CascadeTest extends BaseReactiveTest {
 
-	private static SqlStatementTracker sqlTracker;
 	private SessionFactory ormFactory;
 
 	@Override
@@ -81,15 +79,8 @@ public class CascadeTest extends BaseReactiveTest {
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 
-		sqlTracker = new SqlStatementTracker( CascadeTest::filter, configuration.getProperties() );
-		sqlTracker.registerService( builder );
-
 		StandardServiceRegistry registry = builder.build();
 		ormFactory = configuration.buildSessionFactory( registry );
-	}
-
-	private static boolean filter(String s) {
-		return s.startsWith( "select n1_0.id,n1_0.parent_id,n1_0.s" );
 	}
 
 	@AfterEach
@@ -131,14 +122,14 @@ public class CascadeTest extends BaseReactiveTest {
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persist( child ) )
-				.chain( () -> getMutinySessionFactory()
-						.withTransaction( s -> s
-								.find( Node.class, child.getId() )
+				.chain( () -> getMutinySessionFactory().openSession()
+						.chain( s -> s.find( Node.class, child.getId() )
 								.chain( node -> s
 										.fetch( node.getParent() )
 										.chain( parent -> s
 												.createMutationQuery( "update Node set string = upper(string)" )
 												.executeUpdate()
+												.chain( () -> s.flush() )
 												.chain( () -> s.refresh( node ) )
 												.invoke( () -> {
 													assertThat( node.getString() ).isEqualTo( "CHILD" );

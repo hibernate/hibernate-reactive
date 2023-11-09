@@ -87,21 +87,21 @@ public class DefaultReactiveRefreshEventListener
 		}
 		return ( (ReactiveSession) source )
 				.reactiveFetch( event.getObject(), true )
-				.thenCompose( entity -> {
-					if ( refreshedAlready.add( entity ) ) {
-						return reactiveOnRefresh( event, refreshedAlready, entity );
-					}
-					else {
-						LOG.trace( "Already refreshed" );
-						return voidFuture();
-					}
-				} );
+				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {
+	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object object) {
 		final EventSource source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
+		if ( persistenceContext.reassociateIfUninitializedProxy( object ) ) {
+			if ( isTransient( event, source, object ) ) {
+				source.setReadOnly( object,  source.isDefaultReadOnly() );
+			}
+			return voidFuture();
+		}
+
+		Object entity = persistenceContext.unproxyAndReassociate( object );
 		if ( !refreshedAlready.add( entity) ) {
 			LOG.trace( "Already refreshed" );
 			return voidFuture();
@@ -176,6 +176,11 @@ public class DefaultReactiveRefreshEventListener
 							);
 					return refresh;
 				} );
+	}
+
+	private static boolean isTransient(RefreshEvent event, EventSource source, Object object) {
+		final String entityName = event.getEntityName();
+		return entityName != null ? !source.contains( entityName, object) : !source.contains(object);
 	}
 
 	private static void evictEntity(Object entity, EntityPersister persister, Object id, EventSource source) {

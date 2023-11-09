@@ -6,6 +6,7 @@
 package org.hibernate.reactive.metamodel.mapping.internal;
 
 import org.hibernate.engine.FetchTiming;
+import org.hibernate.metamodel.mapping.AttributeMetadata;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchJoinedImpl;
@@ -52,6 +53,11 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 			return new ReactiveEntityFetchSelectImpl( (EntityFetchSelectImpl) entityFetch );
 		}
 		return entityFetch;
+	}
+
+	@Override
+	public AttributeMetadata getAttributeMetadata() {
+		return super.getAttributeMetadata();
 	}
 
 	@Override
