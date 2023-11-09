@@ -60,12 +60,12 @@ public class DefaultReactiveRefreshEventListener
 
 	@Override
 	public void onRefresh(RefreshEvent event) throws HibernateException {
-		throw new UnsupportedOperationException();
+		throw LOG.nonReactiveMethodCall( "reactiveOnRefresh" );
 	}
 
 	@Override
 	public void onRefresh(RefreshEvent event, RefreshContext refreshedAlready) throws HibernateException {
-			throw new UnsupportedOperationException();
+		throw LOG.nonReactiveMethodCall( "reactiveOnRefresh" );
 	}
 
 	/**
@@ -83,10 +83,19 @@ public class DefaultReactiveRefreshEventListener
 
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in refresh()
-			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
+			throw new IllegalArgumentException( "Unmanaged instance passed to refresh()" );
 		}
-		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
-				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
+		return ( (ReactiveSession) source )
+				.reactiveFetch( event.getObject(), true )
+				.thenCompose( entity -> {
+					if ( refreshedAlready.add( entity ) ) {
+						return reactiveOnRefresh( event, refreshedAlready, entity );
+					}
+					else {
+						LOG.trace( "Already refreshed" );
+						return voidFuture();
+					}
+				} );
 	}
 
 	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {

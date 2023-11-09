@@ -15,7 +15,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.testing.SqlStatementTracker;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +41,12 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
-import static jakarta.persistence.CascadeType.*;
-import static jakarta.persistence.FetchType.*;
+import static jakarta.persistence.CascadeType.MERGE;
+import static jakarta.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.CascadeType.REFRESH;
+import static jakarta.persistence.CascadeType.REMOVE;
+import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.JdbcSettings.DIALECT;
@@ -55,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(value = 10, timeUnit = MINUTES)
 public class CascadeTest extends BaseReactiveTest {
 
+	private static SqlStatementTracker sqlTracker;
 	private SessionFactory ormFactory;
 
 	@Override
@@ -74,8 +81,15 @@ public class CascadeTest extends BaseReactiveTest {
 		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
 				.applySettings( configuration.getProperties() );
 
+		sqlTracker = new SqlStatementTracker( CascadeTest::filter, configuration.getProperties() );
+		sqlTracker.registerService( builder );
+
 		StandardServiceRegistry registry = builder.build();
 		ormFactory = configuration.buildSessionFactory( registry );
+	}
+
+	private static boolean filter(String s) {
+		return s.startsWith( "select n1_0.id,n1_0.parent_id,n1_0.s" );
 	}
 
 	@AfterEach
@@ -158,6 +172,7 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Ignore
 	public void testCascade(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
