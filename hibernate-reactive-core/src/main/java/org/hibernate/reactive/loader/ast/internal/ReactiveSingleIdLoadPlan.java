@@ -62,11 +62,12 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		assert offset == getJdbcParameters().size();
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
 		final Callback callback = new CallbackImpl();
+		EntityMappingType loadable = (EntityMappingType) getLoadable();
 		ExecutionContext executionContext = executionContext(
 				restrictedValue,
 				entityInstance,
 				session,
-				((EntityMappingType) getLoadable()).getRootEntityDescriptor(),
+				loadable.getRootEntityDescriptor(),
 				queryOptions,
 				callback
 		);

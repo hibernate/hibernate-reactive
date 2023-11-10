@@ -28,6 +28,7 @@ import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
@@ -69,6 +70,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
+	}
+
+	@Override
+	public EntityMappingType getRootEntityDescriptor() {
+		return super.getRootEntityDescriptor();
 	}
 
 	@Override
