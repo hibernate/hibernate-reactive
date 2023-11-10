@@ -122,14 +122,14 @@ public class CascadeTest extends BaseReactiveTest {
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persist( child ) )
-				.chain( () -> getMutinySessionFactory().openSession()
-						.chain( s -> s.find( Node.class, child.getId() )
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( s -> s
+								.find( Node.class, child.getId() )
 								.chain( node -> s
 										.fetch( node.getParent() )
 										.chain( parent -> s
 												.createMutationQuery( "update Node set string = upper(string)" )
 												.executeUpdate()
-												.chain( () -> s.flush() )
 												.chain( () -> s.refresh( node ) )
 												.invoke( () -> {
 													assertThat( node.getString() ).isEqualTo( "CHILD" );
