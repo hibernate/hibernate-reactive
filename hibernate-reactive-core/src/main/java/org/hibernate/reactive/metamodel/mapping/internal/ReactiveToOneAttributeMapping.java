@@ -11,9 +11,11 @@ import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchJoinedImpl;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchSelectImpl;
+import org.hibernate.reactive.sql.results.internal.ReactiveEntityDelayedFetchImpl;
 import org.hibernate.reactive.sql.results.internal.domain.ReactiveCircularFetchImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroupProducer;
+import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.FetchParent;
@@ -49,7 +51,7 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 		if ( entityFetch instanceof EntityFetchJoinedImpl ) {
 			return new ReactiveEntityFetchJoinedImpl( (EntityFetchJoinedImpl) entityFetch );
 		}
-		if (entityFetch instanceof EntityFetchSelectImpl) {
+		if ( entityFetch instanceof EntityFetchSelectImpl ) {
 			return new ReactiveEntityFetchSelectImpl( (EntityFetchSelectImpl) entityFetch );
 		}
 		return entityFetch;
@@ -71,6 +73,22 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 			return new ReactiveCircularFetchImpl( (CircularFetchImpl) fetch );
 		}
 		return fetch;
+	}
+
+	@Override
+	protected EntityFetch buildEntityDelayedFetch(
+			FetchParent fetchParent,
+			ToOneAttributeMapping fetchedAttribute,
+			NavigablePath navigablePath,
+			DomainResult<?> keyResult,
+			boolean selectByUniqueKey) {
+		return new ReactiveEntityDelayedFetchImpl(
+				fetchParent,
+				fetchedAttribute,
+				navigablePath,
+				keyResult,
+				selectByUniqueKey
+		);
 	}
 
 	@Override
