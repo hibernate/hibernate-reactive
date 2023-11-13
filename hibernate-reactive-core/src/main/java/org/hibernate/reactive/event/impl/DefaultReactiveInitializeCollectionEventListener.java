@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import static org.hibernate.pretty.MessageHelper.collectionInfoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
@@ -28,6 +25,9 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
 import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
+
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
 
@@ -144,7 +144,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 		final SessionFactoryImplementor factory = source.getFactory();
 		final CollectionDataAccess cacheAccessStrategy = persister.getCacheAccessStrategy();
 		final Object ck = cacheAccessStrategy.generateCacheKey( id, persister, factory, source.getTenantIdentifier() );
-		final Object ce = CacheHelper.fromSharedCache( source, ck, cacheAccessStrategy );
+		final Object ce = CacheHelper.fromSharedCache( source, ck, persister, cacheAccessStrategy );
 
 		final StatisticsImplementor statistics = factory.getStatistics();
 		if ( statistics.isStatisticsEnabled() ) {

@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.CollectionKey;
-import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -30,7 +30,6 @@ import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
-import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
@@ -121,8 +120,8 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			}
 
 			@Override
-			public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
-				ExecutionContext.super.registerLoadingEntityEntry( entityKey, entry );
+			public void registerLoadingEntityHolder(EntityHolder holder) {
+				ExecutionContext.super.registerLoadingEntityHolder( holder );
 			}
 
 			@Override

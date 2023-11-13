@@ -5,11 +5,10 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
-import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
-import org.hibernate.sql.results.graph.entity.LoadingEntityEntry;
 
 /**
  * Copy and paste of {@link org.hibernate.loader.ast.internal.ExecutionContextWithSubselectFetchHandler}
@@ -25,9 +24,9 @@ class ExecutionContextWithSubselectFetchHandler extends BaseExecutionContext {
 	}
 
 	@Override
-	public void registerLoadingEntityEntry(EntityKey entityKey, LoadingEntityEntry entry) {
+	public void registerLoadingEntityHolder(EntityHolder holder) {
 		if ( subSelectFetchableKeysHandler != null ) {
-			subSelectFetchableKeysHandler.addKey( entityKey, entry );
+			subSelectFetchableKeysHandler.addKey( holder );
 		}
 	}
 

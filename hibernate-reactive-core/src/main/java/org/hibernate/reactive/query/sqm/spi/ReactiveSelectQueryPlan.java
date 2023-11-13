@@ -14,23 +14,38 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.ScrollableResultsImplementor;
 import org.hibernate.query.spi.SelectQueryPlan;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.sql.results.spi.ResultsConsumer;
+
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
  * @see org.hibernate.query.spi.SelectQueryPlan
  */
 public interface ReactiveSelectQueryPlan<R> extends SelectQueryPlan<R> {
 
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
 	@Override
 	default List<R> performList(DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "performReactiveList" );
+		throw make( Log.class, MethodHandles.lookup() )
+				.nonReactiveMethodCall( "performReactiveList" );
 	}
 
 	@Override
 	default	ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "<no alternative>" );
+		throw make( Log.class, MethodHandles.lookup() )
+				.nonReactiveMethodCall( "<no alternative>" );
+	}
+
+	default <T> T executeQuery(DomainQueryExecutionContext executionContext, ResultsConsumer<T, R> resultsConsumer) {
+		throw make( Log.class, MethodHandles.lookup() )
+				.nonReactiveMethodCall( "reactiveExecuteQuery" );
+	}
+
+	/**
+	 * Execute the query
+	 */
+	default <T> CompletionStage<T> reactiveExecuteQuery(DomainQueryExecutionContext executionContext, ResultsConsumer<T, R> resultsConsumer) {
+		return failedFuture( new UnsupportedOperationException() );
 	}
 
 	/**

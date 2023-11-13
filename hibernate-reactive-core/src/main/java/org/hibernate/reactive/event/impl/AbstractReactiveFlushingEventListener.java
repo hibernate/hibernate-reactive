@@ -135,7 +135,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 				persistenceContext.getCollectionEntriesSize()
 		);
 		new EntityPrinter( session.getFactory() ).toString(
-				persistenceContext.getEntitiesByKey().entrySet()
+				persistenceContext.getEntityHoldersByKey().entrySet()
 		);
 	}
 

@@ -102,19 +102,22 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 						: new Results<>( domainResultJavaType );
 
 		Supplier<CompletionStage<Void>> addToResultsSupplier = addToResultsSupplier( results, rowReader, rowProcessingState, processingOptions, isEntityResultType );
+		final int[] readRows = { 0 };
 		return whileLoop( () -> rowProcessingState.next()
 					.thenCompose( hasNext -> {
 						if ( hasNext ) {
 							return addToResultsSupplier.get()
 									.thenApply( unused -> {
 										rowProcessingState.finishRowProcessing();
+										readRows[0]++;
 										return true;
 									} );
+
 						}
 						return falseFuture();
 					} )
 		)
-		.thenApply( v -> finishUp( results, jdbcValuesSourceProcessingState, rowReader, persistenceContext, queryOptions ) )
+		.thenApply( v -> finishUp( results, jdbcValuesSourceProcessingState, rowReader, persistenceContext, queryOptions, readRows[0] ) )
 		.handle( (list, ex) -> {
 			end( jdbcValues, session, jdbcValuesSourceProcessingState, rowReader, persistenceContext, ex );
 			return list;
@@ -175,10 +178,11 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			Results<R> results,
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
 			ReactiveRowReader<R> rowReader, PersistenceContext persistenceContext,
-			QueryOptions queryOptions) {
+			QueryOptions queryOptions,
+			int readRows) {
 		try {
 			rowReader.finishUp( jdbcValuesSourceProcessingState );
-			jdbcValuesSourceProcessingState.finishUp();
+			jdbcValuesSourceProcessingState.finishUp( readRows > 0 );
 		}
 		finally {
 			persistenceContext.getLoadContexts().deregister( jdbcValuesSourceProcessingState );
