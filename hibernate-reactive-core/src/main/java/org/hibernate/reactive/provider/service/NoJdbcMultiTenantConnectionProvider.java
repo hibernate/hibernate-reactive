@@ -15,14 +15,14 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
  *
  * @author Gavin King
  */
-public class NoJdbcMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider {
+public class NoJdbcMultiTenantConnectionProvider<T> extends AbstractMultiTenantConnectionProvider<T> {
     @Override
     protected ConnectionProvider getAnyConnectionProvider() {
         throw new UnsupportedOperationException("Not using JDBC");
     }
 
     @Override
-    protected ConnectionProvider selectConnectionProvider(String tenantIdentifier) {
+    protected ConnectionProvider selectConnectionProvider(T tenantIdentifier) {
         throw new UnsupportedOperationException("Not using JDBC");
     }
 }

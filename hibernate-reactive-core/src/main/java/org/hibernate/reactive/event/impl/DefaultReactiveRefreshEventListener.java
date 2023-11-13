@@ -60,12 +60,12 @@ public class DefaultReactiveRefreshEventListener
 
 	@Override
 	public void onRefresh(RefreshEvent event) throws HibernateException {
-		throw new UnsupportedOperationException();
+		throw LOG.nonReactiveMethodCall( "reactiveOnRefresh" );
 	}
 
 	@Override
 	public void onRefresh(RefreshEvent event, RefreshContext refreshedAlready) throws HibernateException {
-			throw new UnsupportedOperationException();
+		throw LOG.nonReactiveMethodCall( "reactiveOnRefresh" );
 	}
 
 	/**
@@ -83,16 +83,25 @@ public class DefaultReactiveRefreshEventListener
 
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in refresh()
-			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
+			throw new IllegalArgumentException( "Unmanaged instance passed to refresh()" );
 		}
-		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
+		return ( (ReactiveSession) source )
+				.reactiveFetch( event.getObject(), true )
 				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}
 
-	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object entity) {
+	private CompletionStage<Void> reactiveOnRefresh(RefreshEvent event, RefreshContext refreshedAlready, Object object) {
 		final EventSource source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 
+		if ( persistenceContext.reassociateIfUninitializedProxy( object ) ) {
+			if ( isTransient( event, source, object ) ) {
+				source.setReadOnly( object,  source.isDefaultReadOnly() );
+			}
+			return voidFuture();
+		}
+
+		Object entity = persistenceContext.unproxyAndReassociate( object );
 		if ( !refreshedAlready.add( entity) ) {
 			LOG.trace( "Already refreshed" );
 			return voidFuture();
@@ -167,6 +176,11 @@ public class DefaultReactiveRefreshEventListener
 							);
 					return refresh;
 				} );
+	}
+
+	private static boolean isTransient(RefreshEvent event, EventSource source, Object object) {
+		final String entityName = event.getEntityName();
+		return entityName != null ? !source.contains( entityName, object) : !source.contains(object);
 	}
 
 	private static void evictEntity(Object entity, EntityPersister persister, Object id, EventSource source) {
