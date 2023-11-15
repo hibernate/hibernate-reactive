@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.SqlStatementTracker;
@@ -21,6 +20,7 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.assertj.core.api.Condition;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,13 +29,20 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 /**
  * Same as Hibernate ORM org.hibernate.orm.test.stateless.UpsertTest
  * <p>
- *     These tests are in a separate class because we need to skip the execution on some databases,
- *     but once this has been resolved, they could be in {@link ReactiveStatelessSessionTest}.
+ * These tests are in a separate class because we need to skip the execution on some databases,
+ * but once this has been resolved, they could be in {@link ReactiveStatelessSessionTest}.
  * </p>
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 public class UpsertTest extends BaseReactiveTest {
+
 	private static SqlStatementTracker sqlTracker;
+
+	// A condition to check that entities are persisted using a merge operator when the database actually supports it.
+	private final static Condition<String> IS_USING_MERGE = new Condition<>(
+			s -> s.toLowerCase().startsWith( "merge into" ),
+			"insertions or updates without using the merge operator"
+	);
 
 	@Override
 	protected Configuration constructConfiguration() {
@@ -69,10 +76,11 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "hello earth" ) )
 							  .call( () -> ss.upsert( new Record( 456L, "hello mars" ) ) )
-						.invoke( v -> assertThat( verifySqlForDB() ).isTrue() )
+							  .invoke( this::assertQueries )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+									  .createQuery( "from Record order by id", Record.class )
+									  .getResultList() )
 							  .invoke( results -> {
 								  assertThat( results ).containsExactly(
 										  new Record( 123L, "hello earth" ),
@@ -83,8 +91,11 @@ public class UpsertTest extends BaseReactiveTest {
 					  .call( () -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
-					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createQuery( "from Record order by id", Record.class ).getResultList() )
+					  .invoke( this::assertQueries )
+					  .call( v -> getMutinySessionFactory()
+							  .withStatelessTransaction( ss -> ss
+									  .createQuery( "from Record order by id", Record.class )
+									  .getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
 									  new Record( 123L, "goodbye earth" ),
 									  new Record( 456L, "hello mars" )
@@ -98,7 +109,7 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
 							  .call( () -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
-						.invoke( v -> assertThat( verifySqlForDB() ).isTrue() )
+							  .invoke( this::assertQueries )
 					  )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
@@ -110,6 +121,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .call( () -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .invoke( this::assertQueries )
 					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
 							  .invoke( results -> assertThat( results ).containsExactly(
@@ -125,8 +137,8 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "hello earth" ) )
 							  .thenCompose( v -> ss.upsert( new Record( 456L, "hello mars" ) ) )
-						.thenApply( v -> assertThat( verifySqlForDB() ).isTrue() )
 					  )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -137,6 +149,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -152,8 +165,8 @@ public class UpsertTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
 							  .thenCompose( v -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
-						.thenApply( v -> assertThat( verifySqlForDB() ).isTrue() )
 					  )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -164,6 +177,7 @@ public class UpsertTest extends BaseReactiveTest {
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
+					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 									  .createQuery( "from Record order by id", Record.class ).getResultList() )
 							  .thenAccept( results -> assertThat( results ).containsExactly(
@@ -174,27 +188,26 @@ public class UpsertTest extends BaseReactiveTest {
 		);
 	}
 
-
-
-	private boolean verifySqlForDB() {
-		String DB_NAME = dbType().getDialectClass().getName().toUpperCase();
-		if ( DB_NAME.contains( "DB2" ) || DB_NAME.contains( "MARIA" ) || DB_NAME.contains( "MYSQL" ) || DB_NAME.contains( "COCKROACH" ) ) {
-			return foundQuery( "update" ) && foundQuery( "insert" );
+	private void assertQueries() {
+		if ( hasMergeOperator() ) {
+			assertThat( sqlTracker.getLoggedQueries() ).have( IS_USING_MERGE );
 		}
-		if ( DB_NAME.contains( "SQLSERVER" ) || DB_NAME.contains( "MSSQL" ) || DB_NAME.contains( "POSTGRES" ) || DB_NAME.contains(
-				"ORACLE" ) ) {
-			return foundQuery( "merge" );
+		else {
+			// This might be overkill, but it's still helpful in case more databases are going to support
+			// the merge operator, and we need to update the documentation or warn people about it.
+			assertThat( sqlTracker.getLoggedQueries() ).doNotHave( IS_USING_MERGE );
 		}
-		return false;
 	}
 
-	private boolean foundQuery( String startsWithFragment ) {
-		for ( int i = 0; i < sqlTracker.getLoggedQueries().size(); i++ ) {
-			if ( sqlTracker.getLoggedQueries().get( i ).startsWith( startsWithFragment ) ) {
+	private boolean hasMergeOperator() {
+		switch ( dbType() ) {
+			case SQLSERVER:
+			case ORACLE:
+			case POSTGRESQL:
 				return true;
-			}
+			default:
+				return false;
 		}
-		return false;
 	}
 
 	@Entity(name = "Record")
