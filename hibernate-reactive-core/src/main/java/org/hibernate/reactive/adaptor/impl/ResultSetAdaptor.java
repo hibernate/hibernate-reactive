@@ -28,9 +28,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.Function;
 
 import org.hibernate.engine.jdbc.BlobProxy;
@@ -41,6 +41,9 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
+
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An adaptor that allows Hibernate core code which expects a JDBC
@@ -54,6 +57,7 @@ public class ResultSetAdaptor implements ResultSet {
 	private boolean wasNull;
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
+		requireNonNull( rows );
 		this.iterator = rows.iterator();
 		this.rows = rows;
 	}
@@ -199,13 +203,24 @@ public class ResultSetAdaptor implements ResultSet {
 	}
 
 	private <T> T caseInsensitiveGet(String columnLabel, Function<String, T> produce) {
-		for ( String columnName : rows.columnsNames() ) {
+		for ( String columnName : getColumnsNames() ) {
 			if ( columnName.equalsIgnoreCase( columnLabel ) ) {
 				return produce.apply( columnName );
 			}
 		}
+
 		// Same error thrown by io.vertx.sqlclient.Row when it doesn't find the label
 		throw new NoSuchElementException( "Column " + columnLabel + " does not exist" );
+	}
+
+	/**
+	 * rows.columnsNames() might return null for some databases.
+	 * For example, when creating a stored procedure in PostgreSQL using a native query.
+	 *
+	 * @return A list of column names or an empty list.
+	 */
+	private List<String> getColumnsNames() {
+		return rows.columnsNames() == null ? emptyList() : rows.columnsNames();
 	}
 
 	@Override
@@ -368,7 +383,7 @@ public class ResultSetAdaptor implements ResultSet {
 		return new ResultSetMetaData() {
 			@Override
 			public int getColumnCount() {
-				return rows.columnsNames().size();
+				return getColumnsNames() == null ? 0 : getColumnsNames().size();
 			}
 
 			@Override
@@ -379,12 +394,12 @@ public class ResultSetAdaptor implements ResultSet {
 
 			@Override
 			public String getColumnLabel(int column) {
-				return rows.columnsNames().get( column - 1 );
+				return getColumnsNames().get( column - 1 );
 			}
 
 			@Override
 			public String getColumnName(int column) {
-				return rows.columnsNames().get( column - 1 );
+				return getColumnsNames().get( column - 1 );
 			}
 
 			@Override
@@ -502,7 +517,7 @@ public class ResultSetAdaptor implements ResultSet {
 	public int findColumn(String columnLabel) {
 		// JDBC parameters index start from 1
 		int index = 1;
-		for ( String column : rows.columnsNames() ) {
+		for ( String column : getColumnsNames() ) {
 			// Some dbs, like Oracle and Db2, return the column names always in uppercase
 			if ( column.equalsIgnoreCase( columnLabel ) ) {
 				return index;
@@ -865,7 +880,7 @@ public class ResultSetAdaptor implements ResultSet {
 		private final Buffer buffer;
 
 		private RowIdAdaptor(Buffer buffer) {
-			Objects.requireNonNull( buffer );
+			requireNonNull( buffer );
 			this.buffer = buffer;
 		}
 
