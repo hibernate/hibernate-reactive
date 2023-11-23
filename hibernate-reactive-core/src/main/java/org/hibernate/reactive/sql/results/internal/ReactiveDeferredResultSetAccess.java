@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -24,6 +25,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
@@ -41,7 +43,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 	private final SqlStatementLogger sqlStatementLogger;
-	private final Function<String, PreparedStatement> statementCreator;
 
 	private final ExecutionContext executionContext;
 
@@ -59,7 +60,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
-		this.statementCreator = statementCreator;
 	}
 
 	@Override
@@ -159,15 +159,31 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 					eventListenerManager.jdbcExecuteStatementStart();
 					return connection()
 							.selectJdbc( sql, parameters )
+							.thenCompose( this::validateResultSet )
 							.whenComplete( (resultSet, throwable) -> {
 								// FIXME: I don't know if this event makes sense for Vert.x
 								eventListenerManager.jdbcExecuteStatementEnd();
 								sqlStatementLogger.logSlowQuery( getFinalSql(), executeStartNanos );
 							} )
 							.thenCompose( this::reactiveSkipRows )
-							.handle( this::convertException );
+							.handle( CompletionStages::handle )
+							.thenCompose( handler -> handler.hasFailed()
+										? convertException( resultSet, handler.getThrowable() )
+										: handler.getResultAsCompletionStage()
+							);
 				} )
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );
+	}
+
+	private CompletionStage<ResultSet> validateResultSet(ResultSet resultSet) {
+		try {
+			return resultSet.getMetaData().getColumnCount() == 0
+					? failedFuture( LOG.noResultException( getFinalSql() ) )
+					: completedFuture( resultSet );
+		}
+		catch (SQLException e) {
+			throw new RuntimeException( e );
+		}
 	}
 
 	private ResultSet saveResultSet(ResultSet resultSet) {
@@ -185,18 +201,29 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection();
 	}
 
-	private ResultSet convertException(ResultSet resultSet, Throwable throwable) {
-		// FIXME: Vert.x will probably throw another exception. Check this.
-		if ( throwable instanceof SQLException) {
-			throw executionContext.getSession().getJdbcServices()
-					.getSqlExceptionHelper()
-					// FIXME: Add this to the logger?
-					.convert( (SQLException) throwable, "Exception executing SQL [" + getFinalSql() + "]" );
-		}
+	private <T> CompletionStage<T> convertException(T object, Throwable throwable) {
 		if ( throwable != null ) {
-			throw new HibernateException( throwable );
+			Throwable cause = throwable;
+			if ( throwable instanceof CompletionException ) {
+				cause = throwable.getCause();
+			}
+			// I doubt this is ever going to happen because Vert.x is not going to throw an SQLException
+			if ( cause instanceof SQLException ) {
+				return failedFuture( executionContext
+											 .getSession().getJdbcServices()
+											 .getSqlExceptionHelper()
+											 .convert(
+													 (SQLException) cause,
+													 "Exception executing SQL [" + getFinalSql() + "]"
+											 )
+				);
+			}
+			if ( cause instanceof HibernateException ) {
+				return failedFuture( cause );
+			}
+			return failedFuture( new HibernateException( cause ) );
 		}
-		return resultSet;
+		return completedFuture( object );
 	}
 
 	private CompletionStage<ResultSet> reactiveSkipRows(ResultSet resultSet) {
