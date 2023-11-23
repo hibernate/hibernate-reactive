@@ -9,9 +9,11 @@ import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.*;
 
+import org.hibernate.HibernateException;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.testing.ReactiveAssertions;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
 import static org.hibernate.reactive.testing.DBSelectionExtension.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -81,6 +84,22 @@ public class CustomOneToOneStoredProcedureSqlTest extends BaseReactiveTest {
 						.thenCompose( v -> s.persist( individualPerson, driverLicence ) )
 						.thenCompose( v -> s.flush() )
 				)
+		);
+	}
+
+	@Test
+	public void testFailureWithGetSingleResultOrNull(VertxTestContext context) {
+		test( context, ReactiveAssertions.assertThrown( HibernateException.class, getMutinySessionFactory()
+						.withTransaction( s ->  s.createNativeQuery( INSERT_DRIVER_LICENCE_SQL ).getSingleResultOrNull() ) )
+				.invoke( e -> assertThat( e ).hasMessageContainingAll( "HR000080:", INSERT_DRIVER_LICENCE_SQL ) )
+		);
+	}
+
+	@Test
+	public void testFailureWithGetSingleResult(VertxTestContext context) {
+		test( context, ReactiveAssertions.assertThrown( HibernateException.class, getSessionFactory()
+						.withTransaction( s ->  s.createNativeQuery( INSERT_DRIVER_LICENCE_SQL ).getSingleResult() ) )
+				.thenAccept( e -> assertThat( e ).hasMessageContainingAll( "HR000080:", INSERT_DRIVER_LICENCE_SQL ) )
 		);
 	}
 
