@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.HibernateException;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
 import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.testing.ReactiveAssertions;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,6 +102,22 @@ public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
 						.thenCompose( v -> s.persist( theRecord ) )
 						.thenCompose( v -> s.flush() )
 				)
+		);
+	}
+
+	@Test
+	public void testFailureWithGetSingleResultOrNull(VertxTestContext context) {
+		test( context, ReactiveAssertions.assertThrown( HibernateException.class, getMutinySessionFactory()
+				.withTransaction( s ->  s.createNativeQuery( INSERT_SP_SQL ).getSingleResultOrNull() ) )
+				.invoke( e -> assertThat( e ).hasMessageContainingAll( "HR000080:", INSERT_SP_SQL ) )
+		);
+	}
+
+	@Test
+	public void testFailureWithGetSingleResult(VertxTestContext context) {
+		test( context, ReactiveAssertions.assertThrown( HibernateException.class, getSessionFactory()
+						.withTransaction( s ->  s.createNativeQuery( INSERT_SP_SQL ).getSingleResult() ) )
+				.thenAccept( e -> assertThat( e ).hasMessageContainingAll( "HR000080:", INSERT_SP_SQL ) )
 		);
 	}
 
