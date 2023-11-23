@@ -255,6 +255,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 79, value = "The configuration property '%1$s' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: either provide the configuration setting or integrate with a different SqlClientPool implementation")
 	HibernateException blankConnectionString(String property);
 
+	@Message(id = 80, value = "No results were returned by the query (you can try running it with '.executeUpdate()'): %1$s")
+	HibernateException noResultException(String sql);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
