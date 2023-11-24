@@ -63,7 +63,15 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		assert offset == getJdbcParameters().size();
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
 		final Callback callback = new CallbackImpl();
-		ExecutionContext executionContext = executionContext( restrictedValue, entityInstance, session, queryOptions, callback );
+		EntityMappingType loadable = (EntityMappingType) getLoadable();
+		ExecutionContext executionContext = executionContext(
+				restrictedValue,
+				entityInstance,
+				session,
+				loadable.getRootEntityDescriptor(),
+				queryOptions,
+				callback
+		);
 		// FIXME: Should we get this from jdbcServices.getSelectExecutor()?
 		return StandardReactiveSelectExecutor.INSTANCE
 				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
@@ -88,6 +96,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			Object restrictedValue,
 			Object entityInstance,
 			SharedSessionContractImplementor session,
+			EntityMappingType rootEntityDescriptor,
 			QueryOptions queryOptions,
 			Callback callback) {
 		return new ExecutionContext() {
@@ -149,6 +158,11 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 			@Override
 			public QueryParameterBindings getQueryParameterBindings() {
 				return QueryParameterBindings.NO_PARAM_BINDINGS;
+			}
+
+			@Override
+			public EntityMappingType getRootEntityDescriptor() {
+				return rootEntityDescriptor;
 			}
 
 			@Override

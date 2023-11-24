@@ -629,7 +629,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					factory
 			);
 			final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
-			return new ReactiveSingleIdArrayLoadPlan( getIdentifierMapping(), select, jdbcParameters, LockOptions.NONE, factory );
+			return new ReactiveSingleIdArrayLoadPlan( this, getIdentifierMapping(), select, jdbcParameters, LockOptions.NONE, factory );
 		}
 	}
 
