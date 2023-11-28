@@ -44,19 +44,15 @@ public class ReactiveStandardDialectResolver implements DialectResolver {
 								EntityMutationTarget mutationTarget,
 								OptionalTableUpdate optionalTableUpdate,
 								SessionFactoryImplementor factory) {
-							final ReactiveOracleSqlAstTranslator<?> translator = new ReactiveOracleSqlAstTranslator<>(
-									factory,
-									optionalTableUpdate
-							);
-							return translator.createReactiveMergeOperation( optionalTableUpdate );
+							return new ReactiveOracleSqlAstTranslator<>( factory, optionalTableUpdate )
+									.createMergeOperation( optionalTableUpdate );
 						}
 
 						@Override
 						public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
 							return new StandardSqlAstTranslatorFactory() {
 								@Override
-								protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(
-										SessionFactoryImplementor sessionFactory, Statement statement) {
+								protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
 									return new ReactiveOracleSqlAstTranslator<>( sessionFactory, statement );
 								}
 							};

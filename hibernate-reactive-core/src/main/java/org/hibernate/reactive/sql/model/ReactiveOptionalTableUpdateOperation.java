@@ -83,15 +83,6 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 		return doReactiveMutation( getTableDetails(), jdbcValueBindings, valuesAnalysis, session );
 	}
 
-	/**
-	 *
-	 * @see OptionalTableUpdateOperation
-	 * @param tableMapping
-	 * @param jdbcValueBindings
-	 * @param valuesAnalysis
-	 * @param session
-	 * @return
-	 */
 	private CompletionStage<Void> doReactiveMutation(
 			TableMapping tableMapping,
 			JdbcValueBindings jdbcValueBindings,
@@ -125,8 +116,6 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 
 	/**
 	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
-	 * @param jdbcValueBindings
-	 * @param session
 	 */
 	private CompletionStage<Void> performReactiveDelete(
 			JdbcValueBindings jdbcValueBindings,
@@ -157,31 +146,17 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 
 	/**
 	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
-	 * @param jdbcValueBindings
-	 * @param session
-	 * @return
 	 */
 	private CompletionStage<Boolean> performReactiveUpdate(
 			JdbcValueBindings jdbcValueBindings,
 			SharedSessionContractImplementor session) {
-		MODEL_MUTATION_LOGGER.tracef( "#performUpdate(%s)", getTableDetails().getTableName() );
+		MODEL_MUTATION_LOGGER.tracef( "#performReactiveUpdate(%s)", getTableDetails().getTableName() );
 
-		final TableUpdate<JdbcMutationOperation> tableUpdate = createJdbcUpdate();
+		final JdbcMutationOperation jdbcUpdate = createJdbcUpdate( session );
+		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable( jdbcUpdate, session );
+		final PreparedStatementDetails statementDetails = statementGroup
+				.resolvePreparedStatementDetails( getTableDetails().getTableName() );
 
-		final SqlAstTranslator<JdbcMutationOperation> translator = session
-				.getJdbcServices()
-				.getJdbcEnvironment()
-				.getSqlAstTranslatorFactory()
-				.buildModelMutationTranslator( tableUpdate, session.getFactory() );
-
-		final JdbcMutationOperation jdbcUpdate = translator.translate( null, MutationQueryOptions.INSTANCE );
-		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable(
-				jdbcUpdate,
-				session
-		);
-
-		final PreparedStatementDetails statementDetails = statementGroup.resolvePreparedStatementDetails(
-				getTableDetails().getTableName() );
 		// If we get here the statement is needed - make sure it is resolved
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor(
@@ -195,9 +170,8 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
-		String sqlString = statementDetails.getSqlString();
 		return reactiveConnection
-				.update( sqlString, params )
+				.update( statementDetails.getSqlString(), params )
 				.thenApply( rowCount -> {
 					if ( rowCount == 0 ) {
 						return false;
@@ -222,11 +196,24 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 				} );
 	}
 
-	private TableUpdate<JdbcMutationOperation> createJdbcUpdate() {
+	// FIXME: Adding this to ORM will save us some duplicated code (similar to createJdbcInsert and createJdbcDelete)
+	private JdbcMutationOperation createJdbcUpdate(SharedSessionContractImplementor session) {
 		MutationTarget<?> mutationTarget = super.getMutationTarget();
+		TableUpdate<JdbcMutationOperation> tableUpdate;
 		if ( getTableDetails().getUpdateDetails() != null
 				&& getTableDetails().getUpdateDetails().getCustomSql() != null ) {
-			return new TableUpdateCustomSql(
+			tableUpdate = new TableUpdateCustomSql(
+					new MutatingTableReference( getTableDetails() ),
+					mutationTarget,
+					"upsert update for " + mutationTarget.getRolePath(),
+					upsert.getValueBindings(),
+					upsert.getKeyBindings(),
+					upsert.getOptimisticLockBindings(),
+					upsert.getParameters()
+			);
+		}
+		else {
+			tableUpdate = new TableUpdateStandard(
 					new MutatingTableReference( getTableDetails() ),
 					mutationTarget,
 					"upsert update for " + mutationTarget.getRolePath(),
@@ -237,15 +224,13 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 			);
 		}
 
-		return new TableUpdateStandard(
-				new MutatingTableReference( getTableDetails() ),
-				mutationTarget,
-				"upsert update for " + mutationTarget.getRolePath(),
-				upsert.getValueBindings(),
-				upsert.getKeyBindings(),
-				upsert.getOptimisticLockBindings(),
-				upsert.getParameters()
-		);
+		final SqlAstTranslator<JdbcMutationOperation> translator = session
+				.getJdbcServices()
+				.getJdbcEnvironment()
+				.getSqlAstTranslatorFactory()
+				.buildModelMutationTranslator( tableUpdate, session.getFactory() );
+
+		return translator.translate( null, MutationQueryOptions.INSTANCE );
 	}
 
 	private CompletionStage<Void> performReactiveInsert(
@@ -268,7 +253,6 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	/**
 	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#createJdbcInsert(SharedSessionContractImplementor)
 	 */
-	// Temporary copy of the createJdbcInsert() in ORM
 	// FIXME: change visibility to protected in ORM and remove this method
 	private JdbcInsertMutation createJdbcInsert(SharedSessionContractImplementor session) {
 		final TableInsert tableInsert;
@@ -306,9 +290,8 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#createJdbcInsert(SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#createJdbcDelete(SharedSessionContractImplementor)
 	 */
-	// Temporary copy of the createJdbcInsert() in ORM
 	// FIXME: change visibility to protected in ORM and remove this method
 	private JdbcDeleteMutation createJdbcDelete(SharedSessionContractImplementor session) {
 		final TableDelete tableDelete;

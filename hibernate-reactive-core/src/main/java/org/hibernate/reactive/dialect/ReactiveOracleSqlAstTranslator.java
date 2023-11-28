@@ -45,24 +45,7 @@ public class ReactiveOracleSqlAstTranslator<T extends JdbcOperation> extends Ora
 		);
 	}
 
-	public MutationOperation createReactiveMergeOperation(OptionalTableUpdate optionalTableUpdate) {
-		renderUpsertStatement( optionalTableUpdate );
-
-		final UpsertOperation upsertOperation = new UpsertOperation(
-				optionalTableUpdate.getMutatingTable().getTableMapping(),
-				optionalTableUpdate.getMutationTarget(),
-				getSql(),
-				getParameterBinders()
-		);
-
-		return new ReactiveDeleteOrUpsertOperation(
-				optionalTableUpdate.getMutationTarget(),
-				(EntityTableMapping) optionalTableUpdate.getMutatingTable().getTableMapping(),
-				upsertOperation,
-				optionalTableUpdate
-		);
-	}
-
+	// FIXME: Copy and paste from ORM
 	private void renderUpsertStatement(OptionalTableUpdate optionalTableUpdate) {
 		// template:
 		//
@@ -95,7 +78,8 @@ public class ReactiveOracleSqlAstTranslator<T extends JdbcOperation> extends Ora
 				final Dialect realDialect = DialectDelegateWrapper.extractRealDialect( getDialect() );
 				return realDialect.getDmlTargetColumnQualifierSupport() == DmlTargetColumnQualifierSupport.TABLE_ALIAS;
 			}
+			default:
+				return true;
 		}
-		return true;
 	}
 }
