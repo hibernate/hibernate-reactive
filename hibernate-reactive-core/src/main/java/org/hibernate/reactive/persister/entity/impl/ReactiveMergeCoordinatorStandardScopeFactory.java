@@ -28,7 +28,9 @@ import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
 public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinator
 		implements ReactiveUpdateCoordinator {
 
-	public ReactiveMergeCoordinatorStandardScopeFactory(AbstractEntityPersister entityPersister, SessionFactoryImplementor factory) {
+	public ReactiveMergeCoordinatorStandardScopeFactory(
+			AbstractEntityPersister entityPersister,
+			SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
 	}
 
@@ -37,10 +39,10 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 		return new ReactiveMergeCoordinator(
 				entityPersister(),
 				factory(),
-				this.getStaticUpdateGroup(),
-				this.getBatchKey(),
-				this.getVersionUpdateGroup(),
-				this.getVersionUpdateBatchkey()
+				getStaticUpdateGroup(),
+				getBatchKey(),
+				getVersionUpdateGroup(),
+				getVersionUpdateBatchkey()
 		);
 	}
 
@@ -79,7 +81,11 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 					System.arraycopy( operations, 0, trimmed, 0, outputIndex );
 					operations = trimmed;
 				}
-				return MutationOperationGroupFactory.manyOperations( mutationGroup.getMutationType(), entityPersister, operations );
+				return MutationOperationGroupFactory.manyOperations(
+						mutationGroup.getMutationType(),
+						entityPersister,
+						operations
+				);
 			}
 		}
 	}
@@ -95,11 +101,11 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 					factory()
 			);
 		}
-		else if ( operation instanceof DeleteOrUpsertOperation &&
-				factory().getJdbcServices().getDialect() instanceof OracleDialect ) {
-			OracleDialect dialect = ((OracleDialect)factory().getJdbcServices().getDialect());
+		if ( operation instanceof DeleteOrUpsertOperation
+				&& factory().getJdbcServices().getDialect() instanceof OracleDialect ) {
+			OracleDialect dialect = ( (OracleDialect) factory().getJdbcServices().getDialect() );
 			return dialect.createOptionalTableUpdateOperation(
-					( (OptionalTableUpdate)operation).getMutationTarget(),
+					( (OptionalTableUpdate) operation ).getMutationTarget(),
 					(OptionalTableUpdate) operation,
 					factory()
 			);
