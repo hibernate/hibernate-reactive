@@ -4,7 +4,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'com.diffplug.spotless' version '6.18.0'
-    id 'nu.studer.credentials' version '2.2'
+    id 'nu.studer.credentials' version '3.0'
     id 'org.asciidoctor.jvm.convert' version '3.3.2' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '1.3.0'
 }
@@ -14,17 +14,17 @@ ext {
     // or stored locally using the gradle-credentials-plugin.
     // See below for the name of project properties.
     // See https://github.com/etiennestuder/gradle-credentials-plugin to store credentials locally.
-    if (!project.hasProperty('jbossNexusUser')) {
-        jbossNexusUser = credentials.jbossNexusUser
+    if ( !project.hasProperty( 'jbossNexusUser' ) ) {
+        jbossNexusUser = credentials.forKey( 'jbossNexusUser' )
     }
-    if (!project.hasProperty('jbossNexusPassword')) {
-        jbossNexusPassword = credentials.jbossNexusPassword
+    if ( !project.hasProperty( 'jbossNexusPassword' ) ) {
+        jbossNexusPassword = credentials.forKey( 'jbossNexusPassword' )
     }
-    if (!project.hasProperty('sonatypeOssrhUser')) {
-        sonatypeOssrhUser = credentials.sonatypeOssrhUser
+    if ( !project.hasProperty( 'sonatypeOssrhUser' ) ) {
+        sonatypeOssrhUser = credentials.forKey( 'sonatypeOssrhUser' )
     }
-    if (!project.hasProperty('sonatypeOssrhPassword')) {
-        sonatypeOssrhPassword = credentials.sonatypeOssrhPassword
+    if ( !project.hasProperty( 'sonatypeOssrhPassword' ) ) {
+        sonatypeOssrhPassword = credentials.forKey( 'sonatypeOssrhPassword' )
     }
 }
 
