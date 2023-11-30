@@ -34,6 +34,9 @@ dependencies {
     testImplementation "io.vertx:vertx-mssql-client:${vertxSqlClientVersion}"
     testImplementation "io.vertx:vertx-oracle-client:${vertxSqlClientVersion}"
 
+    // Metrics
+    testImplementation "io.vertx:vertx-micrometer-metrics:${vertxSqlClientVersion}"
+
     // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
     testImplementation 'com.ongres.scram:client:2.1'
 
