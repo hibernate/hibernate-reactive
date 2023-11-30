@@ -36,6 +36,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Promise;
 import io.vertx.core.VertxOptions;
@@ -43,6 +45,7 @@ import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.micrometer.MicrometerMetricsOptions;
 import jakarta.persistence.criteria.CriteriaQuery;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -73,7 +76,9 @@ public abstract class BaseReactiveTest {
 	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions() );
 
 	private static VertxOptions vertxOptions() {
+		Metrics.addRegistry( new SimpleMeterRegistry() );
 		return new VertxOptions()
+				.setMetricsOptions( new MicrometerMetricsOptions().setEnabled( true ) )
 				.setBlockedThreadCheckInterval( 10 )
 				.setBlockedThreadCheckIntervalUnit( MINUTES );
 	}
