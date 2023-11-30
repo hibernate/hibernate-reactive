@@ -5,13 +5,16 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
+import io.vertx.core.Future;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.SqlConnection;
 
@@ -41,13 +44,13 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 
 	/**
 	 * @return a Hibernate {@link SqlStatementLogger} for logging SQL
-	 *         statements as they are executed
+	 * statements as they are executed
 	 */
 	protected abstract SqlStatementLogger getSqlStatementLogger();
 
 	/**
 	 * @return a Hibernate {@link SqlExceptionHelper} for converting
-	 *         exceptions
+	 * exceptions
 	 */
 	protected abstract SqlExceptionHelper getSqlExceptionHelper();
 
@@ -58,9 +61,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	 * subclasses which support multitenancy.
 	 *
 	 * @param tenantId the id of the tenant
-	 *
 	 * @throws UnsupportedOperationException if multitenancy is not supported
-	 *
 	 * @see ReactiveConnectionPool#getConnection(String)
 	 */
 	protected Pool getTenantPool(String tenantId) {
@@ -88,13 +89,33 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return pool.getConnection()
-				.toCompletionStage().thenApply( this::newConnection );
+		return completionStage( pool.getConnection().map( this::newConnection ), ReactiveConnection::close );
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
-		return pool.getConnection()
-				.toCompletionStage().thenApply( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) );
+		return completionStage(
+				pool.getConnection().map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
+				ReactiveConnection::close
+		);
+	}
+
+	/**
+	 * @param onCancellation invoke when converted {@link java.util.concurrent.CompletionStage} cancellation.
+	 */
+	private <T> CompletionStage<T> completionStage(Future<T> future, Consumer<T> onCancellation) {
+		CompletableFuture<T> completableFuture = new CompletableFuture<>();
+		future.onComplete( ar -> {
+			if ( ar.succeeded() ) {
+				if ( completableFuture.isCancelled() ) {
+					onCancellation.accept( ar.result() );
+				}
+				completableFuture.complete( ar.result() );
+			}
+			else {
+				completableFuture.completeExceptionally( ar.cause() );
+			}
+		} );
+		return completableFuture;
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection) {
