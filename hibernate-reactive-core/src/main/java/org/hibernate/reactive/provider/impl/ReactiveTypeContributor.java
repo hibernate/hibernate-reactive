@@ -27,7 +27,7 @@ import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcType;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -45,7 +45,6 @@ import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
 import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
-import org.hibernate.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
 import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
@@ -83,7 +82,6 @@ public class ReactiveTypeContributor implements TypeContributor {
 		javaTypeRegistry.addDescriptor( JsonObjectJavaType.INSTANCE );
 
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
-		jdbcTypeRegistry.addDescriptor( ReactiveArrayJdbcType.INSTANCE );
 		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
 
 		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect || dialect instanceof OracleDialect ) {

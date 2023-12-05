@@ -146,7 +146,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setBytes(int parameterIndex, byte[] x) {
-		put( parameterIndex, Buffer.buffer(x) );
+		put( parameterIndex, Buffer.buffer( x ) );
 	}
 
 	@Override
@@ -245,7 +245,12 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setArray(int parameterIndex, Array x) {
-		put( parameterIndex, x );
+		try {
+			put( parameterIndex, x.getArray() );
+		}
+		catch (SQLException e) {
+			throw new AssertionFailure( "This shouldn't have happened" );
+		}
 	}
 
 	@Override
@@ -260,7 +265,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setNull(int parameterIndex, int sqlType, String typeName) {
-		throw new UnsupportedOperationException();
+		put( parameterIndex, new JdbcNull( sqlType ) );
 	}
 
 	@Override
