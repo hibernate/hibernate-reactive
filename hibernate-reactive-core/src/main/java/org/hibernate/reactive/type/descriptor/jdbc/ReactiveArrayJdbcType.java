@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 import org.hibernate.HibernateException;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
@@ -111,12 +112,18 @@ public class ReactiveArrayJdbcType implements JdbcType {
 		return new BasicExtractor<>( javaTypeDescriptor, this ) {
 			@Override
 			protected X doExtract(ResultSet rs, int paramIndex, WrapperOptions options) throws SQLException {
-				return javaTypeDescriptor.wrap( rs.getArray( paramIndex ), options );
+				return javaTypeDescriptor.wrap(
+						( (ResultSetAdaptor) rs ).getArray( paramIndex, elementJdbcType ),
+						options
+				);
 			}
 
 			@Override
 			protected X doExtract(CallableStatement statement, int index, WrapperOptions options) throws SQLException {
-				return javaTypeDescriptor.wrap( statement.getArray( index ), options );
+				return javaTypeDescriptor.wrap(
+						( (ResultSetAdaptor) statement ).getArray( index, elementJdbcType ),
+						options
+				);
 			}
 
 			@Override
