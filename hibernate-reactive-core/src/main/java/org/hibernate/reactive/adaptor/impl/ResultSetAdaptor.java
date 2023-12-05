@@ -35,6 +35,7 @@ import java.util.function.Function;
 
 import org.hibernate.engine.jdbc.BlobProxy;
 import org.hibernate.engine.jdbc.ClobProxy;
+import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.sqlclient.Row;
@@ -746,6 +747,15 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Array getArray(int columnIndex) {
 		throw new UnsupportedOperationException();
+	}
+
+	public Array getArray(int columnIndex, JdbcType elementJdbcType) {
+		Object[] objects = (Object[]) row.getValue( columnIndex - 1 );
+		wasNull = objects == null;
+		if ( objects == null ) {
+			return null;
+		}
+		return new ArrayAdaptor( elementJdbcType, objects );
 	}
 
 	@Override

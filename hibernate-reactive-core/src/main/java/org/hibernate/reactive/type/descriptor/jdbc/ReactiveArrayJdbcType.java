@@ -7,12 +7,19 @@ package org.hibernate.reactive.type.descriptor.jdbc;
 
 import java.lang.reflect.Array;
 import java.sql.CallableStatement;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-import org.hibernate.HibernateException;
+import org.hibernate.reactive.adaptor.impl.ArrayAdaptor;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
@@ -24,19 +31,21 @@ import org.hibernate.type.descriptor.jdbc.BasicBinder;
 import org.hibernate.type.descriptor.jdbc.BasicExtractor;
 import org.hibernate.type.descriptor.jdbc.JdbcLiteralFormatter;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
-import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
 import org.hibernate.type.descriptor.jdbc.internal.JdbcLiteralFormatterArray;
 import org.hibernate.type.spi.TypeConfiguration;
+
+
 
 /**
  * {@link java.sql.Connection} has a method {@link java.sql.Connection#createArrayOf(String, Object[])}, but we don't have
  * it in Vert.x SQL Client.
+ * <p>
+ *     Plus, the Vert.x SQL client accept arrays as parameters.
+ * </p>
  *
  * @see org.hibernate.type.descriptor.jdbc.ArrayJdbcType
  */
-public class ReactiveArrayJdbcType implements JdbcType {
-
-	public static final ReactiveArrayJdbcType INSTANCE = new ReactiveArrayJdbcType( ObjectJdbcType.INSTANCE );
+public class  ReactiveArrayJdbcType implements JdbcType {
 
 	private final JdbcType elementJdbcType;
 
@@ -88,20 +97,64 @@ public class ReactiveArrayJdbcType implements JdbcType {
 			@Override
 			protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options)
 					throws SQLException {
-				st.setObject( index, value );
+
+				ArrayAdaptor arrayObject = getArrayObject( value, options );
+				st.setArray( index, arrayObject );
 			}
 
 			@Override
-			protected void doBind(CallableStatement st, X value, String name, WrapperOptions options){
-				try {
-					st.setObject( name, value );
+			protected void doBind(CallableStatement st, X value, String name, WrapperOptions options) {
+				throw new UnsupportedOperationException();
+			}
+
+			private ArrayAdaptor getArrayObject(X value, WrapperOptions options) {
+				final TypeConfiguration typeConfiguration = options.getSessionFactory().getTypeConfiguration();
+				ReactiveArrayJdbcType jdbcType = (ReactiveArrayJdbcType) getJdbcType();
+				final JdbcType elementJdbcType = jdbcType.getElementJdbcType();
+				final JdbcType underlyingJdbcType = typeConfiguration.getJdbcTypeRegistry()
+						.getDescriptor( elementJdbcType.getDefaultSqlTypeCode() );
+				final Class<?> elementJdbcJavaTypeClass = elementJdbcJavaTypeClass(
+						options,
+						elementJdbcType,
+						underlyingJdbcType,
+						typeConfiguration
+				);
+				//noinspection unchecked
+				final Class<Object[]> arrayClass = (Class<Object[]>) Array.newInstance( elementJdbcJavaTypeClass, 0 )
+						.getClass();
+				final Object[] objects = getJavaType().unwrap( value, arrayClass, options );
+				return new ArrayAdaptor( elementJdbcType, objects );
+			}
+
+			private Class<?> elementJdbcJavaTypeClass(
+					WrapperOptions options,
+					JdbcType elementJdbcType,
+					JdbcType underlyingJdbcType,
+					TypeConfiguration typeConfiguration) {
+				final Class<?> preferredJavaTypeClass = elementJdbcType.getPreferredJavaTypeClass( options );
+				final Class<?> elementJdbcJavaTypeClass;
+				if ( preferredJavaTypeClass == null ) {
+					elementJdbcJavaTypeClass = underlyingJdbcType
+							.getJdbcRecommendedJavaTypeMapping( null, null, typeConfiguration )
+							.getJavaTypeClass();
 				}
-				catch (SQLException ex) {
-					throw new HibernateException(
-							"JDBC driver does not support named parameters for setArray. Use positional.",
-							ex
-					);
+				else {
+					elementJdbcJavaTypeClass = preferredJavaTypeClass;
 				}
+				return convertTypes( elementJdbcJavaTypeClass );
+			}
+
+			private Class<?> convertTypes(Class<?> elementJdbcJavaTypeClass) {
+				if ( Timestamp.class.equals( elementJdbcJavaTypeClass ) ) {
+					return LocalDateTime.class;
+				}
+				if ( Date.class.equals( elementJdbcJavaTypeClass ) ) {
+					return LocalDate.class;
+				}
+				if ( Time.class.equals( elementJdbcJavaTypeClass ) ) {
+					return LocalTime.class;
+				}
+				return elementJdbcJavaTypeClass;
 			}
 		};
 	}
@@ -110,13 +163,19 @@ public class ReactiveArrayJdbcType implements JdbcType {
 	public <X> ValueExtractor<X> getExtractor(final JavaType<X> javaTypeDescriptor) {
 		return new BasicExtractor<>( javaTypeDescriptor, this ) {
 			@Override
-			protected X doExtract(ResultSet rs, int paramIndex, WrapperOptions options) throws SQLException {
-				return javaTypeDescriptor.wrap( rs.getArray( paramIndex ), options );
+			protected X doExtract(ResultSet rs, int paramIndex, WrapperOptions options) {
+				return javaTypeDescriptor.wrap(
+						( (ResultSetAdaptor) rs ).getArray( paramIndex, elementJdbcType ),
+						options
+				);
 			}
 
 			@Override
-			protected X doExtract(CallableStatement statement, int index, WrapperOptions options) throws SQLException {
-				return javaTypeDescriptor.wrap( statement.getArray( index ), options );
+			protected X doExtract(CallableStatement statement, int index, WrapperOptions options) {
+				return javaTypeDescriptor.wrap(
+						( (ResultSetAdaptor) statement ).getArray( index, elementJdbcType ),
+						options
+				);
 			}
 
 			@Override
@@ -130,6 +189,10 @@ public class ReactiveArrayJdbcType implements JdbcType {
 	@Override
 	public String getFriendlyName() {
 		return "ARRAY";
+	}
+
+	public JdbcType getElementJdbcType() {
+		return elementJdbcType;
 	}
 
 	@Override
