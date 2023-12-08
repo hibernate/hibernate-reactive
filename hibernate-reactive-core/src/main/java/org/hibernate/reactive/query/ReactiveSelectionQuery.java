@@ -22,6 +22,7 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
+import org.hibernate.query.Order;
 import org.hibernate.query.QueryParameter;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -122,6 +123,10 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
 
 	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
+
+	ReactiveSelectionQuery<R> setOrder(List<Order<? super R>> orderList);
+
+	ReactiveSelectionQuery<R> setOrder(Order<? super R> order);
 
 	ReactiveSelectionQuery<R> enableFetchProfile(String profileName);
 
