@@ -14,8 +14,8 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.Order;
 import org.hibernate.query.Page;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
@@ -118,7 +118,7 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 	}
 
 	@Override
-	public Mutiny.SelectionQuery<R> setPage(Page page) {
+	public SelectionQuery<R> setPage(Page page) {
 		setMaxResults( page.getMaxResults() );
 		setFirstResult( page.getFirstResult() );
 		return this;
@@ -190,6 +190,19 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 		delegate.setLockMode( alias, lockMode );
 		return this;
 	}
+
+	@Override
+	public SelectionQuery<R> setOrder(List<Order<? super R>> orders) {
+		delegate.setOrder( orders );
+		return this;
+	}
+
+	@Override
+	public SelectionQuery<R> setOrder(Order<? super R> order) {
+		delegate.setOrder( order );
+		return this;
+	}
+
 
 	@Override
 	public SelectionQuery<R> setParameter(String name, Object value) {

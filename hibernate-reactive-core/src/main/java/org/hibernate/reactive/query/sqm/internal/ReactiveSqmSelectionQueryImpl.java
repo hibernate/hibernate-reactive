@@ -26,6 +26,7 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.query.BindableType;
+import org.hibernate.query.Order;
 import org.hibernate.query.QueryLogging;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
@@ -248,6 +249,18 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	@Override
 	public ReactiveSqmSelectionQueryImpl<R> setFollowOnLocking(boolean enable) {
 		super.setFollowOnLocking( enable );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setOrder(List<Order<? super R>> orders) {
+		super.setOrder( orders );
+		return this;
+	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setOrder(Order<? super R> order) {
+		super.setOrder( order );
 		return this;
 	}
 
