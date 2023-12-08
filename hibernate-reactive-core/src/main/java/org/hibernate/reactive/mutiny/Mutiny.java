@@ -24,6 +24,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.Order;
 import org.hibernate.query.Page;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -352,6 +353,30 @@ public interface Mutiny {
 //		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
 //		 */
 //		Query<R> setLockOptions(LockOptions lockOptions);
+
+		/**
+		 * If the result type of this query is an entity class, add one or more
+		 * {@linkplain Order rules} for ordering the query results.
+		 *
+		 * @param orderList one or more instances of {@link Order}
+		 *
+		 * @see Order
+		 *
+		 * @see org.hibernate.query.Query#setOrder(List)
+		 */
+		SelectionQuery<R> setOrder(List<Order<? super R>> orderList);
+
+		/**
+		 * If the result type of this query is an entity class, add a
+		 * {@linkplain Order rule} for ordering the query results.
+		 *
+		 * @param order an instance of {@link Order}
+		 *
+		 * @see Order
+		 *
+		 * @see org.hibernate.query.Query#setOrder(Order)
+		 */
+		SelectionQuery<R> setOrder(Order<? super R> order);
 
 		/**
 		 * Set the {@link EntityGraph} that will be used as a fetch plan for

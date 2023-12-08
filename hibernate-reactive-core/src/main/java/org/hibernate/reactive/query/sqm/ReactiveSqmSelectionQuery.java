@@ -9,11 +9,13 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.query.BindableType;
+import org.hibernate.query.Order;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.spi.SqmQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
@@ -166,6 +168,12 @@ public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R>,
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setTimeout(int timeout);
+
+	@Override
+	ReactiveSqmSelectionQuery<R> setOrder(List<Order<? super R>> orders);
+
+	@Override
+	ReactiveSqmSelectionQuery<R> setOrder(Order<? super R> order);
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setFetchSize(int fetchSize);
