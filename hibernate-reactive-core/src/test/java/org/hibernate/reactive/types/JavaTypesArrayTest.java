@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
 
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 
@@ -41,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledIf( "isNotSupported" )
+@DisabledIf("isNotSupported")
 public class JavaTypesArrayTest extends BaseReactiveTest {
 
 	@Override
@@ -80,46 +79,91 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	@Test
 	public void testBooleanArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		Boolean[] dataArray = {TRUE, FALSE, TRUE};
+		Boolean[] dataArray = {TRUE, FALSE, null, TRUE};
 		basic.booleanArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.booleanArray ) );
 	}
 
 	@Test
+	public void testPrimitiveBooleanArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		boolean[] dataArray = {true, false, true};
+		basic.primitiveBooleanArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveBooleanArray ) );
+	}
+
+	@Test
 	public void testIntegerArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		Integer[] dataArray = {1, 2, 3};
+		Integer[] dataArray = {null, Integer.MIN_VALUE, 2, Integer.MAX_VALUE};
 		basic.integerArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.integerArray ) );
 	}
 
 	@Test
+	public void testPrimitiveIntegerArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		int[] dataArray = {1, 2, 3};
+		basic.primitiveIntegerArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveIntegerArray ) );
+	}
+
+	@Test
 	public void testLongArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		Long[] dataArray = {Long.MIN_VALUE, Long.MAX_VALUE, 3L};
+		Long[] dataArray = {Long.MIN_VALUE, Long.MAX_VALUE, 3L, null};
 		basic.longArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.longArray ) );
 	}
 
 	@Test
+	public void testPrimitiveLongArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		long[] dataArray = {Long.MIN_VALUE, Long.MAX_VALUE, 3L};
+		basic.primitiveLongArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveLongArray ) );
+	}
+
+	@Test
 	public void testFloatArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		Float[] dataArray = {12.562f, 13.562f};
+		Float[] dataArray = {12.562f, null, 13.562f};
 		basic.floatArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.floatArray ) );
 	}
 
 	@Test
+	public void testPrimitiveFloatArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		float[] dataArray = {12.562f, 13.562f};
+		basic.primitiveFloatArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveFloatArray ) );
+	}
+
+	@Test
 	public void testDoubleArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		Double[] dataArray = {12.562d, 13.562d};
+		Double[] dataArray = {12.562d, null, 13.562d};
 		basic.doubleArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.doubleArray ) );
+	}
+
+	@Test
+	public void testPrimitiveDoubleArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		double[] dataArray = {12.562d, 13.562d};
+		basic.primitiveDoubleArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveDoubleArray ) );
 	}
 
 	@Test
@@ -151,6 +195,15 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		basic.shortArray = dataArray;
 
 		testField( context, basic, found -> assertArrayEquals( dataArray, found.shortArray ) );
+	}
+
+	@Test
+	public void testPrimitiveShortArrayType(VertxTestContext context) {
+		Basic basic = new Basic();
+		short[] dataArray = {500, 32, -1};
+		basic.primitiveShortArray = dataArray;
+
+		testField( context, basic, found -> assertArrayEquals( dataArray, found.primitiveShortArray ) );
 	}
 
 	@Test
@@ -238,18 +291,26 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Integer id;
 		String[] stringArray;
 		Boolean[] booleanArray;
-
+		boolean[] primitiveBooleanArray;
 		Integer[] integerArray;
+		int[] primitiveIntegerArray;
 		Long[] longArray;
+		long[] primitiveLongArray;
 		Float[] floatArray;
+		float[] primitiveFloatArray;
 		Double[] doubleArray;
+		double[] primitiveDoubleArray;
 		UUID[] uuidArray;
 		AnEnum[] enumArray;
 		Short[] shortArray;
+		short[] primitiveShortArray;
 		Date[] dateArray;
 		LocalDate[] localDateArray;
 		LocalTime[] localTimeArray;
 		LocalDateTime[] localDateTimeArray;
+
+		// We have to specify the length for BigDecimal and BigInteger because
+		// the default column type when creating the schema is too small on some databases
 		@Column(length = 5000)
 		BigInteger[] bigIntegerArray;
 		@Column(length = 5000)
