@@ -151,9 +151,9 @@ jobs:
           # even if we don't use these features, just enabling them can cause side effects
           # and it's useful to test that.
           - { name: "20", java_version_numeric: 20, jvm_args: '--enable-preview' }
-          - { name: "21-ea", java_version_numeric: 21, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-# We skip this until Vert.x fixes a bug preventing the build to pass: https://github.com/eclipse-vertx/vertx-sql-client/issues/1379
-#          - { name: "22-ea", java_version_numeric: 22, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "21", java_version_numeric: 21, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "22-ea", java_version_numeric: 22, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "23-ea", java_version_numeric: 23, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
