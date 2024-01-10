@@ -87,7 +87,23 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 			return voidFuture()
 					.thenCompose( v -> {
 						if ( lazyInitializer != null ) {
-							return lazyInitialize( rowProcessingState, lazyInitializer );
+							final SharedSessionContractImplementor session = rowProcessingState.getSession();
+							final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+							final EntityHolder holder = persistenceContext.getEntityHolder( getEntityKey() );
+							Object instance = holder.getEntity();
+							assert instance != null : "The real entity instance must be resolved in the `resolveInstance()` phase";
+							if ( holder.getEntityInitializer() == this ) {
+								return initializeEntity( instance, rowProcessingState )
+										.thenAccept( vv -> {
+											lazyInitializer.setImplementation( instance );
+											setEntityInstanceForNotify( instance );
+										} );
+							}
+							return voidFuture().thenAccept( vv -> {
+								lazyInitializer.setImplementation( instance );
+								setEntityInstanceForNotify( instance );
+
+							} );
 						}
 						else {
 							// FIXME: Read from cache if possible
@@ -101,35 +117,6 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 					} );
 		}
 		return voidFuture();
-	}
-
-	private CompletionStage<Void> lazyInitialize(ReactiveRowProcessingState rowProcessingState, LazyInitializer lazyInitializer) {
-		final SharedSessionContractImplementor session = rowProcessingState.getSession();
-		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		final EntityHolder holder = persistenceContext.getEntityHolder( getEntityKey() );
-		Object instance = holder.getEntity();
-		if ( instance == null ) {
-			return resolveInstance( rowProcessingState, lazyInitializer, persistenceContext );
-		}
-		lazyInitializer.setImplementation( instance );
-		setEntityInstanceForNotify( instance );
-		return voidFuture();
-	}
-
-	private CompletionStage<Void> resolveInstance(
-			ReactiveRowProcessingState rowProcessingState,
-			LazyInitializer lazyInitializer,
-			PersistenceContext persistenceContext) {
-		final Object instance = super.resolveInstance(
-				getEntityKey().getIdentifier(),
-				persistenceContext.getEntityHolder( getEntityKey() ),
-				rowProcessingState
-		);
-		return initializeEntity( instance, rowProcessingState )
-				.thenAccept( v -> {
-					lazyInitializer.setImplementation( instance );
-					setEntityInstanceForNotify( instance );
-				} );
 	}
 
 	private CompletionStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {

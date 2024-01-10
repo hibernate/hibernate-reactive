@@ -380,8 +380,6 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return narrowedProxy( event, persister, keyToLoad, options, proxy );
 		}
 		else if ( options.isAllowProxyCreation() ) {
-			// return a new proxy
-			// ORM calls DefaultLoadEventListener#proxyOrCache
 			return completedFuture( proxyOrCached( event, persister, keyToLoad, options ) );
 		}
 		else {

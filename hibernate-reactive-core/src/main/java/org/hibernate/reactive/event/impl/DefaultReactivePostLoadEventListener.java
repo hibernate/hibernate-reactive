@@ -43,21 +43,24 @@ public class DefaultReactivePostLoadEventListener implements PostLoadEventListen
 		callbackRegistry.postLoad( entity );
 
 		final EventSource session = event.getSession();
-		final EntityEntry entry = session.getPersistenceContextInternal().getEntry( entity );
+ 		final EntityEntry entry = session.getPersistenceContextInternal().getEntry( entity );
 		if ( entry == null ) {
 			throw new AssertionFailure( "possible non-threadsafe access to the session" );
 		}
 
-		final ReactiveActionQueue actionQueue = ((ReactiveSession) session).getReactiveActionQueue();
+		final ReactiveActionQueue actionQueue = ( (ReactiveSession) session ).getReactiveActionQueue();
 		switch ( entry.getLockMode() ) {
-//			case PESSIMISTIC_FORCE_INCREMENT:
-			// This case is handled by DefaultReactiveLoadEventListener
+			case PESSIMISTIC_FORCE_INCREMENT:
+				// This case is handled by DefaultReactiveLoadEventListener
+				break;
 			case OPTIMISTIC_FORCE_INCREMENT:
 				actionQueue.registerProcess( new ReactiveEntityIncrementVersionProcess( entity ) );
 				break;
 			case OPTIMISTIC:
 				actionQueue.registerProcess( new ReactiveEntityVerifyVersionProcess( entity ) );
 				break;
+			default:
+				// Nothing to do
 		}
 	}
 
