@@ -102,17 +102,18 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 
 		final EntityInitializer parentEntityInitializer = parentAccess.findFirstEntityInitializer();
 		if ( parentEntityInitializer != null && parentEntityInitializer.isEntityInitialized() ) {
-			isInitialized = true;
+			initializeState();
 			return voidFuture();
 		}
 
 		if ( !isAttributeAssignableToConcreteDescriptor() ) {
+			initializeState();
 			return voidFuture();
 		}
 
 		final Object entityIdentifier = keyAssembler.assemble( rowProcessingState );
 		if ( entityIdentifier == null ) {
-			isInitialized = true;
+			initializeState();
 			return voidFuture();
 		}
 
@@ -145,7 +146,7 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 			entityInstance = holder.getEntity();
 			if ( holder.getEntityInitializer() == null ) {
 				if ( entityInstance != null && Hibernate.isInitialized( entityInstance ) ) {
-					isInitialized = true;
+					initializeState();
 					return voidFuture();
 				}
 			}
@@ -159,11 +160,11 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 							holder.getEntityInitializer()
 					);
 				}
-				isInitialized = true;
+				initializeState();
 				return voidFuture();
 			}
 			else if ( entityInstance == null ) {
-				isInitialized = true;
+				initializeState();
 				return voidFuture();
 			}
 		}
@@ -202,9 +203,13 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 					if ( lazyInitializer != null ) {
 						lazyInitializer.setUnwrap( unwrapProxy );
 					}
-					isInitialized = true;
+					initializeState();
 					return voidFuture();
 				} );
+	}
+
+	protected void initializeState() {
+		state = State.INITIALIZED;
 	}
 
 	protected ToOneAttributeMapping toOneMapping() {

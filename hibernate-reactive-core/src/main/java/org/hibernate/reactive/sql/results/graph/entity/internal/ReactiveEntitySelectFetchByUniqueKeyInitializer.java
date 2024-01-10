@@ -41,28 +41,29 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer extends ReactiveEnt
 
 	@Override
 	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
-		if ( entityInstance != null || isInitialized ) {
+		if ( getEntityInstance() != null || isEntityInitialized() ) {
 			return voidFuture();
 		}
+		state = State.RESOLVED;
 
 		final EntityInitializer parentEntityInitializer = getParentEntityInitializer( parentAccess );
 		if ( parentEntityInitializer != null && parentEntityInitializer.getEntityKey() != null ) {
 			// make sure parentEntityInitializer.resolveInstance has been called before
 			parentEntityInitializer.resolveInstance( rowProcessingState );
 			if ( parentEntityInitializer.isEntityInitialized() ) {
-				isInitialized = true;
+				initializeState();
 				return voidFuture();
 			}
 		}
 
 		if ( !isAttributeAssignableToConcreteDescriptor() ) {
-			isInitialized = true;
+			initializeState();
 			return voidFuture();
 		}
 
 		final Object entityIdentifier = keyAssembler.assemble( rowProcessingState );
 		if ( entityIdentifier == null ) {
-			isInitialized = true;
+			initializeState();
 			return voidFuture();
 		}
 		final String entityName = concreteDescriptor.getEntityName();
@@ -104,7 +105,7 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer extends ReactiveEnt
 		if ( entityInstance != null ) {
 			setEntityInstance( persistenceContext.proxyFor( entityInstance ) );
 		}
-		isInitialized = true;
+		initializeState();
 		return voidFuture();
 	}
 
