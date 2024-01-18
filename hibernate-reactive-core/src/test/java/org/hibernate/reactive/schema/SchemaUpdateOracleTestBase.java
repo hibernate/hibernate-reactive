@@ -8,6 +8,15 @@ package org.hibernate.reactive.schema;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.annotations.EnabledFor;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
@@ -23,31 +32,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@EnabledFor(ORACLE)
 public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 
-	@RegisterExtension
-	public DBSelectionExtension dbRule = runOnlyFor( ORACLE );
-
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuallySchemaUpdateOracleTestBase extends SchemaUpdateOracleTestBase {
 
 		@Override
@@ -59,7 +54,6 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class GroupedSchemaUpdateOracleTestBase extends SchemaUpdateOracleTestBase {
 
 		@Override

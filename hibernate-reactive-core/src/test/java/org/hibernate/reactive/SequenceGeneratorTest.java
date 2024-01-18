@@ -12,10 +12,9 @@ import java.util.Objects;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -35,7 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisabledFor(value = MYSQL, reason = "See https://github.com/hibernate/hibernate-reactive/issues/1525")
+@DisabledFor(value = COCKROACHDB, reason = "we don't have permission to create schema in the CI!")
 public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
@@ -73,11 +73,6 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 	}
 
 	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
-
-		// COCKROACHDB: we don't have permission to create schema in the CI!
-		// MYSQL: See https://github.com/hibernate/hibernate-reactive/issues/1525
-		@RegisterExtension
-		public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( COCKROACHDB, MYSQL );
 
 		@Override
 		protected Configuration constructConfiguration() {

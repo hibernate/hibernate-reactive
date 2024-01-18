@@ -5,10 +5,10 @@
  */
 package org.hibernate.reactive.annotations.tests;
 
-import org.hibernate.reactive.annotations.DisableFor;
-import org.hibernate.reactive.annotations.DisableForGroup;
-import org.hibernate.reactive.annotations.EnableFor;
-import org.hibernate.reactive.annotations.EnableForGroup;
+import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.annotations.DisabledForDbTypes;
+import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.annotations.EnabledForDbTypes;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,8 +22,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 public class FilterByDbTypeOnClassTest {
 
 	@Nested
-	@DisableFor(value = POSTGRESQL, reason = "some reason")
-	class DisableForOneDbType {
+	@DisabledFor(value = POSTGRESQL, reason = "some reason")
+	class DisabledForOneDbType {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isNotIn( POSTGRESQL );
@@ -31,8 +31,8 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@DisableFor({POSTGRESQL, MYSQL, DB2})
-	class DisableForMultipleDbType {
+	@DisabledFor({POSTGRESQL, MYSQL, DB2})
+	class DisabledForMultipleDbType {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isNotIn( POSTGRESQL, MYSQL, DB2 );
@@ -40,8 +40,8 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@DisableFor(value = MYSQL, reason = "some reason")
-	@DisableFor(value = POSTGRESQL, reason = "some reason")
+	@DisabledFor(value = MYSQL, reason = "some reason")
+	@DisabledFor(value = POSTGRESQL, reason = "some reason")
 	class DisabledForRepeatableTest {
 		@Test
 		public void testDisabledRepeatable() {
@@ -50,9 +50,9 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@DisableForGroup({
-			@DisableFor(MYSQL),
-			@DisableFor(POSTGRESQL)
+	@DisabledForDbTypes({
+			@DisabledFor(MYSQL),
+			@DisabledFor(POSTGRESQL)
 	})
 	class DisabledForGroupTest {
 		@Test
@@ -62,8 +62,8 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@EnableFor(POSTGRESQL)
-	class EnableForOneDbTypeTest {
+	@EnabledFor(POSTGRESQL)
+	class EnabledForForOneDbTypeTest {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isEqualTo( POSTGRESQL );
@@ -71,8 +71,8 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@EnableFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
-	class EnableForMultipleDbTypeTest {
+	@EnabledFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
+	class EnabledForForMultipleDbTypeTest {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isIn( POSTGRESQL, MYSQL, DB2 );
@@ -80,8 +80,8 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@EnableFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
-	class EnableRepeatableDbTypeTest {
+	@EnabledFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
+	class EnabledForRepeatableDbTypeTest {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isIn( POSTGRESQL, MYSQL, DB2 );
@@ -89,11 +89,11 @@ public class FilterByDbTypeOnClassTest {
 	}
 
 	@Nested
-	@EnableForGroup({
-			@EnableFor(MYSQL),
-			@EnableFor(POSTGRESQL)
+	@EnabledForDbTypes({
+			@EnabledFor(MYSQL),
+			@EnabledFor(POSTGRESQL)
 	})
-	class EnableForGroupTest {
+	class EnabledForForGroupTest {
 		@Test
 		public void test() {
 			assertThat( dbType() ).isIn( POSTGRESQL, MYSQL );

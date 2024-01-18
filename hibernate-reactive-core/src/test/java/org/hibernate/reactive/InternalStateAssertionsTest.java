@@ -12,10 +12,9 @@ import java.util.concurrent.Executor;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage.Session;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
@@ -26,7 +25,6 @@ import jakarta.persistence.Id;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
@@ -34,6 +32,10 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
  * @see org.hibernate.reactive.common.InternalStateAssertions
  */
 @Timeout(value = 10, timeUnit = MINUTES)
+@EnabledFor(
+		value = POSTGRESQL,
+		reason = "These tests will fail before touching the database, so there is no reason to run them on all databases"
+)
 public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	/**
@@ -42,11 +44,6 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 	private static final String ERROR_CODE = "HR000069";
 
 	private Object currentSession;
-
-	// These tests will fail before touching the database, so there is no reason
-	// to run them on all databases
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

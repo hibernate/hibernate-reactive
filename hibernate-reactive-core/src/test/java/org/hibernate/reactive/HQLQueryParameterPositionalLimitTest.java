@@ -9,11 +9,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -24,7 +23,6 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -35,12 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * that should be considered an internal implementation detail.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
-
-	// Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0.
-	@RegisterExtension
-	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );
@@ -83,6 +76,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 	public void testFirstResultSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
@@ -96,6 +90,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 	public void testFirstResultMultipleResults(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s
@@ -108,6 +103,7 @@ public class HQLQueryParameterPositionalLimitTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 	public void testFirstResultMaxResultsSingleResult(VertxTestContext context) {
 		test( context, openSession()
 				.thenCompose( s -> s

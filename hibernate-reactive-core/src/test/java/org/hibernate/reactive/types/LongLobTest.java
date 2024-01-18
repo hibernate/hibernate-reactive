@@ -11,10 +11,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -26,17 +24,11 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class LongLobTest extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = runOnlyFor( MYSQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

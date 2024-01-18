@@ -13,10 +13,9 @@ import java.util.function.Consumer;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.Timeout;
@@ -32,7 +31,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Test types that we expect to work only on selected DBs.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
+@DisabledFor(value = DB2, reason = "SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
+@DisabledFor(value = SQLSERVER, reason = "Unsupported value class: class io.vertx.core.json.JsonObject")
+@DisabledFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: see https://docs.oracle.com/error-help/db/ora-17004/")
 public class UserJsonTypeTest extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = skipTestsFor( DB2, SQLSERVER, ORACLE );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

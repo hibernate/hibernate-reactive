@@ -21,11 +21,10 @@ import org.hibernate.annotations.TimeZoneStorage;
 import org.hibernate.annotations.TimeZoneStorageType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -58,11 +57,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
  * </p>
  */
 @Timeout(value = 10, timeUnit = MINUTES)
+@DisabledFor(value = SQLSERVER, reason = "currently does not support java.time.OffsetTime")
 public class TimeZoneStorageMappingTest extends BaseReactiveTest {
-
-	// SQLSERVER currently does not support java.time.OffsetTime
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.skipTestsFor( SQLSERVER );
 
 	private static final ZoneOffset JVM_TIMEZONE_OFFSET = OffsetDateTime.now().getOffset();
 
