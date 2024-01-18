@@ -11,11 +11,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -38,12 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
-
-	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
-	@RegisterExtension
-	public final DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2 );
 
 	private Campaign theCampaign;
 

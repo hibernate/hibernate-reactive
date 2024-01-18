@@ -15,10 +15,9 @@ import java.util.List;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -35,12 +34,8 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTrunca
 import static org.hibernate.type.descriptor.DateTimeUtils.roundToDefaultPrecision;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
-
-	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
-	@RegisterExtension
-	public final DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

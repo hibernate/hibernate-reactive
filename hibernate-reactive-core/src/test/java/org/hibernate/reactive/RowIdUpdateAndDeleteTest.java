@@ -11,12 +11,11 @@ import java.util.List;
 import org.hibernate.annotations.RowId;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
@@ -30,17 +29,13 @@ import jakarta.persistence.Table;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 
 /**
  * Adapted from the test with the same name in Hibernate ORM: {@literal org.hibernate.orm.test.rowid.RowIdUpdateAndDeleteTest}
  */
+@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisabledFor(value = ORACLE, reason = "Vert.x driver doesn't support RowId type parameters")
 public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
-
-	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
-	// Oracle: Vert.x driver doesn't support RowId type parameters
-	@RegisterExtension
-	public final DBSelectionExtension skip = skipTestsFor( DB2, ORACLE );
 
 	private static SqlStatementTracker sqlTracker;
 

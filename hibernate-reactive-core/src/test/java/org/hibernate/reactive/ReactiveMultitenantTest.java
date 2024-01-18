@@ -11,10 +11,9 @@ import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -38,14 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * on the database for the selected tenant.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnabledFor(value = POSTGRESQL, reason = "Native queries for this test are targeted for PostgreSQL")
 public class ReactiveMultitenantTest extends BaseReactiveTest {
 
 	private static final MyCurrentTenantIdentifierResolver TENANT_RESOLVER = new MyCurrentTenantIdentifierResolver();
-
-	// To check if we are using the right database we run native queries for PostgreSQL
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension.runOnlyFor( POSTGRESQL );
 
 	@Override
 	protected Configuration constructConfiguration() {

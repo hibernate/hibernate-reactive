@@ -8,6 +8,15 @@ package org.hibernate.reactive.schema;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.annotations.EnabledFor;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
@@ -23,28 +32,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@EnabledFor(MARIA)
 public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuallySchemaUpdateMariaDBTestBase
 			extends SchemaUpdateMariaDBTestBase {
 
@@ -73,9 +71,6 @@ public abstract class SchemaUpdateMariaDBTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.DEFAULT_CATALOG, "hreact" );
 		return configuration;
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( MARIA );
 
 	@BeforeEach
 	@Override

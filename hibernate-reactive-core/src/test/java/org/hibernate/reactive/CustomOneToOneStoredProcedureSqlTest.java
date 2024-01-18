@@ -5,37 +5,41 @@
  */
 package org.hibernate.reactive;
 
-import io.vertx.junit5.Timeout;
-import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.*;
-
-import org.hibernate.HibernateException;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLInsert;
-import org.hibernate.reactive.testing.DBSelectionExtension;
-import org.hibernate.reactive.testing.ReactiveAssertions;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-import static java.util.concurrent.TimeUnit.*;
+import org.hibernate.HibernateException;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLInsert;
+import org.hibernate.reactive.testing.ReactiveAssertions;
+import org.hibernate.reactive.annotations.EnabledFor;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.*;
-import static org.hibernate.reactive.testing.DBSelectionExtension.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnabledFor(POSTGRESQL)
 public class CustomOneToOneStoredProcedureSqlTest extends BaseReactiveTest {
 
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 	private IndividualPerson individualPerson;
 	private DriverLicence driverLicence;
 	private static final String INITIAL_LICENCE_NO = "12545KLI12";

@@ -5,10 +5,10 @@
  */
 package org.hibernate.reactive.annotations.tests;
 
-import org.hibernate.reactive.annotations.DisableFor;
-import org.hibernate.reactive.annotations.DisableForGroup;
-import org.hibernate.reactive.annotations.EnableFor;
-import org.hibernate.reactive.annotations.EnableForGroup;
+import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.annotations.DisabledForDbTypes;
+import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.annotations.EnabledForDbTypes;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,31 +21,31 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 public class FilterByDbTypeOnMethodTest {
 
 	@Test
-	@DisableFor(POSTGRESQL)
+	@DisabledFor(POSTGRESQL)
 	public void testDisableOneDb() {
 		// Throw exception if this test is run with POSTGRESQL database
 		assertThat( dbType() ).isNotEqualTo( POSTGRESQL );
 	}
 
 	@Test
-	@DisableFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
+	@DisabledFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
 	public void testDisableMultipleDbs() {
 		// Throw exception if this test is run with POSTGRESQL database
 		assertThat( dbType() ).isNotIn( POSTGRESQL, MYSQL, DB2 );
 	}
 
 	@Test
-	@DisableFor(value = MYSQL, reason = "some reason")
-	@DisableFor(value = POSTGRESQL, reason = "some reason")
+	@DisabledFor(value = MYSQL, reason = "some reason")
+	@DisabledFor(value = POSTGRESQL, reason = "some reason")
 	public void testDisabledRepeatable() {
 		// Throw exception if this test is run with POSTGRESQL or MYSQL database
 		assertThat( dbType() ).isNotIn( POSTGRESQL, MYSQL );
 	}
 
 	@Test
-	@DisableForGroup({
-			@DisableFor(MYSQL),
-			@DisableFor(POSTGRESQL)
+	@DisabledForDbTypes({
+			@DisabledFor(MYSQL),
+			@DisabledFor(POSTGRESQL)
 	})
 	public void testDisabledForGroup() {
 		// Throw exception if this test is run with POSTGRESQL or MYSQL database
@@ -53,30 +53,30 @@ public class FilterByDbTypeOnMethodTest {
 	}
 
 	@Test
-	@EnableFor(POSTGRESQL)
-	public void testEnableForOneDb() {
+	@EnabledFor(POSTGRESQL)
+	public void testEnabledForForOneDb() {
 		assertThat( dbType() ).isEqualTo( POSTGRESQL );
 	}
 
 	@Test
-	@EnableFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
-	public void testEnableMultipleDbs() {
+	@EnabledFor(value = {POSTGRESQL, MYSQL, DB2}, reason = "some reason")
+	public void testEnabledForMultipleDbs() {
 		assertThat( dbType() ).isIn( POSTGRESQL, MYSQL, DB2 );
 	}
 
 	@Test
-	@EnableFor(value = MYSQL, reason = "some reason")
-	@EnableFor(value = POSTGRESQL, reason = "some reason")
-	public void testEnableRepeatable() {
+	@EnabledFor(value = MYSQL, reason = "some reason")
+	@EnabledFor(value = POSTGRESQL, reason = "some reason")
+	public void testEnabledForRepeatable() {
 		assertThat( dbType() ).isIn( POSTGRESQL, MYSQL );
 	}
 
 	@Test
-	@EnableForGroup({
-			@EnableFor(MYSQL),
-			@EnableFor(POSTGRESQL)
+	@EnabledForDbTypes({
+			@EnabledFor(MYSQL),
+			@EnabledFor(POSTGRESQL)
 	})
-	public void testEnableForGroup() {
+	public void testEnabledForForGroup() {
 		assertThat( dbType() ).isIn( POSTGRESQL, MYSQL );
 	}
 }

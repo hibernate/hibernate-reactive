@@ -29,12 +29,10 @@ import java.util.function.Consumer;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.AttributeConverter;
@@ -64,7 +62,6 @@ import jakarta.persistence.Version;
 
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,11 +70,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
  */
-public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
-	//Db2: testUUIDType throws NoStackTraceThrowable: parameter of type BufferImpl cannot be coerced to ByteBuf
-	@RegisterExtension
-	public final DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2 );
+public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
@@ -381,7 +375,6 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@Disabled // Fail for MSSQL because the value changes before it's saved on the db. This also fails for ORM
 	public void testLocalTimeType(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.localTime = LocalTime.now();
@@ -418,6 +411,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@DisabledFor(value = DB2, reason = "java.sql.SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007 in insert query")
 	public void testInstant(VertxTestContext context) {
 		Basic basic = new Basic();
 		basic.instant = Instant.now();

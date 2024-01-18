@@ -10,10 +10,9 @@ import java.util.List;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -25,7 +24,6 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -37,11 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * </p>
  * @see IdentityGeneratorTest
  */
+@DisabledFor(value = COCKROACHDB, reason = "ids cannot be cast to short or int (they are too big)")
 public class IdentityGeneratorTypeTest extends BaseReactiveTest {
-
-	// CockroachDB ids cannot be cast to short or int (they are too big)
-	@RegisterExtension
-	public DBSelectionExtension skip = skipTestsFor( COCKROACHDB );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

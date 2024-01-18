@@ -11,12 +11,11 @@ import java.util.Objects;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -40,6 +39,7 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@EnabledFor(MYSQL)
 public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
@@ -70,9 +70,6 @@ public abstract class SchemaUpdateMySqlTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.DEFAULT_CATALOG, "hreact" );
 		return configuration;
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( MYSQL );
 
 	@BeforeEach
 	@Override

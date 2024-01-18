@@ -13,13 +13,12 @@ import org.hibernate.HibernateException;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLInsert;
 import org.hibernate.annotations.SQLUpdate;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.ReactiveAssertions;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -33,17 +32,13 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnabledFor(POSTGRESQL)
 public class CustomStoredProcedureSqlTest extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	private SimpleRecord theRecord;
 

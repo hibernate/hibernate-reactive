@@ -10,10 +10,9 @@ import java.util.List;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -27,7 +26,6 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,11 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see IdentityGeneratorTypeTest
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnabledFor(COCKROACHDB)
 public class IdentityGeneratorTypeForCockroachDBTest extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension runOnly = runOnlyFor( COCKROACHDB );
 
 	/**
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different

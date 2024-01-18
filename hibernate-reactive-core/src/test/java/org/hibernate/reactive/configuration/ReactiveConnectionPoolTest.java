@@ -18,8 +18,8 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
+import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -39,17 +39,14 @@ import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.reactive.BaseReactiveTest.test;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getJdbcUrl;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
+@EnabledFor(value = POSTGRESQL, reason = "Create new scratch file from selection")
 public class ReactiveConnectionPoolTest {
-
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	@RegisterExtension
 	public TestingRegistryExtension registryExtension = new TestingRegistryExtension();
