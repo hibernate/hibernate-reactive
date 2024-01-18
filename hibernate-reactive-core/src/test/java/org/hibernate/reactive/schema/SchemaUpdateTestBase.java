@@ -11,12 +11,11 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -25,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
@@ -33,10 +31,10 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
  * Schema update will run different queries when the table already exists or
  * when columns are missing.
  */
+@DisableFor(value = DB2, reason = "No InformationExtractor for Dialect [org.hibernate.dialect.DB2Dialect..]")
 public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuallyStrategyTest extends SchemaUpdateTestBase {
 
 		@Override
@@ -48,7 +46,6 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class GroupedStrategyTest extends SchemaUpdateTestBase {
 
 		@Override
@@ -58,9 +55,6 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 			return configuration;
 		}
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = skipTestsFor( DB2 );
 
 	protected Configuration constructConfiguration(String action) {
 		Configuration configuration = super.constructConfiguration();

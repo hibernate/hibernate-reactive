@@ -12,10 +12,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.Timeout;
@@ -40,12 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 
+@DisableFor(value = DB2, reason = "java.sql.SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
+@DisableFor(value = SQLSERVER, reason = "java.lang.IllegalArgumentException: Unsupported value class: class io.vertx.core.json.JsonObject")
+@DisableFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: https://docs.oracle.com/error-help/db/ora-17004/")
+@DisableFor(value = MARIA, reason = "ORM 6 regression, see: https://github.com/hibernate/hibernate-reactive/issues/1529")
 public class JsonTypeTest extends BaseReactiveTest {
-
-	// MARIA: ORM 6 regression, see: https://github.com/hibernate/hibernate-reactive/issues/1529
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = DBSelectionExtension
-			.skipTestsFor( DB2, SQLSERVER, ORACLE, MARIA );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

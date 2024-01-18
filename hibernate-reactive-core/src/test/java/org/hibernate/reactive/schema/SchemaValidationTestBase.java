@@ -10,13 +10,12 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -39,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * - TODO: Missing column
  * - TODO: Wrong column type
  */
+@DisableFor(value = DB2, reason = "No InformationExtractor for Dialect [org.hibernate.dialect.DB2Dialect..]")
 public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
 	public static class IndividuallyStrategyTest extends SchemaValidationTestBase {
@@ -60,9 +60,6 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 			return configuration;
 		}
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.skipTestsFor( DB2 );
 
 	protected Configuration constructConfiguration(String action) {
 		Configuration configuration = super.constructConfiguration();

@@ -12,12 +12,11 @@ import java.util.Objects;
 import org.hibernate.annotations.SQLSelect;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
@@ -25,12 +24,12 @@ import jakarta.persistence.Id;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.SQLSelectTest.Person.SELECT_QUERY;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 
+@EnableFor(value = POSTGRESQL, reason = "Native queries for this test are targeted for PostgreSQL")
+@EnableFor(value = COCKROACHDB, reason = "Native queries for this test are targeted for CockroachDB")
 public class SQLSelectTest extends BaseReactiveTest {
-	@RegisterExtension // We use native queries, which may be different for other DBs
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	private SqlStatementTracker sqlTracker;
 

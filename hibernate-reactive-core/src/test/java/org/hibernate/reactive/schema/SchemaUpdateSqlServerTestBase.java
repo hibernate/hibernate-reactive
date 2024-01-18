@@ -12,12 +12,11 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -41,6 +40,7 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@EnableFor(SQLSERVER)
 public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 
 	// This is the default chosen by MSSQL
@@ -50,7 +50,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	 * Test INDIVIDUALLY option without setting the default catalog name
 	 */
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuallySchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -65,7 +64,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	 * Test INDIVIDUALLY option when we set the catalog name to the default name
 	 */
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuallySchemaUpdateWithCatalogTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -80,7 +78,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	 * Test GROUPED option without setting the default catalog name
 	 */
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class GroupedSchemaUpdateSqlServerTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -95,7 +92,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 	 * Test GROUPED option when we set the catalog name to default name
 	 */
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class GroupedSchemaUpdateWithCatalogNameTest extends SchemaUpdateSqlServerTestBase {
 
 		@Override
@@ -112,9 +108,6 @@ public abstract class SchemaUpdateSqlServerTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.DEFAULT_SCHEMA, "dbo" );
 		return configuration;
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( SQLSERVER );
 
 	@BeforeEach
 	@Override

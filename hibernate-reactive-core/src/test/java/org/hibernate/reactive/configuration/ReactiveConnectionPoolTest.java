@@ -18,15 +18,14 @@ import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -39,23 +38,17 @@ import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.reactive.BaseReactiveTest.test;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getJdbcUrl;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(VertxExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
+@EnableFor(value = POSTGRESQL, reason = "Create new scratch file from selection")
 public class ReactiveConnectionPoolTest {
 
 	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
-
-	@RegisterExtension
 	public TestingRegistryExtension registryExtension = new TestingRegistryExtension();
-
-	@RegisterExtension
-	public RunTestOnContext testOnContext = new RunTestOnContext();
 
 	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
 		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();

@@ -14,10 +14,9 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -31,10 +30,9 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -43,12 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * Test the @{@link Generated} annotation
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisableFor(value = SQLSERVER, reason = "Will fail because custom native queries would be required")
+@DisableFor(value = ORACLE, reason = "Will fail because custom native queries would be required")
+@DisableFor(value = DB2, reason = "Will fail because custom native queries would be required")
 public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
-
-	// It requires native queries, so it won't work for every db
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = runOnlyFor( POSTGRESQL, COCKROACHDB, MYSQL );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

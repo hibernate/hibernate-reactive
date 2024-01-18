@@ -10,10 +10,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -25,7 +24,6 @@ import org.assertj.core.api.Assertions;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,13 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see org.hibernate.reactive.id.impl.IdentifierGeneration
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisableFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0. " +
+	"See https://github.com/eclipse-vertx/vertx-sql-client/issues/899")
 public class IdentifierGenerationTypeTest extends BaseReactiveTest {
-
-	// Vertx DB2 client is throwing "java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0."
-	// See https://github.com/eclipse-vertx/vertx-sql-client/issues/899
-	@RegisterExtension
-	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

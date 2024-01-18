@@ -13,10 +13,9 @@ import java.util.Set;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -28,18 +27,14 @@ import jakarta.persistence.Id;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
+@DisableFor( value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0" )
 public class EmptyCompositeCollectionKeyTest extends BaseReactiveTest {
-
-	// Db2: Throws java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block here but need to find a non-blocking solution
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = skipTestsFor( DB2 );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

@@ -18,9 +18,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -34,23 +34,17 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledIf("isNotSupported")
+@DisableFor( value = ORACLE, reason = "Vert.x does not support arrays for Oracle" )
 public class JavaTypesArrayTest extends BaseReactiveTest {
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
 		return Set.of( Basic.class );
-	}
-
-	public static boolean isNotSupported() {
-		// Vert.x does not support arrays for Oracle
-		return dbType() == ORACLE;
 	}
 
 	private void testField(

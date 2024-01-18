@@ -9,11 +9,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -24,7 +23,6 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -32,12 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * as defined by the JPA specification, along with limit parameters
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisableFor(value = DB2, reason = "Different exceptions for the existing tests")
 public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
-
-	// Db2:java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0.
-	@RegisterExtension
-	public DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );

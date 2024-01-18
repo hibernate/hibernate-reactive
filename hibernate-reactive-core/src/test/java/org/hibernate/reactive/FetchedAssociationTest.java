@@ -11,11 +11,10 @@ import java.util.List;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -32,17 +31,13 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 
 /**
  * Test that's not necessary to do a fetch when we want to add a new element to an association.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnableFor(value = POSTGRESQL, reason = "We use native queries, they might be different for other DBs")
 public class FetchedAssociationTest extends BaseReactiveTest {
-
-	@RegisterExtension // We use native queries, they might be different for other DBs
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	private SqlStatementTracker sqlTracker;
 

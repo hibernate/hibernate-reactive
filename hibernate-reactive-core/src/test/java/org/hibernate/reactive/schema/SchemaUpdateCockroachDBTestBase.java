@@ -11,12 +11,11 @@ import java.util.Objects;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -41,10 +40,10 @@ import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@EnableFor(COCKROACHDB)
 public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class IndividuEachySchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
@@ -56,7 +55,6 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-
 	public static class GroupedSchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
@@ -73,9 +71,6 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.DEFAULT_SCHEMA, "public" );
 		return configuration;
 	}
-
-	@RegisterExtension
-	public DBSelectionExtension dbRule = DBSelectionExtension.runOnlyFor( COCKROACHDB );
 
 	@BeforeEach
 	@Override

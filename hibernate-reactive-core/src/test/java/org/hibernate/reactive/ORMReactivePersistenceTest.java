@@ -14,12 +14,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -41,12 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * This test class verifies that data can be persisted and queried on the same database
  * using both JPA/hibernate and reactive session factories.
  */
+@DisableFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisableFor(value = COCKROACHDB, reason = "We need to change the URL schema we normally use for testing")
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
-
-	// DB2: The CompletionStage test throw java.lang.IllegalStateException: Needed to have 6 in buffer...
-	// Cockroach: We need to change the URL schema we normally use for testing
-	@RegisterExtension
-	public DBSelectionExtension skip = DBSelectionExtension.skipTestsFor( DB2, COCKROACHDB );
 
 	private SessionFactory ormFactory;
 

@@ -15,10 +15,9 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
@@ -34,7 +33,6 @@ import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DE
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,12 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see ReactiveMultitenantTest
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@EnableFor(value = POSTGRESQL, reason = "Native queries for this test are targeted for PostgreSQL")
 public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
-
-	// To check if we are using the right database we run native queries for PostgreSQL
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = runOnlyFor( POSTGRESQL );
 
     @Override
     protected Configuration constructConfiguration() {

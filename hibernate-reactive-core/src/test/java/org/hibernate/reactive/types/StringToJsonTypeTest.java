@@ -12,10 +12,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.Timeout;
@@ -33,7 +32,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,10 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 
+@DisableFor(value = DB2, reason = "SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
+@DisableFor(value = SQLSERVER, reason = "Unsupported value class: class io.vertx.core.json.JsonObject from vertx.mssqlclient")
+@DisableFor(value = MARIA, reason = " org.hibernate.HibernateException: Expecting raw JDBC value of type `io.vertx.core.json.JsonObject`, but found `java.lang.String` : [{\"int\":123,\"str\":\"hello\"}]")
+@DisableFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: see https://docs.oracle.com/error-help/db/ora-17004/")
 public class StringToJsonTypeTest extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension selectionRule = skipTestsFor( DB2, SQLSERVER, MARIA, ORACLE );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {

@@ -13,12 +13,11 @@ import java.util.Objects;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.DisableFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
@@ -30,7 +29,6 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 
 /**
  * Test {@code hibernate.order_updates} and {@code hibernate.order_inserts} configurations.
@@ -38,11 +36,9 @@ import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
  * @see  Settings#ORDER_INSERTS
  * @see  Settings#ORDER_UPDATES
  */
-public abstract class OrderQueriesTestBase extends BaseReactiveTest {
 
-	//Db2: java.lang.IllegalStateException: Needed to have 6 in buffer but only had 0. In JDBC we would normally block
-	@RegisterExtension
-	public final DBSelectionExtension skip = skipTestsFor( DB2 );
+@DisableFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+public abstract class OrderQueriesTestBase extends BaseReactiveTest {
 
 	public static class OrderUpdatesTest extends OrderQueriesTestBase {
 

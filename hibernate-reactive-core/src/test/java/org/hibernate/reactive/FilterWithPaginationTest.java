@@ -15,12 +15,11 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.testing.DBSelectionExtension;
+import org.hibernate.reactive.annotations.DisableFor;
 import org.hibernate.type.descriptor.java.StringJavaType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
@@ -36,18 +35,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.query.Page.first;
 import static org.hibernate.query.Page.page;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.DBSelectionExtension.skipTestsFor;
 
 /**
  * Test the combination of filters, max results, first result, and {@link org.hibernate.query.Page}.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@DisableFor(value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class FilterWithPaginationTest extends BaseReactiveTest {
-
-	// Db2: Exception: IllegalStateException: Needed to have 6 in buffer but only had 0
-	@RegisterExtension
-	public final DBSelectionExtension skip = skipTestsFor( DB2 );
 
 	FamousPerson margaret = new FamousPerson( 1L, "Margaret Howe Lovatt", Status.LIVING, "the woman who lived in a half-flooded home with a dolphin." );
 	FamousPerson nellie = new FamousPerson( 2L, "Nellie Bly", Status.DECEASED, "In 1888, she traveled around the world in 72 days." );

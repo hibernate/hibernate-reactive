@@ -11,11 +11,10 @@ import java.util.List;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.testing.DBSelectionExtension;
 import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.EnableFor;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -34,7 +33,6 @@ import jakarta.persistence.OneToMany;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.hibernate.reactive.testing.DBSelectionExtension.runOnlyFor;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -44,10 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Verify that duplicate sql insert statements are collapsed to a single insert per entity and are ordered based on
  * parent/child relationships`
  */
+@EnableFor(POSTGRESQL)
 public abstract class InsertOrderingReferenceSeveralDifferentSubclassBase extends BaseReactiveTest {
-
-	@RegisterExtension
-	public DBSelectionExtension dbSelection = runOnlyFor( POSTGRESQL );
 
 	public static class OrderedTest extends InsertOrderingReferenceSeveralDifferentSubclassBase {
 
