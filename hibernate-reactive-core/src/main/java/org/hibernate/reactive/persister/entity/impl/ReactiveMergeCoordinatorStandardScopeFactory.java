@@ -6,7 +6,6 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 
-import org.hibernate.dialect.OracleDialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.MergeCoordinator;
@@ -22,7 +21,6 @@ import org.hibernate.sql.model.ast.MutationGroup;
 import org.hibernate.sql.model.ast.TableMutation;
 import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
 import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.jdbc.DeleteOrUpsertOperation;
 import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
 
 public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinator
@@ -46,6 +44,7 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 		);
 	}
 
+	// We override the whole method but we just need to plug in our custom createOperation(...) method
 	@Override
 	protected MutationOperationGroup createOperationGroup(ValuesAnalysis valuesAnalysis, MutationGroup mutationGroup) {
 		final int numberOfTableMutations = mutationGroup.getNumberOfTableMutations();
@@ -98,15 +97,6 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 			return new ReactiveOptionalTableUpdateOperation(
 					operation.getMutationTarget(),
 					(OptionalTableUpdate) singleTableMutation,
-					factory()
-			);
-		}
-		if ( operation instanceof DeleteOrUpsertOperation
-				&& factory().getJdbcServices().getDialect() instanceof OracleDialect ) {
-			OracleDialect dialect = ( (OracleDialect) factory().getJdbcServices().getDialect() );
-			return dialect.createOptionalTableUpdateOperation(
-					( (OptionalTableUpdate) operation ).getMutationTarget(),
-					(OptionalTableUpdate) operation,
 					factory()
 			);
 		}
