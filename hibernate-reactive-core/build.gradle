@@ -10,7 +10,7 @@ dependencies {
 
     api "org.hibernate.orm:hibernate-core:${hibernateOrmVersion}"
 
-    api 'io.smallrye.reactive:mutiny:2.5.3'
+    api 'io.smallrye.reactive:mutiny:2.5.4'
 
     //Logging
     implementation 'org.jboss.logging:jboss-logging:3.5.0.Final'
