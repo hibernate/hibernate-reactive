@@ -51,8 +51,9 @@ public class ReactiveConnectionPoolTest {
 	@RegisterExtension
 	public TestingRegistryExtension registryExtension = new TestingRegistryExtension();
 
+	// Everything should work when running in a Vert.x context
 	@RegisterExtension
-	public RunTestOnContext testOnContext = new RunTestOnContext();
+	public static final RunTestOnContext testOnContext = new RunTestOnContext();
 
 	private ReactiveConnectionPool configureAndStartPool(Map<String, Object> config) {
 		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();
