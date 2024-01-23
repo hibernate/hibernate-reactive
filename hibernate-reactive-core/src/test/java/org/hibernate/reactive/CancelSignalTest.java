@@ -81,7 +81,10 @@ public class CancelSignalTest extends BaseReactiveTest {
 				.mapToObj( i -> runAsync(
 						() -> {
 							await( firstSessionWaiter );
-							cancellableQueue.poll().cancel();
+							Cancellable poll = cancellableQueue.poll();
+							if ( poll != null ) {
+								poll.cancel();
+							}
 							sleep( 500 );
 						},
 						cancelExecutor
