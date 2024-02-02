@@ -53,7 +53,7 @@ public abstract class BaseReactiveIT {
 	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
 	public static final DockerImageName IMAGE_NAME = DockerImageName
-			.parse( "docker.io/postgres:15.2" )
+			.parse( "docker.io/postgres:16.1" )
 			.asCompatibleSubstituteFor( "postgres" );
 
 	public static final String USERNAME = "hreact";
