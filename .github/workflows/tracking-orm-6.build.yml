@@ -1,6 +1,6 @@
 # Run the build using the latest ORM 5.x snapshots
 # so that we can spot integration issues early
-name: Latest ORM 6.x
+name: Latest ORM 6.4
 
 on:
   # Trigger the workflow on push or pull request,
@@ -33,7 +33,7 @@ jobs:
     strategy:
       matrix:
         example: [ 'session-example', 'native-sql-example' ]
-        orm-version: [ '[6.2,6.3)' ]
+        orm-version: [ '[6.2,6.5)' ]
         db: ['MySQL', 'PostgreSQL']
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        orm-version: [ '[6.2,6.3)' ]
+        orm-version: [ '[6.2,6.5)' ]
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle' ]
     steps:
       - uses: actions/checkout@v2
