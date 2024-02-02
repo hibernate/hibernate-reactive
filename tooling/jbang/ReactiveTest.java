@@ -229,7 +229,7 @@ public class ReactiveTest {
 	 */
 	enum Database {
 		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:16.1" ) ),
-		MYSQL( () -> new MySQLContainer( "mysql:8.0.33" ) ),
+		MYSQL( () -> new MySQLContainer( "mysql:8.3.0" ) ),
 		DB2( () -> new Db2Container( "docker.io/ibmcom/db2:11.5.8.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:10.11.3" ) ),
 		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v22.2.10" ) );
