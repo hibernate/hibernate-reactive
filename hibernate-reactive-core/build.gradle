@@ -57,7 +57,7 @@ dependencies {
     testRuntimeOnly "com.mysql:mysql-connector-j:8.0.33"
 
     // JDBC driver for Db2 server, for testing
-    testRuntimeOnly "com.ibm.db2:jcc:11.5.8.0"
+    testRuntimeOnly "com.ibm.db2:jcc:11.5.9.0"
 
     // EHCache
     testRuntimeOnly ("org.ehcache:ehcache:3.10.0-alpha0") {
