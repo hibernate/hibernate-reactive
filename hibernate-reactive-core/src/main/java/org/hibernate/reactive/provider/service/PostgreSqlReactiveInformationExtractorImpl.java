@@ -141,7 +141,7 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 	@Override
 	protected int dataTypeCode(String typeName) {
-		// Copied from PostgreSQLDialect.
+		// Copied from PostgreSQLDialect.resolveSqlTypeCode
 		// Not ideal, but it should work for now
 		// It would be nice to be able to get the correct code some way
 		switch ( typeName ) {
@@ -162,6 +162,11 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 				return SqlTypes.TIMESTAMP_UTC;
 			case "bytea":
 				return Types.VARBINARY;
+			case "_numeric":
+			case "_bool":
+			case "_int8":
+			case "_varchar":
+				return Types.ARRAY;
 			default:
 				return 0;
 		}
