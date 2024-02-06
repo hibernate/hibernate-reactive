@@ -81,6 +81,11 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Character.class, "CHAR" );
 			expectedDBTypeForClass.put( char.class, "CHAR" );
 			expectedDBTypeForClass.put( String.class, "VARCHAR2" );
+			expectedDBTypeForClass.put( String[].class, "STRINGARRAY" );
+			expectedDBTypeForClass.put( Long[].class, "LONGARRAY" );
+			expectedDBTypeForClass.put( BigDecimal[].class, "BIGDECIMALARRAY" );
+			expectedDBTypeForClass.put( BigInteger[].class, "BIGINTEGERARRAY" );
+			expectedDBTypeForClass.put( Boolean[].class, "BOOLEANARRAY" );
 		}
 	}
 

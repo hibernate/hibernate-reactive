@@ -73,6 +73,11 @@ class PostgreSQLDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Character.class, "character" );
 			expectedDBTypeForClass.put( char.class, "character" );
 			expectedDBTypeForClass.put( String.class, "character varying" );
+			expectedDBTypeForClass.put( String[].class, "ARRAY" );
+			expectedDBTypeForClass.put( Long[].class, "ARRAY" );
+			expectedDBTypeForClass.put( BigDecimal[].class, "ARRAY" );
+			expectedDBTypeForClass.put( BigInteger[].class, "ARRAY" );
+			expectedDBTypeForClass.put( Boolean[].class, "ARRAY" );
 	}}
 
 	/**

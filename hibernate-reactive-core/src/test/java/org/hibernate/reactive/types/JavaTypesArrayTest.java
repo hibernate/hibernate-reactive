@@ -17,8 +17,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import org.hibernate.annotations.Array;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,18 +33,50 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.assertj.core.api.Condition;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor( value = ORACLE, reason = "Vert.x does not support arrays for Oracle" )
+@DisabledFor(value = ORACLE, reason = "Vert.x does not support arrays for Oracle")
 public class JavaTypesArrayTest extends BaseReactiveTest {
+
+	private static SqlStatementTracker sqlTracker;
+
+	private final static Condition<String> IS_PG_CREATE_TABLE_QUERY = new Condition<>(
+			s -> s.toLowerCase().startsWith( "create table" ) && s.contains( "stringArrayWithArrayAnnotation varchar(255) array[5]," ),
+			"generated query for PostgreSQL `create table...`"
+	);
+
+	private final static Condition<String> IS_PG_CREATE_TABLE_NO_ARRAY_ANNOTATION_QUERY = new Condition<>(
+			s -> s.toLowerCase().startsWith( "create table" ) && s.contains( "stringArray varchar(255) array," ),
+			"generated query for PostgreSQL `create table...`"
+	);
+
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		sqlTracker = new SqlStatementTracker( JavaTypesArrayTest::filterCreateTable, configuration.getProperties() );
+		return configuration;
+	}
+
+	@Override
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+		sqlTracker.registerService( builder );
+	}
+
+	private static boolean filterCreateTable(String s) {
+		return s.toLowerCase().startsWith( "create table" );
+	}
 
 	@Override
 	protected Set<Class<?>> annotatedEntities() {
@@ -64,11 +100,58 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	@Test
 	public void testStringArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
-		String[] dataArray = {"Hello world!", "Hello earth"};
+		String[] dataArray = { "Hello world!", "Hello earth" };
 		basic.stringArray = dataArray;
 
-		testField( context, basic, found -> assertArrayEquals( dataArray, found.stringArray ) );
+		testField( context, basic, found -> {
+			assertArrayEquals( dataArray, found.stringArray );
+			// PostgreSQL is the only DB that changes it's `create table...` statement to include array information
+			// This test checks that the logged query is correct and contains "array[100]"
+			if ( dbType() == POSTGRESQL ) {
+				assertThat( sqlTracker.getLoggedQueries() ).have( IS_PG_CREATE_TABLE_NO_ARRAY_ANNOTATION_QUERY );
+			}
+		} );
 	}
+
+	@Test
+	public void testStringArrayTypeWithArrayAnnotation(VertxTestContext context) {
+		Basic basic = new Basic();
+		String[] dataArray = {"Hello world!", "Hello earth"};
+		basic.stringArrayWithArrayAnnotation = dataArray;
+
+		testField( context, basic, found -> {
+			assertArrayEquals( dataArray, found.stringArrayWithArrayAnnotation );
+			// PostgreSQL is the only DB that changes it's `create table...` statement to include array information
+			// This test checks that the logged query is correct and contains "array[100]"
+			if ( dbType() == POSTGRESQL ) {
+				assertThat( sqlTracker.getLoggedQueries() ).have( IS_PG_CREATE_TABLE_QUERY );
+			}
+		} );
+	}
+
+	@Test
+	public void testStringArrayTypeWithColumnAnnotation(VertxTestContext context) {
+		Basic basic = new Basic();
+		String[] dataArray = { "Hello world!", "Hello earth" };
+		basic.stringArrayWithColumnAnnotation = dataArray;
+
+		testField( context, basic, found -> {
+			assertArrayEquals( dataArray, found.stringArrayWithColumnAnnotation );
+		} );
+	}
+
+	@Test
+	public void testStringArrayTypeWithBothAnnotations(VertxTestContext context) {
+		Basic basic = new Basic();
+		String[] dataArray = { "Hello world!", "Hello earth" };
+		basic.stringArrayWithBothAnnotations = dataArray;
+
+		testField( context, basic, found -> {
+			assertArrayEquals( dataArray, found.stringArrayWithBothAnnotations );
+		} );
+	}
+
+
 
 	@Test
 	public void testBooleanArrayType(VertxTestContext context) {
@@ -277,6 +360,19 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		} );
 	}
 
+	@Test
+	public void testBigDecimalArrayTypeWithArrayAnnotation(VertxTestContext context) {
+		Basic basic = new Basic();
+		BigDecimal[] dataArray = {BigDecimal.valueOf( 123384967L ), BigDecimal.ZERO};
+		basic.bigDecimalArrayWithArrayAnnotation = dataArray;
+
+		testField( context, basic, found -> {
+			assertEquals( dataArray.length, found.bigDecimalArrayWithArrayAnnotation.length );
+			assertEquals( dataArray[0].compareTo( found.bigDecimalArrayWithArrayAnnotation[0] ), 0 );
+			assertEquals( dataArray[1].compareTo( found.bigDecimalArrayWithArrayAnnotation[1] ), 0 );
+		} );
+	}
+
 	@Entity(name = "Basic")
 	@Table(name = "Basic")
 	private static class Basic {
@@ -284,6 +380,13 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		@GeneratedValue
 		Integer id;
 		String[] stringArray;
+		@Array(length = 5)
+		String[] stringArrayWithArrayAnnotation;
+		@Column(length = 255)
+		String[] stringArrayWithColumnAnnotation;
+		@Array(length = 5)
+		@Column(length = 255)
+		String[] stringArrayWithBothAnnotations;
 		Boolean[] booleanArray;
 		boolean[] primitiveBooleanArray;
 		Integer[] integerArray;
@@ -309,6 +412,9 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		BigInteger[] bigIntegerArray;
 		@Column(length = 5000)
 		BigDecimal[] bigDecimalArray;
+		@Array(length = 5)
+		@Column(length = 5000)
+		BigDecimal[] bigDecimalArrayWithArrayAnnotation;
 	}
 
 	enum AnEnum {FIRST, SECOND, THIRD, FOURTH}
