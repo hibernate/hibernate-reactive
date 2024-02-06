@@ -82,6 +82,11 @@ class MSSQLServerDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( Character.class, "char" );
 		expectedDBTypeForClass.put( char.class, "char" );
 		expectedDBTypeForClass.put( String.class, "varchar" );
+		expectedDBTypeForClass.put( String[].class, "varbinary" );
+		expectedDBTypeForClass.put( Long[].class, "varbinary" );
+		expectedDBTypeForClass.put( BigDecimal[].class, "varbinary" );
+		expectedDBTypeForClass.put( BigInteger[].class, "varbinary" );
+		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
 	}}
 
 	/**

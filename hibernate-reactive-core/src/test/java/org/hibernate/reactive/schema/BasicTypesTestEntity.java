@@ -18,6 +18,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
+
+import org.hibernate.annotations.Array;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -103,6 +106,31 @@ public class BasicTypesTestEntity {
 	Duration duration;
 
 	Serializable serializable;
+
+	String[] stringArray;
+
+	@Array(length = 5)
+	String[] stringArrayAnnotated;
+
+	Long[] longArray;
+
+	@Array(length = 5)
+	Long[] longArrayAnnotated;
+
+	BigDecimal[] bigDecimalArray;
+
+	@Array(length = 5)
+	BigDecimal[] bigDecimalArrayAnnotated;
+
+	BigInteger[] bigIntegerArray;
+
+	@Array(length = 5)
+	BigInteger[] bigIntegerArrayAnnotated;
+
+	Boolean[] fieldBooleanArray;
+
+	@Array(length = 5)
+	Boolean[] fieldBooleanArrayAnnotated;
 
 	public BasicTypesTestEntity() {
 	}
