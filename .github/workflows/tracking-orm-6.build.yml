@@ -15,7 +15,7 @@ on:
     # * is a special character in YAML, so you have to quote this string
     # Run every hour at minute 25
     - cron: '25 * * * *'
-  # Allowing running this workflow against a specific branch/tag
+  # Allow running this workflow against a specific branch/tag
   workflow_dispatch:
 
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
