@@ -41,8 +41,8 @@ dependencies {
     testImplementation 'com.ongres.scram:client:2.1'
 
     // JUnit Jupiter
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 
     // JDBC driver to test with ORM and PostgreSQL
     testRuntimeOnly "org.postgresql:postgresql:42.6.0"
