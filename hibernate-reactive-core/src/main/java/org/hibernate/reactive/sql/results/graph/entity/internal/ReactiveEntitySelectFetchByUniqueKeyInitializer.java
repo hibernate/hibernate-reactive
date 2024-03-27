@@ -10,17 +10,18 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
+import org.hibernate.spi.EntityIdentifierNavigablePath;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.entity.EntityInitializer;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 
 /**
  * @see org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchByUniqueKeyInitializer
@@ -40,32 +41,52 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer extends ReactiveEnt
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
-		if ( getEntityInstance() != null || isEntityInitialized() ) {
+	public CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
+		if ( state != State.UNINITIALIZED ) {
 			return voidFuture();
 		}
 		state = State.RESOLVED;
 
-		final EntityInitializer parentEntityInitializer = getParentEntityInitializer( parentAccess );
-		if ( parentEntityInitializer != null && parentEntityInitializer.getEntityKey() != null ) {
-			// make sure parentEntityInitializer.resolveInstance has been called before
-			parentEntityInitializer.resolveInstance( rowProcessingState );
-			if ( parentEntityInitializer.isEntityInitialized() ) {
-				initializeState();
-				return voidFuture();
-			}
-		}
-
-		if ( !isAttributeAssignableToConcreteDescriptor() ) {
-			initializeState();
+		// We can avoid processing further if the parent is already initialized or missing,
+		// as the value produced by this initializer will never be used anyway.
+		if ( parentShallowCached || shouldSkipInitializer( rowProcessingState ) ) {
+			state = State.INITIALIZED;
 			return voidFuture();
 		}
 
-		final Object entityIdentifier = keyAssembler.assemble( rowProcessingState );
+		entityIdentifier = keyAssembler.assemble( rowProcessingState );
 		if ( entityIdentifier == null ) {
-			initializeState();
+			state = State.INITIALIZED;
 			return voidFuture();
 		}
+
+		NavigablePath[] np = { getNavigablePath().getParent() };
+		if ( np[0] == null ) {
+			return voidFuture();
+		}
+		return whileLoop( () -> {
+			CompletionStage<Void> loop = voidFuture();
+			// Defer the select by default to the initialize phase
+			// We only need to select in this phase if this is part of an identifier or foreign key
+			if ( np[0] instanceof EntityIdentifierNavigablePath
+					|| ForeignKeyDescriptor.PART_NAME.equals( np[0].getLocalName() )
+					|| ForeignKeyDescriptor.TARGET_PART_NAME.equals( np[0].getLocalName() ) ) {
+				loop = reactiveInitializeInstance( rowProcessingState );
+			}
+			return loop.thenApply( v -> {
+				np[0] = np[0].getParent();
+				return np[0] != null;
+			} );
+		} );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
+		if ( state != State.RESOLVED ) {
+			return voidFuture();
+		}
+		state = State.INITIALIZED;
+
 		final String entityName = concreteDescriptor.getEntityName();
 		final String uniqueKeyPropertyName = fetchedAttribute.getReferencedPropertyName();
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
@@ -79,41 +100,21 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer extends ReactiveEnt
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		setEntityInstance( persistenceContext.getEntity( euk ) );
 		if ( entityInstance == null ) {
-			final ReactiveEntitySelectFetchByUniqueKeyInitializer initializer = (ReactiveEntitySelectFetchByUniqueKeyInitializer) persistenceContext
-					.getLoadContexts()
-					.findInitializer( euk );
-			if ( initializer == null ) {
-				final JdbcValuesSourceProcessingState jdbcValuesSourceProcessingState = rowProcessingState.getJdbcValuesSourceProcessingState();
-				jdbcValuesSourceProcessingState.registerInitializer( euk, this );
-
-				return ( (ReactiveEntityPersister) concreteDescriptor )
-						.reactiveLoadByUniqueKey( uniqueKeyPropertyName, entityIdentifier, session )
-						.thenAccept( this::setEntityInstance )
-						.thenAccept( v -> {
-							// If the entity was not in the Persistence Context, but was found now,
-							// add it to the Persistence Context
-							if ( entityInstance != null ) {
-								persistenceContext.addEntity( euk, entityInstance );
-							}
-							notifyResolutionListeners( entityInstance );
-						} );
-			}
-			else {
-				registerResolutionListener( this::setEntityInstance );
-			}
+			return ( (ReactiveEntityPersister) concreteDescriptor )
+					.reactiveLoadByUniqueKey( uniqueKeyPropertyName, entityIdentifier, session )
+					.thenAccept( this::setEntityInstance )
+					.thenAccept( v -> {
+						// If the entity was not in the Persistence Context, but was found now,
+						// add it to the Persistence Context
+						if ( entityInstance != null ) {
+							persistenceContext.addEntity( euk, entityInstance );
+						}
+					} );
 		}
 		if ( entityInstance != null ) {
 			setEntityInstance( persistenceContext.proxyFor( entityInstance ) );
 		}
-		initializeState();
 		return voidFuture();
-	}
-
-	private EntityInitializer getParentEntityInitializer(FetchParentAccess parentAccess) {
-		if ( parentAccess != null ) {
-			return parentAccess.findFirstEntityInitializer();
-		}
-		return null;
 	}
 
 	private void setEntityInstance(Object instance) {

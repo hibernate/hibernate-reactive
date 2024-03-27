@@ -27,6 +27,8 @@ import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.*;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
+import org.hibernate.generator.OnExecutionGenerator;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
@@ -37,6 +39,7 @@ import org.hibernate.metamodel.mapping.*;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
@@ -56,6 +59,8 @@ import org.hibernate.type.BasicType;
 import jakarta.persistence.metamodel.Attribute;
 
 import static java.util.Collections.emptyMap;
+import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -98,6 +103,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 */
 	default AbstractEntityPersister delegate() {
 		return (AbstractEntityPersister) this;
+	}
+
+	default GeneratedValuesMutationDelegate createReactiveInsertDelegate() {
+		if ( isIdentifierAssignedByInsert() ) {
+			final OnExecutionGenerator generator = (OnExecutionGenerator) getGenerator();
+			return generator.getGeneratedIdentifierDelegate( delegate() );
+		}
+		return ReactiveGeneratedValuesHelper.getGeneratedValuesDelegate( this, INSERT );
+	}
+
+	default GeneratedValuesMutationDelegate createReactiveUpdateDelegate() {
+		return ReactiveGeneratedValuesHelper.getGeneratedValuesDelegate( this, UPDATE );
 	}
 
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {

@@ -250,7 +250,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
 		final SqmSelectStatement<R>[] concreteSqmStatements = QuerySplitter
-				.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
+				.split( (SqmSelectStatement<R>) getSqmStatement() );
 
 		return concreteSqmStatements.length > 1
 				? buildAggregatedSelectQueryPlan( concreteSqmStatements )

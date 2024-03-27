@@ -23,9 +23,10 @@ public class ReactiveEagerCollectionFetch extends EagerCollectionFetch {
 			NavigablePath fetchedPath,
 			PluralAttributeMapping fetchedAttribute,
 			TableGroup collectionTableGroup,
+			boolean needsCollectionKeyResult,
 			FetchParent fetchParent,
 			DomainResultCreationState creationState) {
-		super( fetchedPath, fetchedAttribute, collectionTableGroup, fetchParent, creationState );
+		super( fetchedPath, fetchedAttribute, collectionTableGroup,needsCollectionKeyResult, fetchParent, creationState );
 	}
 
 	@Override

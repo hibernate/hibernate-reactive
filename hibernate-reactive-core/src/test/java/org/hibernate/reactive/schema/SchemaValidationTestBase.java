@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * - TODO: Missing column
  * - TODO: Wrong column type
  */
-@DisabledFor(value = DB2, reason = "No InformationExtractor for Dialect [org.hibernate.dialect.DB2Dialect..]")
+@DisabledFor(value = DB2, reason = "We don't have an information extractor. See https://github.com/hibernate/hibernate-reactive/issues/911")
 public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 
 	public static class IndividuallyStrategyTest extends SchemaValidationTestBase {

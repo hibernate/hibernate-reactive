@@ -37,7 +37,7 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Book.class, Author.class, SpellBook.class );
+		return List.of( Author.class, Book.class, SpellBook.class );
 	}
 
 	@Test

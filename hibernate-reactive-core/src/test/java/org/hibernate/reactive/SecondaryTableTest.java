@@ -41,7 +41,7 @@ public class SecondaryTableTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Book.class, Author.class );
+		return List.of( Author.class, Book.class );
 	}
 
 	@Test

@@ -25,7 +25,7 @@ final class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordina
 		return new ReactiveUpdateCoordinatorStandard(
 				entityPersister(),
 				factory(),
-				this.getStaticUpdateGroup(),
+				this.getStaticMutationOperationGroup(),
 				this.getBatchKey(),
 				this.getVersionUpdateGroup(),
 				this.getVersionUpdateBatchkey()

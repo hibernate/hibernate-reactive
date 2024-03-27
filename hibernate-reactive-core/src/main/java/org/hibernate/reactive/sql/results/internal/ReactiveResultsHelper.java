@@ -21,7 +21,10 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.results.ResultsLogger;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
+import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.graph.FetchParentAccess;
 import org.hibernate.sql.results.graph.Initializer;
+import org.hibernate.sql.results.graph.InitializerProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.spi.RowTransformer;
 
@@ -74,6 +77,36 @@ public class ReactiveResultsHelper {
 					NavigablePath navigablePath,
 					ModelPart fetchedModelPart,
 					Supplier<Initializer> producer) {
+				return resolveInitializer(
+						navigablePath,
+						fetchedModelPart,
+						null,
+						null,
+						(resultGraphNode, parentAccess, creationState) -> producer.get()
+				);
+			}
+
+			@Override
+			public <P extends FetchParent> Initializer resolveInitializer(
+					P resultGraphNode,
+					FetchParentAccess parentAccess,
+					InitializerProducer<P> producer) {
+				return resolveInitializer(
+						resultGraphNode.getNavigablePath(),
+						resultGraphNode.getReferencedModePart(),
+						resultGraphNode,
+						parentAccess,
+						producer
+				);
+			}
+
+			public <T extends FetchParent> Initializer resolveInitializer(
+					NavigablePath navigablePath,
+					ModelPart fetchedModelPart,
+					T resultGraphNode,
+					FetchParentAccess parentAccess,
+					InitializerProducer<T> producer) {
+
 				final Initializer existing = initializerMap.get( navigablePath );
 				if ( existing != null ) {
 					if ( fetchedModelPart.getNavigableRole().equals(
@@ -86,11 +119,8 @@ public class ReactiveResultsHelper {
 					}
 				}
 
-				final Initializer initializer = producer.get();
-				ResultsLogger.RESULTS_MESSAGE_LOGGER.tracef(
-						"Registering initializer : %s",
-						initializer
-				);
+				final Initializer initializer = producer.createInitializer( resultGraphNode, parentAccess, this );
+				ResultsLogger.RESULTS_MESSAGE_LOGGER.tracef( "Registering initializer : %s", initializer );
 
 				initializerMap.put( navigablePath, initializer );
 				initializersBuilder.addInitializer( initializer );

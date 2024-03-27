@@ -234,9 +234,10 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		}
 	}
 
-	private ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
+	@Override
+	protected ReactiveSelectQueryPlan<R> buildSelectQueryPlan() {
 		final SqmSelectStatement<R>[] concreteSqmStatements =
-				QuerySplitter.split( (SqmSelectStatement<R>) getSqmStatement(), getSession().getFactory() );
+				QuerySplitter.split( (SqmSelectStatement<R>) getSqmStatement() );
 
 		return concreteSqmStatements.length > 1
 			? buildAggregatedSelectQueryPlan( concreteSqmStatements )
@@ -359,7 +360,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private ReactiveNonSelectQueryPlan buildDeleteQueryPlan() {
 		final SqmDeleteStatement[] concreteSqmStatements = QuerySplitter
-				.split( (SqmDeleteStatement) getSqmStatement(), getSessionFactory() );
+				.split( (SqmDeleteStatement) getSqmStatement() );
 
 		return concreteSqmStatements.length > 1
 				? buildAggregatedDeleteQueryPlan( concreteSqmStatements )

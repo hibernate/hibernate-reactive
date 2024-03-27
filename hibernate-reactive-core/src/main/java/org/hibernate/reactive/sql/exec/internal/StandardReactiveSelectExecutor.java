@@ -6,7 +6,6 @@
 package org.hibernate.reactive.sql.exec.internal;
 
 import java.io.Serializable;
-import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
@@ -25,8 +24,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
@@ -59,8 +56,6 @@ import org.hibernate.type.spi.TypeConfiguration;
  * @see org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl
  */
 public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public static final StandardReactiveSelectExecutor INSTANCE = new StandardReactiveSelectExecutor();
 
@@ -318,7 +313,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
 						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, null, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
 			}
 			else {
 				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata

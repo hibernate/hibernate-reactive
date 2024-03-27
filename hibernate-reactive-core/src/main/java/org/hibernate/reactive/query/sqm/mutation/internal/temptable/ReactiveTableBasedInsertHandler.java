@@ -14,14 +14,12 @@ import java.util.function.Function;
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedInsertHandler;
-import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -30,6 +28,7 @@ import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveInsertExec
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.ast.tree.from.TableReference;
+import org.hibernate.sql.ast.tree.insert.ConflictClause;
 import org.hibernate.sql.ast.tree.insert.InsertSelectStatement;
 import org.hibernate.sql.ast.tree.update.Assignment;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -89,9 +88,8 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			Map<String, TableReference> tableReferenceByAlias,
 			List<Assignment> assignments,
 			InsertSelectStatement insertStatement,
-			Map<SqmParameter<?>, List<List<JdbcParameter>>> parameterResolutions,
+			ConflictClause conflictClause,
 			JdbcParameter sessionUidParameter,
-			Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions,
 			DomainQueryExecutionContext executionContext) {
 		return new ReactiveInsertExecutionDelegate(
 				sqmInsert,
@@ -104,9 +102,8 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 				tableReferenceByAlias,
 				assignments,
 				insertStatement,
-				parameterResolutions,
+				conflictClause,
 				sessionUidParameter,
-				paramTypeResolutions,
 				executionContext
 		);
 	}

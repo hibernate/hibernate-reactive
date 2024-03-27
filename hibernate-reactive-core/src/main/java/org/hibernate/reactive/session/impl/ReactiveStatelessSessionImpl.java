@@ -75,6 +75,7 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Tuple;
@@ -321,7 +322,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		else {
 			oldVersion = null;
 		}
-		return persister.updateReactive( id, state, null, false, null, oldVersion, entity, null, this );
+		return persister
+				.updateReactive( id, state, null, false, null, oldVersion, entity, null, this )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override

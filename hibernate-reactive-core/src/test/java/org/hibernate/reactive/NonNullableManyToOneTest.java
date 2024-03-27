@@ -8,6 +8,9 @@ package org.hibernate.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -47,6 +51,13 @@ public class NonNullableManyToOneTest extends BaseReactiveTest {
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persistAll( painting, artist, dealer ) ) );
+	}
+
+	@Override
+	protected CompletionStage<Void> cleanDb() {
+		// the default implementation is too basic to delete this mapping and, because there's only one test, it's
+		// enough to drop the table at startup
+		return voidFuture();
 	}
 
 	@Test

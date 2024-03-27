@@ -5,14 +5,10 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
-import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
-import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
-import org.hibernate.sql.results.graph.DomainResult;
-import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.Initializer;
+import org.hibernate.sql.results.graph.entity.EntityInitializer;
+import org.hibernate.sql.results.graph.entity.internal.EntityAssembler;
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchSelectImpl;
 
 public class ReactiveEntityFetchSelectImpl extends EntityFetchSelectImpl {
@@ -22,27 +18,20 @@ public class ReactiveEntityFetchSelectImpl extends EntityFetchSelectImpl {
 	}
 
 	@Override
-	protected Initializer buildEntitySelectFetchInitializer(
-			FetchParentAccess parentAccess,
-			ToOneAttributeMapping fetchedMapping,
-			EntityPersister entityPersister,
-			DomainResult<?> keyResult,
-			NavigablePath navigablePath,
-			boolean selectByUniqueKey,
-			AssemblerCreationState creationState) {
+	public EntityInitializer createInitializer(FetchParentAccess parentAccess, AssemblerCreationState creationState) {
 		return ReactiveEntitySelectFetchInitializerBuilder.createInitializer(
 				parentAccess,
-				fetchedMapping,
-				entityPersister,
-				keyResult,
-				navigablePath,
-				selectByUniqueKey,
+				getFetchedMapping(),
+				getReferencedMappingContainer().getEntityPersister(),
+				getKeyResult(),
+				getNavigablePath(),
+				isSelectByUniqueKey(),
 				creationState
 		);
 	}
 
 	@Override
-	protected DomainResultAssembler<?> buildEntityAssembler(Initializer initializer) {
-		return new ReactiveEntityAssembler<>( getResultJavaType(), initializer.asEntityInitializer() );
+	protected EntityAssembler buildEntityAssembler(EntityInitializer entityInitializer) {
+		return new ReactiveEntityAssembler( getFetchedMapping().getJavaType(), entityInitializer );
 	}
 }
