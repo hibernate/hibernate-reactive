@@ -8,10 +8,11 @@ package org.hibernate.reactive.persister.entity.mutation;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorNoOp;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp implements ReactiveScopedUpdateCoordinator, ReactiveUpdateCoordinator {
 
@@ -20,7 +21,7 @@ public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp impleme
 	}
 
 	@Override
-	public void coordinateUpdate(
+	public GeneratedValues update(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -30,10 +31,11 @@ public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp impleme
 			int[] dirtyAttributeIndexes,
 			boolean hasDirtyCollection,
 			SharedSessionContractImplementor session) {
+		return null;
 	}
 
 	@Override
-	public CompletionStage<Void> coordinateReactiveUpdate(
+	public CompletionStage<GeneratedValues> reactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -43,7 +45,7 @@ public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp impleme
 			int[] dirtyAttributeIndexes,
 			boolean hasDirtyCollection,
 			SharedSessionContractImplementor session) {
-		return voidFuture();
+		return nullFuture();
 	}
 
 	@Override

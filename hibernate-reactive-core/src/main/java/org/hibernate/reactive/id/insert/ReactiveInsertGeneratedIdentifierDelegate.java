@@ -7,21 +7,18 @@ package org.hibernate.reactive.id.insert;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
-import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.insert.Binder;
+import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
 
 /**
  * @see org.hibernate.id.insert.InsertGeneratedIdentifierDelegate
  */
-public interface ReactiveInsertGeneratedIdentifierDelegate {
+public interface ReactiveInsertGeneratedIdentifierDelegate extends ReactiveGeneratedValuesMutationDelegate {
 
-	CompletionStage<Object> reactivePerformInsert(
-			PreparedStatementDetails insertStatementDetails,
-			JdbcValueBindings valueBindings,
-			Object entity,
-			SharedSessionContractImplementor session);
-
-	CompletionStage<Object> reactivePerformInsert(String insertSQL, SharedSessionContractImplementor session, Binder binder);
+	CompletionStage<GeneratedValues> reactivePerformInsertReturning(
+			String insertSQL,
+			SharedSessionContractImplementor session,
+			Binder binder);
 }

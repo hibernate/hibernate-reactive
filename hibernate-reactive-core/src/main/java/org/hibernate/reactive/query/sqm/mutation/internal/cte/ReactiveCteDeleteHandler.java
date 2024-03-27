@@ -22,6 +22,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.sql.ast.tree.cte.CteContainer;
 import org.hibernate.sql.ast.tree.cte.CteStatement;
 import org.hibernate.sql.ast.tree.cte.CteTable;
+import org.hibernate.sql.ast.tree.expression.Expression;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 
 /**
@@ -54,4 +55,10 @@ public class ReactiveCteDeleteHandler extends CteDeleteHandler implements Reacti
 	public int execute(DomainQueryExecutionContext executionContext) {
 		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 	}
+
+	@Override
+	public Expression createCountStar(SessionFactoryImplementor factory, MultiTableSqmMutationConverter sqmConverter) {
+		return super.createCountStar( factory, sqmConverter );
+	}
+
 }

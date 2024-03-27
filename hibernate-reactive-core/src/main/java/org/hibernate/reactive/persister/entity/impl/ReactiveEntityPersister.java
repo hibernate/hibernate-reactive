@@ -13,6 +13,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.bytecode.BytecodeLogging;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
 
@@ -31,14 +32,14 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#insert(Object, Object[], Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session);
+	CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session);
 
 	/**
 	 * Insert the given instance state without blocking.
 	 *
 	 * @see EntityPersister#insert(Object[], Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session);
+	CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session);
 
 	/**
 	 * Delete the given instance without blocking.
@@ -52,7 +53,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#update(Object, Object[], int[], boolean, Object[], Object, Object, Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<Void> updateReactive(
+	CompletionStage<GeneratedValues> updateReactive(
 			final Object id,
 			final Object[] values,
 			int[] dirtyAttributeIndexes,
@@ -138,6 +139,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			Object id,
 			Object entity,
 			Object[] state,
+			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session);
 
 	/**
@@ -147,6 +149,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			Object id,
 			Object entity,
 			Object[] state,
+			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session);
 
 	/**

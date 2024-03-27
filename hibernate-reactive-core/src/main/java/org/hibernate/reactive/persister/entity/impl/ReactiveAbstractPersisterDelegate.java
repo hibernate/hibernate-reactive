@@ -21,6 +21,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -171,6 +172,7 @@ public class ReactiveAbstractPersisterDelegate {
 			Object entity,
 			Object[] state,
 			GeneratedValuesProcessor processor,
+			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session,
 			String entityName) {
 		if ( processor == null ) {
@@ -179,12 +181,12 @@ public class ReactiveAbstractPersisterDelegate {
 
 		ReactiveGeneratedValuesProcessor reactiveGeneratedValuesProcessor = new ReactiveGeneratedValuesProcessor(
 				processor.getSelectStatement(),
+				processor.getJdbcSelect(),
 				processor.getGeneratedValuesToSelect(),
 				processor.getJdbcParameters(),
-				processor.getEntityDescriptor(),
-				processor.getSessionFactory()
+				processor.getEntityDescriptor()
 		);
-		return reactiveGeneratedValuesProcessor.processGeneratedValues( id, entity, state, session );
+		return reactiveGeneratedValuesProcessor.processGeneratedValues( id, entity, state, generatedValues, session );
 	}
 
 	public CompletionStage<Void> processUpdateGeneratedProperties(
@@ -192,6 +194,7 @@ public class ReactiveAbstractPersisterDelegate {
 			Object entity,
 			Object[] state,
 			GeneratedValuesProcessor processor,
+			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session,
 			String entityName) {
 		if ( processor == null ) {
@@ -200,12 +203,12 @@ public class ReactiveAbstractPersisterDelegate {
 
 		ReactiveGeneratedValuesProcessor reactiveGeneratedValuesProcessor = new ReactiveGeneratedValuesProcessor(
 				processor.getSelectStatement(),
+				processor.getJdbcSelect(),
 				processor.getGeneratedValuesToSelect(),
 				processor.getJdbcParameters(),
-				processor.getEntityDescriptor(),
-				processor.getSessionFactory()
+				processor.getEntityDescriptor()
 		);
-		return reactiveGeneratedValuesProcessor.processGeneratedValues( id, entity, state, session );
+		return reactiveGeneratedValuesProcessor.processGeneratedValues( id, entity, state, generatedValues, session );
 	}
 
 	public Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> getUniqueKeyLoadersNew() {

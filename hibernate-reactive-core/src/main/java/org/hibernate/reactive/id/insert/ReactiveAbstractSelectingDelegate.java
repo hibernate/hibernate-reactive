@@ -10,19 +10,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
-import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
+import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.id.insert.Binder;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import static org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor.bind;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
@@ -35,28 +31,21 @@ public interface ReactiveAbstractSelectingDelegate extends ReactiveInsertGenerat
 
 	void bindParameters(Object entity, PreparedStatement ps, SharedSessionContractImplementor session);
 
-	Object extractGeneratedValue(ResultSet resultSet, SharedSessionContractImplementor session);
+	CompletionStage<GeneratedValues> extractReturningValues(ResultSet resultSet, SharedSessionContractImplementor session);
 
 	@Override
-	default CompletionStage<Object> reactivePerformInsert(
-			PreparedStatementDetails insertStatementDetails,
-			JdbcValueBindings jdbcValueBindings,
-			Object entity,
-			SharedSessionContractImplementor session) {
-		final JdbcCoordinator jdbcCoordinator = session.getJdbcCoordinator();
-		final JdbcServices jdbcServices = session.getJdbcServices();
-
-		Object[] updateParams = bind( statement -> {
-			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( insertStatementDetails, statement, session.getJdbcServices() );
-			jdbcValueBindings.beforeStatement( details );
-		} );
+	default CompletionStage<GeneratedValues> reactivePerformInsertReturning(
+			String insertSQL,
+			SharedSessionContractImplementor session,
+			Binder binder) {
+		Object[] updateParams = bind( binder::bindValues );
 
 		final String selectSQL = getSelectSQL();
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		return reactiveConnection
-				.update( insertStatementDetails.getSqlString(), updateParams )
+				.update( insertSQL, updateParams )
 				.thenCompose( updated -> {
-					Object[] selectParams = bind( statement -> bindParameters( entity, statement, session ) );
+					Object[] selectParams = bind( statement -> bindParameters( binder.getEntity(), statement, session ) );
 					return reactiveConnection
 							.selectJdbc( selectSQL, selectParams )
 							.handle( (resultSet, e) -> {
@@ -68,12 +57,11 @@ public interface ReactiveAbstractSelectingDelegate extends ReactiveInsertGenerat
 				} )
 				.thenCompose( resultSet -> {
 					try {
-						return completedFuture( extractGeneratedValue( resultSet, session ) );
+						return extractReturningValues( resultSet, session );
 					}
 					catch (Throwable e) {
 						return failedFuture( LOG.bindParametersForPostInsertIdSelectQueryError( selectSQL, e ) );
 					}
 				} );
 	}
-
 }

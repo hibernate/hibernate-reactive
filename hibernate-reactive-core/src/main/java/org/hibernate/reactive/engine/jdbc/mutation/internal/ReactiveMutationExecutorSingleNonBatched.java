@@ -9,9 +9,14 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
+import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
+import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.ValuesAnalysis;
 
@@ -21,24 +26,40 @@ import org.hibernate.sql.model.ValuesAnalysis;
 public class ReactiveMutationExecutorSingleNonBatched extends MutationExecutorSingleNonBatched
 		implements ReactiveMutationExecutor {
 
+	private final ReactiveGeneratedValuesMutationDelegate generatedValuesDelegate;
+
 	public ReactiveMutationExecutorSingleNonBatched(
 			PreparableMutationOperation mutationOperation,
+			GeneratedValuesMutationDelegate generatedValuesDelegate,
 			SharedSessionContractImplementor session) {
-		super( mutationOperation, session );
+		super( mutationOperation, generatedValuesDelegate, session );
+		this.generatedValuesDelegate = (ReactiveGeneratedValuesMutationDelegate) generatedValuesDelegate;
 	}
 
 	@Override
-	public CompletionStage<Void> performReactiveNonBatchedOperations(
+	public CompletionStage<GeneratedValues> performReactiveNonBatchedOperations(
+			Object modelReference,
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
+		PreparedStatementDetails singleStatementDetails = getStatementGroup().getSingleStatementDetails();
+		if ( generatedValuesDelegate != null ) {
+			return generatedValuesDelegate.reactivePerformMutation(
+					singleStatementDetails,
+					getJdbcValueBindings(),
+					modelReference,
+					session
+			);
+		}
 		return performReactiveNonBatchedMutation(
-				getStatementGroup().getSingleStatementDetails(),
+				singleStatementDetails,
+				null,
 				getJdbcValueBindings(),
 				inclusionChecker,
 				resultChecker,
-				session );
+				session
+		).thenCompose( CompletionStages::nullFuture );
 	}
 
 	@Override

@@ -37,7 +37,7 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 		return new ReactiveMergeCoordinator(
 				entityPersister(),
 				factory(),
-				getStaticUpdateGroup(),
+				getStaticMutationOperationGroup(),
 				getBatchKey(),
 				getVersionUpdateGroup(),
 				getVersionUpdateBatchkey()

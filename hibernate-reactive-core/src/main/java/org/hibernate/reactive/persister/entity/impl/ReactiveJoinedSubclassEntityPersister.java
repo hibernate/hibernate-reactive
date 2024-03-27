@@ -20,6 +20,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -44,15 +45,13 @@ import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
-import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultJoinedSubclassImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
-import org.hibernate.sql.results.graph.entity.internal.EntityResultJoinedSubclassImpl;
 import org.hibernate.type.EntityType;
 
 /**
@@ -161,26 +160,16 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 		return reactiveDelegate.reactive( super.getGenerator() );
 	}
 
+	/**
+	 * @see AbstractEntityPersister#createDomainResult(NavigablePath, TableGroup, String, DomainResultCreationState)
+	 */
 	@Override
 	public <T> DomainResult<T> createDomainResult(
 			NavigablePath navigablePath,
 			TableGroup tableGroup,
 			String resultVariable,
 			DomainResultCreationState creationState) {
-		if ( hasSubclasses() ) {
-			final EntityResultJoinedSubclassImpl entityResultJoinedSubclass = new ReactiveEntityResultJoinedSubclassImpl(
-					navigablePath,
-					this,
-					tableGroup,
-					resultVariable
-			);
-			entityResultJoinedSubclass.afterInitialize( entityResultJoinedSubclass, creationState );
-			//noinspection unchecked
-			return entityResultJoinedSubclass;
-		}
-		else {
-			return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
-		}
+		return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
 	}
 
 	@Override
@@ -189,23 +178,22 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Void> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( id, fields, object, session )
-				.thenCompose( CompletionStages::voidFuture );
+	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, id, fields, session );
 	}
 
 	@Override
-	public CompletionStage<Object> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).coordinateReactiveInsert( null, fields, object, session );
+	public CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, null, fields, session );
 	}
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object object, SharedSessionContractImplementor session) {
-		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).coordinateReactiveDelete( object, id, version, session );
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( object, id, version, session );
 	}
 
 	@Override
-	public CompletionStage<Void> updateReactive(
+	public CompletionStage<GeneratedValues> updateReactive(
 			Object id,
 			Object[] values,
 			int[] dirtyAttributeIndexes,
@@ -219,7 +207,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 				// This is different from Hibernate ORM because our reactive update coordinator cannot be share among
 				// multiple update operations
 				.makeScopedCoordinator()
-				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+				.reactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
 	}
 
 	/**
@@ -242,7 +230,8 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 		// multiple update operations
 		return ( (ReactiveUpdateCoordinator) getMergeCoordinator() )
 				.makeScopedCoordinator()
-				.coordinateReactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session );
+				.reactiveUpdate( object, id, rowId, values, oldVersion, oldValues, dirtyAttributeIndexes, hasDirtyCollection, session )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
@@ -305,12 +294,12 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	/**
 	 * Process properties generated with an insert
 	 *
-	 * @see AbstractEntityPersister#processInsertGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
+	 * @see AbstractEntityPersister#processInsertGeneratedProperties(Object, Object, Object[], GeneratedValues, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+	public CompletionStage<Void> reactiveProcessInsertGenerated(Object id, Object entity, Object[] state, GeneratedValues generatedValues, SharedSessionContractImplementor session) {
 		return reactiveDelegate.processInsertGeneratedProperties( id, entity, state,
-				getInsertGeneratedValuesProcessor(), session, getEntityName() );
+				getInsertGeneratedValuesProcessor(), generatedValues, session, getEntityName() );
 	}
 
 	/**
@@ -319,9 +308,9 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	 * @see AbstractEntityPersister#processUpdateGeneratedProperties(Object, Object, Object[], SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, SharedSessionContractImplementor session) {
+	public CompletionStage<Void> reactiveProcessUpdateGenerated(Object id, Object entity, Object[] state, GeneratedValues generatedValues, SharedSessionContractImplementor session) {
 		return reactiveDelegate.processUpdateGeneratedProperties( id, entity, state,
-				getUpdateGeneratedValuesProcessor(), session, getEntityName() );
+				getUpdateGeneratedValuesProcessor(), generatedValues, session, getEntityName() );
 	}
 
 	@Override

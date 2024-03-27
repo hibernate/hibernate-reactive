@@ -14,19 +14,16 @@ import java.util.function.Function;
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedUpdateHandler;
-import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.ast.tree.from.TableReference;
 import org.hibernate.sql.ast.tree.predicate.Predicate;
@@ -90,8 +87,6 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 			Map<String, TableReference> tableReferenceByAlias,
 			List<Assignment> assignments,
 			Predicate suppliedPredicate,
-			Map<SqmParameter<?>, List<List<JdbcParameter>>> parameterResolutions,
-			Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions,
 			DomainQueryExecutionContext executionContext) {
 		return new ReactiveUpdateExecutionDelegate(
 				sqmConverter,
@@ -103,8 +98,6 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 				tableReferenceByAlias,
 				assignments,
 				suppliedPredicate,
-				parameterResolutions,
-				paramTypeResolutions,
 				executionContext
 		);
 	}

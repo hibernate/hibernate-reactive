@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
@@ -18,6 +19,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
@@ -34,14 +36,15 @@ import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRA
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
- * Reactive version of {@link UpdateCoordinatorStandard}, but it cannot be share between multiple update operations.
+ * Reactive version of {@link UpdateCoordinatorStandard}, but it cannot be shared between multiple update operations.
  */
 public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard implements ReactiveScopedUpdateCoordinator {
 
-	private CompletableFuture<Void> updateResultStage;
+	private CompletableFuture<GeneratedValues> updateResultStage;
 
 	public ReactiveUpdateCoordinatorStandard(
 			AbstractEntityPersister entityPersister,
@@ -54,12 +57,12 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	}
 
 	// Utility method to use method reference
-	private void complete(final Object o, final Throwable throwable) {
+	private void complete(final GeneratedValues generatedValues, final Throwable throwable) {
 		if ( throwable != null ) {
 			fail( throwable );
 		}
 		else {
-			updateResultStage.complete( null );
+			updateResultStage.complete( generatedValues );
 		}
 	}
 
@@ -68,7 +71,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	}
 
 	@Override
-	public CompletionStage<Void> coordinateReactiveUpdate(
+	public CompletionStage<GeneratedValues> reactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -80,7 +83,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			SharedSessionContractImplementor session) {
 		final EntityVersionMapping versionMapping = entityPersister().getVersionMapping();
 		if ( versionMapping != null ) {
-			final boolean isForcedVersionIncrement = handlePotentialImplicitForcedVersionIncrement(
+			final Supplier<GeneratedValues> generatedValuesAccess = handlePotentialImplicitForcedVersionIncrement(
 					entity,
 					id,
 					values,
@@ -89,8 +92,9 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					session,
 					versionMapping
 			);
-			if ( isForcedVersionIncrement ) {
-				return voidFuture();
+			if ( generatedValuesAccess != null ) {
+				// FIXME: I think it needs to be reactive
+				return completedFuture( generatedValuesAccess.get() );
 			}
 		}
 
@@ -162,7 +166,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					// doDynamicUpdate, doVersionUpdate, or doStaticUpdate will initialize the stage,
 					// if an update is necessary.
 					// Otherwise, updateResultStage could be null.
-					return updateResultStage != null ? updateResultStage : voidFuture();
+					return updateResultStage != null ? updateResultStage : nullFuture();
 				});
 	}
 
@@ -212,7 +216,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	}
 
 	@Override
-	protected void doVersionUpdate(
+	protected GeneratedValues doVersionUpdate(
 			Object entity,
 			Object id,
 			Object version,
@@ -270,6 +274,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				)
 				.whenComplete( (o, t) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
+		return null;
 	}
 
 	private ReactiveMutationExecutor mutationExecutor(
@@ -282,7 +287,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	}
 
 	@Override
-	protected void doDynamicUpdate(
+	protected GeneratedValues doDynamicUpdate(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -349,10 +354,11 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				)
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
+		return null;
 	}
 
 	@Override
-	protected void doStaticUpdate(
+	protected GeneratedValues doStaticUpdate(
 			Object entity,
 			Object id,
 			Object rowId,
@@ -361,7 +367,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
 		this.updateResultStage = new CompletableFuture<>();
-		final MutationOperationGroup staticUpdateGroup = getStaticUpdateGroup();
+		final MutationOperationGroup staticUpdateGroup = getStaticMutationOperationGroup();
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, staticUpdateGroup );
 
 		decomposeForUpdate(
@@ -386,5 +392,6 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				)
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
+		return null;
 	}
 }

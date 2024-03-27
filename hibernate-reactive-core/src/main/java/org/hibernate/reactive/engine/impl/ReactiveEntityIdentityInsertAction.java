@@ -14,6 +14,8 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.internal.util.NullnessUtil;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -63,29 +65,29 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			final ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
 			return stage
 					.thenCompose( v -> reactivePersister.insertReactive( getState(), instance, session ) )
-					.thenCompose( generatedId -> {
+					.thenCompose( generatedValues -> {
+						Object generatedId = extractGeneratedId( generatedValues );
 						setGeneratedId( generatedId );
-						return processInsertGeneratedProperties( reactivePersister, generatedId, instance, session )
-								.thenApply( v -> generatedId );
-					} )
-					.thenAccept( generatedId -> {
-						//need to do that here rather than in the save event listener to let
-						//the post insert events to have a id-filled entity when IDENTITY is used (EJB3)
-						persister.setIdentifier( instance, generatedId, session );
-						final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-						persistenceContext.registerInsertedKey( getPersister(), generatedId );
-						final EntityKey entityKey = session.generateEntityKey( generatedId, persister );
-						setEntityKey( entityKey );
-						persistenceContext.checkUniqueness( entityKey, getInstance() );
+						return processInsertGeneratedProperties( reactivePersister, generatedId, instance, generatedValues, session )
+								.thenAccept( v -> {
+									//need to do that here rather than in the save event listener to let
+									//the post insert events to have an id-filled entity when IDENTITY is used (EJB3)
+									persister.setIdentifier( instance, generatedId, session );
+									final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+									persistenceContext.registerInsertedKey( getPersister(), generatedId );
+									final EntityKey entityKey = session.generateEntityKey( generatedId, persister );
+									setEntityKey( entityKey );
+									persistenceContext.checkUniqueness( entityKey, getInstance() );
 
-						postInsert();
+									postInsert();
 
-						final StatisticsImplementor statistics = session.getFactory().getStatistics();
-						if ( statistics.isStatisticsEnabled() && !isVeto() ) {
-							statistics.insertEntity( getPersister().getEntityName() );
-						}
+									final StatisticsImplementor statistics = session.getFactory().getStatistics();
+									if ( statistics.isStatisticsEnabled() && !isVeto() ) {
+										statistics.insertEntity( getPersister().getEntityName() );
+									}
 
-						markExecuted();
+									markExecuted();
+								} );
 					} );
 		}
 		else {
@@ -95,13 +97,19 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 		}
 	}
 
+	private Object extractGeneratedId(GeneratedValues generatedValues) {
+		return NullnessUtil.castNonNull( generatedValues )
+				.getGeneratedValue( getPersister().getIdentifierMapping() );
+	}
+
 	private CompletionStage<Void> processInsertGeneratedProperties(
 			ReactiveEntityPersister persister,
 			Object generatedId,
 			Object instance,
+			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session) {
 		return persister.hasInsertGeneratedProperties()
-				? persister.reactiveProcessInsertGenerated( generatedId, instance, getState(), session )
+				? persister.reactiveProcessInsertGenerated( generatedId, instance, getState(), generatedValues, session )
 				: voidFuture();
 	}
 

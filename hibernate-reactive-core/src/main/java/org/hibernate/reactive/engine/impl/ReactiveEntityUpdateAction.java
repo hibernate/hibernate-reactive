@@ -14,13 +14,13 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.TypeHelper;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -85,28 +85,28 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 						getRowId(),
 						session
 				)
-				.thenApply( res -> {
+				.thenCompose( generatedValues -> {
 					final EntityEntry entry = session.getPersistenceContextInternal().getEntry( instance );
 					if ( entry == null ) {
 						throw new AssertionFailure( "possible non-threadsafe access to session" );
 					}
-					return entry;
-				} )
-				.thenCompose( this::handleGeneratedProperties )
-				.thenAccept( entry -> {
-					handleDeleted( entry );
-					updateCacheItem( persister, ck, entry );
-					handleNaturalIdResolutions( persister, session, id );
-					postUpdate();
+					return reactiveHandleGeneratedProperties( entry, generatedValues )
+							.thenAccept( v -> {
+								handleDeleted( entry );
+								updateCacheItem( persister, ck, entry );
+								handleNaturalIdResolutions( persister, session, id );
+								postUpdate();
 
-					final StatisticsImplementor statistics = session.getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.updateEntity( getPersister().getEntityName() );
-					}
+								final StatisticsImplementor statistics = session.getFactory().getStatistics();
+								if ( statistics.isStatisticsEnabled() ) {
+									statistics.updateEntity( getPersister().getEntityName() );
+								}
+							} );
+
 				} );
 	}
 
-	private CompletionStage<EntityEntry> handleGeneratedProperties(EntityEntry entry) {
+	private CompletionStage<Void> reactiveHandleGeneratedProperties(EntityEntry entry, GeneratedValues generatedValues) {
 		final EntityPersister persister = getPersister();
 		if ( entry.getStatus() == Status.MANAGED || persister.isVersionPropertyGenerated() ) {
 			final SharedSessionContractImplementor session = getSession();
@@ -123,21 +123,19 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 					session
 			);
 			final ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
-			return processGeneratedProperties( id, reactivePersister, session, instance )
+			return processGeneratedProperties( id, reactivePersister, session, generatedValues, instance )
 					// have the entity entry doAfterTransactionCompletion post-update processing, passing it the
 					// update state and the new version (if one).
-					.thenAccept( v -> entry.postUpdate( instance, getState(), getNextVersion() ) )
-					.thenApply( v -> entry );
+					.thenAccept( v -> entry.postUpdate( instance, getState(), getNextVersion() ) );
 		}
-		else {
-			return completedFuture( entry );
-		}
+		return voidFuture();
 	}
 
 	private CompletionStage<Void> processGeneratedProperties(
 			Object id,
 			ReactiveEntityPersister persister,
 			SharedSessionContractImplementor session,
+			GeneratedValues generatedValues,
 			Object instance) {
 		if ( persister.hasUpdateGeneratedProperties() ) {
 			// this entity defines property generation, so process those generated values...
@@ -145,7 +143,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setNextVersion( Versioning.getVersion( getState(), persister ) );
 			}
-			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), session );
+			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), generatedValues, session );
 
 		}
 		else {

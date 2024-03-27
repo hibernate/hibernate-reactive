@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -51,15 +52,11 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	@Override
 	public CompletionStage<Void> reactiveExecute() throws HibernateException {
 		final CompletionStage<Void> stage = reactiveNullifyTransientReferencesIfNotAlready();
-
 		final EntityPersister persister = getPersister();
 		final SharedSessionContractImplementor session = getSession();
 		final Object instance = getInstance();
 		final Object id = getId();
-
-		// FIXME: It needs to become async
 		final boolean veto = preInsert();
-
 		// Don't need to lock the cache here, since if someone
 		// else inserted the same pk first, the insert would fail
 		if ( !veto ) {
@@ -67,34 +64,35 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			return stage
 					.thenCompose( v -> reactivePersister.insertReactive( id, getState(), instance, session ) )
-					.thenApply( res -> {
+					.thenCompose( generatedValues -> {
 						final EntityEntry entry = persistenceContext.getEntry( instance );
 						if ( entry == null ) {
 							throw new AssertionFailure( "possible non-threadsafe access to session" );
 						}
 						entry.postInsert( getState() );
-						return entry;
-					} )
-					.thenCompose( entry -> processInsertGeneratedProperties( reactivePersister, session, instance, id, entry ) )
-					.thenAccept( vv -> {
-						persistenceContext.registerInsertedKey( persister, getId() );
-						addCollectionsByKeyToPersistenceContext( persistenceContext, getState() );
-						putCacheIfNecessary();
-						handleNaturalIdPostSaveNotifications( id );
-						postInsert();
-
-						final StatisticsImplementor statistics = session.getFactory().getStatistics();
-						if ( statistics.isStatisticsEnabled() ) {
-							statistics.insertEntity( getPersister().getEntityName() );
-						}
-
-						markExecuted();
+						return processInsertGeneratedProperties( reactivePersister, session, instance, id, generatedValues, entry )
+								.thenAccept( vv -> {
+									persistenceContext.registerInsertedKey( persister, getId() );
+									addCollectionsByKeyToPersistenceContext( persistenceContext, getState() );
+									putCacheIfNecessary();
+									handleNaturalIdPostSaveNotifications( id );
+									postInsert();
+									final StatisticsImplementor statistics = session.getFactory().getStatistics();
+									if ( statistics.isStatisticsEnabled() ) {
+										statistics.insertEntity( getPersister().getEntityName() );
+									}
+									markExecuted();
+								} );
 					} );
 		}
 		else {
 			putCacheIfNecessary();
 			handleNaturalIdPostSaveNotifications( id );
 			postInsert();
+			final StatisticsImplementor statistics = session.getFactory().getStatistics();
+			if ( statistics.isStatisticsEnabled() ) {
+				statistics.insertEntity( getPersister().getEntityName() );
+			}
 			markExecuted();
 			return stage;
 		}
@@ -105,13 +103,14 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			SharedSessionContractImplementor session,
 			Object instance,
 			Object id,
+			GeneratedValues generatedValues,
 			EntityEntry entry) {
 		if ( persister.hasInsertGeneratedProperties() ) {
 			if ( persister.isVersionPropertyGenerated() ) {
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setVersion( Versioning.getVersion( getState(), persister ) );
 			}
-			return persister.reactiveProcessInsertGenerated( id, instance, getState(), session )
+			return persister.reactiveProcessInsertGenerated( id, instance, getState(), generatedValues, session )
 					.thenAccept( v -> entry.postUpdate( instance, getState(), getVersion() ) );
 
 		}

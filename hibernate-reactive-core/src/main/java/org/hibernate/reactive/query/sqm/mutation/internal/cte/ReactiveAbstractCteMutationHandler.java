@@ -8,7 +8,6 @@ package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -28,10 +27,9 @@ import org.hibernate.query.sqm.mutation.internal.MatchingIdSelectionHelper;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.cte.AbstractCteMutationHandler;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.spi.SqmParameterMappingModelResolutionAccess;
 import org.hibernate.query.sqm.tree.SqmDeleteOrUpdateStatement;
-import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
-import org.hibernate.query.sqm.tree.expression.SqmStar;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
@@ -53,7 +51,6 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.basic.BasicResult;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
-import org.hibernate.type.spi.TypeConfiguration;
 
 /**
  * @see org.hibernate.query.sqm.mutation.internal.cte.AbstractCteMutationHandler
@@ -109,15 +106,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 			parameterResolutions = new IdentityHashMap<>();
 		}
 
-		//noinspection rawtypes
-		final Map<SqmParameter, MappingModelExpressible> paramTypeResolutions = new LinkedHashMap<>();
-
-		final Predicate restriction = sqmConverter.visitWhereClause(
-				sqmMutationStatement.getWhereClause(),
-				columnReference -> {
-				},
-				(sqmParam, mappingType, jdbcParameters) -> paramTypeResolutions.put( sqmParam, mappingType )
-		);
+		final Predicate restriction = sqmConverter.visitWhereClause( sqmMutationStatement.getWhereClause() );
 		sqmConverter.pruneTableGroupJoins();
 
 		final CteStatement idSelectCte = new CteStatement(
@@ -172,7 +161,12 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 				SqmUtil.generateJdbcParamsXref( getDomainParameterXref(), sqmConverter ),
 				factory.getRuntimeMetamodels().getMappingMetamodel(),
 				navigablePath -> sqmConverter.getMutatingTableGroup(),
-				paramTypeResolutions::get,
+				new SqmParameterMappingModelResolutionAccess() {
+					@Override @SuppressWarnings("unchecked")
+					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
+						return (MappingModelExpressible<T>) sqmConverter.getSqmParameterMappingModelExpressibleResolutions().get( parameter );
+					}
+				},
 				executionContext.getSession()
 		);
 		final LockOptions lockOptions = executionContext.getQueryOptions().getLockOptions();
@@ -198,18 +192,5 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 				);
 	}
 
-	/**
-	 * Copy and paste of the one in the super class
-	 */
-	default Expression createCountStar(
-			SessionFactoryImplementor factory,
-			MultiTableSqmMutationConverter sqmConverter) {
-		final SqmExpression<?> arg = new SqmStar( factory.getNodeBuilder() );
-		final TypeConfiguration typeConfiguration = factory.getJpaMetamodel().getTypeConfiguration();
-		return factory.getQueryEngine()
-				.getSqmFunctionRegistry()
-				.findFunctionDescriptor( "count" )
-				.generateSqmExpression( arg, null, factory.getQueryEngine() )
-				.convertToSqlAst( sqmConverter );
-	}
+	Expression createCountStar(SessionFactoryImplementor factory, MultiTableSqmMutationConverter sqmConverter);
 }

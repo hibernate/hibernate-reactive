@@ -19,14 +19,12 @@ import java.util.function.Supplier;
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.UpdateExecutionDelegate;
-import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
@@ -34,7 +32,6 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.expression.SqlTuple;
 import org.hibernate.sql.ast.tree.from.NamedTableReference;
 import org.hibernate.sql.ast.tree.from.TableGroup;
@@ -71,8 +68,6 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 			Map<String, TableReference> tableReferenceByAlias,
 			List<Assignment> assignments,
 			Predicate suppliedPredicate,
-			Map<SqmParameter<?>, List<List<JdbcParameter>>> parameterResolutions,
-			Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions,
 			DomainQueryExecutionContext executionContext) {
 		super(
 				sqmConverter,
@@ -84,8 +79,6 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 				tableReferenceByAlias,
 				assignments,
 				suppliedPredicate,
-				parameterResolutions,
-				paramTypeResolutions,
 				executionContext
 		);
 	}

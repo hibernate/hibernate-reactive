@@ -11,16 +11,16 @@ import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
 
 public final class ReactiveCoordinatorFactory {
 
-	public static ReactiveInsertCoordinator buildInsertCoordinator(
+	public static ReactiveInsertCoordinatorStandard buildInsertCoordinator(
 			AbstractEntityPersister entityPersister,
 			SessionFactoryImplementor factory) {
-		return new ReactiveInsertCoordinator( entityPersister, factory );
+		return new ReactiveInsertCoordinatorStandard( entityPersister, factory );
 	}
 
 	public static ReactiveUpdateCoordinator buildUpdateCoordinator(

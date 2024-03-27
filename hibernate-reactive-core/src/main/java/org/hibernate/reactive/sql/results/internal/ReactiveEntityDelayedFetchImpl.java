@@ -8,11 +8,11 @@ package org.hibernate.reactive.sql.results.internal;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityDelayedFetchInitializer;
 import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResult;
-import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.Initializer;
+import org.hibernate.sql.results.graph.entity.EntityInitializer;
 import org.hibernate.sql.results.graph.entity.internal.EntityDelayedFetchImpl;
 
 public class ReactiveEntityDelayedFetchImpl extends EntityDelayedFetchImpl {
@@ -26,12 +26,15 @@ public class ReactiveEntityDelayedFetchImpl extends EntityDelayedFetchImpl {
 	}
 
 	@Override
-	protected Initializer buildEntityDelayedFetchInitializer(
-			FetchParentAccess parentAccess,
-			NavigablePath navigablePath,
-			ToOneAttributeMapping entityValuedModelPart,
-			boolean selectByUniqueKey,
-			DomainResultAssembler<?> resultAssembler) {
-		return new ReactiveEntityDelayedFetchInitializer( parentAccess, navigablePath, entityValuedModelPart, selectByUniqueKey, resultAssembler );
+	public EntityInitializer createInitializer(FetchParentAccess parentAccess, AssemblerCreationState creationState) {
+		return new ReactiveEntityDelayedFetchInitializer( parentAccess,
+														  getNavigablePath(),
+														  getEntityValuedModelPart(),
+														  isSelectByUniqueKey(),
+														  getKeyResult().createResultAssembler(
+																  parentAccess,
+																  creationState
+														  )
+		);
 	}
 }

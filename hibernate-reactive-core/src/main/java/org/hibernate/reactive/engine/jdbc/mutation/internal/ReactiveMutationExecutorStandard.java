@@ -5,28 +5,41 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
+import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementGroup;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorStandard;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
+import org.hibernate.persister.entity.mutation.EntityMutationTarget;
+import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
+import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.checkResults;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
@@ -35,12 +48,21 @@ import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER
  */
 public class ReactiveMutationExecutorStandard extends MutationExecutorStandard implements ReactiveMutationExecutor {
 
+	private static final Log LOG = make( Log.class, MethodHandles.lookup() );
+
+	private final GeneratedValuesMutationDelegate generatedValuesDelegate;
+	private final MutationOperationGroup mutationOperationGroup;
+
 	public ReactiveMutationExecutorStandard(
 			MutationOperationGroup mutationOperationGroup,
 			BatchKeyAccess batchKeySupplier,
 			int batchSize,
 			SharedSessionContractImplementor session) {
 		super( mutationOperationGroup, batchKeySupplier, batchSize, session );
+		this.generatedValuesDelegate = mutationOperationGroup.asEntityMutationOperationGroup() != null
+				? mutationOperationGroup.asEntityMutationOperationGroup().getMutationDelegate()
+				: null;
+		this.mutationOperationGroup = mutationOperationGroup;
 	}
 
 	private ReactiveConnection connection(SharedSessionContractImplementor session) {
@@ -57,7 +79,8 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	}
 
 	@Override
-	protected void performNonBatchedOperations(
+	protected GeneratedValues performNonBatchedOperations(
+			Object modelReference,
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
@@ -81,50 +104,101 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	}
 
 	@Override
-	public CompletionStage<Void> performReactiveNonBatchedOperations(
+	public CompletionStage<GeneratedValues> performReactiveNonBatchedOperations(
+			Object modelReference,
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
 
 		if ( getNonBatchedStatementGroup() == null || getNonBatchedStatementGroup().getNumberOfStatements() <= 0 ) {
-			return voidFuture();
+			return nullFuture();
 		}
 
 		PreparedStatementGroup nonBatchedStatementGroup = getNonBatchedStatementGroup();
-		final OperationsForEach forEach = new OperationsForEach( inclusionChecker, resultChecker, session, getJdbcValueBindings() );
-		nonBatchedStatementGroup.forEachStatement( forEach::add );
-		return forEach.buildLoop();
+		if ( generatedValuesDelegate != null ) {
+			final EntityMutationOperationGroup entityGroup = mutationOperationGroup.asEntityMutationOperationGroup();
+			final EntityMutationTarget entityTarget = entityGroup.getMutationTarget();
+			final PreparedStatementDetails details = nonBatchedStatementGroup.getPreparedStatementDetails(
+					entityTarget.getIdentifierTableName()
+			);
+			return ( (ReactiveGeneratedValuesMutationDelegate) generatedValuesDelegate )
+					.reactivePerformMutation( details, getJdbcValueBindings(), modelReference, session )
+					.thenCompose( generatedValues -> {
+						Object id = entityGroup.getMutationType() == MutationType.INSERT && details.getMutatingTableDetails().isIdentifierTable()
+								? generatedValues.getGeneratedValue( entityTarget.getTargetPart().getIdentifierMapping() )
+								: null;
+						OperationsForEach forEach = new OperationsForEach(
+								id,
+								inclusionChecker,
+								resultChecker,
+								session,
+								getJdbcValueBindings(),
+								true
+						);
+						nonBatchedStatementGroup.forEachStatement( forEach::add );
+						return forEach.buildLoop().thenApply( v -> generatedValues );
+					} );
+
+		}
+		else {
+			OperationsForEach forEach = new OperationsForEach(
+					null,
+					inclusionChecker,
+					resultChecker,
+					session,
+					getJdbcValueBindings(),
+					false
+			);
+			nonBatchedStatementGroup.forEachStatement( forEach::add );
+			return forEach.buildLoop().thenCompose( CompletionStages::nullFuture );
+		}
 	}
 
 	private class OperationsForEach {
 
+		private final Object id;
 		private final TableInclusionChecker inclusionChecker;
 		private final OperationResultChecker resultChecker;
 		private final SharedSessionContractImplementor session;
+		private final boolean requiresCheck;
 		private final JdbcValueBindings jdbcValueBindings;
 
 		private CompletionStage<Void> loop = voidFuture();
 
 		public OperationsForEach(
+				Object id,
 				TableInclusionChecker inclusionChecker,
 				OperationResultChecker resultChecker,
 				SharedSessionContractImplementor session,
-				JdbcValueBindings jdbcValueBindings) {
+				JdbcValueBindings jdbcValueBindings,
+				boolean requiresCheck) {
+			this.id = id;
 			this.inclusionChecker = inclusionChecker;
 			this.resultChecker = resultChecker;
 			this.session = session;
 			this.jdbcValueBindings = jdbcValueBindings;
+			this.requiresCheck = requiresCheck;
 		}
 
 		public void add(String tableName, PreparedStatementDetails statementDetails) {
-			loop = loop.thenCompose( v -> performReactiveNonBatchedMutation(
-					statementDetails,
-					getJdbcValueBindings(),
-					inclusionChecker,
-					resultChecker,
-					session
-			) );
+			if ( requiresCheck ) {
+				loop = loop.thenCompose( v -> !statementDetails
+						.getMutatingTableDetails().isIdentifierTable()
+						? performReactiveNonBatchedMutation( statementDetails, id, jdbcValueBindings, inclusionChecker, resultChecker, session )
+						: voidFuture()
+				);
+			}
+			else {
+				loop = loop.thenCompose( v -> performReactiveNonBatchedMutation(
+						statementDetails,
+						null,
+						jdbcValueBindings,
+						inclusionChecker,
+						resultChecker,
+						session
+				) );
+			}
 		}
 
 		public CompletionStage<Void> buildLoop() {
@@ -134,6 +208,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	@Override
 	public CompletionStage<Void> performReactiveNonBatchedMutation(
 			PreparedStatementDetails statementDetails,
+			Object id,
 			JdbcValueBindings valueBindings,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
@@ -145,10 +220,23 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 		final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
 		if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
 			if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
-				MODEL_MUTATION_LOGGER
-						.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
+				MODEL_MUTATION_LOGGER.tracef( "Skipping execution of secondary insert : %s", tableDetails.getTableName() );
 			}
 			return voidFuture();
+		}
+
+		if ( id != null ) {
+			assert !tableDetails.isIdentifierTable() : "Unsupported identifier table with generated id";
+			( (EntityTableMapping) tableDetails ).getKeyMapping().breakDownKeyJdbcValues(
+					id,
+					(jdbcValue, columnMapping) -> valueBindings.bindValue(
+							jdbcValue,
+							tableDetails.getTableName(),
+							columnMapping.getColumnName(),
+							ParameterUsage.SET
+					),
+					session
+			);
 		}
 
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {

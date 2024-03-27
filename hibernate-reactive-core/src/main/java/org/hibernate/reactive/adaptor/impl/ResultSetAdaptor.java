@@ -13,6 +13,7 @@ import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.JDBCType;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -28,6 +29,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -38,10 +41,11 @@ import org.hibernate.engine.jdbc.ClobProxy;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 import io.vertx.core.buffer.Buffer;
+import io.vertx.sqlclient.PropertyKind;
 import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
+import io.vertx.sqlclient.impl.RowBase;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -52,15 +56,75 @@ import static java.util.Objects.requireNonNull;
  */
 public class ResultSetAdaptor implements ResultSet {
 
-	private final RowIterator<Row> iterator;
-	private final RowSet<Row> rows;
+	private final Iterator<Row> iterator;
+
+	private final List<ColumnDescriptor> columnDescriptors;
+	private final List<String> columnNames;
 	private Row row;
 	private boolean wasNull;
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
 		requireNonNull( rows );
 		this.iterator = rows.iterator();
-		this.rows = rows;
+		this.columnNames = rows.columnsNames() == null ? emptyList() : rows.columnsNames();
+		this.columnDescriptors = rows.columnDescriptors();
+	}
+
+	public ResultSetAdaptor(RowSet<Row> rows, PropertyKind<Row> propertyKind, String idColumnName, Class<?> idClass) {
+		this( rows, rows.property( propertyKind ), idColumnName, idClass );
+	}
+
+	public ResultSetAdaptor(RowSet<Row> rows, Collection<?> ids, String idColumnName, Class<?> idClass) {
+		this( rows, new RowFromId( ids, idColumnName ), idColumnName, idClass );
+	}
+
+	private ResultSetAdaptor(RowSet<Row> rows, Row row, String idColumnName, Class<?> idClass) {
+		requireNonNull( rows );
+		requireNonNull( idColumnName );
+		this.iterator = List.of( row ).iterator();
+		this.columnNames = List.of( idColumnName );
+		ColumnDescriptor columnDescriptor = new ColumnDescriptor() {
+			@Override
+			public String name() {
+				return idColumnName;
+			}
+
+			@Override
+			public boolean isArray() {
+				return idClass.isArray();
+			}
+
+			@Override
+			public String typeName() {
+				return idClass.getName();
+			}
+
+			@Override
+			public JDBCType jdbcType() {
+				return null;
+			}
+		};
+		this.columnDescriptors = List.of( columnDescriptor );
+	}
+
+	private static class RowFromId extends RowBase {
+
+		private final List<String> columns;
+
+		public RowFromId(Collection<?> ids, String columnName) {
+			super( ids );
+			this.columns = List.of( requireNonNull( columnName ) );
+		}
+
+		@Override
+		public String getColumnName(int pos) {
+			return pos > 0 ? null : columns.get( pos );
+		}
+
+		@Override
+		public int getColumnIndex(String column) {
+			return columns.indexOf( column );
+		}
 	}
 
 	@Override
@@ -221,7 +285,7 @@ public class ResultSetAdaptor implements ResultSet {
 	 * @return A list of column names or an empty list.
 	 */
 	private List<String> getColumnsNames() {
-		return rows.columnsNames() == null ? emptyList() : rows.columnsNames();
+		return this.columnNames;
 	}
 
 	@Override
@@ -377,129 +441,6 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public String getCursorName() {
 		return null;
-	}
-
-	@Override
-	public ResultSetMetaData getMetaData() {
-		return new ResultSetMetaData() {
-			@Override
-			public int getColumnCount() {
-				return getColumnsNames() == null ? 0 : getColumnsNames().size();
-			}
-
-			@Override
-			public int getColumnType(int column) {
-				ColumnDescriptor descriptor = rows.columnDescriptors().get( column - 1 );
-				return descriptor.isArray() ? Types.ARRAY : descriptor.jdbcType().getVendorTypeNumber();
-			}
-
-			@Override
-			public String getColumnLabel(int column) {
-				return getColumnsNames().get( column - 1 );
-			}
-
-			@Override
-			public String getColumnName(int column) {
-				return getColumnsNames().get( column - 1 );
-			}
-
-			@Override
-			public boolean isAutoIncrement(int column) {
-				return false;
-			}
-
-			@Override
-			public boolean isCaseSensitive(int column) {
-				return false;
-			}
-
-			@Override
-			public boolean isSearchable(int column) {
-				return false;
-			}
-
-			@Override
-			public boolean isCurrency(int column) {
-				return false;
-			}
-
-			@Override
-			public int isNullable(int column) {
-				return columnNullableUnknown;
-			}
-
-			@Override
-			public boolean isSigned(int column) {
-				return false;
-			}
-
-			@Override
-			public int getColumnDisplaySize(int column) {
-				return 0;
-			}
-
-			@Override
-			public String getSchemaName(int column) {
-				return null;
-			}
-
-			@Override
-			public int getPrecision(int column) {
-				return 0;
-			}
-
-			@Override
-			public int getScale(int column) {
-				return 0;
-			}
-
-			@Override
-			public String getTableName(int column) {
-				return null;
-			}
-
-			@Override
-			public String getCatalogName(int column) {
-				return null;
-			}
-
-			@Override
-			public String getColumnTypeName(int column) {
-				// This information is in rows.columnDescriptors().get( column-1 ).dataType.name
-				// but does not appear to be accessible.
-				return null;
-			}
-
-			@Override
-			public boolean isReadOnly(int column) {
-				return false;
-			}
-
-			@Override
-			public boolean isWritable(int column) {
-				return false;
-			}
-
-			@Override
-			public boolean isDefinitelyWritable(int column) {
-				return false;
-			}
-
-			@Override
-			public String getColumnClassName(int column) {
-				return null;
-			}
-
-			@Override
-			public <T> T unwrap(Class<T> iface) {
-				return null;
-			}
-
-			@Override
-			public boolean isWrapperFor(Class<?> iface) {
-				return false;
-			}
-		};
 	}
 
 	@Override
@@ -680,7 +621,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public Statement getStatement() {
-		throw new UnsupportedOperationException();
+		return new PreparedStatementAdaptor();
 	}
 
 	@Override
@@ -1308,5 +1249,140 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public void updateNClob(String columnLabel, Reader reader) {
 		throw new UnsupportedOperationException();
+	}
+
+
+	@Override
+	public ResultSetMetaData getMetaData() {
+		return new MetaData( columnNames, columnDescriptors );
+	}
+
+	private static class MetaData implements ResultSetMetaData {
+
+		private final List<String> columns;
+		private final List<ColumnDescriptor> descriptors;
+
+		public MetaData(List<String> columnNames, List<ColumnDescriptor> columnDescriptors) {
+			columns = columnNames;
+			descriptors = columnDescriptors;
+		}
+
+		@Override
+		public int getColumnCount() {
+			return columns.size();
+		}
+
+		@Override
+		public int getColumnType(int column) {
+			ColumnDescriptor descriptor = descriptors.get( column - 1 );
+			return descriptor.isArray() ? Types.ARRAY : descriptor.jdbcType().getVendorTypeNumber();
+		}
+
+		@Override
+		public String getColumnLabel(int column) {
+			return columns.get( column - 1 );
+		}
+
+		@Override
+		public String getColumnName(int column) {
+			return columns.get( column - 1 );
+		}
+
+		@Override
+		public boolean isAutoIncrement(int column) {
+			return false;
+		}
+
+		@Override
+		public boolean isCaseSensitive(int column) {
+			return false;
+		}
+
+		@Override
+		public boolean isSearchable(int column) {
+			return false;
+		}
+
+		@Override
+		public boolean isCurrency(int column) {
+			return false;
+		}
+
+		@Override
+		public int isNullable(int column) {
+			return columnNullableUnknown;
+		}
+
+		@Override
+		public boolean isSigned(int column) {
+			return false;
+		}
+
+		@Override
+		public int getColumnDisplaySize(int column) {
+			return 0;
+		}
+
+		@Override
+		public String getSchemaName(int column) {
+			return null;
+		}
+
+		@Override
+		public int getPrecision(int column) {
+			return 0;
+		}
+
+		@Override
+		public int getScale(int column) {
+			return 0;
+		}
+
+		@Override
+		public String getTableName(int column) {
+			return null;
+		}
+
+		@Override
+		public String getCatalogName(int column) {
+			return null;
+		}
+
+		@Override
+		public String getColumnTypeName(int column) {
+			// This information is in rows.columnDescriptors().get( column-1 ).dataType.name
+			// but does not appear to be accessible.
+			return null;
+		}
+
+		@Override
+		public boolean isReadOnly(int column) {
+			return false;
+		}
+
+		@Override
+		public boolean isWritable(int column) {
+			return false;
+		}
+
+		@Override
+		public boolean isDefinitelyWritable(int column) {
+			return false;
+		}
+
+		@Override
+		public String getColumnClassName(int column) {
+			return null;
+		}
+
+		@Override
+		public <T> T unwrap(Class<T> iface) {
+			return null;
+		}
+
+		@Override
+		public boolean isWrapperFor(Class<?> iface) {
+			return false;
+		}
 	}
 }

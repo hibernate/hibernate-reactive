@@ -696,7 +696,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				)
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
-
 					if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
 					}

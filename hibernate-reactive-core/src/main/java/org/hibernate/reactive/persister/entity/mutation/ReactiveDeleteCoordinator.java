@@ -41,13 +41,13 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 	}
 
 	@Override
-	public void coordinateDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
+	public void delete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
 		throw LOG.nonReactiveMethodCall( "coordinateReactiveDelete" );
 	}
 
-	public CompletionStage<Void> coordinateReactiveDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
+	public CompletionStage<Void> reactiveDelete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
 		try {
-			super.coordinateDelete( entity, id, version, session );
+			super.delete( entity, id, version, session );
 			return stage != null ? stage : voidFuture();
 		}
 		catch (Throwable t) {
@@ -126,11 +126,11 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 		final boolean applyVersion = entity != null;
 		final MutationOperationGroup operationGroupToUse = entity == null
 				? resolveNoVersionDeleteGroup( session )
-				: getStaticDeleteGroup();
+				: getStaticMutationOperationGroup();
 
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroupToUse );
-		for ( int position = 0; position < getStaticDeleteGroup().getNumberOfOperations(); position++ ) {
-			final MutationOperation mutation = getStaticDeleteGroup().getOperation( position );
+		for ( int position = 0; position < getStaticMutationOperationGroup().getNumberOfOperations(); position++ ) {
+			final MutationOperation mutation = getStaticMutationOperationGroup().getOperation( position );
 			if ( mutation != null ) {
 				mutationExecutor.getPreparedStatementDetails( mutation.getTableDetails().getTableName() );
 			}
@@ -141,7 +141,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 		}
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 		bindPartitionColumnValueBindings( loadedState, session, jdbcValueBindings );
-		applyId( id, rowId, mutationExecutor, getStaticDeleteGroup(), session );
+		applyId( id, rowId, mutationExecutor, getStaticMutationOperationGroup(), session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,
