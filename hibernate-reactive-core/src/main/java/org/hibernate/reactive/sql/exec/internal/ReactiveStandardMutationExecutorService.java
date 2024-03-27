@@ -13,17 +13,14 @@ import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorPostInsert;
-import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorPostInsertSingleTable;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleBatched;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleNonBatched;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleSelfExecuting;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorStandard;
-import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.SelfExecutingUpdateOperation;
 
@@ -56,21 +53,7 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 				? globalBatchSize
 				: sessionBatchSize;
 
-		final int numberOfOperations = operationGroup.getNumberOfOperations();
-		final MutationType mutationType = operationGroup.getMutationType();
-		final EntityMutationOperationGroup entityMutationOperationGroup = operationGroup.asEntityMutationOperationGroup();
-
-		if ( mutationType == MutationType.INSERT
-				&& entityMutationOperationGroup != null
-				&& entityMutationOperationGroup.getMutationTarget().getIdentityInsertDelegate() != null ) {
-			if ( numberOfOperations > 1 ) {
-				return new ReactiveMutationExecutorPostInsert( entityMutationOperationGroup, session );
-			}
-
-			return new ReactiveMutationExecutorPostInsertSingleTable( entityMutationOperationGroup, session );
-		}
-
-		if ( numberOfOperations == 1 ) {
+		if ( operationGroup.getNumberOfOperations() == 1 ) {
 			final MutationOperation singleOperation = operationGroup.getSingleOperation();
 			if ( singleOperation instanceof SelfExecutingUpdateOperation ) {
 				return new ReactiveMutationExecutorSingleSelfExecuting( (SelfExecutingUpdateOperation) singleOperation, session );
@@ -82,9 +65,16 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 				return new ReactiveMutationExecutorSingleBatched( jdbcOperation, batchKey, batchSizeToUse, session );
 			}
 
-			return new ReactiveMutationExecutorSingleNonBatched( jdbcOperation, session );
+			return new ReactiveMutationExecutorSingleNonBatched( jdbcOperation, generatedValuesDelegate( operationGroup ), session );
 		}
 
 		return new ReactiveMutationExecutorStandard( operationGroup, batchKeySupplier, batchSizeToUse, session );
+	}
+
+	private static GeneratedValuesMutationDelegate generatedValuesDelegate(MutationOperationGroup operationGroup) {
+		GeneratedValuesMutationDelegate generatedValuesMutationDelegate = operationGroup.asEntityMutationOperationGroup() != null
+				? operationGroup.asEntityMutationOperationGroup().getMutationDelegate()
+				: null;
+		return generatedValuesMutationDelegate;
 	}
 }

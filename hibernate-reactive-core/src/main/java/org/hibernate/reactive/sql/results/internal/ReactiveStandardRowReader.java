@@ -9,9 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.query.named.RowReaderMemento;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
 import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
@@ -129,20 +126,5 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 	@Override
 	public void finishUp(JdbcValuesSourceProcessingState processingState) {
 		initializers.endLoading( processingState.getExecutionContext() );
-	}
-
-	@Override
-	public RowReaderMemento toMemento(SessionFactoryImplementor factory) {
-		return new RowReaderMemento() {
-			@Override
-			public Class<?>[] getResultClasses() {
-				return ArrayHelper.EMPTY_CLASS_ARRAY;
-			}
-
-			@Override
-			public String[] getResultMappingNames() {
-				return ArrayHelper.EMPTY_STRING_ARRAY;
-			}
-		};
 	}
 }

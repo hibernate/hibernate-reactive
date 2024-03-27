@@ -67,28 +67,26 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 
 	@Test
 	public void testBatchingWithPersistAll(VertxTestContext context) {
-		test( context, openSession()
-				.thenCompose( s -> s
-						.persist(
-								new GuineaPig( 11, "One" ),
-								new GuineaPig( 22, "Two" ),
-								new GuineaPig( 33, "Three" )
-						)
-						// Auto-flush
-						.thenCompose( v -> s
-								.createSelectionQuery( "select name from GuineaPig", String.class )
-								.getResultList()
-								.thenAccept( names -> {
-									assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
-									assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
-									// Parameters are different for different dbs, so we cannot do an exact match
-									assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-											.startsWith( "insert into pig (name,version,id) values " );
-									sqlTracker.clear();
-								} )
-						)
+		test( context, openSession().thenCompose( s -> s
+				.persist(
+						new GuineaPig( 11, "One" ),
+						new GuineaPig( 22, "Two" ),
+						new GuineaPig( 33, "Three" )
 				)
-		);
+				// Auto-flush
+				.thenCompose( v -> s
+						.createSelectionQuery( "select name from GuineaPig", String.class )
+						.getResultList()
+						.thenAccept( names -> {
+							assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+							// Parameters are different for different dbs, so we cannot do an exact match
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+									.startsWith( "insert into pig (name,version,id) values " );
+							sqlTracker.clear();
+						} )
+				)
+		) );
 	}
 
 	@Test

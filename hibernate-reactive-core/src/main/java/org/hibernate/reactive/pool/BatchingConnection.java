@@ -138,22 +138,22 @@ public class BatchingConnection implements ReactiveConnection {
 	}
 
 	public CompletionStage<Integer> update(String sql) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.update( sql ) ) :
-				delegate.update( sql );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.update( sql ) )
+				: delegate.update( sql );
 	}
 
 	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) ) :
-				delegate.update( sql, paramValues );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) )
+				: delegate.update( sql, paramValues );
 	}
 
 	public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) ) :
-				delegate.update( sql, paramValues );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) )
+				: delegate.update( sql, paramValues );
 	}
 
 	public <T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName) {
@@ -162,22 +162,36 @@ public class BatchingConnection implements ReactiveConnection {
 				: delegate.insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName );
 	}
 
+	@Override
+	public CompletionStage<ResultSet> insertAndSelectIdentifierAsResultSet(
+			String sql,
+			Object[] paramValues,
+			Class<?> idClass,
+			String idColumnName) {
+		return insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName )
+				.thenApply( this::convertToResultSet );
+	}
+
+	private ResultSet convertToResultSet(Object o) {
+		return null;
+	}
+
 	public CompletionStage<ReactiveConnection.Result> select(String sql) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.select( sql ) ) :
-				delegate.select( sql );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.select( sql ) )
+				: delegate.select( sql );
 	}
 
 	public CompletionStage<ReactiveConnection.Result> select(String sql, Object[] paramValues) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.select( sql, paramValues ) ) :
-				delegate.select( sql, paramValues );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.select( sql, paramValues ) )
+				: delegate.select( sql, paramValues );
 	}
 
 	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
-		return hasBatch() ?
-				executeBatch().thenCompose( v -> delegate.selectJdbc( sql, paramValues ) ) :
-				delegate.selectJdbc( sql, paramValues );
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.selectJdbc( sql, paramValues ) )
+				: delegate.selectJdbc( sql, paramValues );
 	}
 
 	@Override

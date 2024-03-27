@@ -11,12 +11,10 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
@@ -27,6 +25,7 @@ import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.Fetch;
+import org.hibernate.sql.results.graph.FetchParentAccess;
 import org.hibernate.sql.results.graph.entity.AbstractEntityInitializer;
 import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
@@ -37,7 +36,6 @@ import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCH
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.internal.log.LoggingHelper.toLoggableString;
-import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -53,6 +51,27 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 			Fetch discriminatorFetch,
 			DomainResult<Object> rowIdResult,
 			AssemblerCreationState creationState) {
+		this(
+				resultDescriptor,
+				navigablePath,
+				lockMode,
+				identifierFetch,
+				discriminatorFetch,
+				rowIdResult,
+				null,
+				creationState
+		);
+	}
+
+	protected ReactiveAbstractEntityInitializer(
+			EntityResultGraphNode resultDescriptor,
+			NavigablePath navigablePath,
+			LockMode lockMode,
+			Fetch identifierFetch,
+			Fetch discriminatorFetch,
+			DomainResult<Object> rowIdResult,
+			FetchParentAccess parentAccess,
+			AssemblerCreationState creationState) {
 		super(
 				resultDescriptor,
 				navigablePath,
@@ -60,6 +79,7 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 				identifierFetch,
 				discriminatorFetch,
 				rowIdResult,
+				parentAccess,
 				creationState
 		);
 	}
@@ -82,44 +102,14 @@ public abstract class ReactiveAbstractEntityInitializer extends AbstractEntityIn
 
 	@Override
 	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
-		if ( !isMissing() && !isEntityInitialized() ) {
-			final LazyInitializer lazyInitializer = extractLazyInitializer( getEntityInstance() );
-			return voidFuture()
-					.thenCompose( v -> {
-						if ( lazyInitializer != null ) {
-							final SharedSessionContractImplementor session = rowProcessingState.getSession();
-							final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-							final EntityHolder holder = persistenceContext.getEntityHolder( getEntityKey() );
-							Object instance = holder.getEntity();
-							assert instance != null : "The real entity instance must be resolved in the `resolveInstance()` phase";
-							if ( holder.getEntityInitializer() == this ) {
-								return initializeEntity( instance, rowProcessingState )
-										.thenAccept( vv -> {
-											lazyInitializer.setImplementation( instance );
-											setEntityInstanceForNotify( instance );
-										} );
-							}
-							return voidFuture().thenAccept( vv -> {
-								lazyInitializer.setImplementation( instance );
-								setEntityInstanceForNotify( instance );
-
-							} );
-						}
-						else {
-							// FIXME: Read from cache if possible
-							return initializeEntity( getEntityInstance(), rowProcessingState )
-									.thenAccept( ignore -> setEntityInstanceForNotify( getEntityInstance() ) );
-						}
-					} )
-					.thenAccept( o -> {
-						notifyResolutionListeners( getEntityInstanceForNotify() );
-						setEntityInitialized( true );
-					} );
+		if ( state == State.KEY_RESOLVED || state == State.RESOLVED ) {
+			return initializeEntity( getEntityInstanceForNotify(), rowProcessingState )
+					.thenAccept( v -> state = State.INITIALIZED );
 		}
 		return voidFuture();
 	}
 
-	private CompletionStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {
+	protected CompletionStage<Void> initializeEntity(Object toInitialize, RowProcessingState rowProcessingState) {
 		if ( !skipInitialization( toInitialize, rowProcessingState ) ) {
 			assert consistentInstance( toInitialize, rowProcessingState );
 			return initializeEntityInstance( toInitialize, rowProcessingState );

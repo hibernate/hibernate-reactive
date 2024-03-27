@@ -46,12 +46,14 @@ public class ReactivePluralAttributeMapping extends PluralAttributeMappingImpl i
 			NavigablePath fetchedPath,
 			PluralAttributeMapping fetchedAttribute,
 			TableGroup collectionTableGroup,
+			boolean needsCollectionKeyResult,
 			FetchParent fetchParent,
 			DomainResultCreationState creationState) {
 		return new ReactiveEagerCollectionFetch(
 				fetchedPath,
 				fetchedAttribute,
 				collectionTableGroup,
+				needsCollectionKeyResult,
 				fetchParent,
 				creationState
 		);

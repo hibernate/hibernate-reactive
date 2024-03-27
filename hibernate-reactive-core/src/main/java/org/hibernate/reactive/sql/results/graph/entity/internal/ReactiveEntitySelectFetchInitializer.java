@@ -30,7 +30,6 @@ import org.hibernate.spi.EntityIdentifierNavigablePath;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
-import org.hibernate.sql.results.graph.entity.EntityInitializer;
 import org.hibernate.sql.results.graph.entity.EntityLoadingLogging;
 import org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
@@ -74,6 +73,74 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 
 	@Override
 	public CompletionStage<Void> reactiveResolveInstance(ReactiveRowProcessingState rowProcessingState) {
+		if ( state != State.UNINITIALIZED ) {
+			return voidFuture();
+		}
+		state = State.RESOLVED;
+
+		// We can avoid processing further if the parent is already initialized or missing,
+		// as the value produced by this initializer will never be used anyway.
+		if ( parentShallowCached || shouldSkipInitializer( rowProcessingState ) ) {
+			state = State.INITIALIZED;
+			return voidFuture();
+		}
+
+		entityIdentifier = keyAssembler.assemble( rowProcessingState );
+		if ( entityIdentifier == null ) {
+			state = State.INITIALIZED;
+			return voidFuture();
+		}
+
+		if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isTraceEnabled() ) {
+			EntityLoadingLogging.ENTITY_LOADING_LOGGER.tracef(
+					"(%s) Beginning Initializer#resolveInstance process for entity (%s) : %s",
+					StringHelper.collapse( this.getClass().getName() ),
+					getNavigablePath(),
+					entityIdentifier
+			);
+		}
+		final SharedSessionContractImplementor session = rowProcessingState.getSession();
+		final EntityKey entityKey = new EntityKey( entityIdentifier, concreteDescriptor );
+
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+		if ( holder != null ) {
+			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
+						"(%s) Found existing loading entry [%s] - using loading instance",
+						CONCRETE_NAME,
+						toLoggableString(
+								getNavigablePath(),
+								entityIdentifier
+						)
+				);
+			}
+			entityInstance = holder.getEntity();
+			if ( holder.getEntityInitializer() == null ) {
+				if ( entityInstance != null && Hibernate.isInitialized( entityInstance ) ) {
+					state = State.INITIALIZED;
+					return voidFuture();
+				}
+			}
+			else if ( holder.getEntityInitializer() != this ) {
+				// the entity is already being loaded elsewhere
+				if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+					EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
+							"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
+							CONCRETE_NAME,
+							toLoggableString( getNavigablePath(), entityIdentifier ),
+							holder.getEntityInitializer()
+					);
+				}
+				state = State.INITIALIZED;
+				return voidFuture();
+			}
+			else if ( entityInstance == null ) {
+				state = State.INITIALIZED;
+				return voidFuture();
+			}
+		}
+
 		NavigablePath[] np = { getNavigablePath().getParent() };
 		if ( np[0] == null ) {
 			return voidFuture();
@@ -96,22 +163,19 @@ public class ReactiveEntitySelectFetchInitializer extends EntitySelectFetchIniti
 
 	@Override
 	public CompletionStage<Void> reactiveInitializeInstance(ReactiveRowProcessingState rowProcessingState) {
-		if ( getEntityInstance() != null || isEntityInitialized() ) {
+		if ( state != State.RESOLVED ) {
 			return voidFuture();
 		}
+		state = State.INITIALIZED;
 
-		final EntityInitializer parentEntityInitializer = parentAccess.findFirstEntityInitializer();
-		if ( parentEntityInitializer != null && parentEntityInitializer.isEntityInitialized() ) {
+		// We can avoid processing further if the parent is already initialized or missing,
+		// as the value produced by this initializer will never be used anyway.
+		if ( parentShallowCached || shouldSkipInitializer( rowProcessingState ) ) {
 			initializeState();
 			return voidFuture();
 		}
 
-		if ( !isAttributeAssignableToConcreteDescriptor() ) {
-			initializeState();
-			return voidFuture();
-		}
-
-		final Object entityIdentifier = keyAssembler.assemble( rowProcessingState );
+		entityIdentifier = keyAssembler.assemble( rowProcessingState );
 		if ( entityIdentifier == null ) {
 			initializeState();
 			return voidFuture();

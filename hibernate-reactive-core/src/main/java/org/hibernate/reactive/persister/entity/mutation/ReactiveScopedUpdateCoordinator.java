@@ -8,6 +8,7 @@ package org.hibernate.reactive.persister.entity.mutation;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValues;
 
 /**
  * Scoped to a single operation, so that we can keep
@@ -18,7 +19,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
  */
 public interface ReactiveScopedUpdateCoordinator {
 
-	CompletionStage<Void> coordinateReactiveUpdate(
+	CompletionStage<GeneratedValues> reactiveUpdate(
 			Object entity,
 			Object id,
 			Object rowId,

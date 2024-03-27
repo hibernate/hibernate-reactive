@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.pool;
 
-import org.hibernate.Incubating;
-
 import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.List;
@@ -80,6 +78,7 @@ public interface ReactiveConnection {
 	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
 	<T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName);
+	CompletionStage<ResultSet> insertAndSelectIdentifierAsResultSet(String sql, Object[] paramValues, Class<?> idClass, String idColumnName);
 
 	<T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
 
