@@ -82,6 +82,10 @@ public class  CompletionStages {
 		return (CompletionStage<T>) VOID;
 	}
 
+	public static <T> CompletionStage<T> nullFuture(Void v) {
+		return nullFuture();
+	}
+
 	public static <T> CompletionStage<T> completedFuture(T value) {
 		return CompletableFuture.completedFuture( value );
 	}
@@ -108,13 +112,6 @@ public class  CompletionStages {
 			throw (T) x;
 		}
 		return result;
-	}
-
-	/**
-	 * For CompletionStage#handle when we don't care about errors
-	 */
-	public static <U> U ignoreErrors(Void unused, Throwable throwable) {
-		return null;
 	}
 
 	public static void logSqlException(Throwable t, Supplier<String> message, String sql) {
@@ -223,10 +220,6 @@ public class  CompletionStages {
 			return asyncWhile( loop::next );
 		}
 		return voidFuture();
-	}
-
-	public static <U> U nullFuture(Void unused) {
-		return null;
 	}
 
 	public static <R, T extends Throwable> CompletionStageHandler<R, T> handle(R result, T throwable) {
