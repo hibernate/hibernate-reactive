@@ -38,7 +38,7 @@ required credentials and schema to run the tests:
 ```
 podman run --rm --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -p 5432:5432 docker.io/postgres:16.1
+    -p 5432:5432 docker.io/postgres:16.2
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
