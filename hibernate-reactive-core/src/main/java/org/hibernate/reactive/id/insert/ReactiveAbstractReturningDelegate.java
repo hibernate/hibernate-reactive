@@ -43,7 +43,8 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 		final JdbcServices jdbcServices = session.getJdbcServices();
 		final String insertSql = createInsert( sql, identifierColumnName, jdbcServices.getDialect() );
 		final Object[] params = PreparedStatementAdaptor.bind( binder::bindValues );
-		return reactiveExecuteAndExtractReturning( insertSql, params, session );
+		return reactiveExecuteAndExtractReturning( insertSql, params, session )
+				.thenApply( this::validateGeneratedIdentityId );
 	}
 
 	CompletionStage<GeneratedValues> reactiveExecuteAndExtractReturning(String sql, Object[] params,  SharedSessionContractImplementor session);

@@ -64,7 +64,8 @@ public class ReactiveInsertReturningDelegate extends InsertReturningDelegate imp
 		return ( (ReactiveConnectionSupplier) session )
 				.getReactiveConnection()
 				.insertAndSelectIdentifierAsResultSet( sql, params, idType, identifierColumnName )
-				.thenCompose( rs -> getGeneratedValues( rs, getPersister(), getTiming(), session ) );
+				.thenCompose( rs -> getGeneratedValues( rs, getPersister(), getTiming(), session ) )
+				.thenApply( this::validateGeneratedIdentityId );
 	}
 
 	@Override
