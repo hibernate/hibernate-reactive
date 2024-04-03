@@ -69,7 +69,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static MariaDBContainer<?> database = new MariaDBContainer<>( imageName( "docker.io", "mariadb", "11.2.2" ) );
+    public final static MariaDBContainer<?> database = new MariaDBContainer<>( imageName( "docker.io", "mariadb", "11.3.2" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
