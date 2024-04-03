@@ -87,7 +87,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( imageName( "postgres", "16.1" ) )
+	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( imageName( "postgres", "16.2" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
