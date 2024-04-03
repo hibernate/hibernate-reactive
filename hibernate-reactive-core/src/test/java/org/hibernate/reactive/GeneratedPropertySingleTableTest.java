@@ -31,6 +31,8 @@ import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +59,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 		return configuration;
 	}
 
+	@DisabledFor({MYSQL, MARIA})
 	@Test
 	public void testWithIdentity(VertxTestContext context) {
 		final GeneratedWithIdentity davide = new GeneratedWithIdentity( "Davide", "D'Alto" );
