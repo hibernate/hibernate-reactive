@@ -1,6 +1,6 @@
 # Run the build using the latest ORM 5.x snapshots
 # so that we can spot integration issues early
-name: Latest ORM 6.4
+name: Latest ORM 6.5
 
 on:
   # Trigger the workflow on push or pull request,
