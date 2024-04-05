@@ -179,12 +179,17 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 
 	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, id, fields, session );
+		return insertReactive( id, fields, object, session, true );
+	}
+
+	@Override
+	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session, boolean isIdentityInsert) {
+		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, id, fields, session, isIdentityInsert );
 	}
 
 	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, null, fields, session );
+		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( object, null, fields, session, true );
 	}
 
 	@Override

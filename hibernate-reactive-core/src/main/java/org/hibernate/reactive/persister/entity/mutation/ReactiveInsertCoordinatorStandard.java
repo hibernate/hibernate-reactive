@@ -117,20 +117,21 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			Object id,
 			Object[] values,
 			SharedSessionContractImplementor session) {
-		return coordinateReactiveInsert( entity, id, values, session );
+		return coordinateReactiveInsert( entity, id, values, session, true );
 	}
 
 	public CompletionStage<GeneratedValues> coordinateReactiveInsert(
 			Object entity,
 			Object id,
 			Object[] values,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			boolean isIdentityInsert) {
 		return reactivePreInsertInMemoryValueGeneration( values, entity, session )
 				.thenCompose( needsDynamicInsert -> {
 					final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
 					return entityPersister().getEntityMetamodel().isDynamicInsert() || needsDynamicInsert || forceIdentifierBinding
-						? doDynamicInserts( id, values, entity, session, forceIdentifierBinding )
-						: doStaticInserts( id, values, entity, session );
+						? doDynamicInserts( id, values, entity, session, forceIdentifierBinding, isIdentityInsert )
+						: doStaticInserts( id, values, entity, session, isIdentityInsert );
 				} );
 	}
 
@@ -207,7 +208,8 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			Object[] values,
 			Object object,
 			SharedSessionContractImplementor session,
-			boolean forceIdentifierBinding) {
+			boolean forceIdentifierBinding,
+			boolean isIdentityInsert) {
 		final boolean[] insertability = getPropertiesToInsert( values );
 		final MutationOperationGroup insertGroup = generateDynamicInsertSqlGroup( insertability, object, session, forceIdentifierBinding );
 		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, insertGroup, true );
@@ -229,12 +231,14 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 											);
 									return true;
 								},
-								session
+								session,
+								isIdentityInsert,
+								entityPersister().getIdentifierColumnNames()
 						)
 						.whenComplete( (o, t) -> mutationExecutor.release() ) );
 	}
 
-	protected CompletionStage<GeneratedValues> doStaticInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session) {
+	protected CompletionStage<GeneratedValues> doStaticInserts(Object id, Object[] values, Object object, SharedSessionContractImplementor session, boolean isIdentityInsert) {
 		final InsertValuesAnalysis insertValuesAnalysis = new InsertValuesAnalysis( entityPersister(), values );
 		final TableInclusionChecker tableInclusionChecker = getTableInclusionChecker( insertValuesAnalysis );
 		final ReactiveMutationExecutor mutationExecutor = getReactiveMutationExecutor( session, staticInsertGroup, false );
@@ -248,7 +252,9 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 							statementDetails.getExpectation().verifyOutcome( affectedRowCount, statementDetails.getStatement(), batchPosition, statementDetails.getSqlString() );
 							return true;
 						},
-						session
+						session,
+						isIdentityInsert,
+						entityPersister().getIdentifierColumnNames()
 				) )
 				.whenComplete( (generatedValues, throwable) -> mutationExecutor.release() );
 	}

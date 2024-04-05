@@ -7,6 +7,8 @@ package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
@@ -42,9 +44,11 @@ public class ReactiveMutationExecutorSingleNonBatched extends MutationExecutorSi
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			boolean isIdentityInsert,
+			String[] identifierColumnsNames) {
 		PreparedStatementDetails singleStatementDetails = getStatementGroup().getSingleStatementDetails();
-		if ( generatedValuesDelegate != null ) {
+		if ( generatedValuesDelegate != null && !isRegularInsertWithMariaDb( session, isIdentityInsert ) ) {
 			return generatedValuesDelegate.reactivePerformMutation(
 					singleStatementDetails,
 					getJdbcValueBindings(),
@@ -58,8 +62,17 @@ public class ReactiveMutationExecutorSingleNonBatched extends MutationExecutorSi
 				getJdbcValueBindings(),
 				inclusionChecker,
 				resultChecker,
-				session
+				session,
+				identifierColumnsNames
 		).thenCompose( CompletionStages::nullFuture );
+	}
+
+	private boolean isRegularInsertWithMariaDb(SharedSessionContractImplementor session, boolean isIdentityInsert) {
+		if ( isIdentityInsert ) {
+			return false;
+		}
+		Dialect dialect = session.getJdbcServices().getDialect();
+		return dialect instanceof MariaDBDialect;
 	}
 
 	@Override

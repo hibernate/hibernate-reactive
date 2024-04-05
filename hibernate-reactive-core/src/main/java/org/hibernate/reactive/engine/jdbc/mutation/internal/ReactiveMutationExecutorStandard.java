@@ -109,7 +109,9 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			boolean isIndentityInsert,
+			String[] identifiersColumnsNames) {
 
 		if ( getNonBatchedStatementGroup() == null || getNonBatchedStatementGroup().getNumberOfStatements() <= 0 ) {
 			return nullFuture();
@@ -185,7 +187,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			if ( requiresCheck ) {
 				loop = loop.thenCompose( v -> !statementDetails
 						.getMutatingTableDetails().isIdentifierTable()
-						? performReactiveNonBatchedMutation( statementDetails, id, jdbcValueBindings, inclusionChecker, resultChecker, session )
+						? performReactiveNonBatchedMutation( statementDetails, id, jdbcValueBindings, inclusionChecker, resultChecker, session, null )
 						: voidFuture()
 				);
 			}
@@ -196,7 +198,8 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 						jdbcValueBindings,
 						inclusionChecker,
 						resultChecker,
-						session
+						session,
+						null
 				) );
 			}
 		}
@@ -212,7 +215,8 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			JdbcValueBindings valueBindings,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			String[] identifierColumnsNames) {
 		if ( statementDetails == null ) {
 			return voidFuture();
 		}

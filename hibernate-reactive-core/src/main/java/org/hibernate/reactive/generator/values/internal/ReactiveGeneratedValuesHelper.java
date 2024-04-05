@@ -45,7 +45,6 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.results.internal.RowTransformerArrayImpl;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.WrapperOptions;
@@ -159,6 +158,7 @@ public class ReactiveGeneratedValuesHelper {
 			SharedSessionContractImplementor session) {
 		final ExecutionContext executionContext = new BaseExecutionContext( session );
 
+
 		final ReactiveDirectResultSetAccess directResultSetAccess;
 		try {
 			directResultSetAccess = new ReactiveDirectResultSetAccess( session, (PreparedStatement) resultSet.getStatement(), resultSet );
@@ -167,13 +167,16 @@ public class ReactiveGeneratedValuesHelper {
 			throw new HibernateException( "Could not retrieve statement from generated values result set", e );
 		}
 
-		JdbcValuesMapping resolve = mappingProducer.resolve( directResultSetAccess, session.getLoadQueryInfluencers(), session.getSessionFactory() );
 		final ReactiveValuesResultSet jdbcValues = new ReactiveValuesResultSet(
 				directResultSetAccess,
 				null,
 				null,
 				QueryOptions.NONE,
-				resolve,
+				mappingProducer.resolve(
+						directResultSetAccess,
+						session.getLoadQueryInfluencers(),
+						session.getSessionFactory()
+				),
 				null,
 				executionContext
 		);

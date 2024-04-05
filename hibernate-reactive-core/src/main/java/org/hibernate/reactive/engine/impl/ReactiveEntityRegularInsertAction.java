@@ -63,7 +63,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			final ReactiveEntityPersister reactivePersister = (ReactiveEntityPersister) persister;
 			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 			return stage
-					.thenCompose( v -> reactivePersister.insertReactive( id, getState(), instance, session ) )
+					.thenCompose( v -> reactivePersister.insertReactive( id, getState(), instance, session, false ) )
 					.thenCompose( generatedValues -> {
 						final EntityEntry entry = persistenceContext.getEntry( instance );
 						if ( entry == null ) {

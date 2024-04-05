@@ -142,6 +142,7 @@ public class ReactiveDeleteCoordinator extends DeleteCoordinatorStandard {
 		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 		bindPartitionColumnValueBindings( loadedState, session, jdbcValueBindings );
 		applyId( id, rowId, mutationExecutor, getStaticMutationOperationGroup(), session );
+		String[] identifierColumnNames = entityPersister().getIdentifierColumnNames();
 		mutationExecutor.executeReactive(
 						entity,
 						null,

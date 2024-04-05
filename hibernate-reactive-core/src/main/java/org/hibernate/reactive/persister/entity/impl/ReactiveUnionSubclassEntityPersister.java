@@ -322,14 +322,19 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object entity, SharedSessionContractImplementor session) {
+		return insertReactive( id, fields, entity, session, true );
+	}
+
+	@Override
+	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object entity, SharedSessionContractImplementor session, boolean isIdentityInsert) {
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() )
-				.coordinateReactiveInsert( entity, id, fields, session );
+				.coordinateReactiveInsert( entity, id, fields, session, isIdentityInsert );
 	}
 
 	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object entity, SharedSessionContractImplementor session) {
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() )
-				.coordinateReactiveInsert( entity, null, fields, session );
+				.coordinateReactiveInsert( entity, null, fields, session, true );
 	}
 
 	@Override

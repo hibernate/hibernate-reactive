@@ -8,6 +8,12 @@ package org.hibernate.reactive.engine.jdbc.env.internal;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.dialect.DB2Dialect;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.DialectDelegateWrapper;
+import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
@@ -52,7 +58,18 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
-		return performReactiveNonBatchedOperations( modelReference, valuesAnalysis, inclusionChecker, resultChecker, session )
+		return executeReactive( modelReference, valuesAnalysis, inclusionChecker, resultChecker, session, true, null );
+	}
+
+	default CompletionStage<GeneratedValues> executeReactive(
+			Object modelReference,
+			ValuesAnalysis valuesAnalysis,
+			TableInclusionChecker inclusionChecker,
+			OperationResultChecker resultChecker,
+			SharedSessionContractImplementor session,
+			boolean isIdentityInsert,
+			String[] identifierColumnsNames) {
+		return performReactiveNonBatchedOperations( modelReference, valuesAnalysis, inclusionChecker, resultChecker, session, isIdentityInsert, identifierColumnsNames )
 				.thenCompose( generatedValues -> performReactiveSelfExecutingOperations( valuesAnalysis, inclusionChecker, session )
 									  .thenCompose( v -> performReactiveBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session ) )
 									  .thenApply( v -> generatedValues )
@@ -64,7 +81,9 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			boolean isIdentityInsert,
+			String[] identifierColumnsNames) {
 		return nullFuture();
 	}
 
@@ -82,6 +101,58 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 		return voidFuture();
 	}
 
+	private static String createInsert(String insertSql, String identifierColumnName, Dialect dialect) {
+		String sql = insertSql;
+		final String sqlEnd = " returning " + identifierColumnName;
+		Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
+		if ( realDialect instanceof MySQLDialect ) {
+			// For some reason ORM generates a query with an invalid syntax
+			int index = sql.lastIndexOf( sqlEnd );
+			return index > -1
+					? sql.substring( 0, index )
+					: sql;
+		}
+		if ( realDialect instanceof SQLServerDialect ) {
+			int index = sql.lastIndexOf( sqlEnd );
+			// FIXME: this is a hack for HHH-16365
+			if ( index > -1 ) {
+				sql = sql.substring( 0, index );
+			}
+			if ( sql.endsWith( "default values" ) ) {
+				index = sql.indexOf( "default values" );
+				sql = sql.substring( 0, index );
+				sql = sql + "output inserted." + identifierColumnName + " default values";
+			}
+			else {
+				sql = sql.replace( ") values (", ") output inserted." + identifierColumnName + " values (" );
+			}
+			return sql;
+		}
+		if ( realDialect instanceof DB2Dialect ) {
+			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
+			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
+			return sql.replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
+		}
+		if ( realDialect instanceof OracleDialect ) {
+			final String valuesStr = " values ( )";
+			int index = sql.lastIndexOf( sqlEnd );
+			// remove "returning id" since it's added via
+			if ( index > -1 ) {
+				sql = sql.substring( 0, index );
+			}
+
+			// Oracle is expecting values (default)
+			if ( sql.endsWith( valuesStr ) ) {
+				index = sql.lastIndexOf( valuesStr );
+				sql = sql.substring( 0, index );
+				sql = sql + " values (default)";
+			}
+
+			return sql;
+		}
+		return sql;
+	}
+
 	/**
 	 * Perform a non-batched mutation
 	 */
@@ -91,7 +162,8 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			JdbcValueBindings valueBindings,
 			TableInclusionChecker inclusionChecker,
 			OperationResultChecker resultChecker,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			String[] identifierColumnsNames) {
 		if ( statementDetails == null ) {
 			return nullFuture();
 		}
@@ -124,8 +196,12 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			valueBindings.beforeStatement( details );
 		} );
 
+		Dialect dialect = session.getJdbcServices().getDialect();
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		String sqlString = statementDetails.getSqlString();
+		if ( identifierColumnsNames != null ) {
+			sqlString = createInsert( statementDetails.getSqlString(), identifierColumnsNames[0], dialect );
+		}
 		return reactiveConnection
 				.update( sqlString, params )
 				.thenCompose( affectedRowCount -> {

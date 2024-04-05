@@ -13,6 +13,7 @@ import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleBatched;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleNonBatched;
@@ -64,15 +65,16 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 				return new ReactiveMutationExecutorSingleBatched( jdbcOperation, batchKey, batchSizeToUse, session );
 			}
 
-			return new ReactiveMutationExecutorSingleNonBatched(
-					jdbcOperation,
-					operationGroup.asEntityMutationOperationGroup() != null
-							? operationGroup.asEntityMutationOperationGroup().getMutationDelegate()
-							: null,
-					session
-			);
+			return new ReactiveMutationExecutorSingleNonBatched( jdbcOperation, generatedValuesDelegate( operationGroup ), session );
 		}
 
 		return new ReactiveMutationExecutorStandard( operationGroup, batchKeySupplier, batchSizeToUse, session );
+	}
+
+	private static GeneratedValuesMutationDelegate generatedValuesDelegate(MutationOperationGroup operationGroup) {
+		GeneratedValuesMutationDelegate generatedValuesMutationDelegate = operationGroup.asEntityMutationOperationGroup() != null
+				? operationGroup.asEntityMutationOperationGroup().getMutationDelegate()
+				: null;
+		return generatedValuesMutationDelegate;
 	}
 }

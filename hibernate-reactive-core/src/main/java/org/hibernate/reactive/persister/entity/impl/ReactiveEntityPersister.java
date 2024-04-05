@@ -32,7 +32,16 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 *
 	 * @see EntityPersister#insert(Object, Object[], Object, SharedSessionContractImplementor)
 	 */
-	CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session);
+	default CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
+		return insertReactive( id, fields, object, session );
+	};
+
+	/**
+	 * Insert the given instance state without blocking, but it allows to specify if it's an identity insert or a regular one.
+	 *
+	 * @see EntityPersister#insert(Object, Object[], Object, SharedSessionContractImplementor)
+	 */
+	CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session, boolean isIdentityType);
 
 	/**
 	 * Insert the given instance state without blocking.

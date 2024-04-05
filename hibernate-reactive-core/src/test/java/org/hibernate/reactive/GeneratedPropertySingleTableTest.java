@@ -31,8 +31,6 @@ import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,12 +52,11 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 	@Override
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata");
-		configuration.setProperty(AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql");
+		configuration.setProperty( AvailableSettings.HBM2DDL_CREATE_SOURCE, "script-then-metadata" );
+		configuration.setProperty( AvailableSettings.HBM2DDL_CREATE_SCRIPT_SOURCE, "/mysql-pipe.sql" );
 		return configuration;
 	}
 
-	@DisabledFor({MYSQL, MARIA})
 	@Test
 	public void testWithIdentity(VertxTestContext context) {
 		final GeneratedWithIdentity davide = new GeneratedWithIdentity( "Davide", "D'Alto" );
@@ -69,7 +66,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 				context,
 				getMutinySessionFactory()
 						// Generated during insert
-						.withSession( session -> session.persist( davide ).call( session::flush )
+						.withTransaction( session -> session.persist( davide ).call( session::flush )
 								.invoke( v -> {
 									assertNotNull( davide.id );
 									assertEquals( "Davide", davide.firstname );
@@ -83,7 +80,7 @@ public class GeneratedPropertySingleTableTest extends BaseReactiveTest {
 								} ) )
 						// Generated during update
 						.chain( () -> getMutinySessionFactory()
-								.withSession( session -> session.find( GeneratedWithIdentity.class, davide.id )
+								.withTransaction( session -> session.find( GeneratedWithIdentity.class, davide.id )
 										.chain( result -> {
 											CurrentUser.INSTANCE.logIn( "dd-update" );
 											result.lastname = "O'Tall";
