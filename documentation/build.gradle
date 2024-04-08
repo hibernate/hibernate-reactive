@@ -108,7 +108,7 @@ task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation')
     outputDir = new File("$buildDir/asciidoc/reference/html_single")
     options logDocuments: true
 	attributes icons: 'font', experimental: true,
-			   'source-highlighter': 'prettify',
+			   'source-highlighter': 'coderay',
 			   linkcss: true,
 			   majorMinorVersion: project.version.family,
 			   fullVersion: project.version.toString(),
