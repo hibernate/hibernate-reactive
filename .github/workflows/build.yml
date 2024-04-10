@@ -3,11 +3,9 @@ name: Hibernate Reactive CI
 on:
   push:
     branches:
-      - main
-    tags:
-      - '2.*'
+      - wip/orm-6.5
   pull_request:
-    branches: main
+    branches: wip/orm-6.5
 
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
 concurrency:
