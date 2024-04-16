@@ -105,14 +105,23 @@ task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation')
         include 'index.adoc'
     }
 
-    outputDir = new File("$buildDir/asciidoc/reference/html_single")
+	resources {
+		from(sourceDir) {
+			include 'images/**'
+			include 'css/**'
+		}
+	}
+
+	outputDir = new File("$buildDir/asciidoc/reference/html_single")
     options logDocuments: true
-	attributes icons: 'font', experimental: true,
-			   'source-highlighter': 'prettify',
+	attributes icons: 'font',
+			   'source-highlighter': 'rouge',
+			   experimental: true,
 			   linkcss: true,
 			   majorMinorVersion: project.version.family,
 			   fullVersion: project.version.toString(),
 			   docinfo: 'private'
+
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
