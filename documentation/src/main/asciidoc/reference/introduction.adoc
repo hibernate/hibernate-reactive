@@ -678,7 +678,7 @@ Whatever you decide, the first step to getting a reactive session is to obtain
 a JPA `EntityManagerFactory` just as you usually would in plain ol' regular JPA,
 for example, by calling:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
 ----
@@ -687,7 +687,7 @@ Now, `unwrap()` the reactive `SessionFactory`. If you want to use
 ``CompletionStage``s for chaining reactive operations, ask for a
 `Stage.SessionFactory`:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 ----
@@ -695,7 +695,7 @@ Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
 Or, if you prefer to use the Mutiny-based API, `unwrap()` the type
 `Mutiny.SessionFactory`:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
 ----
@@ -724,7 +724,7 @@ concurrent reactive streams!
 
 To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 sessionFactory.withSession(
         session -> session.find(Book.class, id)
@@ -743,7 +743,7 @@ the session when you're done.
 And you must take great care to only access each session from within exactly
 one Vert.x context. (See <<_sessions_and_vert_x_contexts>> more on this).
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Uni<Session> sessionUni = sessionFactory.openSession();
 sessionUni.chain(
@@ -801,7 +801,7 @@ Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
 of these methods returns its result in a non-blocking fashion via a Java
 `CompletionStage` (or Mutiny `Uni`). For example:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Book.class, book.id)
        .invoke( book -> System.out.println(book.title + " is a great book!") )
@@ -810,7 +810,7 @@ session.find(Book.class, book.id)
 On the other hand, methods with no meaningful return value just return
 `CompletionStage<Void>` (or `Uni<Void>`).
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Book.class, id)
        .call( book -> session.remove(book) )
@@ -828,7 +828,7 @@ chain the return value of a "void-like" method. For example, in the following
 code, the `flush()` operation is never executed, because `invoke()` doesn't
 chain its return value to the tip of the stream.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Book.class, id)
        .call( book -> session.remove(book) )
@@ -845,7 +845,7 @@ So remember:
 The same problem occurs in the following code, but this time it's `remove()`
 that never gets called:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Book.class, id)
        .call( book -> {
@@ -879,7 +879,7 @@ That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
 queries to be executed asynchronously, always returning their results via a
 `CompletionStage` (or `Uni`):
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.createQuery("select title from Book order by title desc")
        .getResultList()
@@ -910,7 +910,7 @@ For  JPA criteria queries, you must first obtain the `CriteriaBuilder` using
 `SessionFactory.getCriteriaBuilder()`, and execute your query using
 `Session.createQuery()`.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery(Book.class);
 Root<Author> a = query.from(Author.class);
@@ -932,7 +932,7 @@ produces a result via a `CompletionStage` (or `Uni`).
 Therefore, lazy fetching is an explicit operation named `fetch()`, a static
 method of `Stage` and `Mutiny`:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Author.class, author.id)
        .chain( author -> Mutiny.fetch(author.books) )
@@ -949,7 +949,7 @@ patterns like "open session in view" will _not help at all_.
 Sometimes you might need to chain multiple calls to `fetch()`, for
 example:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Mutiny.fetch( session.getReference(detachedAuthor) )
        .chain( author -> Mutiny.fetch(author.books) )
@@ -968,7 +968,7 @@ bytecode enhancer&mdash;is also an explicit operation.
 
 To declare a lazy field we usually use the JPA `@Basic` annotation:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 @Basic(fetch=LAZY) String isbn;
 ----
@@ -987,7 +987,7 @@ there.
 A lazy field is only fetched if we explicitly request it by calling an
 overloaded version of the `fetch()` operation:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.find(Book.class, book.id)
        .chain( book -> session.fetch(book, Book_.isbn) )
@@ -1006,7 +1006,7 @@ as vulnerable to N+1 selects as lazy association fetching.
 The `withTransaction()` method performs work within the scope of a database
 transaction.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 session.withTransaction( tx -> session.persist(book) )
 ----
@@ -1025,7 +1025,7 @@ transactions.
 For extra convenience, there's a method that opens a session and starts a
 transaction in one call:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 ----
@@ -1083,7 +1083,7 @@ puff of pixie dust. That's not how these things work.
 
 For example, I bet you would like to be able to write code like this:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 List<CompletionStage> list = ...
 for (Entity entity : entities) {
@@ -1103,7 +1103,7 @@ Vert.x `Context` object using {vertx-get-context}[`getOrCreateContext()`] and
 then call {vertx-runon-context}[`runOnContext()`] to execute the code in that
 context.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Context currentContext = Vertx.currentContext();
 currentContext.runOnContext( event -> {
@@ -1122,7 +1122,7 @@ needed. But if your program requires control over how the Vert.x instance is
 created, or how it's obtained, you can override the default implementation and
 provide your own `VertxInstance`. Let's consider this example:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 public class MyVertx implements VertxInstance {
 
@@ -1143,7 +1143,7 @@ public class MyVertx implements VertxInstance {
 One way to register this implementation is to configure Hibernate programmatically,
 for example:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Configuration configuration = new Configuration();
 StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
@@ -1155,7 +1155,7 @@ SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
 
 Alternatively, you could implement the `ServiceContributor` interface.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 public class MyServiceContributor implements ServiceContributor {
   @Override
@@ -1168,7 +1168,7 @@ public class MyServiceContributor implements ServiceContributor {
 To register this `ServiceContributor`, add a text file named
 `org.hibernate.service.spi.ServiceContributor` to `/META-INF/services/`.
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 org.myproject.MyServiceContributor
 ----
@@ -1177,7 +1177,7 @@ org.myproject.MyServiceContributor
 //or `Mutiny.SessionFactory` using the `org.hibernate.reactive.common.spi.Implementor`
 //interface:
 //
-//[source, JAVA, indent=0]
+//[source,java]
 //----
 //Mutiny.SessionFactory sessionFactory = ...
 //VertxInstance vertxInstance = ((Implementor) sessionFactory)
@@ -1391,7 +1391,7 @@ interacting with the database.
 
 You may obtain a reactive stateless session from the `SessionFactory`:
 
-[source, JAVA, indent=0]
+[source,java]
 ----
 Stage.StatelessSession ss = getSessionFactory().openStatelessSession();
 ----
