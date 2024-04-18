@@ -152,7 +152,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 
 	@Override
 	protected DeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( super.getSoftDeleteMapping(), this, getFactory() );
 	}
 
 	@Override

@@ -9,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-
 import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -49,7 +48,7 @@ import org.hibernate.reactive.generator.values.GeneratedValuesMutationDelegateAd
 import org.hibernate.reactive.generator.values.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveAbstractDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -115,7 +114,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	protected DeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( super.getSoftDeleteMapping(), this, getFactory() );
 	}
 
 	@Override
@@ -357,7 +356,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
-		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
+		return ( (ReactiveAbstractDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
 	}
 
 	/**

@@ -9,8 +9,11 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.SoftDeleteMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorSoft;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
@@ -39,10 +42,13 @@ public final class ReactiveCoordinatorFactory {
 		return new ReactiveUpdateCoordinatorNoOp( entityPersister );
 	}
 
-	public static ReactiveDeleteCoordinator buildDeleteCoordinator(
+	public static DeleteCoordinator buildDeleteCoordinator(
+			SoftDeleteMapping softDeleteMapping,
 			AbstractEntityPersister entityPersister,
 			SessionFactoryImplementor factory) {
-		return new ReactiveDeleteCoordinator( entityPersister, factory );
+		return softDeleteMapping != null
+				? new ReactiveDeleteCoordinatorSoft( entityPersister, factory )
+				: new ReactiveDeleteCoordinator( entityPersister, factory );
 	}
 
 	public static ReactiveUpdateCoordinator buildMergeCoordinator(
