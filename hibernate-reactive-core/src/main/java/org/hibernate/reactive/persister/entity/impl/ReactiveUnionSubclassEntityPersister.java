@@ -170,7 +170,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	protected DeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveCoordinatorFactory.buildDeleteCoordinator( this, getFactory() );
+		return ReactiveCoordinatorFactory.buildDeleteCoordinator( super.getSoftDeleteMapping(), this, getFactory() );
 	}
 
 	@Override
