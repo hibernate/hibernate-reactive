@@ -30,6 +30,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -228,6 +229,25 @@ public class ReferenceTest extends BaseReactiveTest {
 							assertNotNull( book );
 							assertEquals( 1, book.version );
 						} )
+		);
+	}
+
+	@Test
+	public void testFetchOfReference(VertxTestContext context) {
+		final Book goodOmens = new Book( "Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch" );
+		final Author neil = new Author( "Neil Gaiman", goodOmens );
+		final Author terry = new Author( "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neil );
+		goodOmens.getAuthors().add( terry );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persistAll( goodOmens, terry, neil ) )
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						// Not the most common case, but should be possible
+						.fetch( s.getReference( Book.class, goodOmens.getId() ) )
+						.chain( reference -> s.fetch( reference.getAuthors() ) )
+						.invoke( authors -> assertThat( authors ).containsExactlyInAnyOrder( terry, neil ) )
+				) )
 		);
 	}
 
