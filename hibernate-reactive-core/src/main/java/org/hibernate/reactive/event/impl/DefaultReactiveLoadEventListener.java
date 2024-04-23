@@ -361,7 +361,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			// we have a HibernateProxy factory, this case is more complicated
 			return loadWithProxyFactory( event, persister, keyToLoad );
 		}
-		else if ( !persister.hasSubclasses() ) {
+		else if ( persister.hasSubclasses() ) {
 			// the entity class has subclasses and there is no HibernateProxy factory
 			return load( event, persister, keyToLoad, options );
 		}
