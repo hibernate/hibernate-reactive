@@ -848,16 +848,23 @@ public interface Mutiny {
 
 		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
-		 *
+		 * <p>
 		 * <pre>
 		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
 		 * </pre>
-		 *
-		 * @param association a lazy-loaded association
+		 * </p>
+		 * <p>
+		 * It can also initialize proxys. For example:
+		 * <pre>
+		 * {@code session.fetch(session.getReference(Author.class, authorId))}
+		 * </pre>
+		 * </p>
+		 * @param association a lazy-loaded association, or a proxy
 		 *
 		 * @return the fetched association, via a {@code Uni}
 		 *
 		 * @see Mutiny#fetch(Object)
+		 * @see #getReference(Class, Object)
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> Uni<T> fetch(T association);
