@@ -339,7 +339,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				}
 			}
 
-			return createCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
+			return createReactiveCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
 		}
 		catch (RuntimeException e) {
 			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
@@ -349,7 +349,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
-	private <T> ReactiveQueryImplementor<T> createCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
+	protected <T> ReactiveQueryImplementor<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
 		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
 		applyQuerySettingsAndHints( query );
 		return query;
@@ -524,7 +524,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
+			return createReactiveCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -535,7 +535,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete<R> deleteQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
+			return createReactiveCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -546,7 +546,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect<R> insertSelect) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
+			return createReactiveCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );

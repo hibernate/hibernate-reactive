@@ -22,6 +22,7 @@ import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
 import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.spi.LoadState;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -37,6 +38,12 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
+
+	@Override
+	public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration persistenceConfiguration) {
+		// Same as ORM
+		throw log.notYetImplemented();
+	}
 
 	/**
 	 * {@inheritDoc}
