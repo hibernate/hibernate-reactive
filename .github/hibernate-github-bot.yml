@@ -4,3 +4,9 @@ develocity:
     # To have the bot create a GitHub check listing Develocity build scans
     # for every commit that has completed checks related to CI (GitHub Actions or Jenkins)
     addCheck: true
+    # To group tags in a separate column and/or alter/remove some tags,
+    # a list of column rules can be configured:
+    tags:
+      - column: "Database"
+        pattern: "Test with (.*)"
+        replacement: "$1"
