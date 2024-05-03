@@ -89,6 +89,7 @@ include 'release'
 include 'bytecode-enhancements-it'
 include 'verticle-postgres-it'
 include 'techempower-postgres-it'
+include 'hibernate-validator-postgres-it'
 
 // Examples
 for ( project in rootProject.children ) {
