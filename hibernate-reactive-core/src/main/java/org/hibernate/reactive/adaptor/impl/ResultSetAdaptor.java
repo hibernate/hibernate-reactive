@@ -44,6 +44,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.sqlclient.PropertyKind;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.RowBase;
 
@@ -56,12 +57,70 @@ import static java.util.Objects.requireNonNull;
  */
 public class ResultSetAdaptor implements ResultSet {
 
-	private final Iterator<Row> iterator;
+	private final Iterator<? extends Row> iterator;
 
 	private final List<ColumnDescriptor> columnDescriptors;
 	private final List<String> columnNames;
 	private Row row;
 	private boolean wasNull;
+
+	public ResultSetAdaptor(Object id, Class<?> idClass, String columnName) {
+		requireNonNull( id );
+		this.iterator = List.of( new RowAdaptor( id, idClass, columnName ) ).iterator();
+		this.columnNames = columnName == null ? emptyList() : List.of( columnName );
+		this.columnDescriptors = List.of( toColumnDescriptor( idClass, columnName ) );
+	}
+
+	private static class RowAdaptor implements Row {
+		private final Object id;
+		private final Class<?> idClass;
+		private final String columnName;
+
+		public RowAdaptor(Object id, Class<?> idClass, String columnName) {
+			this.id = id;
+			this.idClass = idClass;
+			this.columnName = columnName;
+		}
+
+		@Override
+		public Object getValue(String column) {
+			return id;
+		}
+
+		@Override
+		public String getColumnName(int pos) {
+			return columnName;
+		}
+
+		@Override
+		public int getColumnIndex(String column) {
+			return 0;
+		}
+
+		@Override
+		public Object getValue(int pos) {
+			return id;
+		}
+
+		@Override
+		public Tuple addValue(Object value) {
+			return null;
+		}
+
+		@Override
+		public int size() {
+			return 1;
+		}
+
+		@Override
+		public void clear() {
+		}
+
+		@Override
+		public List<Class<?>> types() {
+			return List.of( idClass );
+		}
+	}
 
 	public ResultSetAdaptor(RowSet<Row> rows) {
 		requireNonNull( rows );
@@ -83,7 +142,11 @@ public class ResultSetAdaptor implements ResultSet {
 		requireNonNull( idColumnName );
 		this.iterator = List.of( row ).iterator();
 		this.columnNames = List.of( idColumnName );
-		ColumnDescriptor columnDescriptor = new ColumnDescriptor() {
+		this.columnDescriptors = List.of( toColumnDescriptor( idClass, idColumnName ) );
+	}
+
+	private static ColumnDescriptor toColumnDescriptor(Class<?> idClass, String idColumnName) {
+		return new ColumnDescriptor() {
 			@Override
 			public String name() {
 				return idColumnName;
@@ -104,7 +167,6 @@ public class ResultSetAdaptor implements ResultSet {
 				return null;
 			}
 		};
-		this.columnDescriptors = List.of( columnDescriptor );
 	}
 
 	private static class RowFromId extends RowBase {

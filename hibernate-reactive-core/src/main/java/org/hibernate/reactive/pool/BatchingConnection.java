@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -169,11 +171,7 @@ public class BatchingConnection implements ReactiveConnection {
 			Class<?> idClass,
 			String idColumnName) {
 		return insertAndSelectIdentifier( sql, paramValues, idClass, idColumnName )
-				.thenApply( this::convertToResultSet );
-	}
-
-	private ResultSet convertToResultSet(Object o) {
-		return null;
+				.thenApply( id -> new ResultSetAdaptor( id, idClass, idColumnName ) );
 	}
 
 	public CompletionStage<ReactiveConnection.Result> select(String sql) {
