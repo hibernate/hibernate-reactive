@@ -106,7 +106,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 				getJdbcEnvironment().getDialect()
 		);
 		final String queryToUse = parametersDialectSpecific.process( queryString, parametersToUse.length );
-		return connectionStage.thenCompose( c -> c.selectJdbcOutsideTransaction( queryToUse, parametersToUse ) )
+		return connectionStage.thenCompose( c -> c.selectJdbc( queryToUse, parametersToUse ) )
 				.whenComplete( (resultSet, err) -> logSqlException( err, () -> "could not execute query ", queryToUse ) )
 				.thenApply(ResultSetWorkaround::new)
 				.toCompletableFuture()
