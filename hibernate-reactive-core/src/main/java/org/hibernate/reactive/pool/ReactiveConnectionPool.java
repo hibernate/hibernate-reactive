@@ -10,7 +10,9 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.service.Service;
 
+import java.sql.ResultSet;
 import java.util.concurrent.CompletionStage;
+
 
 /**
  * A Hibernate {@link Service} that provides access to pooled
@@ -62,6 +64,8 @@ public interface ReactiveConnectionPool extends Service {
 	 * for the pool.
 	 */
 	CompletionStage<ReactiveConnection> getConnection(String tenantId, SqlExceptionHelper sqlExceptionHelper);
+
+	CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues);
 
 	/**
 	 * The shutdown of the pool is actually asynchronous but the

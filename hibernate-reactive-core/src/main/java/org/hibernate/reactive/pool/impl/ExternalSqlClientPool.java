@@ -5,15 +5,26 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import io.vertx.sqlclient.DatabaseException;
 import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.Tuple;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -81,5 +92,42 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 	@Override
 	public CompletionStage<Void> getCloseFuture() {
 		return CompletionStages.voidFuture();
+	}
+
+
+	@Override
+	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
+		return preparedQueryOutsideTransaction( sql, Tuple.wrap( paramValues ) )
+				.thenApply( ResultSetAdaptor::new );
+	}
+
+	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql, Tuple parameters) {
+		feedback( sql );
+		return getPool().preparedQuery( sql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+	}
+
+	/**
+	 * Similar to {@link org.hibernate.exception.internal.SQLExceptionTypeDelegate#convert(SQLException, String, String)}
+	 */
+	private <T> T convertException(T rows, String sql, Throwable sqlException) {
+		if ( sqlException == null ) {
+			return rows;
+		}
+		if ( sqlException instanceof DatabaseException ) {
+			DatabaseException de = (DatabaseException) sqlException;
+			sqlException = sqlExceptionHelper
+					.convert( new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode() ), "error executing SQL statement", sql );
+		}
+		return rethrow( sqlException );
+	}
+
+	private void feedback(String sql) {
+		Objects.requireNonNull( sql, "SQL query cannot be null" );
+		// DDL already gets formatted by the client, so don't reformat it
+		FormatStyle formatStyle = sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )
+				? FormatStyle.BASIC
+				: FormatStyle.NONE;
+		sqlStatementLogger.logStatement( sql, formatStyle.getFormatter() );
 	}
 }

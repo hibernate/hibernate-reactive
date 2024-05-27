@@ -5,18 +5,29 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import io.vertx.core.Future;
+import io.vertx.sqlclient.DatabaseException;
 import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Tuple;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 
 /**
  * A pool of reactive connections backed by a supplier of
@@ -97,6 +108,56 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 				pool.getConnection().map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
 				ReactiveConnection::close
 		);
+	}
+
+	/**
+	 * This method is intended to be used only for queries returning
+	 * a ResultSet that must be executed outside any "current"
+	 * transaction (i.e. with autocommit=true).
+	 * <p/>
+	 * For example, it would be appropriate to use this method when
+	 * performing queries on information_schema or system tables in
+	 * order to obtain metadata information about catalogs, schemas,
+	 * tables, etc.
+	 *
+	 * @param sql - the query to execute outside a transaction
+	 * @param paramValues - a non-null array of parameter values
+	 *
+	 * @return the CompletionStage<ResultSet> from executing the query.
+	 */
+	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
+		return preparedQueryOutsideTransaction( sql, Tuple.wrap( paramValues ) )
+				.thenApply( ResultSetAdaptor::new );
+	}
+
+	private CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql, Tuple parameters) {
+		feedback( sql );
+		return getPool().preparedQuery( sql ).execute( parameters ).toCompletionStage()
+				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+	}
+
+	/**
+	 * Similar to {@link org.hibernate.exception.internal.SQLExceptionTypeDelegate#convert(SQLException, String, String)}
+	 */
+	private <T> T convertException(T rows, String sql, Throwable sqlException) {
+		if ( sqlException == null ) {
+			return rows;
+		}
+		if ( sqlException instanceof DatabaseException ) {
+			DatabaseException de = (DatabaseException) sqlException;
+			sqlException = getSqlExceptionHelper()
+					.convert( new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode() ), "error executing SQL statement", sql );
+		}
+		return rethrow( sqlException );
+	}
+
+	private void feedback(String sql) {
+		Objects.requireNonNull( sql, "SQL query cannot be null" );
+		// DDL already gets formatted by the client, so don't reformat it
+		FormatStyle formatStyle = getSqlStatementLogger().isFormat() && !sql.contains( System.lineSeparator() )
+				? FormatStyle.BASIC
+				: FormatStyle.NONE;
+		getSqlStatementLogger().logStatement( sql, formatStyle.getFormatter() );
 	}
 
 	/**

@@ -34,12 +34,10 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.resource.transaction.spi.DdlTransactionIsolator;
@@ -48,11 +46,10 @@ import org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl;
 import org.hibernate.tool.schema.internal.exec.JdbcContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionContextImpl {
 
-	private final ReactiveConnectionPool service;
+	private final ReactiveConnectionPool connectionPool;
 
 	public ReactiveImprovedExtractionContextImpl(
 			ServiceRegistry registry,
@@ -65,7 +62,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 				NoopDdlTransactionIsolator.INSTANCE,
 				databaseObjectAccess
 		);
-		service = registry.getService( ReactiveConnectionPool.class );
+		connectionPool = registry.getService( ReactiveConnectionPool.class );
 	}
 
 	@Override
@@ -73,44 +70,32 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 			String queryString,
 			Object[] positionalParameters,
 			ResultSetProcessor<T> resultSetProcessor) throws SQLException {
-
-		final CompletionStage<ReactiveConnection> connectionStage = service.getConnection();
-
-		try (final ResultSet resultSet = getQueryResultSet( queryString, positionalParameters, connectionStage )) {
+		try (final ResultSet resultSet = getQueryResultSet( queryString, positionalParameters )) {
 			return resultSetProcessor.process( resultSet );
 		}
-		finally {
-			// This method doesn't return a reactive type, so we start closing the connection and ignore the result
-			connectionStage
-					.handle( ReactiveImprovedExtractionContextImpl::ignoreException )
-					.thenCompose( ReactiveImprovedExtractionContextImpl::closeConnection );
-
-		}
-	}
-
-	private static ReactiveConnection ignoreException(ReactiveConnection reactiveConnection, Throwable throwable) {
-		return reactiveConnection;
-	}
-
-	private static CompletionStage<Void> closeConnection(ReactiveConnection connection) {
-		// Avoid NullPointerException if we couldn't create a connection
-		return connection != null ? connection.close() : voidFuture();
 	}
 
 	private ResultSet getQueryResultSet(
 			String queryString,
-			Object[] positionalParameters,
-			CompletionStage<ReactiveConnection> connectionStage) {
+			Object[] positionalParameters) {
 		final Object[] parametersToUse = positionalParameters != null ? positionalParameters : new Object[0];
-		final Parameters parametersDialectSpecific = Parameters.instance(
-				getJdbcEnvironment().getDialect()
-		);
+		final Parameters parametersDialectSpecific = Parameters.instance( getJdbcEnvironment().getDialect() );
 		final String queryToUse = parametersDialectSpecific.process( queryString, parametersToUse.length );
-		return connectionStage.thenCompose( c -> c.selectJdbcOutsideTransaction( queryToUse, parametersToUse ) )
+		return connectionPool
+				// DDL needs to run outside the current transaction. For example:
+				// - increment on a table-based id generator should happen outside the current tx.
+				// - not all databases support transactional DDL
+				.selectJdbcOutsideTransaction( queryToUse, parametersToUse )
 				.whenComplete( (resultSet, err) -> logSqlException( err, () -> "could not execute query ", queryToUse ) )
-				.thenApply(ResultSetWorkaround::new)
+				.thenApply( ResultSetWorkaround::new )
+				// During schema migration, errors are ignored
+				.handle( ReactiveImprovedExtractionContextImpl::ignoreException )
 				.toCompletableFuture()
 				.join();
+	}
+
+	private static <T> T ignoreException(T result, Throwable throwable) {
+		return result;
 	}
 
 	private static class NoopDdlTransactionIsolator implements DdlTransactionIsolator {
