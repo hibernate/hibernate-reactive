@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
@@ -190,11 +189,6 @@ public class BatchingConnection implements ReactiveConnection {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.selectJdbc( sql, paramValues ) )
 				: delegate.selectJdbc( sql, paramValues );
-	}
-
-	@Override
-	public CompletionStage<ResultSet> selectJdbcOutsideTransaction(String sql, Object[] paramValues) {
-		return delegate.selectJdbcOutsideTransaction( sql, paramValues );
 	}
 
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
