@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,6 +15,8 @@ import java.util.StringTokenizer;
 import org.hibernate.boot.model.TruthValue;
 import org.hibernate.boot.model.naming.DatabaseIdentifier;
 import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.tool.schema.extract.internal.AbstractInformationExtractorImpl;
 import org.hibernate.tool.schema.extract.internal.ColumnInformationImpl;
 import org.hibernate.tool.schema.extract.spi.ColumnInformation;
@@ -28,6 +31,8 @@ import org.hibernate.tool.schema.extract.spi.TableInformation;
  * @author Gail Badner
  */
 public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extends AbstractInformationExtractorImpl  {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public AbstractReactiveInformationSchemaBasedExtractorImpl(ExtractionContext extractionContext) {
 		super( extractionContext );
@@ -152,6 +157,20 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				null,
 				processor
 		);
+	}
+
+	@Override
+	protected <T> T processCrossReferenceResultSet(
+			String parentCatalog,
+			String parentSchema,
+			String parentTable,
+			String foreignCatalog,
+			String foreignSchema,
+			String foreignTable,
+			ExtractionContext.ResultSetProcessor<T> processor) {
+		// This method has been added as fix for https://hibernate.atlassian.net/browse/HHH-18221
+		// The issue is only for Informix that we don't currently support.
+		throw LOG.notYetImplemented();
 	}
 
 	@Override

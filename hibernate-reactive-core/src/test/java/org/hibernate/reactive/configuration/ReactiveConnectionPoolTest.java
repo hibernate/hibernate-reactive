@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
@@ -63,6 +64,11 @@ public class ReactiveConnectionPoolTest {
 			@Override
 			public SqlStatementLogger getSqlStatementLogger() {
 				return new SqlStatementLogger();
+			}
+
+			@Override
+			public SqlExceptionHelper getSqlExceptionHelper() {
+				return new SqlExceptionHelper( true );
 			}
 		} );
 		DefaultSqlClientPool reactivePool = new DefaultSqlClientPool();
