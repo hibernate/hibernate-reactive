@@ -26,17 +26,22 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 /**
  * @see org.hibernate.query.sql.spi.NamedNativeQueryMemento
  */
-public class ReactiveNamedSqmQueryMemento implements NamedSqmQueryMemento {
+public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> {
 
-	private final NamedSqmQueryMemento delegate;
+	private final NamedSqmQueryMemento<E> delegate;
 
-	public ReactiveNamedSqmQueryMemento(NamedSqmQueryMemento delegate) {
+	public ReactiveNamedSqmQueryMemento(NamedSqmQueryMemento<E> delegate) {
 		Objects.requireNonNull( delegate );
 		this.delegate = delegate;
 	}
 
 	@Override
-	public <T> SqmQueryImplementor<T> toQuery(SharedSessionContractImplementor session) {
+	public Class<? extends E> getResultType() {
+		return delegate.getResultType();
+	}
+
+	@Override
+	public SqmQueryImplementor<E> toQuery(SharedSessionContractImplementor session) {
 		return toQuery( session, null );
 	}
 
@@ -73,7 +78,7 @@ public class ReactiveNamedSqmQueryMemento implements NamedSqmQueryMemento {
 	}
 
 	@Override
-	public SqmStatement<?> getSqmStatement() {
+	public SqmStatement<E> getSqmStatement() {
 		return delegate.getSqmStatement();
 	}
 
@@ -98,8 +103,8 @@ public class ReactiveNamedSqmQueryMemento implements NamedSqmQueryMemento {
 	}
 
 	@Override
-	public NamedSqmQueryMemento makeCopy(String name) {
-		return new ReactiveNamedSqmQueryMemento( delegate.makeCopy( name ) );
+	public NamedSqmQueryMemento<E> makeCopy(String name) {
+		return new ReactiveNamedSqmQueryMemento<>( delegate.makeCopy( name ) );
 	}
 
 	@Override

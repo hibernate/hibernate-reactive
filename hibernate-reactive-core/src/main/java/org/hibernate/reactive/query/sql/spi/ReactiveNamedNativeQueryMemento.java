@@ -19,12 +19,17 @@ import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 /**
  * @see NamedNativeQueryMemento
  */
-public class ReactiveNamedNativeQueryMemento implements NamedNativeQueryMemento {
+public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemento<E> {
 
-	private final NamedNativeQueryMemento delegate;
+	private final NamedNativeQueryMemento<E> delegate;
 
-	public ReactiveNamedNativeQueryMemento(NamedNativeQueryMemento delegate) {
+	public ReactiveNamedNativeQueryMemento(NamedNativeQueryMemento<E> delegate) {
 		this.delegate = delegate;
+	}
+
+	@Override
+	public Class<? extends E> getResultType() {
+		return delegate.getResultType();
 	}
 
 	@Override
@@ -63,23 +68,23 @@ public class ReactiveNamedNativeQueryMemento implements NamedNativeQueryMemento 
 	}
 
 	@Override
-	public <T> NativeQueryImplementor<T> toQuery(SharedSessionContractImplementor session) {
-		return new ReactiveNativeQueryImpl<T>( this, session );
+	public NativeQueryImplementor<E> toQuery(SharedSessionContractImplementor session) {
+		return new ReactiveNativeQueryImpl<>( this, session );
 	}
 
 	@Override
 	public <T> NativeQueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
-		return new ReactiveNativeQueryImpl<T>( this, resultType, session );
+		return new ReactiveNativeQueryImpl<>( this, resultType, session );
 	}
 
 	@Override
 	public <T> NativeQueryImplementor<T> toQuery(SharedSessionContractImplementor session, String resultSetMapping) {
-		return new ReactiveNativeQueryImpl<T>( this, resultSetMapping, session );
+		return new ReactiveNativeQueryImpl<>( this, resultSetMapping, session );
 	}
 
 	@Override
-	public NamedNativeQueryMemento makeCopy(String name) {
-		return new ReactiveNamedNativeQueryMemento( delegate.makeCopy( name ) );
+	public NamedNativeQueryMemento<E> makeCopy(String name) {
+		return new ReactiveNamedNativeQueryMemento<>( delegate.makeCopy( name ) );
 	}
 
 	@Override
