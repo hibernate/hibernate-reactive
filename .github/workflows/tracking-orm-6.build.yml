@@ -35,7 +35,7 @@ jobs:
     strategy:
       matrix:
         example: [ 'session-example', 'native-sql-example' ]
-        orm-version: [ '[6.6,6.7)' ]
+        orm-version: [ '[7.0,7.1)' ]
         db: ['MySQL', 'PostgreSQL']
         exclude:
           # 'native-sql-example' doesn't run on MySQL because it has native queries
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        orm-version: [ '[6.6,6.7)' ]
+        orm-version: [ '[7.0,7.1)' ]
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle' ]
     steps:
       - uses: actions/checkout@v2
