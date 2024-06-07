@@ -48,9 +48,9 @@ import static org.hibernate.reactive.QueryTest.Book.BOOK_TABLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class QueryTest extends BaseReactiveTest {
@@ -407,10 +407,10 @@ public class QueryTest extends BaseReactiveTest {
 				.thenAccept( books -> {
 					assertEquals( 3, books.size() );
 					books.forEach( tuple -> {
-						assertTrue( tuple instanceof Object[] );
+						assertInstanceOf( Object[].class, tuple );
 						assertEquals( 2, tuple.length );
-						assertTrue( tuple[0] instanceof String );
-						assertTrue( tuple[1] instanceof String );
+						assertInstanceOf( String.class, tuple[0] );
+						assertInstanceOf( String.class, tuple[1] );
 					} );
 				} )
 				.thenCompose( v -> openSession() )
@@ -425,24 +425,23 @@ public class QueryTest extends BaseReactiveTest {
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
 									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertInstanceOf( String.class, tuple[0] );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE )
 								.getResultList()
-								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) )
-						)
+								.thenAccept( list -> assertInstanceOf( String.class, list.get( 0 ) ) ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE, String.class )
 								.getResultList()
-								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) ) )
+								.thenAccept( list -> assertInstanceOf( String.class, list.get( 0 ) ) ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = (Object[]) list.get( 0 );
 									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertInstanceOf( String.class, tuple[0] );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Object[].class )
@@ -450,7 +449,7 @@ public class QueryTest extends BaseReactiveTest {
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
 									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertInstanceOf( String.class, tuple[0] );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Tuple.class )
@@ -458,8 +457,8 @@ public class QueryTest extends BaseReactiveTest {
 								.thenAccept( list -> {
 									Tuple tuple = list.get( 0 );
 									assertEquals( 3, tuple.toArray().length );
-									assertTrue( tuple.get( 0 ) instanceof String );
-									assertTrue( tuple.get( "isbn" ) instanceof String );
+									assertInstanceOf( String.class, tuple.get( 0 ) );
+									assertInstanceOf( String.class, tuple.get( "isbn" ) );
 								} ) )
 				)
 		);
@@ -488,10 +487,10 @@ public class QueryTest extends BaseReactiveTest {
 						.thenAccept( books -> {
 							assertEquals( 3, books.size() );
 							books.forEach( tuple -> {
-								assertTrue( tuple instanceof Object[] );
+								assertInstanceOf( Object[].class, tuple );
 								assertEquals( 2, tuple.length );
-								assertTrue( tuple[0] instanceof String );
-								assertTrue( tuple[1] instanceof String );
+								assertInstanceOf( String.class, tuple[0] );
+								assertInstanceOf( String.class, tuple[1] );
 							} );
 						} )
 
@@ -527,10 +526,10 @@ public class QueryTest extends BaseReactiveTest {
 						.thenAccept( books -> {
 							assertEquals( 3, books.size() );
 							books.forEach( tuple -> {
-								assertTrue( tuple instanceof Object[] );
+								assertInstanceOf( Object[].class, tuple );
 								assertEquals( 2, tuple.length );
-								assertTrue( tuple[0] instanceof String );
-								assertTrue( tuple[1] instanceof String );
+								assertInstanceOf( String.class, tuple[0] );
+								assertInstanceOf( String.class, tuple[1] );
 							} );
 						} )
 		);
@@ -573,7 +572,7 @@ public class QueryTest extends BaseReactiveTest {
 
 				} )
 				.handle( (r, x) -> {
-					assertTrue( x.getCause() instanceof NoResultException );
+					assertInstanceOf( NoResultException.class, x.getCause() );
 					return null;
 				} )
 		);
