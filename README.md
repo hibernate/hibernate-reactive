@@ -31,7 +31,7 @@ Hibernate Reactive has been tested with:
 
 - Java 11, 17, 20, 21
 - PostgreSQL 16
-- MySQL 8.3
+- MySQL 8
 - MariaDB 11
 - Db2 11.5
 - CockroachDB v23.1
