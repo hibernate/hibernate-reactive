@@ -232,7 +232,7 @@ public class ReactiveTest {
 		MYSQL( () -> new MySQLContainer( "mysql:8.4.0" ) ),
 		DB2( () -> new Db2Container( "docker.io/icr.io/db2_community/db2:11.5.9.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:11.4.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v23.1.17" ) );
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v24.1.0" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 
