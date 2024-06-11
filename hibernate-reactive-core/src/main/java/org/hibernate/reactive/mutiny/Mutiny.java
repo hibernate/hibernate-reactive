@@ -195,6 +195,17 @@ public interface Mutiny {
 		Uni<R> getSingleResultOrNull();
 
 		/**
+		 * Determine the size of the query result list that would be
+		 * returned by calling {@link #getResultList()} with no
+		 * {@linkplain #getFirstResult() offset} or
+		 * {@linkplain #getMaxResults() limit} applied to the query.
+		 *
+		 * @return the size of the list that would be returned
+		 */
+		@Incubating
+		Uni<Long> getResultCount();
+
+		/**
 		 * Asynchronously execute this query, returning the query results
 		 * as a {@link List}, via a {@link Uni}. If the query
 		 * has multiple results per row, the results are returned in an

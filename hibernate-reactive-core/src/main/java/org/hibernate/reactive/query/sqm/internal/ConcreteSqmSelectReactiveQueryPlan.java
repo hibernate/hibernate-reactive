@@ -36,6 +36,7 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
+import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
@@ -59,6 +60,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
 		implements ReactiveSelectQueryPlan<R> {
 
+	private final SqmInterpreter<Object, ReactiveResultsConsumer<Object, R>> executeQueryInterpreter;
 	private final SqmInterpreter<List<R>, Void> listInterpreter;
 	private final RowTransformer<R> rowTransformer;
 
@@ -80,6 +82,8 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		this.rowTransformer = determineRowTransformer( sqm, resultType, tupleMetadata, queryOptions );
 		this.listInterpreter = (unused, executionContext, sqmInterpretation, jdbcParameterBindings) ->
 				listInterpreter( hql, domainParameterXref, executionContext, sqmInterpretation, jdbcParameterBindings, rowTransformer );
+		this.executeQueryInterpreter = (resultsConsumer, executionContext, sqmInterpretation, jdbcParameterBindings) ->
+				executeQueryInterpreter( hql, domainParameterXref, executionContext, sqmInterpretation, jdbcParameterBindings, rowTransformer, resultsConsumer );
 	}
 
 	private static <R> CompletionStage<List<R>> listInterpreter(
@@ -110,6 +114,40 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
 	}
 
+	private static <R> CompletionStage<Object> executeQueryInterpreter(
+			String hql,
+			DomainParameterXref domainParameterXref,
+			DomainQueryExecutionContext executionContext,
+			CacheableSqmInterpretation sqmInterpretation,
+			JdbcParameterBindings jdbcParameterBindings,
+			RowTransformer<R> rowTransformer,
+			ReactiveResultsConsumer<Object, R> resultsConsumer) {
+		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
+		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
+		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
+		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
+				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, JdbcParametersList.empty(), jdbcParameterBindings );
+		return completedFuture( fetchHandlerSupplier )
+				.thenApply( Supplier::get )
+				.thenCompose( subSelectFetchKeyHandler ->  session
+						.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
+						.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
+								.executeQuery( jdbcSelect,
+									   jdbcParameterBindings,
+									   ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
+									   rowTransformer,
+									   null,
+									   sql -> executionContext.getSession()
+											   .getJdbcCoordinator()
+											   .getStatementPreparer()
+											   .prepareQueryStatement( sql, false, null ),
+									   resultsConsumer
+								)
+						)
+				)
+				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
+	}
+
 	@Override
 	public ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw new UnsupportedOperationException();
@@ -119,10 +157,21 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	public CompletionStage<List<R>> reactivePerformList(DomainQueryExecutionContext executionContext) {
 		return executionContext.getQueryOptions().getEffectiveLimit().getMaxRowsJpa() == 0
 				? completedFuture( emptyList() )
-				: withCacheableSqmInterpretation( executionContext, listInterpreter );
+				: withCacheableSqmInterpretation( executionContext, null, listInterpreter );
 	}
 
-	private <T, X> CompletionStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, SqmInterpreter<T, X> interpreter) {
+	@Override
+	public <T> CompletionStage<T> reactiveExecuteQuery(
+			DomainQueryExecutionContext executionContext,
+			ReactiveResultsConsumer<T, R> resultsConsumer) {
+		return withCacheableSqmInterpretation(
+				executionContext,
+				resultsConsumer,
+				(SqmInterpreter<T, ReactiveResultsConsumer<T, R>>) (SqmInterpreter) executeQueryInterpreter
+		);
+	}
+
+	private <T, X> CompletionStage<T> withCacheableSqmInterpretation(DomainQueryExecutionContext executionContext, X context, SqmInterpreter<T, X> interpreter) {
 		// NOTE : VERY IMPORTANT - intentional double-lock checking
 		//		The other option would be to leverage `java.util.concurrent.locks.ReadWriteLock`
 		//		to protect access.  However, synchronized is much simpler here.  We will verify
@@ -162,7 +211,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			jdbcParameterBindings = createJdbcParameterBindings( localCopy, executionContext );
 		}
 
-		return interpreter.interpret( null, executionContext, localCopy, jdbcParameterBindings );
+		return interpreter.interpret( context, executionContext, localCopy, jdbcParameterBindings );
 	}
 
 	private JdbcParameterBindings createJdbcParameterBindings(CacheableSqmInterpretation sqmInterpretation, DomainQueryExecutionContext executionContext) {
