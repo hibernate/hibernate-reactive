@@ -14,6 +14,7 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.ScrollableResultsImplementor;
 import org.hibernate.query.spi.SelectQueryPlan;
 import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.sql.results.spi.ResultsConsumer;
 
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
@@ -44,7 +45,7 @@ public interface ReactiveSelectQueryPlan<R> extends SelectQueryPlan<R> {
 	/**
 	 * Execute the query
 	 */
-	default <T> CompletionStage<T> reactiveExecuteQuery(DomainQueryExecutionContext executionContext, ResultsConsumer<T, R> resultsConsumer) {
+	default <T> CompletionStage<T> reactiveExecuteQuery(DomainQueryExecutionContext executionContext, ReactiveResultsConsumer<T, R> resultsConsumer) {
 		return failedFuture( new UnsupportedOperationException() );
 	}
 

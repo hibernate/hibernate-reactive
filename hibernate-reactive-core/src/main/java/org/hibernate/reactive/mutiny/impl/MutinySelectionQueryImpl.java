@@ -46,6 +46,11 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 	}
 
 	@Override
+	public Uni<Long> getResultCount() {
+		return uni( delegate::getReactiveResultCount );
+	}
+
+	@Override
 	public Uni<List<R>> getResultList() {
 		return uni( delegate::getReactiveResultList );
 	}

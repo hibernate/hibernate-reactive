@@ -48,6 +48,11 @@ public class MutinyQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public Uni<Long> getResultCount() {
+		return uni( delegate::getReactiveResultCount );
+	}
+
+	@Override
 	public Uni<List<R>> getResultList() {
 		return uni( delegate::getReactiveResultList );
 	}

@@ -140,6 +140,17 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
+	public long getResultCount() {
+		throw LOG.nonReactiveMethodCall( "getReactiveResultCount()" );
+	}
+
+	@Override
+	public CompletionStage<Long> getReactiveResultCount() {
+		return selectionQueryDelegate
+				.getReactiveResultsCount( ( (SqmSelectStatement<?>) getSqmStatement() ).createCountQuery(), this );
+	}
+
+	@Override
 	public CompletionStage<R> getReactiveSingleResultOrNull() {
 		return selectionQueryDelegate.getReactiveSingleResultOrNull();
 	}
