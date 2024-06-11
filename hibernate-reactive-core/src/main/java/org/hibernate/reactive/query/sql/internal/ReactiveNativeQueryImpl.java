@@ -93,6 +93,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		return null;
 	}
 
+	@Override
+	public long getResultCount() {
+		throw LOG.nonReactiveMethodCall( "getReactiveResultCount()" );
+	}
+
+	@Override
+	public CompletionStage<Long> getReactiveResultCount() {
+		throw LOG.notYetImplemented();
+	}
+
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
 		return new ReactiveAbstractSelectionQuery<>(
 				this::getQueryOptions,
