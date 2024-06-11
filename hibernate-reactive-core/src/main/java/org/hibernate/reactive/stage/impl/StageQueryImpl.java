@@ -39,6 +39,11 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public CompletionStage<Long> getResultCount() {
+		return delegate.getReactiveResultCount();
+	}
+
+	@Override
 	public CompletionStage<List<R>> getResultList() {
 		return delegate.getReactiveResultList();
 	}

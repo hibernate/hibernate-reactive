@@ -49,6 +49,8 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	CompletionStage<R> getReactiveSingleResultOrNull();
 
+	CompletionStage<Long> getReactiveResultCount();
+
 	CompletionStage<R> reactiveUnique();
 
 	CompletionStage<Optional<R>> reactiveUniqueResultOptional();
