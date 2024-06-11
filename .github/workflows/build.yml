@@ -154,6 +154,7 @@ jobs:
           - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
           - { name: "22-ea", java_version_numeric: 22, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "23-ea", java_version_numeric: 23, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "24-ea", java_version_numeric: 24, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
     - uses: actions/checkout@v2
     - name: Get year/month for cache key
