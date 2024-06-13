@@ -17,6 +17,7 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -56,22 +57,52 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	//to reason about what the current state is and what the CombinerExecutor is
 	//supposed to work on.
 	private static class GeneratorState {
-		private int loValue;
-		private long hiValue;
+
+		private static final class LoHi {
+
+			private static final AtomicIntegerFieldUpdater<LoHi> LO_UPDATER = AtomicIntegerFieldUpdater.newUpdater(LoHi.class, "lo");
+			private final long hi;
+			private volatile long lo;
+
+			LoHi(long hi) {
+				this.hi = hi;
+				this.lo = 1;
+			}
+
+			public long next(int blockSize) {
+				final long nextLo = LO_UPDATER.getAndIncrement(this);
+				if (nextLo < blockSize) {
+					return hi + nextLo;
+				}
+				return -1;
+			}
+		}
+
+		private volatile LoHi loHi;
+
+		public long hi(long hi) {
+			loHi = new LoHi(hi);
+			return hi;
+		}
+
+		public long next(int blockSize) {
+			final LoHi loHi = this.loHi;
+			if (loHi == null) {
+				return -1;
+			}
+			return loHi.next(blockSize);
+		}
 	}
 
 	//Critical section: needs to be accessed exclusively via the CombinerExecutor
 	//when there's contention; direct invocation is allowed in the fast path.
-	private synchronized long next() {
-		return state.loValue > 0 && state.loValue < getBlockSize()
-				? state.hiValue + state.loValue++
-				: -1; //flag value indicating that we need to hit db
+	private long next() {
+		return state.next(getBlockSize());
 	}
 
 	//Critical section: needs to be accessed exclusively via the CombinerExecutor
-	private synchronized long next(long hi) {
-		state.hiValue = hi;
-		state.loValue = 1;
+	private long next(long hi) {
+		state.hi(hi);
 		return hi;
 	}
 
