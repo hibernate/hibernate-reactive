@@ -24,6 +24,7 @@ import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.FetchParentAccess;
+import org.hibernate.sql.results.graph.basic.BasicResultAssembler;
 import org.hibernate.sql.results.graph.entity.internal.EntityDelayedFetchInitializer;
 import org.hibernate.type.Type;
 
@@ -38,8 +39,9 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 			NavigablePath fetchedNavigable,
 			ToOneAttributeMapping referencedModelPart,
 			boolean selectByUniqueKey,
-			DomainResultAssembler<?> identifierAssembler) {
-		super( parentAccess, fetchedNavigable, referencedModelPart, selectByUniqueKey, identifierAssembler );
+			DomainResultAssembler<?> identifierAssembler,
+			BasicResultAssembler<?> discriminatorAssembler) {
+		super( parentAccess, fetchedNavigable, referencedModelPart, selectByUniqueKey, identifierAssembler, discriminatorAssembler );
 		this.referencedModelPart = referencedModelPart;
 	}
 

@@ -81,13 +81,15 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 			ToOneAttributeMapping fetchedAttribute,
 			NavigablePath navigablePath,
 			DomainResult<?> keyResult,
-			boolean selectByUniqueKey) {
+			boolean selectByUniqueKey,
+			DomainResultCreationState creationState) {
 		return new ReactiveEntityDelayedFetchImpl(
 				fetchParent,
 				fetchedAttribute,
 				navigablePath,
 				keyResult,
-				selectByUniqueKey
+				selectByUniqueKey,
+				creationState
 		);
 	}
 
