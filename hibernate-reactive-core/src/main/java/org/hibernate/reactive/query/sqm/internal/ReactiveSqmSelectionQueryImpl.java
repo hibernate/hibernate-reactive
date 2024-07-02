@@ -213,6 +213,12 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
+	public CompletionStage<Long> getReactiveResultCount() {
+		return selectionQueryDelegate
+				.getReactiveResultsCount( getSqmStatement().createCountQuery(), this );
+	}
+
+	@Override
 	public List<R> getResultList() {
 		return selectionQueryDelegate.getResultList();
 	}

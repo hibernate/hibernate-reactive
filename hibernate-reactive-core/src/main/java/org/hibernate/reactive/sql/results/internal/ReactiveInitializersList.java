@@ -56,6 +56,12 @@ public final class ReactiveInitializersList {
 		}
 	}
 
+	public void startLoading(final RowProcessingState rowProcessingState) {
+		for ( int i = initializers.length - 1; i >= 0; i-- ) {
+			initializers[i].startLoading( rowProcessingState );
+		}
+	}
+
 	public CompletionStage<Void> initializeInstance(final ReactiveRowProcessingState rowProcessingState) {
 		return loop( initializers, initializer -> {
 			if ( initializer instanceof ReactiveInitializer ) {

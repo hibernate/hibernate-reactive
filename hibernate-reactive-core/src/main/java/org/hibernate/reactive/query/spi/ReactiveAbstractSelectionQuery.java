@@ -21,6 +21,8 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
+import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
+import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -33,6 +35,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.internal.AggregatedSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.internal.ConcreteSqmSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
+import org.hibernate.reactive.sql.results.spi.ReactiveSingleResultConsumer;
 import org.hibernate.sql.results.internal.TupleMetadata;
 
 import jakarta.persistence.NoResultException;
@@ -144,6 +147,17 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return reactiveList()
 				.thenApply( this::reactiveSingleResult )
 				.exceptionally( this::convertException );
+	}
+
+	public CompletionStage<Long> getReactiveResultsCount(SqmSelectStatement<?> sqmStatement, DomainQueryExecutionContext domainQueryExecutionContext) {
+		final DelegatingDomainQueryExecutionContext context = new DelegatingDomainQueryExecutionContext( domainQueryExecutionContext ) {
+			@Override
+			public QueryOptions getQueryOptions() {
+				return QueryOptions.NONE;
+			}
+		};
+		return buildConcreteSelectQueryPlan( sqmStatement.createCountQuery(), Long.class, getQueryOptions() )
+				.reactiveExecuteQuery( context, new ReactiveSingleResultConsumer<>() );
 	}
 
 	private R reactiveSingleResult(List<R> list) {
@@ -269,7 +283,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 		return new AggregatedSelectReactiveQueryPlan<>(  aggregatedQueryPlans );
 	}
 
-	private <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
+	public  <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {

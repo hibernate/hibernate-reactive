@@ -42,6 +42,11 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	}
 
 	@Override
+	public CompletionStage<Long> getResultCount() {
+		return delegate.getReactiveResultCount();
+	}
+
+	@Override
 	public CompletionStage<List<T>> getResultList() {
 		return delegate.getReactiveResultList();
 	}
