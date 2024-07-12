@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 
 import org.hibernate.FetchMode;
 import org.hibernate.LockOptions;
+import org.hibernate.engine.FetchTiming;
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -27,7 +28,9 @@ import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
+import org.hibernate.mapping.RootClass;
 import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
@@ -35,6 +38,7 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationHelper;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.metamodel.mapping.internal.NonAggregatedIdentifierMappingImpl;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
@@ -54,11 +58,14 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactivePluralAttributeMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveToOneAttributeMapping;
+import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonAggregatedIdentifierMappingFetch;
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
+import org.hibernate.sql.results.graph.Fetch;
+import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.EntityType;
 
@@ -155,7 +162,7 @@ public class ReactiveAbstractPersisterDelegate {
 			}
 		}
 
-		return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, factory );
+		return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, new LoadQueryInfluencers( factory ) );
 	}
 
 	private static ReactiveSingleIdEntityLoader<Object> createBatchingIdEntityLoader(
@@ -311,5 +318,46 @@ public class ReactiveAbstractPersisterDelegate {
 						creationProcess,
 						ReactivePluralAttributeMapping::new
 				);
+	}
+
+	public EntityIdentifierMapping convertEntityIdentifierMapping(EntityIdentifierMapping entityIdentifierMapping) {
+		if ( entityIdentifierMapping instanceof NonAggregatedIdentifierMappingImpl ) {
+			return new ReactiveNonAggregatedIdentifierMappingImpl( (NonAggregatedIdentifierMappingImpl) entityIdentifierMapping );
+		}
+		return entityIdentifierMapping;
+	}
+
+	private static class ReactiveNonAggregatedIdentifierMappingImpl extends NonAggregatedIdentifierMappingImpl {
+
+		public ReactiveNonAggregatedIdentifierMappingImpl(
+				EntityPersister entityPersister,
+				RootClass bootEntityDescriptor,
+				String rootTableName,
+				String[] rootTableKeyColumnNames,
+				MappingModelCreationProcess creationProcess) {
+			super( entityPersister, bootEntityDescriptor, rootTableName, rootTableKeyColumnNames, creationProcess );
+		}
+
+		public ReactiveNonAggregatedIdentifierMappingImpl(NonAggregatedIdentifierMappingImpl entityIdentifierMapping) {
+			super( entityIdentifierMapping );
+		}
+
+		@Override
+		public Fetch generateFetch(
+				FetchParent fetchParent,
+				NavigablePath fetchablePath,
+				FetchTiming fetchTiming,
+				boolean selected,
+				String resultVariable,
+				DomainResultCreationState creationState) {
+			return new ReactiveNonAggregatedIdentifierMappingFetch(
+					fetchablePath,
+					this,
+					fetchParent,
+					fetchTiming,
+					selected,
+					creationState
+			);
+		}
 	}
 }

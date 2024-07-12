@@ -241,16 +241,8 @@ public class ReactiveActionQueue {
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction( ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret = voidFuture();
-		if ( insert.isEarlyInsert() ) {
-			// For early inserts, must execute inserts before finding non-nullable transient entities.
-			// TODO: find out why this is necessary
-			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
-			ret = ret.thenCompose( v -> executeInserts() );
-		}
-
-		return ret
+	private CompletionStage<Void> addInsertAction(ReactiveEntityInsertAction insert) {
+		return executeEarlyInsertsIfRequired( insert )
 				.thenCompose( v -> insert.reactiveFindNonNullableTransientEntities() )
 				.thenCompose( nonNullables -> {
 					if ( nonNullables == null ) {
@@ -270,40 +262,51 @@ public class ReactiveActionQueue {
 				} );
 	}
 
-	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret;
+	private CompletionStage<Void> executeEarlyInsertsIfRequired(ReactiveEntityInsertAction insert) {
 		if ( insert.isEarlyInsert() ) {
-			LOG.trace( "Executing insertions before resolved early-insert" );
-			ret = executeInserts()
-					.thenCompose( v -> {
+			// For early inserts, must execute inserts before finding non-nullable transient entities.
+			// TODO: find out why this is necessary
+			LOG.tracev(
+					"Executing inserts before finding non-nullable transient entities for early insert: [{0}]",
+					insert
+			);
+			return executeInserts();
+		}
+		return voidFuture();
+	}
+
+	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		if ( insert.isEarlyInsert() ) {
+			// For early inserts, must execute inserts before finding non-nullable transient entities.
+			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
+			return executeInserts().thenCompose( v -> {
 						LOG.debug( "Executing identity-insert immediately" );
 						return execute( insert );
-					} );
+					} )
+					.thenCompose( v -> postResolvedEntityInsertAction( insert ) );
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			OrderedActions.EntityInsertAction.ensureInitialized( this );
 			this.insertions.add( new ReactiveEntityInsertActionHolder( insert ) );
-			ret = voidFuture();
+			return postResolvedEntityInsertAction( insert );
 		}
+	}
 
-		return ret.thenCompose( v -> {
-			if ( !insert.isVeto() ) {
-				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
-				if ( unresolvedInsertions == null ) {
-					return comp;
-				}
-				else {
-					return comp.thenCompose( vv -> loop(
+	private CompletionStage<Void> postResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		if ( !insert.isVeto() ) {
+			return insert.reactiveMakeEntityManaged().thenCompose( v -> {
+				if ( unresolvedInsertions != null ) {
+					return loop(
 							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
 							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
-					) );
+					);
 				}
-			}
-			else {
-				throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
-			}
-		} );
+				return voidFuture();
+			} );
+		}
+
+		throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
 	}
 
 	private static String[] convertTimestampSpaces(Serializable[] spaces) {

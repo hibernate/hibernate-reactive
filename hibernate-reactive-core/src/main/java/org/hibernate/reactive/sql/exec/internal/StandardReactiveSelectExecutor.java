@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.hibernate.CacheMode;
-import org.hibernate.LockOptions;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -175,17 +174,10 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					);
 
 					final ReactiveRowReader<R> rowReader = ReactiveResultsHelper.createRowReader(
-							executionContext,
-							// If follow-on locking is used, we must omit the lock options here,
-							// because these lock options are only for Initializers.
-							// If we wouldn't omit this, the follow-on lock requests would be no-ops,
-							// because the EntityEntries would already have the desired lock mode
-							deferredResultSetAccess.usesFollowOnLocking()
-									? LockOptions.NONE
-									: executionContext.getQueryOptions().getLockOptions(),
+							executionContext.getSession().getSessionFactory(),
 							rowTransformer,
 							domainResultType,
-							jdbcValues.getValuesMapping()
+							jdbcValues
 					);
 
 					final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState(
@@ -194,6 +186,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 							rowReader,
 							jdbcValues
 					);
+
+					rowReader.startLoading( rowProcessingState );
 
 					return resultsConsumer
 							.consume(
@@ -237,7 +231,12 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		return rowTransformer;
 	}
 
-	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcOperationQuerySelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
+	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(
+			String queryIdentifier,
+			JdbcOperationQuerySelect jdbcSelect,
+			boolean canBeCached,
+			ExecutionContext executionContext,
+			ReactiveDeferredResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
@@ -313,7 +312,16 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
 						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								queryResultsCacheKey,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								null,
+								executionContext
+						) );
 			}
 			else {
 				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
@@ -321,7 +329,16 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 				JdbcValuesMetadata metadataForCache = capturingMetadata.resolveMetadataForCache();
 				return mappingProducer
 						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext ) );
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								queryResultsCacheKey,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								metadataForCache,
+								executionContext
+						) );
 			}
 		}
 		else {
@@ -339,6 +356,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					queryResultsCacheKey,
 					queryIdentifier,
 					executionContext.getQueryOptions(),
+					resultSetAccess.usesFollowOnLocking(),
 					jdbcValuesMapping,
 					capturingMetadata,
 					executionContext

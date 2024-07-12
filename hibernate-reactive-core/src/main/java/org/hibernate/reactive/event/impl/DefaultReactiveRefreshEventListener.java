@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import static org.hibernate.pretty.MessageHelper.infoString;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -23,7 +20,6 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.EntityEntry;
-import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.internal.EvictVisitor;
@@ -45,6 +41,9 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
+
+import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactific {@link org.hibernate.event.internal.DefaultRefreshEventListener}.
@@ -150,11 +149,11 @@ public class DefaultReactiveRefreshEventListener
 		return cascadeRefresh( source, persister, entity, refreshedAlready )
 				.thenCompose( v -> {
 					if ( entry != null ) {
-						final EntityKey key = source.generateEntityKey( id, persister );
-						persistenceContext.removeEntity( key );
+						persistenceContext.removeEntityHolder( entry.getEntityKey() );
 						if ( persister.hasCollections() ) {
-							new EvictVisitor( source, entity ).process( entity, persister );
+							new EvictVisitor( source, object ).process( object, persister );
 						}
+						persistenceContext.removeEntry( object );
 					}
 
 					evictEntity( entity, persister, id, source );
@@ -282,14 +281,14 @@ public class DefaultReactiveRefreshEventListener
 			EntityPersister persister,
 			Object object,
 			RefreshContext refreshedAlready) {
-		return new Cascade(
+		return Cascade.cascade(
 				CascadingActions.REFRESH,
 				CascadePoint.BEFORE_REFRESH,
+				source,
 				persister,
 				object,
-				refreshedAlready,
-				source
-		).cascade();
+				refreshedAlready
+		);
 	}
 
 	private void evictCachedCollections(EntityPersister persister, Object id, EventSource source) {

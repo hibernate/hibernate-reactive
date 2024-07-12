@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -37,6 +35,9 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
+
+import static org.hibernate.reactive.engine.impl.CascadingActions.PERSIST_ON_FLUSH;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * Collects commons methods needed during the management of flush events.
@@ -80,14 +81,32 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * @throws HibernateException Error flushing caches to execution queues.
 	 */
 	protected CompletionStage<Void> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
-
 		LOG.trace( "Flushing session" );
-
 		final EventSource session = event.getSession();
-
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		session.getInterceptor().preFlush( persistenceContext.managedEntitiesIterator() );
+		return preFlush( session, persistenceContext )
+				.thenRun( () -> flushEverythingToExecutions( event, persistenceContext, session ) );
+	}
 
+	protected void flushEverythingToExecutions(FlushEvent event, PersistenceContext persistenceContext, EventSource session) {
+		persistenceContext.setFlushing( true );
+		try {
+			int entityCount = flushEntities( event, persistenceContext );
+			int collectionCount = flushCollections( session, persistenceContext );
+
+			event.setNumberOfEntitiesProcessed( entityCount );
+			event.setNumberOfCollectionsProcessed( collectionCount );
+		}
+		finally {
+			persistenceContext.setFlushing( false);
+		}
+
+		//some statistics
+		logFlushResults( event );
+	}
+
+	protected CompletionStage<Void> preFlush(EventSource session, PersistenceContext persistenceContext) {
+		session.getInterceptor().preFlush( persistenceContext.managedEntitiesIterator() );
 		return prepareEntityFlushes( session, persistenceContext )
 				.thenAccept( v -> {
 					// we could move this inside if we wanted to
@@ -97,20 +116,6 @@ public abstract class AbstractReactiveFlushingEventListener {
 					// now, any collections that are initialized
 					// inside this block do not get updated - they
 					// are ignored until the next flush
-					persistenceContext.setFlushing( true );
-					try {
-						int entityCount = flushEntities( event, persistenceContext );
-						int collectionCount = flushCollections( session, persistenceContext );
-
-						event.setNumberOfEntitiesProcessed(entityCount);
-						event.setNumberOfCollectionsProcessed(collectionCount);
-					}
-					finally {
-						persistenceContext.setFlushing( false );
-					}
-
-					//some statistics
-					logFlushResults( event );
 				} );
 	}
 
@@ -145,7 +150,6 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * and also apply orphan delete
 	 */
 	private CompletionStage<Void> prepareEntityFlushes(EventSource session, PersistenceContext persistenceContext) throws HibernateException {
-
 		LOG.debug( "Processing flush-time cascades" );
 
 		final PersistContext context = PersistContext.create();
@@ -154,7 +158,41 @@ public abstract class AbstractReactiveFlushingEventListener {
 		return loop(
 				entries,
 				index -> flushable( entries[index].getValue() ),
-				index -> cascadeOnFlush( session, entries[index].getValue().getPersister(), entries[index].getKey(), context ) );
+				index -> cascadeOnFlush(
+						session,
+						entries[index].getValue().getPersister(),
+						entries[index].getKey(),
+						context
+				)
+		)
+				// perform these checks after all cascade persist events have been
+				// processed, so that all entities which will be persisted are
+				// persistent when we do the check (I wonder if we could move this
+				// into Nullability, instead of abusing the Cascade infrastructure)
+				.thenCompose( v -> loop(
+						entries,
+						index -> flushable( entries[index].getValue() ),
+						index -> Cascade.cascade(
+								CascadingActions.CHECK_ON_FLUSH,
+								CascadePoint.BEFORE_FLUSH,
+								session,
+								entries[index].getValue().getPersister(),
+								entries[index].getKey(),
+								null
+						)
+				) );
+	}
+
+	private CompletionStage<Void> cascadeOnFlush(
+			EventSource session,
+			EntityPersister persister,
+			Object object,
+			PersistContext anything)
+			throws HibernateException {
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		persistenceContext.incrementCascadeLevel();
+		return Cascade.cascade( PERSIST_ON_FLUSH, CascadePoint.BEFORE_FLUSH, session, persister, object, anything )
+				.whenComplete( (unused, throwable) -> persistenceContext.decrementCascadeLevel() );
 	}
 
 	private static boolean flushable(EntityEntry entry) {
@@ -297,19 +335,6 @@ public abstract class AbstractReactiveFlushingEventListener {
 		actionQueue.sortCollectionActions();
 
 		return count;
-	}
-
-	private CompletionStage<Void> cascadeOnFlush(
-			EventSource session,
-			EntityPersister persister,
-			Object object,
-			PersistContext copiedAlready)
-			throws HibernateException {
-		return new Cascade<>(
-				CascadingActions.PERSIST_ON_FLUSH,
-				CascadePoint.BEFORE_FLUSH,
-				persister, object, copiedAlready, session
-		).cascade();
 	}
 
 	/**

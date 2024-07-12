@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.util.Iterator;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
-
-import java.util.Iterator;
-import java.util.concurrent.CompletionStage;
 
 /**
  * A {@link Stage.Session reactive session} operation that may
@@ -63,13 +63,17 @@ public interface CascadingAction<C> {
 	 */
 	boolean deleteOrphans();
 
-
 	/**
 	 * Does the specified cascading action require verification of no cascade validity?
 	 *
 	 * @return True if this action requires no-cascade verification; false otherwise.
+	 *
+	 * @deprecated No longer used
 	 */
-	boolean requiresNoCascadeChecking();
+	@Deprecated(since = "2.4", forRemoval = true)
+	default boolean requiresNoCascadeChecking() {
+		return false;
+	}
 
 	/**
 	 * Called (in the case of {@link #requiresNoCascadeChecking} returning true) to validate
@@ -81,6 +85,7 @@ public interface CascadingAction<C> {
 	 * @param propertyType The property type
 	 * @param propertyIndex The index of the property within the owner.
 	 */
+	@Deprecated(since = "2.4", forRemoval = true)
 	CompletionStage<Void> noCascade(EventSource session, Object parent, EntityPersister persister, Type propertyType, int propertyIndex);
 
 	/**

@@ -27,6 +27,7 @@ import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveInitializeCollectionEventListener implements InitializeCollectionEventListener {
@@ -47,7 +48,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 
 		final CollectionEntry ce = source.getPersistenceContextInternal().getCollectionEntry( collection );
 		if ( ce == null ) {
-			throw LOG.collectionWasEvicted();
+			return failedFuture( LOG.collectionWasEvicted() );
 		}
 
 		if ( collection.wasInitialized() ) {
@@ -58,10 +59,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 		final CollectionPersister loadedPersister = ce.getLoadedPersister();
 		final Object loadedKey = ce.getLoadedKey();
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev(
-					"Initializing collection {0}",
-					collectionInfoString( loadedPersister, collection, loadedKey, source )
-			);
+			LOG.tracev( "Initializing collection {0}", collectionInfoString( loadedPersister, collection, loadedKey, source ) );
 			LOG.trace( "Checking second-level cache" );
 		}
 
@@ -129,8 +127,7 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			PersistentCollection<?> collection,
 			SessionImplementor source) {
 
-		if ( source.getLoadQueryInfluencers().hasEnabledFilters()
-				&& persister.isAffectedByEnabledFilters( source ) ) {
+		if ( source.getLoadQueryInfluencers().hasEnabledFilters() && persister.isAffectedByEnabledFilters( source ) ) {
 			LOG.trace( "Disregarding cached version (if any) of collection due to enabled filters" );
 			return false;
 		}
@@ -160,12 +157,12 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			return false;
 		}
 
-		final CollectionCacheEntry cacheEntry = (CollectionCacheEntry)
-				persister.getCacheEntryStructure().destructure( ce, factory );
+		final CollectionCacheEntry cacheEntry = (CollectionCacheEntry) persister
+				.getCacheEntryStructure().destructure( ce, factory );
 
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		cacheEntry.assemble( collection, persister, persistenceContext.getCollectionOwner( id, persister ) );
-		persistenceContext.getCollectionEntry( collection ).postInitialize( collection );
+		persistenceContext.getCollectionEntry( collection ).postInitialize( collection, source );
 		return true;
 	}
 }
