@@ -38,12 +38,14 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
+import org.hibernate.event.spi.InitializeCollectionEventListener;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.LockEvent;
@@ -689,7 +691,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		return fastSessionServices.eventListenerGroup_INIT_COLLECTION
+		EventListenerGroup<InitializeCollectionEventListener> eventListenerGroupInitCollection = fastSessionServices.eventListenerGroup_INIT_COLLECTION;
+		return eventListenerGroupInitCollection
 				.fireEventOnEachListener(
 						event,
 						(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection

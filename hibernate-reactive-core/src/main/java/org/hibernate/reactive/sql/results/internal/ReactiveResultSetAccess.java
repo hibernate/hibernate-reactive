@@ -37,6 +37,15 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 	SessionFactoryImplementor getFactory();
 	void release();
 
+	/**
+	 * The estimate for the amount of results that can be expected for pre-sizing collections.
+	 * May return zero or negative values if the count can not be reasonably estimated.
+	 * @since 6.6
+	 */
+	default int getResultCountEstimate() {
+		return -1;
+	}
+
 	default int getColumnCount() {
 		try {
 			return getResultSet().getMetaData().getColumnCount();

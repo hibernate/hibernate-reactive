@@ -6,13 +6,11 @@
 package org.hibernate.reactive.sql.results.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
@@ -32,6 +30,7 @@ import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelectExecutor;
 import org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.type.BasicType;
@@ -50,7 +49,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private CompletionStage<ResultSet> resultSetStage;
 
-
 	private Integer columnCount;
 	private ResultSet resultSet;
 
@@ -58,8 +56,9 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
-			Function<String, PreparedStatement> statementCreator) {
-		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
+			JdbcSelectExecutor.StatementCreator statementCreator,
+			int resultCountEstimate) {
+		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, resultCountEstimate );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
 	}

@@ -210,7 +210,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
 
-
 	/**
 	 * @see #insertReactive(Object[], Object, SharedSessionContractImplementor)
 	 */
@@ -423,7 +422,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName) {
+	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName, SharedSessionContractImplementor session) {
 		throw new UnsupportedOperationException( "use the reactive method: #getReactiveUniqueKeyLoader(String)" );
 	}
 
