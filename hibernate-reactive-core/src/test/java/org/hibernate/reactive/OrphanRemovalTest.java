@@ -8,7 +8,9 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 
 import org.hibernate.reactive.annotations.DisabledFor;
@@ -24,59 +26,83 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.CascadeType.REMOVE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout( value = 10, timeUnit = MINUTES)
 @DisabledFor( value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0" )
 public class OrphanRemovalTest extends BaseReactiveTest {
 
 	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return getSessionFactory()
+				.withTransaction( s -> s
+						// Because of the Cascade options, all elements will be deleted
+						.createSelectionQuery( "from Shop", Shop.class )
+						.getResultList()
+						.thenApply( List::toArray )
+						.thenCompose( s::remove ) );
+	}
+
+	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Shop.class, Version.class, Product.class );
+		return List.of( Version.class, Product.class, Shop.class );
 	}
 	@Test
 	public void testOrphan(VertxTestContext context) {
+		Product product = new Product( "ap1" );
+		product.addVersion( new Version( "Tactical Nuclear Penguin" ) );
+
 		Shop shop = new Shop( "shop" );
-		Product product = new Product( "ap1", shop );
-		product.addVersion( new Version( product ) );
 		shop.addProduct( product );
-		shop.addProduct( new Product( "ap2", shop ) );
-		shop.addProduct( new Product( "ap3", shop ) );
-		shop.addProduct( new Product( "ap4", shop ) );
+		shop.addProduct( new Product( "ap2" ) );
+		shop.addProduct( new Product( "ap3" ) );
+		shop.addProduct( new Product( "ap4" ) );
 
 		test(
 				context,
 				getSessionFactory()
 						.withTransaction( session -> session.persist( shop ) )
-						.thenCompose( v -> getSessionFactory()
-								.withTransaction( session -> session.find( Shop.class, shop.id )
-								.thenCompose( result -> session.fetch( result.products )
-										.thenApply( products -> result ) )
-										.thenAccept( result -> {
-											// update
-											result.products.clear();
-											result.addProduct( new Product( "bp5", result ) );
-											result.addProduct( new Product( "bp6", result ) );
-											result.addProduct( new Product( "bp7", result ) );
-										} )
+						.thenCompose( v -> getSessionFactory().withTransaction( session -> session
+								.createSelectionQuery( "select name from Product", String.class )
+								.getResultList()
+								.thenAccept( list -> assertThat( list )
+										.containsExactlyInAnyOrder( "ap1", "ap2", "ap3", "ap4" ) )
 						) )
-						.thenCompose( v -> getSessionFactory()
-								.withTransaction( session -> session
-										.createSelectionQuery( "select count(*) from Product", Long.class )
-										.getSingleResult()
-										.thenAccept( result -> assertEquals( 3L, result ) )
+						.thenCompose( v -> getSessionFactory().withTransaction( session -> session
+								.createSelectionQuery( "from Version", Version.class )
+								.getResultList()
+								.thenAccept( list -> assertThat( list )
+										.containsExactlyInAnyOrder( new Version( "Tactical Nuclear Penguin" ) ) )
 						) )
-						.thenCompose( v -> getSessionFactory()
-								.withTransaction( session -> session
-										.createSelectionQuery( "select name from Product", String.class )
-										.getResultList()
-										.thenAccept( list -> assertThat( list )
-												.containsExactlyInAnyOrder( "bp5", "bp6", "bp7" ) )
+						.thenCompose( v -> getSessionFactory().withTransaction( session -> session
+								.find( Shop.class, shop.id )
+								.thenCompose( foundShop -> session
+										.fetch( foundShop.products )
+										.thenApply( products -> foundShop )
+								)
+								.thenAccept( foudnShop -> {
+									// update
+									foudnShop.products.clear();
+									foudnShop.addProduct( new Product( "bp5" ) );
+									foudnShop.addProduct( new Product( "bp6" ) );
+									foudnShop.addProduct( new Product( "bp7" ) );
+								} )
+						) )
+						.thenCompose( v -> getSessionFactory().withTransaction( session -> session
+								.createSelectionQuery( "select name from Product", String.class )
+								.getResultList()
+								.thenAccept( list -> assertThat( list )
+										.containsExactlyInAnyOrder( "bp5", "bp6", "bp7" ) )
+						) )
+						.thenCompose( v -> getSessionFactory().withTransaction( session -> session
+								.createSelectionQuery( "from Version", Version.class )
+								.getResultList()
+								.thenAccept( list -> assertThat( list ).isEmpty() )
 						) )
 		);
 	}
@@ -88,19 +114,38 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 		@GeneratedValue
 		private long id;
 
+		private String name;
+
 		@ManyToOne
 		private Product product;
-
-		public Version(Product product) {
-			this.product = product;
-		}
 
 		Version() {
 		}
 
+		public Version(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Version version = (Version) o;
+			return Objects.equals( name, version.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( name );
+		}
+
 		@Override
 		public String toString() {
-			return Version.class.getSimpleName() + ":" + id + ":" + product;
+			return Version.class.getSimpleName() + ":" + id + ":" + name + ":" + product;
 		}
 	}
 
@@ -113,22 +158,39 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 		private long id;
 		private String name;
 
-		Product(String name, Shop shop) {
-			this.name = name;
-			this.shop = shop;
+		Product() {
 		}
 
-		Product() {
+		Product(String name) {
+			this.name = name;
 		}
 
 		@ManyToOne
 		private Shop shop;
 
-		@OneToMany(mappedBy = "product", cascade = { PERSIST, REMOVE })
+		@OneToMany(mappedBy = "product", cascade = ALL)
 		private Set<Version> versions = new HashSet<>();
 
 		public void addVersion(Version version) {
 			versions.add( version );
+			version.product = this;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Product product = (Product) o;
+			return Objects.equals( name, product.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( name );
 		}
 
 		@Override
@@ -146,18 +208,60 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 		private long id;
 		private String name;
 
-		Shop(String name) {
-			this.name = name;
+		Shop() {
 		}
 
-		Shop() {
+		Shop(String name) {
+			this.name = name;
 		}
 
 		@OneToMany(mappedBy = "shop", cascade = { PERSIST, REMOVE }, orphanRemoval = true)
 		private Set<Product> products = new HashSet<>();
 
+		public long getId() {
+			return id;
+		}
+
+		public void setId(long id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public Set<Product> getProducts() {
+			return products;
+		}
+
+		public void setProducts(Set<Product> products) {
+			this.products = products;
+		}
+
 		public void addProduct(Product product) {
 			products.add( product );
+			product.shop = this;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Shop shop = (Shop) o;
+			return Objects.equals( name, shop.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( name );
 		}
 
 		@Override
@@ -165,5 +269,4 @@ public class OrphanRemovalTest extends BaseReactiveTest {
 			return Shop.class.getSimpleName() + ":" + id + ":" + name;
 		}
 	}
-
 }

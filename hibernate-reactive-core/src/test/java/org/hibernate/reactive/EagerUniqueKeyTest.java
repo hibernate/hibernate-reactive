@@ -90,11 +90,10 @@ public class EagerUniqueKeyTest extends BaseReactiveTest {
 		Bar bar = new Bar( "uniquePersist" );
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( bar ) )
-				.thenCompose( i -> getSessionFactory()
-						.withTransaction( session -> {
-							Foo foo = new Foo( session.getReference( Bar.class, bar.getId() ) );
-							return session.persist( foo ).thenApply( v -> foo );
-						} ) )
+				.thenCompose( i -> getSessionFactory().withTransaction( session -> {
+					Foo foo = new Foo( session.getReference( Bar.class, bar.getId() ) );
+					return session.persist( foo ).thenApply( v -> foo );
+				} ) )
 				.thenCompose( result -> getSessionFactory().withTransaction( session -> session.fetch( result.getBar() ) ) )
 				.thenAccept( b -> assertEquals( "uniquePersist", b.getKey() ) )
 		);

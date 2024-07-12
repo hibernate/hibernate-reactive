@@ -10,8 +10,10 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +52,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 	@BeforeEach
 	public void populateDb(VertxTestContext context) {
 		theCampaign = new Campaign();
-		theCampaign.setSchedule( new ExecutionDate(OffsetDateTime.now(), "ALPHA") );
+		theCampaign.setSchedule( new ExecutionDate( OffsetDateTime.now(), "ALPHA" ) );
 
 		test( context, getMutinySessionFactory().withTransaction( (s, t) -> s.persist( theCampaign ) ) );
 	}
@@ -68,6 +70,11 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 				.invoke( updatedCampaign -> assertThat( updatedCampaign.getSchedule().getCodeName() )
 						.isNotEqualTo( theCampaign.getSchedule().getCodeName() ) )
 		);
+	}
+
+	@Override
+	protected CompletionStage<Void> cleanDb() {
+		return CompletionStages.voidFuture();
 	}
 
 	@Test
@@ -94,13 +101,14 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		);
 	}
 
-	@Entity (name="Campaign")
+	@Entity(name = "Campaign")
 	public static class Campaign implements Serializable {
 
-		@Id @GeneratedValue
+		@Id
+		@GeneratedValue
 		private Integer id;
 
-		@OneToOne(mappedBy = "campaign",  cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+		@OneToOne(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 		public Schedule schedule;
 
 		public Campaign() {
@@ -123,7 +131,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity (name="Schedule")
+	@Entity(name = "Schedule")
 	@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 	@DiscriminatorColumn(name = "schedule_type", discriminatorType = DiscriminatorType.STRING)
 	public static abstract class Schedule implements Serializable {
@@ -160,7 +168,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity (name="ExecutionDate")
+	@Entity(name = "ExecutionDate")
 	@DiscriminatorValue("EXECUTION_DATE")
 	public static class ExecutionDate extends Schedule {
 
@@ -170,7 +178,7 @@ public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 		public ExecutionDate() {
 		}
 
-		public ExecutionDate( OffsetDateTime start, String code_name ) {
+		public ExecutionDate(OffsetDateTime start, String code_name) {
 			this.start = start;
 			setCodeName( code_name );
 		}

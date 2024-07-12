@@ -48,105 +48,91 @@ public class OrderedOneToManyTest extends BaseReactiveTest {
 		test(
 				context,
 				getMutinySessionFactory()
-						.withTransaction( (session, transaction) -> session.persistAll( book1, book2, author ) )
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> assertEquals( 2, books.size() ) )
+						.withTransaction( session -> session.persistAll( book1, book2, author ) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> assertEquals( 2, books.size() ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.createSelectionQuery(
+										"select distinct a from Author a left join fetch a.books",
+										Author.class
 								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.createSelectionQuery(
-																  "select distinct a from Author a left join fetch a.books",
-																  Author.class
-														  )
-														  .getSingleResult()
-														  .invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
-														  .invoke( a -> assertEquals( 2, a.books.size() ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> books.remove( 0 ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> {
-											assertEquals( 1, books.size() );
-											assertEquals( book2.title, books.get( 0 ).title );
-										} )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.chain( books -> session.find( Book.class, book1.id ).invoke( books::add ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> assertEquals( 2, books.size() ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> books.remove( 1 ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> {
-											assertEquals( 1, books.size() );
-											assertEquals( book2.title, books.get( 0 ).title );
-										} )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.chain( books -> session.find( Book.class, book1.id ).invoke( books::add ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> assertEquals( 2, books.size() ) )
-								)
-						)
+								.getSingleResult()
+								.invoke( a -> assertTrue( Hibernate.isInitialized( a.books ) ) )
+								.invoke( a -> assertEquals( 2, a.books.size() ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> books.remove( 0 ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> {
+									assertEquals( 1, books.size() );
+									assertEquals( book2.title, books.get( 0 ).title );
+								} )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.chain( books -> session.find( Book.class, book1.id ).invoke( books::add ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> assertEquals( 2, books.size() ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> books.remove( 1 ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> {
+									assertEquals( 1, books.size() );
+									assertEquals( book2.title, books.get( 0 ).title );
+								} )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.chain( books -> session.find( Book.class, book1.id ).invoke( books::add ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> assertEquals( 2, books.size() ) )
+						) )
 						//TODO: this is broken, but I suspect it is broken in core also!
-//                        .chain( () -> getMutinySessionFactory()
-//                                .withTransaction( (session, transaction) -> session.find(Author.class, author.id)
-//                                        .chain( a -> session.fetch(a.books) )
-//                                        .invoke( books -> books.add( books.remove(0) ) )
-//                                )
-//                        )
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> assertEquals( 2, books.size() ) )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.invoke( a -> a.books = null )
-								)
-						)
-						.chain( () -> getMutinySessionFactory()
-								.withTransaction( (session, transaction) -> session.find( Author.class, author.id )
-										.chain( a -> session.fetch( a.books ) )
-										.invoke( books -> assertTrue( books.isEmpty() ) )
-								)
-						)
+//						.chain( () -> getMutinySessionFactory().withTransaction( (session, transaction) -> session
+//								.find( Author.class, author.id )
+//								.chain( a -> session.fetch( a.books ) )
+//								.invoke( books -> books.add( books.remove( 0 ) ) )
+//						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.invoke( a -> assertFalse( Hibernate.isInitialized( a.books ) ) )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> assertEquals( 2, books.size() ) )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.invoke( a -> a.books = null )
+						) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.find( Author.class, author.id )
+								.chain( a -> session.fetch( a.books ) )
+								.invoke( books -> assertTrue( books.isEmpty() ) )
+						) )
 		);
 	}
 
