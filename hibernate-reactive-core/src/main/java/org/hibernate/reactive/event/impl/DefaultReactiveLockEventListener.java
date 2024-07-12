@@ -39,6 +39,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveLockEventListener extends AbstractReassociateEventListener
@@ -67,7 +68,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				: !source.contains( event.getObject() );
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in refresh()
-			throw new IllegalArgumentException("unmanaged instance passed to refresh()");
+			throw new IllegalArgumentException( "unmanaged instance passed to refresh()" );
 		}
 
 
@@ -80,64 +81,55 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 	}
 
 	private CompletionStage<Void> reactiveOnLock(LockEvent event, Object entity) {
-
 		final SessionImplementor source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-
-		final EntityEntry entry = persistenceContext.getEntry(entity);
-		final CompletionStage<EntityEntry> stage;
-		if ( entry==null ) {
-			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-			final Object id = persister.getIdentifier( entity, source );
-			stage = ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source)
-					.thenApply( trans -> {
-								if (!trans) {
-									throw new TransientObjectException(
-											"cannot lock an unsaved transient instance: " +
-													persister.getEntityName()
-									);
-								}
-
-								final EntityEntry e = reassociate( event, entity, id, persister );
-								cascadeOnLock( event, persister, entity );
-								return e;
-							}
-					);
-
-		}
-		else {
-			stage = completedFuture( entry );
-		}
-
-		return stage.thenCompose( e -> upgradeLock( entity, e, event.getLockOptions(), event.getSession() ) );
+		final EntityEntry entry = persistenceContext.getEntry( entity );
+		return lockEntry( event, entity, entry, source )
+				.thenCompose( e -> upgradeLock( entity, e, event.getLockOptions(), event.getSession() ) );
 	}
 
-	private void cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {
-		EventSource source = event.getSession();
-		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
-		persistenceContext.incrementCascadeLevel();
-		try {
-			new Cascade(
-					CascadingActions.LOCK,
-					CascadePoint.AFTER_LOCK,
-					persister,
-					entity,
-					event.getLockOptions(),
-					source
-			).cascade();
+	private CompletionStage<EntityEntry> lockEntry(
+			LockEvent event,
+			Object entity,
+			EntityEntry entry,
+			SessionImplementor source) {
+		if ( entry == null ) {
+			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
+			final Object id = persister.getIdentifier( entity, source );
+			return ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source )
+					.thenCompose( trans -> {
+									  if ( !trans ) {
+										  return failedFuture( new TransientObjectException(
+												  "cannot lock an unsaved transient instance: " + persister.getEntityName() ) );
+									  }
+
+									  final EntityEntry e = reassociate( event, entity, id, persister );
+									  return cascadeOnLock( event, persister, entity )
+											  .thenApply( v -> e );
+								  }
+					);
 		}
-		finally {
-			persistenceContext.decrementCascadeLevel();
-		}
+		return completedFuture( entry );
+	}
+
+	private CompletionStage<Void> cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {
+		return new Cascade<>(
+				CascadingActions.LOCK,
+				CascadePoint.AFTER_LOCK,
+				persister,
+				entity,
+				event.getLockOptions(),
+				event.getSession()
+		).cascade();
 	}
 
 	/**
 	 * Performs a pessimistic lock upgrade on a given entity, if needed.
 	 *
-	 * @param object The entity for which to upgrade the lock.
-	 * @param entry The entity's EntityEntry instance.
+	 * @param object      The entity for which to upgrade the lock.
+	 * @param entry       The entity's EntityEntry instance.
 	 * @param lockOptions contains the requested lock mode.
-	 * @param source The session which is the source of the event being processed.
+	 * @param source      The session which is the source of the event being processed.
 	 */
 	protected CompletionStage<Void> upgradeLock(
 			Object object,
@@ -165,7 +157,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 				);
 			}
 
-			final ReactiveActionQueue actionQueue = ((ReactiveSession) source).getReactiveActionQueue();
+			final ReactiveActionQueue actionQueue = ( (ReactiveSession) source ).getReactiveActionQueue();
 			switch ( requestedLockMode ) {
 				case OPTIMISTIC:
 					actionQueue.registerProcess( new ReactiveEntityVerifyVersionProcess( object ) );
@@ -184,9 +176,10 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		}
 	}
 
-	private CompletionStage<Void> doUpgradeLock(Object object, EntityEntry entry,
-												LockOptions lockOptions,
-												EventSource source) {
+	private CompletionStage<Void> doUpgradeLock(
+			Object object, EntityEntry entry,
+			LockOptions lockOptions,
+			EventSource source) {
 
 		final EntityPersister persister = entry.getPersister();
 
@@ -209,7 +202,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		}
 
 		try {
-			return ((ReactiveEntityPersister) persister)
+			return ( (ReactiveEntityPersister) persister )
 					.reactiveLock(
 							entry.getId(),
 							entry.getVersion(),
