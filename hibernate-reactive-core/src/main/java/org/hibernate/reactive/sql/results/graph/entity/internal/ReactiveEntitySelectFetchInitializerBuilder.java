@@ -11,11 +11,13 @@ import org.hibernate.metamodel.mapping.EmbeddableValuedModelPart;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveEmbeddableForeignKeyResultImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResult;
-import org.hibernate.sql.results.graph.FetchParentAccess;
+import org.hibernate.sql.results.graph.InitializerParent;
 import org.hibernate.sql.results.graph.embeddable.EmbeddableInitializer;
+import org.hibernate.sql.results.graph.embeddable.internal.EmbeddableForeignKeyResultImpl;
 import org.hibernate.sql.results.graph.entity.EntityInitializer;
 import org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer;
 import org.hibernate.sql.results.graph.entity.internal.BatchEntitySelectFetchInitializer;
@@ -26,74 +28,94 @@ import org.hibernate.sql.results.graph.entity.internal.BatchInitializeEntitySele
  */
 public class ReactiveEntitySelectFetchInitializerBuilder {
 
-	public static EntityInitializer createInitializer(
-			FetchParentAccess parentAccess,
+	public static EntityInitializer<?> createInitializer(
+			InitializerParent<?> parent,
 			ToOneAttributeMapping fetchedAttribute,
 			EntityPersister entityPersister,
-			DomainResult<?> keyResult,
+			DomainResult<?> originalKeyResult,
 			NavigablePath navigablePath,
 			boolean selectByUniqueKey,
+			boolean affectedByFilter,
 			AssemblerCreationState creationState) {
+		final DomainResult<?> keyResult = originalKeyResult instanceof EmbeddableForeignKeyResultImpl
+				? new ReactiveEmbeddableForeignKeyResultImpl<>( (EmbeddableForeignKeyResultImpl<?>) originalKeyResult )
+				: originalKeyResult;
 		if ( selectByUniqueKey ) {
 			return new ReactiveEntitySelectFetchByUniqueKeyInitializer(
-					parentAccess,
+					parent,
 					fetchedAttribute,
 					navigablePath,
 					entityPersister,
-					keyResult.createResultAssembler( parentAccess, creationState )
+					keyResult,
+					affectedByFilter,
+					creationState
 			);
 		}
-		final BatchMode batchMode = determineBatchMode( entityPersister, parentAccess, creationState );
+		final BatchMode batchMode = determineBatchMode( entityPersister, parent, creationState );
 		switch ( batchMode ) {
 			case NONE:
-				return new ReactiveEntitySelectFetchInitializer(
-						parentAccess,
+				return new ReactiveEntitySelectFetchInitializer<>(
+						parent,
 						fetchedAttribute,
 						navigablePath,
 						entityPersister,
-						keyResult.createResultAssembler( parentAccess, creationState )
+						keyResult,
+						affectedByFilter,
+						creationState
 				);
 			case BATCH_LOAD:
-				if ( parentAccess.isEmbeddableInitializer() ) {
+				if ( parent.isEmbeddableInitializer() ) {
 					return new BatchEntityInsideEmbeddableSelectFetchInitializer(
-							parentAccess,
+							parent,
 							fetchedAttribute,
 							navigablePath,
 							entityPersister,
-							keyResult.createResultAssembler( parentAccess, creationState )
+							keyResult,
+							affectedByFilter,
+							creationState
 					);
 				}
 				else {
 					return new BatchEntitySelectFetchInitializer(
-							parentAccess,
+							parent,
 							fetchedAttribute,
 							navigablePath,
 							entityPersister,
-							keyResult.createResultAssembler( parentAccess, creationState )
+							keyResult,
+							affectedByFilter,
+							creationState
 					);
 				}
 			case BATCH_INITIALIZE:
 				return new BatchInitializeEntitySelectFetchInitializer(
-						parentAccess,
+						parent,
 						fetchedAttribute,
 						navigablePath,
 						entityPersister,
-						keyResult.createResultAssembler( parentAccess, creationState )
+						keyResult,
+						affectedByFilter,
+						creationState
 				);
 		}
 		throw new IllegalStateException( "Should be unreachable" );
 	}
 
 	// FIXME: Use the one in ORM
-	private static BatchMode determineBatchMode(
+	public static BatchMode determineBatchMode(
 			EntityPersister entityPersister,
-			FetchParentAccess parentAccess,
+			InitializerParent<?> parent,
 			AssemblerCreationState creationState) {
-		if ( !entityPersister.isBatchLoadable() || creationState.isScrollResult() ) {
+		if ( !entityPersister.isBatchLoadable() ) {
 			return BatchMode.NONE;
 		}
-		while ( parentAccess.isEmbeddableInitializer() ) {
-			final EmbeddableInitializer embeddableInitializer = parentAccess.asEmbeddableInitializer();
+		if ( creationState.isDynamicInstantiation() ) {
+			if ( canBatchInitializeBeUsed( entityPersister ) ) {
+				return BatchMode.BATCH_INITIALIZE;
+			}
+			return BatchMode.NONE;
+		}
+		while ( parent.isEmbeddableInitializer() ) {
+			final EmbeddableInitializer<?> embeddableInitializer = parent.asEmbeddableInitializer();
 			final EmbeddableValuedModelPart initializedPart = embeddableInitializer.getInitializedPart();
 			// For entity identifier mappings we can't batch load,
 			// because the entity identifier needs the instance in the resolveKey phase,
@@ -101,29 +123,40 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 			if ( initializedPart.isEntityIdentifierMapping()
 					// todo: check if the virtual check is necessary
 					|| initializedPart.isVirtual()
-					// If the parent embeddable has a custom instantiator, we can't inject entities later through setValues()
-					|| !( initializedPart.getMappedType().getRepresentationStrategy().getInstantiator() instanceof StandardEmbeddableInstantiator ) ) {
+					|| initializedPart.getMappedType().isPolymorphic()
+					// If the parent embeddable has a custom instantiator,
+					// we can't inject entities later through setValues()
+					|| !( initializedPart.getMappedType().getRepresentationStrategy().getInstantiator()
+					instanceof StandardEmbeddableInstantiator ) ) {
 				return entityPersister.hasSubclasses() ? BatchMode.NONE : BatchMode.BATCH_INITIALIZE;
 			}
-			parentAccess = parentAccess.getFetchParentAccess();
-			if ( parentAccess == null ) {
+			parent = parent.getParent();
+			if ( parent == null ) {
 				break;
 			}
 		}
-		if ( parentAccess != null ) {
-			assert parentAccess.getInitializedPart() instanceof EntityValuedModelPart;
-			final EntityPersister parentPersister = parentAccess.asEntityInitializer().getEntityDescriptor();
+		if ( parent != null ) {
+			assert parent.getInitializedPart() instanceof EntityValuedModelPart;
+			final EntityPersister parentPersister = parent.asEntityInitializer().getEntityDescriptor();
 			final EntityDataAccess cacheAccess = parentPersister.getCacheAccessStrategy();
 			if ( cacheAccess != null ) {
 				// Do batch initialization instead of batch loading if the parent entity is cacheable
 				// to avoid putting entity state into the cache at a point when the association is not yet set
-				return BatchMode.BATCH_INITIALIZE;
+				if ( canBatchInitializeBeUsed( entityPersister ) ) {
+					return BatchMode.BATCH_INITIALIZE;
+				}
+				return BatchMode.NONE;
 			}
 		}
 		return BatchMode.BATCH_LOAD;
 	}
 
-	enum BatchMode {
+	private static boolean canBatchInitializeBeUsed(EntityPersister entityPersister) {
+		//  we need to create a Proxy in order to use batch initialize
+		return entityPersister.getRepresentationStrategy().getProxyFactory() != null;
+	}
+
+	private enum BatchMode {
 		NONE,
 		BATCH_LOAD,
 		BATCH_INITIALIZE

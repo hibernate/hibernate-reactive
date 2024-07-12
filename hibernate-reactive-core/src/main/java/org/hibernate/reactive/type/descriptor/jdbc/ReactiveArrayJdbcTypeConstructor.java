@@ -33,7 +33,7 @@ public class ReactiveArrayJdbcTypeConstructor implements JdbcTypeConstructor {
 		if ( realDialect instanceof OracleDialect ) {
 			String typeName = columnTypeInformation == null ? null : columnTypeInformation.getTypeName();
 			if ( typeName == null || typeName.isBlank() ) {
-				typeName = ReactiveOracleArrayJdbcType.getTypeName( elementType.getJavaTypeDescriptor(), dialect );
+				typeName = ReactiveOracleArrayJdbcType.getTypeName( elementType, dialect );
 			}
 			return new ReactiveOracleArrayJdbcType( elementType.getJdbcType(), typeName );
 		}

@@ -25,13 +25,13 @@ public class ReactiveSingleResultConsumer<T> implements ReactiveResultsConsumer<
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
 			ReactiveRowProcessingState rowProcessingState,
 			ReactiveRowReader<T> rowReader) {
-		rowReader.getReactiveInitializersList().startLoading( rowProcessingState );
+		rowReader.startLoading( rowProcessingState );
 		return rowProcessingState.next()
 				.thenCompose( hasNext -> rowReader
 						.reactiveReadRow( rowProcessingState, processingOptions )
 						.thenApply( result -> {
 							rowProcessingState.finishRowProcessing( true );
-							rowReader.finishUp( jdbcValuesSourceProcessingState );
+							rowReader.finishUp( rowProcessingState );
 							jdbcValuesSourceProcessingState.finishUp( false );
 							return result;
 						} )

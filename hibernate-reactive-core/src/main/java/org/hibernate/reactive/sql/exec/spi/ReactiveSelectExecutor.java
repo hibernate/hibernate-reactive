@@ -22,12 +22,39 @@ import org.hibernate.sql.results.spi.RowTransformer;
  */
 public interface ReactiveSelectExecutor {
 
+	/**
+	 * @since 2.4 (and Hibernate ORM 6.6)
+	 */
+	default <T, R> CompletionStage<T> executeQuery(
+			JdbcOperationQuerySelect jdbcSelect,
+			JdbcParameterBindings jdbcParameterBindings,
+			ExecutionContext executionContext,
+			RowTransformer<R> rowTransformer,
+			Class<R> domainResultType,
+			int resultCountEstimate,
+			ReactiveResultsConsumer<T, R> resultsConsumer) {
+		return executeQuery(
+				jdbcSelect,
+				jdbcParameterBindings,
+				executionContext,
+				rowTransformer,
+				domainResultType,
+				resultCountEstimate,
+				sql -> executionContext.getSession()
+						.getJdbcCoordinator()
+						.getStatementPreparer()
+						.prepareQueryStatement( sql, false, null ),
+				resultsConsumer
+		);
+	}
+
 	<T, R> CompletionStage<T> executeQuery(
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
 			Class<R> domainResultType,
+			int resultCountEstimate,
 			Function<String, PreparedStatement> statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer);
 

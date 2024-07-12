@@ -8,8 +8,10 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
-import org.junit.jupiter.api.Assertions;
+import org.hibernate.TransientObjectException;
+
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -22,14 +24,32 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Book.class, Author.class );
+		return List.of( Author.class, Book.class );
+	}
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return getSessionFactory()
+				.withTransaction( s -> s
+						.createSelectionQuery( "from Book", Book.class )
+						.getResultList()
+						.thenCompose( books -> loop( books, book -> {
+										  Author author = book.author;
+										  book.author = null;
+										  author.mostPopularBook = null;
+										  return s.remove( book, author );
+									  } )
+						)
+				);
 	}
 
 	@Test
@@ -39,16 +59,48 @@ public class EagerOneToOneAssociationTest extends BaseReactiveTest {
 		mostPopularBook.setAuthor( author );
 		author.setMostPopularBook( mostPopularBook );
 
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> s.persist( mostPopularBook )
-								.thenCompose( v -> s.persist( author ) )
-								.thenCompose( v -> s.flush() )
-						)
-						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.find( Book.class, 5 ) )
-						.thenAccept( Assertions::assertNotNull)
+		test( context, openSession()
+				.thenCompose( s -> s
+						.persist( mostPopularBook )
+						.thenCompose( v -> s.persist( author ) )
+						.thenCompose( v -> s.flush() )
+				)
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.find( Book.class, 5 ) )
+				.thenAccept( book -> {
+					assertThat( book ).isEqualTo( mostPopularBook );
+					assertThat( book.getAuthor() ).isEqualTo( author );
+				} )
+		);
+	}
+
+	@Test
+	public void testTransientException(VertxTestContext context) {
+		final Book yellowface = new Book( 7, "Yellowface" );
+		final Author kuang = new Author( 19, "R.F. Kuang" );
+		yellowface.setAuthor( kuang );
+		kuang.setMostPopularBook( yellowface );
+
+		test( context, assertThrown( TransientObjectException.class, openSession()
+					  .thenCompose( s -> s
+							  .persist( yellowface )
+							  .thenCompose( v -> s.persist( kuang ) )
+							  .thenCompose( v -> s.flush() )
+					  )
+					  .thenCompose( v -> openSession() )
+					  .thenCompose( s -> s
+							  .createSelectionQuery( "from Book", Book.class )
+							  .getResultList()
+							  .thenCompose( books -> s.remove( books.toArray() ) )
+							  // This query should force an auto-flush. Because we have deleted the book but not the associated author
+							  // it should cause a TransientObjectException. Note that this validation has been added in 6.6, and the same test
+							  // wasn't throwing any exception with ORM 6.5
+							  .thenCompose( v -> s
+									  .createSelectionQuery( "from Author", Author.class )
+									  .getResultList()
+							  )
+					  )
+			  )
 		);
 	}
 

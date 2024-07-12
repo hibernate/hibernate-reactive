@@ -10,8 +10,8 @@ import java.util.Objects;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.provider.Settings;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

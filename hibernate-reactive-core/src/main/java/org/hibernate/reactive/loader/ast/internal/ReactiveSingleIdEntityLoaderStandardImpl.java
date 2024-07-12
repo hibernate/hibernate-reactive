@@ -30,11 +30,11 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 
 	public ReactiveSingleIdEntityLoaderStandardImpl(
 			EntityMappingType entityDescriptor,
-			SessionFactoryImplementor sessionFactory) {
+			LoadQueryInfluencers loadQueryInfluencers) {
 		super(
 				entityDescriptor,
-				sessionFactory,
-				(lockOptions, influencers) -> createLoadPlan( entityDescriptor, lockOptions, influencers, sessionFactory )
+				loadQueryInfluencers,
+				(lockOptions, influencers) -> createLoadPlan( entityDescriptor, lockOptions, influencers, influencers.getSessionFactory() )
 		);
 	}
 

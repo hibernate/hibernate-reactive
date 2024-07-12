@@ -29,7 +29,7 @@ Learn more at <http://hibernate.org/reactive>.
 
 Hibernate Reactive has been tested with:
 
-- Java 11, 17, 20, 21
+- Java 11, 17, 20, 21, 22
 - PostgreSQL 16
 - MySQL 8
 - MariaDB 11
@@ -37,7 +37,7 @@ Hibernate Reactive has been tested with:
 - CockroachDB v24
 - MS SQL Server 2022
 - Oracle 23
-- [Hibernate ORM][] 6.5.2.Final
+- [Hibernate ORM][] 6.6.0.CR2
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.5.8
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.5.8
 - [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.5.8

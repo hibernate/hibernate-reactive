@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
-import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
@@ -172,6 +171,7 @@ public class ReactiveGeneratedValuesHelper {
 				null,
 				null,
 				QueryOptions.NONE,
+				true,
 				mappingProducer.resolve(
 						directResultSetAccess,
 						session.getLoadQueryInfluencers(),
@@ -209,11 +209,10 @@ public class ReactiveGeneratedValuesHelper {
 		);
 
 		final ReactiveRowReader<Object[]> rowReader = ReactiveResultsHelper.createRowReader(
-				executionContext,
-				LockOptions.NONE,
+				session.getSessionFactory(),
 				RowTransformerArrayImpl.instance(),
 				Object[].class,
-				jdbcValues.getValuesMapping()
+				jdbcValues
 		);
 
 		final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState( valuesProcessingState, executionContext, rowReader, jdbcValues );

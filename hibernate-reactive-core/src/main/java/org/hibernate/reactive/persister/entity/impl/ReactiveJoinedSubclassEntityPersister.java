@@ -388,7 +388,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName) {
+	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName, SharedSessionContractImplementor session) {
 		throw LOG.nonReactiveMethodCall( "getReactiveUniqueKeyLoader" );
 	}
 

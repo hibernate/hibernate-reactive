@@ -11,9 +11,11 @@ import org.hibernate.LockMode;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.internal.Nullability;
-import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.ComparableExecutable;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
@@ -21,6 +23,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 
+import static org.hibernate.engine.internal.Versioning.getVersion;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -37,6 +40,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	Object getInstance();
 	String getEntityName();
 	Object[] getState();
+	Object getRowId();
 	EntityPersister getPersister();
 
 	boolean isExecuted();
@@ -62,7 +66,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 		if ( !areTransientReferencesNullified() ) {
 			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), (SessionImplementor) getSession(), getPersister() )
 					.nullifyTransientReferences( getState() )
-					.thenAccept( v-> {
+					.thenAccept( v -> {
 						new Nullability( getSession() ).checkNullability( getState(), getPersister(), false );
 						setTransientReferencesNullified();
 					} );
@@ -79,27 +83,35 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	 */
 	default CompletionStage<Void> reactiveMakeEntityManaged() {
 		return reactiveNullifyTransientReferencesIfNotAlready()
-				.thenAccept( v -> getSession().getPersistenceContextInternal().addEntity(
-						getInstance(),
-						getPersister().isMutable() ? Status.MANAGED : Status.READ_ONLY,
-						getState(),
-						getEntityKey(),
-						Versioning.getVersion( getState(), getPersister() ),
-						LockMode.WRITE,
-						isExecuted(),
-						getPersister(),
-						isVersionIncrementDisabled()
-				));
+				.thenAccept( v -> {
+					final Object version = getVersion( getState(), getPersister() );
+					final PersistenceContext persistenceContextInternal = getSession().getPersistenceContextInternal();
+					final EntityHolder entityHolder = persistenceContextInternal
+							.addEntityHolder( getEntityKey(), getInstance() );
+					final EntityEntry entityEntry = persistenceContextInternal.addEntry(
+							getInstance(),
+							( getPersister().isMutable() ? Status.MANAGED : Status.READ_ONLY ),
+							getState(),
+							getRowId(),
+							getEntityKey().getIdentifier(),
+							version,
+							LockMode.WRITE,
+							isExecuted(),
+							getPersister(),
+							isVersionIncrementDisabled()
+					);
+					entityHolder.setEntityEntry( entityEntry );
+					if ( isEarlyInsert() ) {
+						addCollectionsByKeyToPersistenceContext( persistenceContextInternal, getState() );
+					}
+				});
 	}
+
+	void addCollectionsByKeyToPersistenceContext(PersistenceContext persistenceContext, Object[] objects);
 
 	default CompletionStage<NonNullableTransientDependencies> reactiveFindNonNullableTransientEntities() {
 		return ForeignKeys.findNonNullableTransientEntities( getPersister().getEntityName(), getInstance(), getState(), isEarlyInsert(), getSession() );
 	}
 
 	AbstractEntityInsertAction asAbstractEntityInsertAction();
-
-	default int compareActionTo(ReactiveEntityInsertAction delegate) {
-		return asAbstractEntityInsertAction().compareTo( delegate.asAbstractEntityInsertAction() );
-	}
-
 }

@@ -50,7 +50,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private CompletionStage<ResultSet> resultSetStage;
 
-
 	private Integer columnCount;
 	private ResultSet resultSet;
 
@@ -58,8 +57,9 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			JdbcOperationQuerySelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
-			Function<String, PreparedStatement> statementCreator) {
-		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
+			Function<String, PreparedStatement> statementCreator,
+			int resultCountEstimate) {
+		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, resultCountEstimate );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
 	}

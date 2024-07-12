@@ -43,6 +43,7 @@ import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.type.Type;
 import org.hibernate.type.TypeHelper;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.processIfManagedEntity;
 import static org.hibernate.engine.internal.ManagedTypeHelper.processIfSelfDirtinessTracker;
 import static org.hibernate.engine.internal.Versioning.getVersion;
 import static org.hibernate.engine.internal.Versioning.seedVersion;
@@ -226,6 +227,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		callbackRegistry.preCreate( entity );
 
 		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
+		processIfManagedEntity( entity, managedEntity -> managedEntity.$$_hibernate_setUseTracker( true ) );
 
 		if ( persister.getGenerator() instanceof Assigned ) {
 			id = persister.getIdentifier( entity, source );
@@ -276,6 +278,11 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			else {
 				return failedFuture( new NonUniqueObjectException( id, persister.getEntityName() ) );
 			}
+		}
+		else if ( persistenceContext.containsDeletedUnloadedEntityKey( key ) ) {
+			return source.unwrap( ReactiveSession.class )
+					.reactiveForceFlush( persistenceContext.getEntry( old ) )
+					.thenApply( v -> key );
 		}
 		else {
 			return completedFuture( key );
@@ -330,6 +337,10 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 				persister,
 				false
 		);
+
+		if ( original.getLoadedState() != null ) {
+			persistenceContext.getEntityHolder( key ).setEntityEntry( original );
+		}
 
 		return cascadeBeforeSave( source, persister, entity, context )
 				.thenCompose( v -> addInsertAction(
@@ -409,7 +420,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean useIdentityColumn,
 			EventSource source,
 			boolean shouldDelayIdentityInserts) {
-		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
+		final ReactiveActionQueue actionQueue = source.unwrap( ReactiveSession.class ).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
 			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts
@@ -438,11 +449,14 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			Object entity,
 			C context) {
 		// cascade-save to many-to-one BEFORE the parent is saved
-		return new Cascade<>(
+		return Cascade.cascade(
 				getCascadeReactiveAction(),
 				CascadePoint.BEFORE_INSERT_AFTER_DELETE,
-				persister, entity, context, source
-		).cascade();
+				source,
+				persister,
+				entity,
+				context
+		);
 	}
 
 	/**
@@ -459,11 +473,14 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			Object entity,
 			C context) {
 		// cascade-save to collections AFTER the collection owner was saved
-		return new Cascade<>(
+		return Cascade.cascade(
 				getCascadeReactiveAction(),
 				CascadePoint.AFTER_INSERT_BEFORE_DELETE,
-				persister, entity, context, source
-		).cascade();
+				source,
+				persister,
+				entity,
+				context
+		);
 	}
 
 	protected abstract CascadingAction<C> getCascadeReactiveAction();

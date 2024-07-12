@@ -40,6 +40,7 @@ import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
+import org.hibernate.sql.ast.tree.expression.Expression;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
@@ -132,20 +133,33 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				.thenCompose( subSelectFetchKeyHandler ->  session
 						.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
 						.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
-								.executeQuery( jdbcSelect,
-									   jdbcParameterBindings,
-									   ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
-									   rowTransformer,
-									   null,
-									   sql -> executionContext.getSession()
-											   .getJdbcCoordinator()
-											   .getStatementPreparer()
-											   .prepareQueryStatement( sql, false, null ),
-									   resultsConsumer
+								.executeQuery(
+										jdbcSelect,
+										jdbcParameterBindings,
+										ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext(
+												hql,
+												executionContext,
+												jdbcSelect,
+												subSelectFetchKeyHandler
+										),
+										rowTransformer,
+										null,
+										resultCountEstimate( sqmInterpretation, jdbcParameterBindings ),
+										resultsConsumer
 								)
 						)
 				)
 				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
+	}
+
+	private static int resultCountEstimate(
+			CacheableSqmInterpretation sqmInterpretation,
+			JdbcParameterBindings jdbcParameterBindings) {
+		final Expression fetchExpression = sqmInterpretation.selectStatement.getQueryPart()
+				.getFetchClauseExpression();
+		return fetchExpression != null
+				? interpretIntExpression( fetchExpression, jdbcParameterBindings )
+				: -1;
 	}
 
 	@Override

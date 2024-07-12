@@ -5,20 +5,11 @@
  */
 package org.hibernate.reactive;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import java.net.URI;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.dialect.CockroachDialect;
-import org.hibernate.dialect.DB2Dialect;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MariaDBDialect;
-import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.OracleDialect;
-import org.hibernate.dialect.PostgreSQLDialect;
-import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
+import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 
 import org.junit.jupiter.api.Assertions;
@@ -26,6 +17,11 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -33,20 +29,7 @@ public class UriConfigTest extends BaseReactiveTest {
 
 	@Override
 	protected Configuration constructConfiguration() {
-		Class<? extends Dialect> dialect;
-		switch ( dbType() ) {
-			case POSTGRESQL: dialect = PostgreSQLDialect.class; break;
-			case COCKROACHDB: dialect = CockroachDialect.class; break;
-			case MYSQL: dialect = MySQLDialect.class; break;
-			case MARIA: dialect = MariaDBDialect.class; break;
-			case SQLSERVER: dialect = SQLServerDialect.class; break;
-			case DB2: dialect = DB2Dialect.class; break;
-			case ORACLE: dialect = OracleDialect.class; break;
-			default: throw new IllegalArgumentException( "Database not recognized: " + dbType().name() );
-		}
-
 		Configuration configuration = super.constructConfiguration();
-		configuration.setProperty( Environment.DIALECT, dialect.getName() );
 		configuration.setProperty( Settings.URL, DatabaseConfiguration.getUri() );
 		configuration.setProperty( Settings.SQL_CLIENT_POOL_CONFIG, UriPoolConfiguration.class.getName() );
 		return configuration;
@@ -75,6 +58,32 @@ public class UriConfigTest extends BaseReactiveTest {
 				return "select to_char(current_timestamp) from dual";
 			default:
 				throw new IllegalArgumentException( "Database not recognized: " + dbType().name() );
+		}
+	}
+
+	/**
+	 * This class is used by {@link UriConfigTest} to test that one can use a different implementation of
+	 * {@link SqlClientPoolConfiguration}.
+	 * <p>
+	 * But, it also test {@link SqlConnectOptions#fromUri(String)} for each database.
+	 *</p>
+	 */
+	public static class UriPoolConfiguration implements SqlClientPoolConfiguration {
+		@Override
+		public PoolOptions poolOptions() {
+			return new PoolOptions();
+		}
+
+		@Override
+		public SqlConnectOptions connectOptions(URI uri) {
+			// For CockroachDB we use the PostgreSQL Vert.x client
+			String uriString = uri.toString().replaceAll( "^cockroach(db)?:", "postgres:" );
+			if ( uriString.startsWith( "sqlserver" ) ) {
+				// Testscontainer adds encrypt=false to the url. The problem is that it uses the JDBC syntax that's
+				// different from the supported one by the Vert.x driver.
+				uriString = uriString.replaceAll( ";[e|E]ncrypt=false", "?encrypt=false" );
+			}
+			return SqlConnectOptions.fromUri( uriString );
 		}
 	}
 }

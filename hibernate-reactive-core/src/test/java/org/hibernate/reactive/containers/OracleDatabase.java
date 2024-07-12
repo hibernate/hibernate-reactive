@@ -44,10 +44,9 @@ class OracleDatabase implements TestableDatabase {
 
 	static {
 		{
-			expectedDBTypeForClass.put( boolean.class, "NUMBER" );
-			expectedDBTypeForClass.put( Boolean.class, "NUMBER" );
+			expectedDBTypeForClass.put( boolean.class, "BOOLEAN" );
+			expectedDBTypeForClass.put( Boolean.class, "BOOLEAN" );
 
-			// FIXME: [ORM-6] Check if we need alternatives
 			expectedDBTypeForClass.put( NumericBooleanConverter.class, "NUMBER" );
 			expectedDBTypeForClass.put( YesNoConverter.class, "CHAR" );
 			expectedDBTypeForClass.put( TrueFalseConverter.class, "CHAR" );

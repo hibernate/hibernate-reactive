@@ -5,6 +5,11 @@
  */
 package org.hibernate.reactive.engine.impl;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
+
 import org.hibernate.HibernateException;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
@@ -13,15 +18,13 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -29,6 +32,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * Add reactive methods to a {@link PersistenceContext}.
  */
 public class ReactivePersistenceContextAdapter extends StatefulPersistenceContext {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private HashMap<Serializable, Object[]> entitySnapshotsByKey;
 
@@ -71,7 +76,7 @@ public class ReactivePersistenceContextAdapter extends StatefulPersistenceContex
 	@Deprecated
 	@Override
 	public Object[] getDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
-		throw new UnsupportedOperationException( "reactive persistence context" );
+		throw LOG.nonReactiveMethodCall( "reactiveGetDatabaseSnapshot" );
 	}
 
 	private static final Object[] NO_ROW = new Object[]{ StatefulPersistenceContext.NO_ROW };

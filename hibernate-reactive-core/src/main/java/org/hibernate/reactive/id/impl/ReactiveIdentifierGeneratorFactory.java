@@ -81,18 +81,6 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 		throw new MappingException( String.format( "Not an id generator [entity-name=%s]", entityName ) );
 	}
 
-	//TODO: deleteme, after update to ORM
-	@Override
-	public Class<? extends Generator> getIdentifierGeneratorClass(String strategy) {
-		try {
-			return super.getIdentifierGeneratorClass( strategy );
-		}
-		catch ( MappingException ignored ) {
-			// happens because the class does not implement Generator
-			return generatorClassForName( strategy );
-		}
-	}
-
 	protected Class<? extends Generator> generatorClassForName(String strategy) {
 		try {
 			return serviceRegistry.getService( ClassLoaderService.class ).classForName( strategy );

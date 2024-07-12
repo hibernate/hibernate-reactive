@@ -10,9 +10,9 @@ import io.vertx.core.Vertx;
 import io.vertx.core.net.impl.pool.CombinerExecutor;
 import io.vertx.core.net.impl.pool.Executor;
 import io.vertx.core.net.impl.pool.Task;
+
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +29,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * @author Gavin King
  * @author Davide D'Alto
  * @author Sanne Grinovero
- *
  */
 public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
 
@@ -83,40 +82,41 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 		//(this does actually hit a synchronization, but it's extremely short)
 		final long next = next();
 		if ( next != -1 ) {
-			return CompletionStages.completedFuture( next );
+			return completedFuture( next );
 		}
 
 		//Another special case we need to deal with; this is an unlikely configuration, but
 		//if it were to happen we should be better off with direct execution rather than using
 		//the co-operative executor:
 		if ( getBlockSize() <= 1 ) {
-			return nextHiValue( connectionSupplier )
-					.thenApply( i -> next( i ) );
+			return nextHiValue( connectionSupplier ).thenApply( this::next );
 		}
 
 		final CompletableFuture<Long> resultForThisEventLoop = new CompletableFuture<>();
 		final CompletableFuture<Long> result = new CompletableFuture<>();
-		executor.submit( new GenerateIdAction( connectionSupplier, result ) );
 		final Context context = Vertx.currentContext();
-		result.whenComplete( (id,t) -> {
+		executor.submit( new GenerateIdAction( connectionSupplier, result ) );
+		result.whenComplete( (id, t) -> {
 			final Context newContext = Vertx.currentContext();
 			//Need to be careful in resuming processing on the same context as the original
 			//request, potentially having to switch back if we're no longer executing on the same:
 			if ( newContext != context ) {
 				if ( t != null ) {
-					context.runOnContext( ( v ) -> resultForThisEventLoop.completeExceptionally( t ) );
-				} else {
-					context.runOnContext( ( v ) -> resultForThisEventLoop.complete( id ) );
+					context.runOnContext( v -> resultForThisEventLoop.completeExceptionally( t ) );
+				}
+				else {
+					context.runOnContext( v -> resultForThisEventLoop.complete( id ) );
 				}
 			}
 			else {
 				if ( t != null ) {
 					resultForThisEventLoop.completeExceptionally( t );
-				} else {
+				}
+				else {
 					resultForThisEventLoop.complete( id );
 				}
 			}
-		});
+		} );
 		return resultForThisEventLoop;
 	}
 
@@ -126,8 +126,8 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 		private final CompletableFuture<Long> result;
 
 		public GenerateIdAction(ReactiveConnectionSupplier connectionSupplier, CompletableFuture<Long> result) {
-			this.connectionSupplier = Objects.requireNonNull(connectionSupplier);
-			this.result = Objects.requireNonNull(result);
+			this.connectionSupplier = Objects.requireNonNull( connectionSupplier );
+			this.result = Objects.requireNonNull( result );
 		}
 
 		@Override
@@ -137,21 +137,22 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 				// We don't need to update or initialize the hi
 				// value in the table, so just increment the lo
 				// value and return the next id in the block
-				completedFuture( local )
-						.whenComplete( this::acceptAsReturnValue );
+				completedFuture( local ).whenComplete( this::acceptAsReturnValue );
 				return null;
-			} else {
+			}
+			else {
 				nextHiValue( connectionSupplier )
 						.whenComplete( (newlyGeneratedHi, throwable) -> {
 							if ( throwable != null ) {
 								result.completeExceptionally( throwable );
-							} else {
+							}
+							else {
 								//We ignore the state argument as we actually use the field directly
 								//for convenience, but they are the same object.
 								executor.submit( stateIgnored -> {
 									result.complete( next( newlyGeneratedHi ) );
 									return null;
-								});
+								} );
 							}
 						} );
 				return null;
