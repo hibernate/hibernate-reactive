@@ -5,17 +5,13 @@
  */
 package org.hibernate.reactive.sql.exec.internal;
 
-import java.io.Serializable;
-import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import org.hibernate.CacheMode;
-import org.hibernate.LockOptions;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -36,14 +32,16 @@ import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.JdbcExecHelper;
+import org.hibernate.sql.exec.internal.StandardStatementCreator;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelectExecutor;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.sql.results.internal.RowTransformerTupleTransformerAdapter;
+import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.sql.results.spi.RowTransformer;
@@ -78,16 +76,60 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			RowTransformer<R> rowTransformer,
 			Class<R> domainResultType,
 			ReactiveListResultsConsumer.UniqueSemantic uniqueSemantic) {
+		return list(
+				jdbcSelect,
+				jdbcParameterBindings,
+				executionContext,
+				rowTransformer,
+				domainResultType,
+				uniqueSemantic,
+				-1
+		);
+	}
+
+	/**
+	 * @since 2.4 (and ORM 6.6)
+	 */
+	public  <R> CompletionStage<List<R>> list(
+			JdbcOperationQuerySelect jdbcSelect,
+			JdbcParameterBindings jdbcParameterBindings,
+			ExecutionContext executionContext,
+			RowTransformer<R> rowTransformer,
+			Class<R> requestedJavaType,
+			ReactiveListResultsConsumer.UniqueSemantic uniqueSemantic,
+			int resultCountEstimate) {
+		// Only do auto flushing for top level queries
+		return executeQuery(
+				jdbcSelect,
+				jdbcParameterBindings,
+				executionContext,
+				rowTransformer,
+				requestedJavaType,
+				resultCountEstimate,
+				ReactiveListResultsConsumer.instance( uniqueSemantic )
+		);
+	}
+
+	/**
+	 * @since 2.4 (and Hibernate ORM 6.6)
+	 */
+	public  <T, R> CompletionStage<T> executeQuery(
+			JdbcOperationQuerySelect jdbcSelect,
+			JdbcParameterBindings jdbcParameterBindings,
+			ExecutionContext executionContext,
+			RowTransformer<R> rowTransformer,
+			Class<R> domainResultType,
+			int resultCountEstimate,
+			ReactiveResultsConsumer<T, R> resultsConsumer) {
 		return executeQuery(
 				jdbcSelect,
 				jdbcParameterBindings,
 				executionContext,
 				rowTransformer,
 				domainResultType,
-				executionContext.getSession()
-						.getJdbcCoordinator()
-						.getStatementPreparer()::prepareStatement,
-				ReactiveListResultsConsumer.instance( uniqueSemantic )
+				resultCountEstimate,
+				StandardStatementCreator.getStatementCreator( null ),
+				resultsConsumer
 		);
 	}
 
@@ -98,7 +140,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
 			Class<R> domainResultType,
-			Function<String, PreparedStatement> statementCreator,
+			int resultCountEstimate,
+			JdbcSelectExecutor.StatementCreator statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer) {
 
 		final PersistenceContext persistenceContext = executionContext.getSession().getPersistenceContext();
@@ -110,7 +153,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			persistenceContext.setDefaultReadOnly( readOnly );
 		}
 
- 		return doExecuteQuery( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, domainResultType, statementCreator, resultsConsumer )
+ 		return doExecuteQuery( jdbcSelect, jdbcParameterBindings, executionContext, rowTransformer, domainResultType, resultCountEstimate, statementCreator, resultsConsumer )
 				.thenCompose( list -> ( (ReactivePersistenceContextAdapter) persistenceContext )
 						// only initialize non-lazy collections after everything else has been refreshed
 						.reactiveInitializeNonLazyCollections()
@@ -129,10 +172,11 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			ExecutionContext executionContext,
 			RowTransformer<R> transformer,
 			Class<R> domainResultType,
-			Function<String, PreparedStatement> statementCreator,
+			int resultCountEstimate,
+			JdbcSelectExecutor.StatementCreator statementCreator,
 			ReactiveResultsConsumer<T, R> resultsConsumer) {
 
-		final ReactiveDeferredResultSetAccess deferredResultSetAccess = new ReactiveDeferredResultSetAccess( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
+		final ReactiveDeferredResultSetAccess deferredResultSetAccess = new ReactiveDeferredResultSetAccess( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, resultCountEstimate );
 
 		return resolveJdbcValuesSource(
 				executionContext.getQueryIdentifier( deferredResultSetAccess.getFinalSql() ),
@@ -175,17 +219,10 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					);
 
 					final ReactiveRowReader<R> rowReader = ReactiveResultsHelper.createRowReader(
-							executionContext,
-							// If follow-on locking is used, we must omit the lock options here,
-							// because these lock options are only for Initializers.
-							// If we wouldn't omit this, the follow-on lock requests would be no-ops,
-							// because the EntityEntries would already have the desired lock mode
-							deferredResultSetAccess.usesFollowOnLocking()
-									? LockOptions.NONE
-									: executionContext.getQueryOptions().getLockOptions(),
+							executionContext.getSession().getSessionFactory(),
 							rowTransformer,
 							domainResultType,
-							jdbcValues.getValuesMapping()
+							jdbcValues
 					);
 
 					final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState(
@@ -194,6 +231,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 							rowReader,
 							jdbcValues
 					);
+
+					rowReader.startLoading( rowProcessingState );
 
 					return resultsConsumer
 							.consume(
@@ -237,7 +276,12 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		return rowTransformer;
 	}
 
-	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(String queryIdentifier, JdbcOperationQuerySelect jdbcSelect, boolean canBeCached, ExecutionContext executionContext, ReactiveResultSetAccess resultSetAccess) {
+	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(
+			String queryIdentifier,
+			JdbcOperationQuerySelect jdbcSelect,
+			boolean canBeCached,
+			ExecutionContext executionContext,
+			ReactiveDeferredResultSetAccess resultSetAccess) {
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
@@ -252,7 +296,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		if ( cacheable && cacheMode.isGetEnabled() ) {
 			SqlExecLogger.SQL_EXEC_LOGGER.debugf( "Reading Query result cache data per CacheMode#isGetEnabled [%s]", cacheMode.name() );
 			final Set<String> querySpaces = jdbcSelect.getAffectedTableNames();
-			if ( querySpaces == null || querySpaces.size() == 0 ) {
+			if ( querySpaces == null || querySpaces.isEmpty() ) {
 				SqlExecLogger.SQL_EXEC_LOGGER.tracef( "Unexpected querySpaces is empty" );
 			}
 			else {
@@ -313,41 +357,70 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			if ( queryResultsCacheKey == null ) {
 				return mappingProducer
 						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, null, executionContext ) );
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								null,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								null,
+								executionContext
+						) );
 			}
 			else {
 				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 				final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-				JdbcValuesMetadata metadataForCache = capturingMetadata.resolveMetadataForCache();
 				return mappingProducer
 						.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet( resultSetAccess, queryResultsCacheKey, queryIdentifier, executionContext.getQueryOptions(), jdbcValuesMapping, metadataForCache, executionContext ) );
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								queryResultsCacheKey,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								capturingMetadata.resolveMetadataForCache(),
+								executionContext
+						) );
 			}
 		}
 		else {
+			// TODO: Implements JdbcValuesCacheHit for reactive, see JdbcSelectExecutorStandardImpl#resolveJdbcValuesSource
 			// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 			final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-			final CompletionStage<JdbcValuesMapping> stage;
 			if ( cachedResults.isEmpty() || !( cachedResults.get( 0 ) instanceof JdbcValuesMetadata ) ) {
-				stage = mappingProducer.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory );
+				return mappingProducer.reactiveResolve( resultSetAccess, session.getLoadQueryInfluencers(), factory )
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								queryResultsCacheKey,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								capturingMetadata.resolveMetadataForCache(),
+								executionContext
+						) );
 			}
 			else {
-				stage = mappingProducer.reactiveResolve( (JdbcValuesMetadata) cachedResults.get( 0 ), session.getLoadQueryInfluencers(), factory );
+				return mappingProducer
+						.reactiveResolve( (JdbcValuesMetadata) cachedResults.get( 0 ), session.getLoadQueryInfluencers(), factory )
+						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+								resultSetAccess,
+								queryResultsCacheKey,
+								queryIdentifier,
+								executionContext.getQueryOptions(),
+								resultSetAccess.usesFollowOnLocking(),
+								jdbcValuesMapping,
+								capturingMetadata.resolveMetadataForCache(),
+								executionContext
+						) );
 			}
-			return stage.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
-					resultSetAccess,
-					queryResultsCacheKey,
-					queryIdentifier,
-					executionContext.getQueryOptions(),
-					jdbcValuesMapping,
-					capturingMetadata,
-					executionContext
-			) );
 		}
 	}
 
 	/**
-	 * see {@link org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl.CapturingJdbcValuesMetadata}
+	 * see {@link CachedJdbcValuesMetadata}
 	 */
 	public static class CapturingJdbcValuesMetadata implements JdbcValuesMetadata {
 		private final ReactiveResultSetAccess resultSetAccess;
@@ -423,65 +496,11 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			return basicType;
 		}
 
-		public JdbcValuesMetadata resolveMetadataForCache() {
+		public CachedJdbcValuesMetadata resolveMetadataForCache() {
 			if ( columnNames == null ) {
 				return null;
 			}
 			return new CachedJdbcValuesMetadata( columnNames, types );
-		}
-	}
-
-	private static class CachedJdbcValuesMetadata implements JdbcValuesMetadata, Serializable {
-		private final String[] columnNames;
-		private final BasicType<?>[] types;
-
-		public CachedJdbcValuesMetadata(String[] columnNames, BasicType<?>[] types) {
-			this.columnNames = columnNames;
-			this.types = types;
-		}
-
-		@Override
-		public int getColumnCount() {
-			return columnNames.length;
-		}
-
-		@Override
-		public int resolveColumnPosition(String columnName) {
-			final int position = ArrayHelper.indexOf( columnNames, columnName ) + 1;
-			if ( position == 0 ) {
-				throw new IllegalStateException( "Unexpected resolving of unavailable column: " + columnName );
-			}
-			return position;
-		}
-
-		@Override
-		public String resolveColumnName(int position) {
-			final String name = columnNames[position - 1];
-			if ( name == null ) {
-				throw new IllegalStateException( "Unexpected resolving of unavailable column at position: " + position );
-			}
-			return name;
-		}
-
-		@Override
-		public <J> BasicType<J> resolveType(
-				int position,
-				JavaType<J> explicitJavaType,
-				TypeConfiguration typeConfiguration) {
-			final BasicType<?> type = types[position - 1];
-			if ( type == null ) {
-				throw new IllegalStateException( "Unexpected resolving of unavailable column at position: " + position );
-			}
-			if ( explicitJavaType == null || type.getJavaTypeDescriptor() == explicitJavaType ) {
-				//noinspection unchecked
-				return (BasicType<J>) type;
-			}
-			else {
-				return typeConfiguration.getBasicTypeRegistry().resolve(
-						explicitJavaType,
-						type.getJdbcType()
-				);
-			}
 		}
 	}
 

@@ -6,7 +6,7 @@
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
 import org.hibernate.sql.results.graph.AssemblerCreationState;
-import org.hibernate.sql.results.graph.FetchParentAccess;
+import org.hibernate.sql.results.graph.InitializerParent;
 import org.hibernate.sql.results.graph.entity.EntityInitializer;
 import org.hibernate.sql.results.graph.entity.internal.EntityAssembler;
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchSelectImpl;
@@ -18,14 +18,15 @@ public class ReactiveEntityFetchSelectImpl extends EntityFetchSelectImpl {
 	}
 
 	@Override
-	public EntityInitializer createInitializer(FetchParentAccess parentAccess, AssemblerCreationState creationState) {
+	public EntityInitializer<?> createInitializer(InitializerParent<?> parent, AssemblerCreationState creationState) {
 		return ReactiveEntitySelectFetchInitializerBuilder.createInitializer(
-				parentAccess,
+				parent,
 				getFetchedMapping(),
 				getReferencedMappingContainer().getEntityPersister(),
 				getKeyResult(),
 				getNavigablePath(),
 				isSelectByUniqueKey(),
+				isAffectedByFilter(),
 				creationState
 		);
 	}

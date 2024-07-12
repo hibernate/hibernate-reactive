@@ -588,14 +588,14 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			final Object entity,
 			final MergeContext copyCache
 	) {
-		return new Cascade<>(
+		return Cascade.cascade(
 				getCascadeReactiveAction(),
 				CascadePoint.BEFORE_MERGE,
+				source,
 				persister,
 				entity,
-				copyCache,
-				source
-		).cascade();
+				copyCache
+		);
 	}
 
 

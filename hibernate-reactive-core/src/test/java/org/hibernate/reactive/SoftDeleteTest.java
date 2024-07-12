@@ -30,6 +30,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.Root;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
@@ -103,16 +104,10 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDefaults(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> {
-			switch ( dbType() ) {
-				case DB2:
-					return ( (short) obj ) == 1;
-				case ORACLE:
-					return ( (Number) obj ).intValue() == 1;
-				default:
-					return (boolean) obj;
-			}
-		};
+		Predicate<Object> deleted = obj -> dbType() == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
+
 		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
 				() -> getMutinySessionFactory().withTransaction( s -> s
 						.remove( s.getReference( ImplicitEntity.class, implicitEntities[0].getId() ) )
@@ -122,16 +117,10 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDeletionWithHQLQuery(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> {
-					switch ( dbType() ) {
-						case DB2:
-							return ( (short) obj ) == 1;
-						case ORACLE:
-							return ( (Number) obj ).intValue() == 1;
-						default:
-							return (boolean) obj;
-					}
-		};
+		Predicate<Object> deleted = obj -> requireNonNull( dbType() ) == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
+
 		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
 				() -> getMutinySessionFactory().withTransaction( s -> s
 						.createMutationQuery( "delete from ImplicitEntity where name = :name" )
@@ -143,16 +132,10 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDeletionWithCriteria(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> {
-			switch ( dbType() ) {
-				case DB2:
-					return ( (short) obj ) == 1;
-				case ORACLE:
-					return ( (Number) obj ).intValue() == 1;
-				default:
-					return (boolean) obj;
-			}
-		};
+		Predicate<Object> deleted = obj -> dbType() == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
+
 		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
 				() -> getMutinySessionFactory().withTransaction( s -> {
 					CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();

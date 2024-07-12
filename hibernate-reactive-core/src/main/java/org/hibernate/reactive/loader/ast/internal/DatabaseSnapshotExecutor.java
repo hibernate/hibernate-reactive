@@ -44,7 +44,7 @@ import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.sql.results.graph.internal.ImmutableFetchList;
-import org.hibernate.sql.results.internal.RowTransformerDatabaseSnapshotImpl;
+import org.hibernate.sql.results.internal.RowTransformerArrayImpl;
 import org.hibernate.type.StandardBasicTypes;
 
 import org.jboss.logging.Logger;
@@ -181,7 +181,13 @@ class DatabaseSnapshotExecutor {
 
 		// FIXME: use JdbcServices
 		return StandardReactiveSelectExecutor.INSTANCE
-				.list( jdbcSelect, jdbcParameterBindings, new BaseExecutionContext( session ), RowTransformerDatabaseSnapshotImpl.instance(), ReactiveListResultsConsumer.UniqueSemantic.FILTER  )
+				.list(
+						jdbcSelect,
+						jdbcParameterBindings,
+						new BaseExecutionContext( session ),
+						RowTransformerArrayImpl.instance(),
+						ReactiveListResultsConsumer.UniqueSemantic.FILTER
+				)
 				.thenApply( list -> {
 					assert list != null;
 					final int size = list.size();
@@ -191,7 +197,7 @@ class DatabaseSnapshotExecutor {
 						return null;
 					}
 
-					final Object[] entitySnapshot = (Object[]) list.get( 0 );
+					final Object[] entitySnapshot = list.get( 0 );
 					// The result of this method is treated like the entity state array which doesn't include the id
 					// So we must exclude it from the array
 					if ( entitySnapshot.length == 1 ) {

@@ -19,6 +19,7 @@ import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.SingularAttribute;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -302,6 +303,7 @@ public class OrderTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Book")
+	@Table(name = "OrderTest_Book" )
 	static class Book {
 		@Id
 		String isbn;

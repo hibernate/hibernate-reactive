@@ -21,7 +21,7 @@ public interface ReactiveDomainResultsAssembler<J> extends DomainResultAssembler
 			JdbcValuesSourceProcessingOptions options);
 
 	/**
-	 * Convenience form of {@link #assemble(RowProcessingState, JdbcValuesSourceProcessingOptions)}
+	 * Convenience form of {@link #assemble(RowProcessingState)}
 	 */
 	default CompletionStage<J> reactiveAssemble(ReactiveRowProcessingState rowProcessingState) {
 		return reactiveAssemble(

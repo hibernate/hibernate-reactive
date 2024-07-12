@@ -125,6 +125,11 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	}
 
 	@Override
+	public void addCollectionsByKeyToPersistenceContext(PersistenceContext persistenceContext, Object[] objects) {
+		super.addCollectionsByKeyToPersistenceContext( persistenceContext, objects );
+	}
+
+	@Override
 	public AbstractEntityInsertAction asAbstractEntityInsertAction() {
 		return this;
 	}
@@ -133,6 +138,11 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	protected void markExecuted() {
 		super.markExecuted();
 		executed = true;
+	}
+
+	@Override
+	public Object getRowId() {
+		return super.getRowId();
 	}
 
 	@Override

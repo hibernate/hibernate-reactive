@@ -9,6 +9,7 @@ import org.hibernate.engine.FetchTiming;
 import org.hibernate.metamodel.mapping.AttributeMetadata;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
+import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveEmbeddableForeignKeyResultImpl;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchJoinedImpl;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchSelectImpl;
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityDelayedFetchImpl;
@@ -19,6 +20,7 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.graph.embeddable.internal.EmbeddableForeignKeyResultImpl;
 import org.hibernate.sql.results.graph.entity.EntityFetch;
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchJoinedImpl;
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchSelectImpl;
@@ -81,14 +83,23 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 			ToOneAttributeMapping fetchedAttribute,
 			NavigablePath navigablePath,
 			DomainResult<?> keyResult,
-			boolean selectByUniqueKey) {
+			boolean selectByUniqueKey,
+			DomainResultCreationState creationState) {
 		return new ReactiveEntityDelayedFetchImpl(
 				fetchParent,
 				fetchedAttribute,
 				navigablePath,
-				keyResult,
-				selectByUniqueKey
+				convert( keyResult ),
+				selectByUniqueKey,
+				creationState
 		);
+	}
+
+	private static DomainResult<?> convert(DomainResult<?> keyResult) {
+		if ( keyResult instanceof EmbeddableForeignKeyResultImpl ) {
+			return new ReactiveEmbeddableForeignKeyResultImpl<>( (EmbeddableForeignKeyResultImpl<?>) keyResult );
+		}
+		return keyResult;
 	}
 
 	@Override
