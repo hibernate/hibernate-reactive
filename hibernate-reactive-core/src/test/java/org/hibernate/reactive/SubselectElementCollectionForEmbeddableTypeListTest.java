@@ -124,23 +124,20 @@ public class SubselectElementCollectionForEmbeddableTypeListTest extends BaseRea
 
 	@Test
 	public void noJoinFetch(VertxTestContext context) {
-		test (
-				context,
-				getMutinySessionFactory()
-						.withTransaction( session -> session.createSelectionQuery("from Person p where p.name='Claude'", Person.class)
-								.getResultList()
-								.invoke( all -> assertEquals( 2, all.size() ) )
-								.invoke( all -> all.forEach( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) ) )
-								.chain ( all -> session.fetch( all.get(0).phones ) )
-								.invoke( phones -> {
-									assertTrue( Hibernate.isInitialized( phones ) );
-									assertPhones( phones, "111-111-1111", "999-999-9999" );
-								} )
-						)
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+				.createSelectionQuery( "from Person p where p.name='Claude'", Person.class )
+				.getResultList()
+				.invoke( all -> assertEquals( 2, all.size() ) )
+				.invoke( all -> all.forEach( result -> assertFalse( Hibernate.isInitialized( result.phones ) ) ) )
+				.chain( all -> session.fetch( all.get( 0 ).phones ) )
+				.invoke( phones -> {
+					assertTrue( Hibernate.isInitialized( phones ) );
+					assertPhones( phones, "111-111-1111", "999-999-9999" );
+				} ) )
 		);
 	}
 
-	private static void assertPhones( List<Phone> list, String... phones) {
+	private static void assertPhones(List<Phone> list, String... phones) {
 		assertEquals( phones.length, list.size() );
 		for ( String phone : phones ) {
 			assertTrue( phonesContainNumber( list, phone ) );

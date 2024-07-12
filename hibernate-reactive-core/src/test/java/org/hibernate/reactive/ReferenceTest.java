@@ -47,9 +47,9 @@ public class ReferenceTest extends BaseReactiveTest {
 	}
 
 	@Override
-	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+	public CompletionStage<Void> deleteEntities(Class<?>... types) {
 		return getSessionFactory()
-				.withTransaction( s -> loop( entities, entityClass -> s
+				.withTransaction( s -> loop( types, entityClass -> s
 						.createQuery( "from " + entityName( entityClass ), entityClass )
 						.getResultList()
 						.thenCompose( list -> loop( list, s::remove ) ) ) );

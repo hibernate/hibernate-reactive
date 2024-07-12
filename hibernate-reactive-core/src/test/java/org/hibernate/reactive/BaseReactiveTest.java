@@ -165,6 +165,9 @@ public abstract class BaseReactiveTest {
 		}
 	}
 
+	/**
+	 * This method works for most common cases, but some tests might need to overrides it
+	 */
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
 		return getSessionFactory()
 				.withTransaction( s -> loop( entities, entityClass -> s

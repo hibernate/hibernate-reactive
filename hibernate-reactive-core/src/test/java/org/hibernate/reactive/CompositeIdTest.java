@@ -67,10 +67,10 @@ public class CompositeIdTest extends BaseReactiveTest {
 	}
 
 	private CompletionStage<Double> selectWeightFromId(Integer id) {
-		return getSessionFactory().withSession(
-				session -> session.createSelectionQuery("SELECT weight FROM GuineaPig WHERE id = " + id, Double.class )
-						.getResultList()
-						.thenApply( CompositeIdTest::weightFromResult )
+		return getSessionFactory().withSession( session -> session
+				.createSelectionQuery( "SELECT weight FROM GuineaPig WHERE id = " + id, Double.class )
+				.getResultList()
+				.thenApply( CompositeIdTest::weightFromResult )
 		);
 	}
 
@@ -79,93 +79,85 @@ public class CompositeIdTest extends BaseReactiveTest {
 			case 0:
 				return null;
 			case 1:
-				return rowSet.get(0);
+				return rowSet.get( 0 );
 			default:
-				throw new AssertionError("More than one result returned: " + rowSet.size());
+				throw new AssertionError( "More than one result returned: " + rowSet.size() );
 		}
 	}
 
 	@Test
 	public void reactiveFind(VertxTestContext context) {
 		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
-		test(
-				context,
-				populateDB()
-						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.find( GuineaPig.class, new Pig(5, "Aloi") ) )
-						.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
+		test( context, populateDB()
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session.find( GuineaPig.class, new Pig( 5, "Aloi" ) ) )
+				.thenAccept( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
 		);
 	}
 
 	@Test
 	public void reactivePersist(VertxTestContext context) {
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> s.persist( new GuineaPig( 10, "Tulip" ) )
-								.thenCompose( v -> s.flush() )
-						)
-						.thenCompose( v -> selectNameFromId( 10 ) )
-						.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
+		test( context, openSession()
+				.thenCompose( s -> s
+						.persist( new GuineaPig( 10, "Tulip" ) )
+						.thenCompose( v -> s.flush() )
+				)
+				.thenCompose( v -> selectNameFromId( 10 ) )
+				.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
 		);
 	}
 
 	@Test
 	public void reactiveRemoveTransientEntity(VertxTestContext context) {
-		test(
-				context,
-				populateDB()
-						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( Assertions::assertNotNull )
-						.thenCompose( v -> openSession() )
-						.thenCompose( session -> session.remove( new GuineaPig( 5, "Aloi" ) )
-								.thenCompose( v -> session.flush() )
-								.thenCompose( v -> session.close() )
-						)
-						.thenCompose( v -> selectNameFromId( 5 ) )
-						.thenAccept( Assertions::assertNull )
-						.handle( (r, e) -> {
-							assertNotNull( e );
-							return r;
-						} )
+		test( context, populateDB()
+				.thenCompose( v -> selectNameFromId( 5 ) )
+				.thenAccept( Assertions::assertNotNull )
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session
+						.remove( new GuineaPig( 5, "Aloi" ) )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> session.close() )
+				)
+				.thenCompose( v -> selectNameFromId( 5 ) )
+				.thenAccept( Assertions::assertNull )
+				.handle( (r, e) -> {
+					assertNotNull( e );
+					return r;
+				} )
 		);
 	}
 
 	@Test
 	public void reactiveRemoveManagedEntity(VertxTestContext context) {
-		test(
-				context,
-				populateDB()
-						.thenCompose( v -> openSession() )
-						.thenCompose( session ->
-							session.find( GuineaPig.class, new Pig(5, "Aloi") )
-								.thenCompose( session::remove )
-								.thenCompose( v -> session.flush() )
-								.thenCompose( v -> selectNameFromId( session,5 ) )
-								.thenAccept( Assertions::assertNull )
-						)
+		test( context, populateDB()
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session
+						.find( GuineaPig.class, new Pig( 5, "Aloi" ) )
+						.thenCompose( session::remove )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> selectNameFromId( session, 5 ) )
+						.thenAccept( Assertions::assertNull )
+				)
 		);
 	}
 
 	@Test
 	public void reactiveUpdate(VertxTestContext context) {
 		final double NEW_WEIGHT = 200.0;
-		test(
-				context,
-				populateDB()
-						.thenCompose( v -> openSession() )
-						.thenCompose( session ->
-							session.find( GuineaPig.class, new Pig(5, "Aloi") )
-								.thenAccept( pig -> {
-									assertNotNull( pig );
-									// Checking we are actually changing the name
-									assertNotEquals( pig.getWeight(), NEW_WEIGHT );
-									pig.setWeight( NEW_WEIGHT );
-								} )
-								.thenCompose( v -> session.flush() )
-								.thenCompose( v -> session.close() )
-								.thenCompose( v -> selectWeightFromId( 5 ) )
-								.thenAccept( w -> assertEquals( NEW_WEIGHT, w ) ) )
+		test( context, populateDB()
+				.thenCompose( v -> openSession() )
+				.thenCompose( session -> session
+						.find( GuineaPig.class, new Pig( 5, "Aloi" ) )
+						.thenAccept( pig -> {
+							assertNotNull( pig );
+							// Checking we are actually changing the name
+							assertNotEquals( pig.getWeight(), NEW_WEIGHT );
+							pig.setWeight( NEW_WEIGHT );
+						} )
+						.thenCompose( v -> session.flush() )
+						.thenCompose( v -> session.close() )
+						.thenCompose( v -> selectWeightFromId( 5 ) )
+						.thenAccept( w -> assertEquals( NEW_WEIGHT, w ) ) )
 		);
 	}
 
@@ -185,7 +177,8 @@ public class CompositeIdTest extends BaseReactiveTest {
 			this.name = name;
 		}
 
-		Pig() {}
+		Pig() {
+		}
 
 		public Integer getId() {
 			return id;
@@ -197,25 +190,31 @@ public class CompositeIdTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
 			Pig pig = (Pig) o;
-			return id.equals(pig.id) &&
-					name.equals(pig.name);
+			return id.equals( pig.id ) &&
+					name.equals( pig.name );
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(id, name);
+			return Objects.hash( id, name );
 		}
 	}
 
-	@Entity(name="GuineaPig")
-	@Table(name="Pig")
+	@Entity(name = "GuineaPig")
+	@Table(name = "Pig")
 	@IdClass(Pig.class)
 	public static class GuineaPig implements Serializable {
-		@Id private Integer id;
-		@Id private String name;
+		@Id
+		private Integer id;
+		@Id
+		private String name;
 
 		private double weight = 100.0;
 

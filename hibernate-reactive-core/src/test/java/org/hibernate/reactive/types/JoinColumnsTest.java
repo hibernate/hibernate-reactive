@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.hibernate.TransientPropertyValueException;
+import org.hibernate.TransientObjectException;
 import org.hibernate.reactive.BaseReactiveTest;
 
 import org.junit.jupiter.api.Test;
@@ -176,7 +176,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
 					return session.persist( sampleJoinEntity );
 				} ) )
-				.thenAccept( t -> assertThat( t ).hasCauseInstanceOf( TransientPropertyValueException.class ) )
+				.thenAccept( t -> assertThat( t ).hasCauseInstanceOf( TransientObjectException.class ) )
 		);
 	}
 
@@ -196,7 +196,7 @@ public class JoinColumnsTest extends BaseReactiveTest {
 					sampleEntity.sampleJoinEntities.add( sampleJoinEntity );
 					return session.persist( sampleJoinEntity );
 				} ) )
-				.invoke( t -> assertThat( t ).hasCauseInstanceOf( TransientPropertyValueException.class ) )
+				.invoke( t -> assertThat( t ).hasCauseInstanceOf( TransientObjectException.class ) )
 		);
 	}
 
