@@ -54,6 +54,11 @@ public class ReactiveDirectResultSetAccess extends DirectResultSetAccess impleme
 	}
 
 	@Override
+	public int getResultCountEstimate() {
+		return super.getResultCountEstimate();
+	}
+
+	@Override
 	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
 		return super.resolveType( position, explicitJavaType, sessionFactory );
 	}

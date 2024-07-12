@@ -20,6 +20,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.exception.DataException;
 import org.hibernate.exception.LockTimeoutException;
+import org.hibernate.query.spi.Limit;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.sql.ast.spi.SqlSelection;
@@ -28,8 +29,8 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.results.caching.QueryCachePutManager;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManagerEnabledImpl;
 import org.hibernate.sql.results.graph.DomainResult;
+import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -46,6 +47,8 @@ public class ReactiveValuesResultSet {
 	private final ReactiveResultSetAccess resultSetAccess;
 	private final JdbcValuesMapping valuesMapping;
 	private final ExecutionContext executionContext;
+	private final boolean usesFollowOnLocking;
+	private final int resultCountEstimate;
 	private final SqlSelection[] sqlSelections;
 	private final BitSet initializedIndexes;
 	private final Object[] currentRowJdbcValues;
@@ -54,19 +57,29 @@ public class ReactiveValuesResultSet {
 	// Contains the size of the row to cache, or if the value is negative,
 	// represents the inverted index of the single value to cache
 	private final int rowToCacheSize;
+	private int resultCount;
 
 	public ReactiveValuesResultSet(
 			ReactiveResultSetAccess resultSetAccess,
 			QueryKey queryCacheKey,
 			String queryIdentifier,
 			QueryOptions queryOptions,
+			boolean usesFollowOnLocking,
 			JdbcValuesMapping valuesMapping,
-			JdbcValuesMetadata metadataForCache,
+			CachedJdbcValuesMetadata metadataForCache,
 			ExecutionContext executionContext) {
-		this.queryCachePutManager = resolveQueryCachePutManager( executionContext, queryOptions, queryCacheKey, queryIdentifier, metadataForCache );
+		this.queryCachePutManager = resolveQueryCachePutManager(
+				executionContext,
+				queryOptions,
+				queryCacheKey,
+				queryIdentifier,
+				metadataForCache
+		);
 		this.resultSetAccess = resultSetAccess;
 		this.valuesMapping = valuesMapping;
 		this.executionContext = executionContext;
+		this.usesFollowOnLocking = usesFollowOnLocking;
+		this.resultCountEstimate = determineResultCountEstimate( resultSetAccess, queryOptions );
 
 		final int rowSize = valuesMapping.getRowSize();
 		this.sqlSelections = new SqlSelection[rowSize];
@@ -116,12 +129,27 @@ public class ReactiveValuesResultSet {
 		}
 	}
 
+	private int determineResultCountEstimate(
+			ReactiveResultSetAccess resultSetAccess,
+			QueryOptions queryOptions) {
+		final Limit limit = queryOptions.getLimit();
+		if ( limit != null && limit.getMaxRows() != null ) {
+			return limit.getMaxRows();
+		}
+
+		final int resultCountEstimate = resultSetAccess.getResultCountEstimate();
+		if ( resultCountEstimate > 0 ) {
+			return resultCountEstimate;
+		}
+		return -1;
+	}
+
 	private static QueryCachePutManager resolveQueryCachePutManager(
 			ExecutionContext executionContext,
 			QueryOptions queryOptions,
 			QueryKey queryCacheKey,
 			String queryIdentifier,
-			JdbcValuesMetadata metadataForCache) {
+			CachedJdbcValuesMetadata metadataForCache) {
 		if ( queryCacheKey != null ) {
 			final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 			final QueryResultsCache queryCache = factory.getCache()
@@ -182,13 +210,20 @@ public class ReactiveValuesResultSet {
 
 	public void finishUp(SharedSessionContractImplementor session) {
 		if ( queryCachePutManager != null ) {
-			queryCachePutManager.finishUp( session );
+			queryCachePutManager.finishUp( resultCount, session );
 		}
 		resultSetAccess.release();
 	}
 
+	public boolean usesFollowOnLocking() {
+		return usesFollowOnLocking;
+	}
+
 	public void finishRowProcessing(RowProcessingState rowProcessingState, boolean wasAdded) {
 		if ( queryCachePutManager != null ) {
+			if ( wasAdded ) {
+				resultCount++;
+			}
 			final Object objectToCache;
 			if ( valueIndexesToCacheIndexes == null ) {
 				objectToCache = Arrays.copyOf( currentRowJdbcValues, currentRowJdbcValues.length );
@@ -245,5 +280,9 @@ public class ReactiveValuesResultSet {
 					}
 					return true;
 				} );
+	}
+
+	public int getResultCountEstimate() {
+		return resultCountEstimate;
 	}
 }
