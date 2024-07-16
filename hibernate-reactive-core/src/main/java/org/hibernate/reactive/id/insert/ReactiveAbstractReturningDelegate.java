@@ -21,8 +21,8 @@ import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.values.GeneratedValues;
-import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.Binder;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
@@ -35,7 +35,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	@Override
 	PreparedStatement prepareStatement(String insertSql, SharedSessionContractImplementor session);
 
-	PostInsertIdentityPersister getPersister();
+	EntityPersister getPersister();
 
 	@Override
 	default CompletionStage<GeneratedValues> reactivePerformInsertReturning(String sql, SharedSessionContractImplementor session, Binder binder) {
