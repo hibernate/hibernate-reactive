@@ -30,6 +30,29 @@ public class  CompletionStages {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ) );
 
+	public static class Completable<T> {
+
+		private final CompletableFuture<T> stage;
+
+		public Completable() {
+			this.stage = new CompletableFuture<>();
+		}
+
+		public Object complete(T result, Throwable throwable) {
+			if ( throwable != null ) {
+				stage.completeExceptionally( throwable );
+			}
+			else {
+				stage.complete( result );
+			}
+			return null;
+		}
+
+		public CompletionStage<T> getStage() {
+			return stage;
+		}
+	}
+
 	// singleton instances:
 	private static final CompletionStage<Void> VOID = completedFuture( null );
 	private static final CompletionStage<Integer> ZERO = completedFuture( 0 );

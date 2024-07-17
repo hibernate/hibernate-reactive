@@ -27,7 +27,6 @@ import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationHelper;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.Joinable;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
@@ -65,11 +64,10 @@ import org.hibernate.sql.ast.tree.predicate.Predicate;
 import org.hibernate.sql.ast.tree.predicate.PredicateCollector;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryDelete;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import static org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithTemporaryTableHelper.createIdTableSelectQuerySpec;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -127,7 +125,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		final EntityPersister entityDescriptor = sessionFactory.getRuntimeMetamodels()
 				.getMappingMetamodel()
 				.getEntityDescriptor( sqmDelete.getTarget().getEntityName() );
-		final String hierarchyRootTableName = ( (Joinable) entityDescriptor ).getTableName();
+		final String hierarchyRootTableName = entityDescriptor.getTableName();
 
 		final TableGroup deletingTableGroup = converter.getMutatingTableGroup();
 
@@ -150,6 +148,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				deletingTableGroup,
 				true,
 				executionContext.getSession().getLoadQueryInfluencers().getEnabledFilters(),
+				false,
 				null,
 				converter
 		);
@@ -203,7 +202,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		assert entityDescriptor == entityDescriptor.getRootEntityDescriptor();
 
 		final EntityPersister rootEntityPersister = entityDescriptor.getEntityPersister();
-		final String rootTableName = ( (Joinable) rootEntityPersister ).getTableName();
+		final String rootTableName = rootEntityPersister.getTableName();
 		final NamedTableReference rootTableReference = (NamedTableReference) tableGroup.resolveTableReference(
 				tableGroup.getNavigablePath(),
 				rootTableName
@@ -480,9 +479,9 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 
 		final JdbcServices jdbcServices = factory.getJdbcServices();
 
-		final JdbcOperationQueryDelete jdbcDelete = jdbcServices.getJdbcEnvironment()
+		final JdbcOperationQueryMutation jdbcDelete = jdbcServices.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildDeleteTranslator( factory, sqlAst )
+				.buildMutationTranslator( factory, sqlAst )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
@@ -589,20 +588,20 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				} );
 	}
 
-	private CompletionStage<Void> visitConstraintOrderedTables(QuerySpec idTableIdentifierSubQuery, ExecutionContext executionContext) {
-		final CompletionStage<Integer>[] resultStage = new CompletionStage[]{ completedFuture( -1 ) };
-		entityDescriptor.visitConstraintOrderedTables(
-				(tableExpression, tableKeyColumnVisitationSupplier) -> {
-					resultStage[0] = resultStage[0].thenCompose( ignore -> deleteFromTableUsingIdTable(
-							tableExpression,
-							tableKeyColumnVisitationSupplier,
-							idTableIdentifierSubQuery,
-							executionContext
-					) );
-				}
-		);
-		return resultStage[0]
-				.thenCompose( CompletionStages::voidFuture );
+	private CompletionStage<Void> visitConstraintOrderedTables(
+			QuerySpec idTableIdentifierSubQuery,
+			ExecutionContext executionContext) {
+		final CompletionStages.Completable<Integer> resultStage = new CompletionStages.Completable<>();
+		entityDescriptor
+				.visitConstraintOrderedTables( (tableExpression, tableKeyColumnVisitationSupplier) -> deleteFromTableUsingIdTable(
+								tableExpression,
+								tableKeyColumnVisitationSupplier,
+								idTableIdentifierSubQuery,
+								executionContext
+						)
+						.handle( resultStage::complete )
+				);
+		return resultStage.getStage().thenCompose( CompletionStages::voidFuture );
 	}
 
 	private CompletionStage<Integer> deleteFromTableUsingIdTable(

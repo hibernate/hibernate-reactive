@@ -44,6 +44,7 @@ import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
@@ -54,12 +55,17 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.EntityType;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+
 /**
  * An {@link ReactiveEntityPersister} backed by {@link JoinedSubclassEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister
 		implements ReactiveAbstractEntityPersister {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -289,11 +295,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
 		return super.initializeLazyProperty( fieldName, entity, entry, lazyIndex, selectedValue );
-	}
-
-	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
 	}
 
 	/**

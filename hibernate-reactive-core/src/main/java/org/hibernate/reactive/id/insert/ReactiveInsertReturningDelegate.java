@@ -50,6 +50,10 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 	private final MutatingTableReference tableReference;
 	private final List<ColumnReference> generatedColumns;
 
+	public ReactiveInsertReturningDelegate(EntityPersister persister, EventType timing) {
+		this( persister, timing, false );
+	}
+
 	public ReactiveInsertReturningDelegate(EntityPersister persister, Dialect dialect) {
 		// With JDBC it's possible to enabled GetGeneratedKeys for identity generation.
 		// Vert.x doesn't have this option, so we always use the same strategy for all database.
