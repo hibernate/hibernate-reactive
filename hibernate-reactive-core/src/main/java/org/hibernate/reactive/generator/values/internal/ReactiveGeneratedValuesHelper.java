@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
-import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
@@ -64,14 +63,14 @@ public class ReactiveGeneratedValuesHelper {
 	 *
 	 * @see GeneratedValuesHelper#getGeneratedValuesDelegate(EntityPersister, EventType)
 	 */
-	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(
-			EntityPersister persister,
-			EventType timing) {
+	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(EntityPersister persister, EventType timing) {
 		final boolean hasGeneratedProperties = !persister.getGeneratedProperties( timing ).isEmpty();
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 
-		if ( hasRowId && dialect.supportsInsertReturning() && dialect.supportsInsertReturningRowId()
+		if ( hasRowId
+				&& dialect.supportsInsertReturning()
+				&& dialect.supportsInsertReturningRowId()
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it
@@ -172,6 +171,7 @@ public class ReactiveGeneratedValuesHelper {
 				null,
 				null,
 				QueryOptions.NONE,
+				true,
 				mappingProducer.resolve(
 						directResultSetAccess,
 						session.getLoadQueryInfluencers(),
@@ -209,11 +209,10 @@ public class ReactiveGeneratedValuesHelper {
 		);
 
 		final ReactiveRowReader<Object[]> rowReader = ReactiveResultsHelper.createRowReader(
-				executionContext,
-				LockOptions.NONE,
+				session.getSessionFactory(),
 				RowTransformerArrayImpl.instance(),
 				Object[].class,
-				jdbcValues.getValuesMapping()
+				jdbcValues
 		);
 
 		final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState( valuesProcessingState, executionContext, rowReader, jdbcValues );

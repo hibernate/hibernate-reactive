@@ -10,10 +10,11 @@ import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
+import org.hibernate.Internal;
 import org.hibernate.LockOptions;
+import org.hibernate.TransientObjectException;
 import org.hibernate.TransientPropertyValueException;
 import org.hibernate.engine.spi.EntityEntry;
-
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.MergeContext;
@@ -29,6 +30,9 @@ import org.hibernate.type.EntityType;
 import org.hibernate.type.Type;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -48,7 +52,7 @@ public class CascadingActions {
 	/**
 	 * @see org.hibernate.Session#remove(Object)
 	 */
-	public static final CascadingAction<DeleteContext> DELETE = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.DELETE ) {
+	public static final CascadingAction<DeleteContext> REMOVE = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.REMOVE ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -150,6 +154,58 @@ public class CascadingActions {
 		}
 	};
 
+	@Internal
+	public static final CascadingAction<Void> CHECK_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.CHECK_ON_FLUSH ) {
+		@Override
+		public CompletionStage<Void> cascade(
+				EventSource session,
+				Object child,
+				String entityName,
+				Void context,
+				boolean isCascadeDeleteEnabled) throws HibernateException {
+			if ( child != null ) {
+				return isChildTransient( session, child, entityName ).thenCompose( isTransient -> {
+					if ( isTransient ) {
+						return failedFuture( new TransientObjectException(
+								"persistent instance references an unsaved transient instance of '" + entityName + "' (save the transient instance before flushing)" ) );
+					}
+					return voidFuture();
+				} );
+			}
+			return voidFuture();
+		}
+	};
+
+	private static CompletionStage<Boolean> isChildTransient(EventSource session, Object child, String entityName) {
+		if ( isHibernateProxy( child ) ) {
+			// a proxy is always non-transient
+			// and ForeignKeys.isTransient()
+			// is not written to expect a proxy
+			// TODO: but the proxied entity might have been deleted!
+			return falseFuture();
+		}
+		else {
+			final EntityEntry entry = session.getPersistenceContextInternal().getEntry( child );
+			if ( entry != null ) {
+				// if it's associated with the session
+				// we are good, even if it's not yet
+				// inserted, since ordering problems
+				// are detected and handled elsewhere
+				boolean deleted = entry.getStatus().isDeletedOrGone();
+				return completedFuture( deleted );
+			}
+			else {
+				// TODO: check if it is a merged entity which has not yet been flushed
+				// Currently this throws if you directly reference a new transient
+				// instance after a call to merge() that results in its managed copy
+				// being scheduled for insertion, if the insert has not yet occurred.
+				// This is not terrible: it's more correct to "swap" the reference to
+				// point to the managed instance, but it's probably too heavy-handed.
+				return ForeignKeys.isTransient( entityName, child, null, session );
+			}
+		}
+	}
+
 	/**
 	 * @see org.hibernate.Session#merge(Object)
 	 */
@@ -173,35 +229,35 @@ public class CascadingActions {
 	 * @see org.hibernate.Session#refresh(Object)
 	 */
 	public static final CascadingAction<RefreshContext> REFRESH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.REFRESH ) {
-				@Override
-				public CompletionStage<Void> cascade(
-						EventSource session,
-						Object child,
-						String entityName,
-						RefreshContext context,
-						boolean isCascadeDeleteEnabled)
-						throws HibernateException {
-					LOG.tracev( "Cascading to refresh: {0}", entityName );
-					return session.unwrap( ReactiveSession.class ).reactiveRefresh( child, context );
-				}
-			};
+		@Override
+		public CompletionStage<Void> cascade(
+				EventSource session,
+				Object child,
+				String entityName,
+				RefreshContext context,
+				boolean isCascadeDeleteEnabled)
+				throws HibernateException {
+			LOG.tracev( "Cascading to refresh: {0}", entityName );
+			return session.unwrap( ReactiveSession.class ).reactiveRefresh( child, context );
+		}
+	};
 
 	/**
 	 * @see org.hibernate.Session#lock(Object, org.hibernate.LockMode)
 	 */
 	public static final CascadingAction<LockOptions> LOCK = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.LOCK ) {
-				@Override
-				public CompletionStage<Void> cascade(
-						EventSource session,
-						Object child,
-						String entityName,
-						LockOptions context,
-						boolean isCascadeDeleteEnabled)
-						throws HibernateException {
-					LOG.tracev( "Cascading to lock: {0}", entityName );
-					return session.unwrap( ReactiveSession.class ).reactiveLock( child, context );
-				}
-			};
+		@Override
+		public CompletionStage<Void> cascade(
+				EventSource session,
+				Object child,
+				String entityName,
+				LockOptions context,
+				boolean isCascadeDeleteEnabled)
+				throws HibernateException {
+			LOG.tracev( "Cascading to lock: {0}", entityName );
+			return session.unwrap( ReactiveSession.class ).reactiveLock( child, context );
+		}
+	};
 
 	public abstract static class BaseCascadingAction<C> implements CascadingAction<C> {
 		private final org.hibernate.engine.spi.CascadingAction<C> delegate;
@@ -223,11 +279,6 @@ public class CascadingActions {
 		@Override
 		public org.hibernate.engine.spi.CascadingAction<C> delegate() {
 			return delegate;
-		}
-
-		@Override
-		public boolean requiresNoCascadeChecking() {
-			return delegate.requiresNoCascadeChecking();
 		}
 
 		/**

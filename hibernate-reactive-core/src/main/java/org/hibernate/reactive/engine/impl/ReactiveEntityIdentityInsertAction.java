@@ -119,6 +119,11 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	}
 
 	@Override
+	public void addCollectionsByKeyToPersistenceContext(PersistenceContext persistenceContext, Object[] objects) {
+		super.addCollectionsByKeyToPersistenceContext( persistenceContext, objects );
+	}
+
+	@Override
 	public AbstractEntityInsertAction asAbstractEntityInsertAction() {
 		return this;
 	}

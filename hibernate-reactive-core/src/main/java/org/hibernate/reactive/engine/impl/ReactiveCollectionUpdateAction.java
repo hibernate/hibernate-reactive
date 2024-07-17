@@ -26,6 +26,7 @@ import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersis
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 
@@ -55,51 +56,59 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 		final SharedSessionContractImplementor session = getSession();
 		final ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) getPersister();
 		final CollectionPersister persister = getPersister();
-		final PersistentCollection collection = getCollection();
+		final PersistentCollection<?> collection = getCollection();
 		final boolean affectedByFilters = persister.isAffectedByEnabledFilters( session );
 
 		preUpdate();
 
-		final CompletionStage<Void> updateStage;
+		return createUpdateStage( collection, affectedByFilters, reactivePersister, key, session, persister )
+				.thenRun( () -> {
+					session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
+					evict();
+					postUpdate();
+
+					final StatisticsImplementor statistics = session.getFactory().getStatistics();
+					if ( statistics.isStatisticsEnabled() ) {
+						statistics.updateCollection( persister.getRole() );
+					}
+				} );
+	}
+
+	private CompletionStage<Void> createUpdateStage(
+			PersistentCollection<?> collection,
+			boolean affectedByFilters,
+			ReactiveCollectionPersister reactivePersister,
+			Object key,
+			SharedSessionContractImplementor session,
+			CollectionPersister persister) {
 		if ( !collection.wasInitialized() ) {
 			// If there were queued operations, they would have been processed
 			// and cleared by now.
 			// The collection should still be dirty.
 			if ( !collection.isDirty() ) {
-				throw new AssertionFailure( "collection is not dirty" );
+				return failedFuture( new AssertionFailure( "collection is not dirty" ) );
 			}
 			//do nothing - we only need to notify the cache...
-			updateStage = voidFuture();
+			return voidFuture();
 		}
 		else if ( !affectedByFilters && collection.empty() ) {
-			updateStage = emptySnapshot ? voidFuture() : reactivePersister.reactiveRemove( key, session );
+			return emptySnapshot ? voidFuture() : reactivePersister.reactiveRemove( key, session );
 		}
 		else if ( collection.needsRecreate( persister ) ) {
 			if ( affectedByFilters ) {
-				throw LOG.cannotRecreateCollectionWhileFilterIsEnabled( collectionInfoString( persister, collection, key, session ) );
+				return failedFuture( LOG.cannotRecreateCollectionWhileFilterIsEnabled( collectionInfoString( persister, collection, key, session ) ) );
 			}
-			updateStage = emptySnapshot
+			return emptySnapshot
 					? reactivePersister.reactiveRecreate( collection, key, session )
 					: reactivePersister.reactiveRemove( key, session )
 							.thenCompose( v -> reactivePersister.reactiveRecreate( collection, key, session ) );
 		}
 		else {
-			updateStage = voidFuture()
-					.thenCompose( v -> reactivePersister.reactiveDeleteRows( collection, key, session ) )
+			return reactivePersister
+					.reactiveDeleteRows( collection, key, session )
 					.thenCompose( v -> reactivePersister.reactiveUpdateRows( collection, key, session ) )
 					.thenCompose( v -> reactivePersister.reactiveInsertRows( collection, key, session ) );
 		}
-
-		return updateStage.thenAccept( v -> {
-			session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
-			evict();
-			postUpdate();
-
-			final StatisticsImplementor statistics = session.getFactory().getStatistics();
-			if ( statistics.isStatisticsEnabled() ) {
-				statistics.updateCollection( persister.getRole() );
-			}
-		} );
 	}
 
 	@Override

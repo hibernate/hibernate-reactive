@@ -29,8 +29,8 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.spi.FromClauseAccess;
-import org.hibernate.sql.ast.tree.update.UpdateStatement;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryUpdate;
+import org.hibernate.sql.ast.tree.MutationStatement;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
@@ -43,7 +43,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 	private final SqmUpdateStatement<?> sqmUpdate;
 	private final DomainParameterXref domainParameterXref;
 
-	private JdbcOperationQueryUpdate jdbcUpdate;
+	private JdbcOperationQueryMutation jdbcUpdate;
 	private FromClauseAccess tableGroupAccess;
 	private Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref;
 	private Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParamMappingTypeResolutions;
@@ -57,11 +57,9 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
 		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
 		final SharedSessionContractImplementor session = executionContext.getSession();
-		SqlAstTranslator<JdbcOperationQueryUpdate> updateTranslator = null;
-		if ( jdbcUpdate == null ) {
-			updateTranslator = createUpdateTranslator( executionContext );
-		}
-
+		SqlAstTranslator<? extends JdbcOperationQueryMutation> updateTranslator = jdbcUpdate == null
+				? createUpdateTranslator( executionContext )
+				: null;
 		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,
@@ -97,12 +95,12 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 	}
 
 	// I can probably change ORM to reuse this
-	private SqlAstTranslator<JdbcOperationQueryUpdate> createUpdateTranslator(DomainQueryExecutionContext executionContext) {
+	private SqlAstTranslator<? extends JdbcOperationQueryMutation> createUpdateTranslator(DomainQueryExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final QueryEngine queryEngine = factory.getQueryEngine();
 
 		final SqmTranslatorFactory translatorFactory = queryEngine.getSqmTranslatorFactory();
-		final SqmTranslator<UpdateStatement> translator = translatorFactory.createSimpleUpdateTranslator(
+		final SqmTranslator<? extends MutationStatement> translator = translatorFactory.createMutationTranslator(
 				sqmUpdate,
 				executionContext.getQueryOptions(),
 				domainParameterXref,
@@ -111,13 +109,12 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 				factory
 		);
 
-		final SqmTranslation<UpdateStatement> sqmInterpretation = translator.translate();
-
+		final SqmTranslation<? extends MutationStatement> sqmInterpretation = translator.translate();
 		tableGroupAccess = sqmInterpretation.getFromClauseAccess();
 		this.jdbcParamsXref = SqmUtil
 				.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
 		this.sqmParamMappingTypeResolutions = sqmInterpretation.getSqmParameterMappingModelTypeResolutions();
 		return factory.getJdbcServices().getJdbcEnvironment().getSqlAstTranslatorFactory()
-				.buildUpdateTranslator( factory, sqmInterpretation.getSqlAst() );
+				.buildMutationTranslator( factory, sqmInterpretation.getSqlAst() );
 	}
 }

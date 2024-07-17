@@ -113,14 +113,14 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 	}
 
 	private CompletionStage<Void> cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {
-		return new Cascade<>(
+		return Cascade.cascade(
 				CascadingActions.LOCK,
 				CascadePoint.AFTER_LOCK,
+				event.getSession(),
 				persister,
 				entity,
-				event.getLockOptions(),
-				event.getSession()
-		).cascade();
+				event.getLockOptions()
+		);
 	}
 
 	/**

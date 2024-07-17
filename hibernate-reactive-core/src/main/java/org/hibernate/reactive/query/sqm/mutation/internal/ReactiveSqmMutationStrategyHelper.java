@@ -6,7 +6,6 @@
 package org.hibernate.reactive.query.sqm.mutation.internal;
 
 import java.sql.PreparedStatement;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
@@ -17,14 +16,16 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.EmbeddedAttributeMapping;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.impl.CompletionStages.Completable;
 import org.hibernate.sql.ast.tree.delete.DeleteStatement;
 import org.hibernate.sql.ast.tree.from.NamedTableReference;
 import org.hibernate.sql.ast.tree.from.TableReference;
 import org.hibernate.sql.ast.tree.predicate.Predicate;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryDelete;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -34,74 +35,6 @@ public class ReactiveSqmMutationStrategyHelper {
 
 	private ReactiveSqmMutationStrategyHelper() {
 	}
-
-//	public static CompletionStage<Void> visitCollectionTables(EntityMappingType entityDescriptor, Consumer<PluralAttributeMapping> consumer) {
-//		if ( !entityDescriptor.getEntityPersister().hasCollections() ) {
-//			// none to clean-up
-//			return voidFuture();
-//		}
-//
-//		final CompletableFuture<Void> stage = new CompletableFuture<>();
-//		try {
-//			entityDescriptor.visitSubTypeAttributeMappings(
-//					attributeMapping -> {
-//						if ( attributeMapping instanceof PluralAttributeMapping ) {
-//							try {
-//								consumer.accept( (PluralAttributeMapping) attributeMapping );
-//								complete( stage, null );
-//							}
-//							catch (Throwable throwable) {
-//								complete( stage, throwable );
-//							}
-//						}
-//						else if ( attributeMapping instanceof EmbeddedAttributeMapping ) {
-//							visitCollectionTables( (EmbeddedAttributeMapping) attributeMapping, consumer )
-//									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
-//						}
-//						else {
-//							complete( stage, null );
-//						}
-//					} );
-//			return stage;
-//		}
-//		catch (Throwable throwable) {
-//			complete( stage, throwable );
-//			return stage;
-//		}
-//	}
-
-//	private static CompletionStage<Void> visitCollectionTables(EmbeddedAttributeMapping attributeMapping, Consumer<PluralAttributeMapping> consumer) {
-//		final CompletableFuture<Void> stage = new CompletableFuture<>();
-//
-//		try {
-//			attributeMapping.visitSubParts(
-//					modelPart -> {
-//						if ( modelPart instanceof PluralAttributeMapping ) {
-//							try {
-//								consumer.accept( (PluralAttributeMapping) modelPart );
-//								complete( stage, null );
-//							}
-//							catch (Throwable throwable) {
-//								complete( stage, throwable );
-//							}
-//						}
-//						else if ( modelPart instanceof EmbeddedAttributeMapping ) {
-//							visitCollectionTables( (EmbeddedAttributeMapping) modelPart, consumer )
-//									.whenComplete( (v, throwable) -> complete( stage, throwable ) );
-//						}
-//						else {
-//							complete( stage, null );
-//						}
-//					},
-//					null
-//			);
-//			return stage;
-//		}
-//		catch (Throwable t) {
-//			complete( stage, t );
-//			return stage;
-//		}
-//	}
 
 	public static CompletionStage<Void> cleanUpCollectionTables(
 			EntityMappingType entityDescriptor,
@@ -113,83 +46,75 @@ public class ReactiveSqmMutationStrategyHelper {
 			return voidFuture();
 		}
 
-		final CompletableFuture<Void> stage = new CompletableFuture<>();
 		try {
-			entityDescriptor.visitSubTypeAttributeMappings(
-					attributeMapping -> {
+			final Completable<Void> stage = new Completable<>();
+			entityDescriptor
+					.visitSubTypeAttributeMappings( attributeMapping -> {
 						if ( attributeMapping instanceof PluralAttributeMapping ) {
 							cleanUpCollectionTable(
 									(PluralAttributeMapping) attributeMapping,
-									entityDescriptor,
 									restrictionProducer,
 									jdbcParameterBindings,
 									executionContext
-							).whenComplete( (v, throwable) -> complete( stage, throwable ) );
+							).handle( stage::complete );
 						}
 						else if ( attributeMapping instanceof EmbeddedAttributeMapping ) {
 							cleanUpCollectionTables(
 									(EmbeddedAttributeMapping) attributeMapping,
-									entityDescriptor,
 									restrictionProducer,
 									jdbcParameterBindings,
 									executionContext
-							).whenComplete( (v, throwable) -> complete( stage, throwable ) );
+							).handle( stage::complete );
 						}
 						else {
-							complete( stage, null );
+							stage.complete( null, null );
 						}
 					}
 			);
-			return stage;
+			return stage.getStage();
 		}
 		catch (Throwable throwable) {
-			complete( stage, throwable );
-			return stage;
+			return failedFuture( throwable );
 		}
 	}
 
 	private static CompletionStage<Void> cleanUpCollectionTables(
 			EmbeddedAttributeMapping attributeMapping,
-			EntityMappingType entityDescriptor,
 			BiFunction<TableReference, PluralAttributeMapping, Predicate> restrictionProducer,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
-		final CompletableFuture<Void> stage = new CompletableFuture<>();
 		try {
+			final Completable<Void> stage = new Completable<>();
 			attributeMapping.visitSubParts(
 					modelPart -> {
 						if ( modelPart instanceof PluralAttributeMapping ) {
 							cleanUpCollectionTable(
 									(PluralAttributeMapping) modelPart,
-									entityDescriptor,
 									restrictionProducer,
 									jdbcParameterBindings,
 									executionContext
-							);
+							).handle( stage::complete );
 						}
 						else if ( modelPart instanceof EmbeddedAttributeMapping ) {
 							cleanUpCollectionTables(
 									(EmbeddedAttributeMapping) modelPart,
-									entityDescriptor,
 									restrictionProducer,
 									jdbcParameterBindings,
 									executionContext
-							);
+							).handle( stage::complete );
 						}
 					},
 					null
 			);
-			return stage;
+			return stage.getStage();
 		}
 		catch (Throwable throwable) {
-			complete( stage, throwable );
-			return stage;
+			return failedFuture( throwable );
 		}
 	}
 
 	private static CompletionStage<Void> cleanUpCollectionTable(
 			PluralAttributeMapping attributeMapping,
-			EntityMappingType entityDescriptor,
 			BiFunction<TableReference, PluralAttributeMapping, Predicate> restrictionProducer,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
@@ -216,9 +141,9 @@ public class ReactiveSqmMutationStrategyHelper {
 				restrictionProducer.apply( tableReference, attributeMapping )
 		);
 
-		JdbcOperationQueryDelete jdbcDelete = jdbcServices.getJdbcEnvironment()
+		JdbcOperationQueryMutation jdbcDelete = jdbcServices.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildDeleteTranslator( sessionFactory, sqlAstDelete )
+				.buildMutationTranslator( sessionFactory, sqlAstDelete )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
 				.executeReactive(
@@ -229,15 +154,6 @@ public class ReactiveSqmMutationStrategyHelper {
 						executionContext
 				)
 				.thenCompose( CompletionStages::voidFuture );
-	}
-
-	private static void complete(CompletableFuture<Void> stage, Throwable throwable) {
-		if ( throwable == null ) {
-			stage.complete( null );
-		}
-		else {
-			stage.completeExceptionally( throwable );
-		}
 	}
 
 	private static void doNothing(Integer i, PreparedStatement ps) {

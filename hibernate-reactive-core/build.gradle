@@ -45,7 +45,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 
     // JDBC driver to test with ORM and PostgreSQL
-    testRuntimeOnly "org.postgresql:postgresql:42.6.0"
+    testRuntimeOnly "org.postgresql:postgresql:42.7.3"
 
     // JDBC driver for Testcontainers with MS SQL Server
     testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11"

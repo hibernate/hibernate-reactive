@@ -13,13 +13,13 @@ import java.util.concurrent.TimeUnit;
 import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
+import org.hibernate.reactive.annotations.EnabledFor;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
-import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;

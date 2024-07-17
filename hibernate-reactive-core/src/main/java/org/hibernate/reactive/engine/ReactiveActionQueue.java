@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.hibernate.AssertionFailure;
 import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
+import org.hibernate.TransientObjectException;
+import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.action.internal.UnresolvedEntityInsertActions;
@@ -28,13 +30,13 @@ import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
+import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -59,7 +61,6 @@ import org.hibernate.type.Type;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -241,16 +242,8 @@ public class ReactiveActionQueue {
 		return addInsertAction( action );
 	}
 
-	private CompletionStage<Void> addInsertAction( ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret = voidFuture();
-		if ( insert.isEarlyInsert() ) {
-			// For early inserts, must execute inserts before finding non-nullable transient entities.
-			// TODO: find out why this is necessary
-			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
-			ret = ret.thenCompose( v -> executeInserts() );
-		}
-
-		return ret
+	private CompletionStage<Void> addInsertAction(ReactiveEntityInsertAction insert) {
+		return executeEarlyInsertsIfRequired( insert )
 				.thenCompose( v -> insert.reactiveFindNonNullableTransientEntities() )
 				.thenCompose( nonNullables -> {
 					if ( nonNullables == null ) {
@@ -270,40 +263,51 @@ public class ReactiveActionQueue {
 				} );
 	}
 
-	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
-		CompletionStage<Void> ret;
+	private CompletionStage<Void> executeEarlyInsertsIfRequired(ReactiveEntityInsertAction insert) {
 		if ( insert.isEarlyInsert() ) {
-			LOG.trace( "Executing insertions before resolved early-insert" );
-			ret = executeInserts()
-					.thenCompose( v -> {
+			// For early inserts, must execute inserts before finding non-nullable transient entities.
+			// TODO: find out why this is necessary
+			LOG.tracev(
+					"Executing inserts before finding non-nullable transient entities for early insert: [{0}]",
+					insert
+			);
+			return executeInserts();
+		}
+		return voidFuture();
+	}
+
+	private CompletionStage<Void> addResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		if ( insert.isEarlyInsert() ) {
+			// For early inserts, must execute inserts before finding non-nullable transient entities.
+			LOG.tracev( "Executing inserts before finding non-nullable transient entities for early insert: [{0}]", insert );
+			return executeInserts().thenCompose( v -> {
 						LOG.debug( "Executing identity-insert immediately" );
 						return execute( insert );
-					} );
+					} )
+					.thenCompose( v -> postResolvedEntityInsertAction( insert ) );
 		}
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			OrderedActions.EntityInsertAction.ensureInitialized( this );
 			this.insertions.add( new ReactiveEntityInsertActionHolder( insert ) );
-			ret = voidFuture();
+			return postResolvedEntityInsertAction( insert );
 		}
+	}
 
-		return ret.thenCompose( v -> {
-			if ( !insert.isVeto() ) {
-				CompletionStage<Void> comp = insert.reactiveMakeEntityManaged();
-				if ( unresolvedInsertions == null ) {
-					return comp;
-				}
-				else {
-					return comp.thenCompose( vv -> loop(
+	private CompletionStage<Void> postResolvedEntityInsertAction(ReactiveEntityInsertAction insert) {
+		if ( !insert.isVeto() ) {
+			return insert.reactiveMakeEntityManaged().thenCompose( v -> {
+				if ( unresolvedInsertions != null ) {
+					return loop(
 							unresolvedInsertions.resolveDependentActions( insert.getInstance(), session.getSharedContract() ),
 							resolvedAction -> addResolvedEntityInsertAction( (ReactiveEntityRegularInsertAction) resolvedAction )
-					) );
+					);
 				}
-			}
-			else {
-				throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
-			}
-		} );
+				return voidFuture();
+			} );
+		}
+
+		throw new ReactiveEntityActionVetoException( "The ReactiveEntityInsertAction was vetoed.", insert );
 	}
 
 	private static String[] convertTimestampSpaces(Serializable[] spaces) {
@@ -517,11 +521,21 @@ public class ReactiveActionQueue {
 	 */
 	public CompletionStage<Void> executeActions() {
 		if ( hasUnresolvedEntityInsertActions() ) {
-			return failedFuture( new IllegalStateException( "About to execute actions, but there are unresolved entity insert actions." ) );
+			final AbstractEntityInsertAction insertAction = unresolvedInsertions
+					.getDependentEntityInsertActions()
+					.iterator()
+					.next();
+			final NonNullableTransientDependencies transientEntities = insertAction.findNonNullableTransientEntities();
+			final Object transientEntity = transientEntities.getNonNullableTransientEntities().iterator().next();
+			final String path = transientEntities.getNonNullableTransientPropertyPaths(transientEntity).iterator().next();
+			//TODO: should be TransientPropertyValueException
+			throw new TransientObjectException( "Persistent instance of '" + insertAction.getEntityName()
+														+ "' with id '" + insertAction.getId()
+														+ "' references an unsaved transient instance via attribute '" + path
+														+ "' (save the transient instance before flushing)" );
 		}
 
 		CompletionStage<Void> ret = voidFuture();
-
 		for ( OrderedActions action : ORDERED_OPERATIONS ) {
 			ret = ret.thenCompose( v -> executeActions( action.getActions( this ) ) );
 		}
@@ -735,26 +749,6 @@ public class ReactiveActionQueue {
 		return insertions.size();
 	}
 
-//	public TransactionCompletionProcesses getTransactionCompletionProcesses() {
-//		return new TransactionCompletionProcesses( beforeTransactionProcesses(), afterTransactionProcesses() );
-//	}
-//
-//	/**
-//	 * Bind transaction completion processes to make them shared between primary and secondary session.
-//	 * Transaction completion processes are always executed by transaction owner (primary session),
-//	 * but can be registered using secondary session too.
-//	 *
-//	 * @param processes Transaction completion processes.
-//	 * @param isTransactionCoordinatorShared Flag indicating shared transaction context.
-//	 */
-//	public void setTransactionCompletionProcesses(
-//			TransactionCompletionProcesses processes,
-//			boolean isTransactionCoordinatorShared) {
-//		this.isTransactionCoordinatorShared = isTransactionCoordinatorShared;
-//		this.beforeTransactionProcesses = processes.beforeTransactionCompletionProcesses;
-//		this.afterTransactionProcesses = processes.afterTransactionCompletionProcesses;
-//	}
-
 	public void sortCollectionActions() {
 		if ( isOrderUpdatesEnabled() ) {
 			// sort the updates by fk
@@ -861,32 +855,6 @@ public class ReactiveActionQueue {
 		throw new AssertionFailure( "Unable to perform un-delete for instance " + entry.getEntityName() );
 	}
 
-//	/**
-//	 * Used by the owning session to explicitly control serialization of the action queue
-//	 *
-//	 * @param oos The stream to which the action queue should get written
-//	 *
-//	 * @throws IOException Indicates an error writing to the stream
-//	 */
-//	public void serialize(ObjectOutputStream oos) throws IOException {
-//		LOG.trace( "Serializing action-queue" );
-//		if ( unresolvedInsertions == null ) {
-//			unresolvedInsertions = new UnresolvedEntityInsertActions();
-//		}
-//		unresolvedInsertions.serialize( oos );
-//
-//		for ( ListProvider<?> p : EXECUTABLE_LISTS_MAP.values() ) {
-//			ExecutableList<?> l = p.get( this );
-//			if ( l == null ) {
-//				oos.writeBoolean( false );
-//			}
-//			else {
-//				oos.writeBoolean( true );
-//				l.writeExternal( oos );
-//			}
-//		}
-//	}
-
 	private abstract static class AbstractTransactionCompletionProcessQueue<T,U> {
 		final ReactiveSession session;
 
@@ -990,21 +958,6 @@ public class ReactiveActionQueue {
 			).whenComplete( (v, e) -> reactiveProcesses.clear() );
 		}
 	}
-
-//	/**
-//	 * Wrapper class allowing to bind the same transaction completion process queues in different sessions.
-//	 */
-//	public static class TransactionCompletionProcesses {
-//		private final BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcesses;
-//		private final AfterTransactionCompletionProcessQueue afterTransactionCompletionProcesses;
-//
-//		private TransactionCompletionProcesses(
-//				BeforeTransactionCompletionProcessQueue beforeTransactionCompletionProcessQueue,
-//				AfterTransactionCompletionProcessQueue afterTransactionCompletionProcessQueue) {
-//			this.beforeTransactionCompletionProcesses = beforeTransactionCompletionProcessQueue;
-//			this.afterTransactionCompletionProcesses = afterTransactionCompletionProcessQueue;
-//		}
-//	}
 
 	/**
 	 * Order the {@link #insertions} queue such that we group inserts against the same entity together (without
@@ -1149,26 +1102,23 @@ public class ReactiveActionQueue {
 		 */
 		private void addParentChildEntityNames(ReactiveEntityInsertAction action, BatchIdentifier batchIdentifier) {
 			Object[] propertyValues = action.getState();
-			ClassMetadata classMetadata = action.getPersister().getClassMetadata();
-			if ( classMetadata != null ) {
-				Type[] propertyTypes = classMetadata.getPropertyTypes();
-				Type identifierType = classMetadata.getIdentifierType();
+			Type[] propertyTypes = action.getPersister().getPropertyTypes();
+			Type identifierType = action.getPersister().getIdentifierType();
 
-				for ( int i = 0; i < propertyValues.length; i++ ) {
-					Object value = propertyValues[i];
-					if (value!=null) {
-						Type type = propertyTypes[i];
-						addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
-					}
+			for ( int i = 0; i < propertyValues.length; i++ ) {
+				Object value = propertyValues[i];
+				if (value!=null) {
+					Type type = propertyTypes[i];
+					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
 				}
+			}
 
-				if ( identifierType.isComponentType() ) {
-					CompositeType compositeType = (CompositeType) identifierType;
-					Type[] compositeIdentifierTypes = compositeType.getSubtypes();
+			if ( identifierType.isComponentType() ) {
+				CompositeType compositeType = (CompositeType) identifierType;
+				Type[] compositeIdentifierTypes = compositeType.getSubtypes();
 
-					for ( Type type : compositeIdentifierTypes ) {
-						addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, null );
-					}
+				for ( Type type : compositeIdentifierTypes ) {
+					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, null );
 				}
 			}
 		}
@@ -1272,10 +1222,9 @@ public class ReactiveActionQueue {
 				if ( this == o ) {
 					return true;
 				}
-				if ( !( o instanceof BatchIdentifier ) ) {
+				if ( !( o instanceof BatchIdentifier that ) ) {
 					return false;
 				}
-				BatchIdentifier that = (BatchIdentifier) o;
 				return Objects.equals( entityName, that.entityName );
 			}
 
@@ -1312,9 +1261,7 @@ public class ReactiveActionQueue {
 			/**
 			 * Check if this {@link BatchIdentifier} has a parent or grandparent
 			 * matching the given {@link BatchIdentifier reference.
-			 *
 			 * @param batchIdentifier {@link BatchIdentifier} reference
-			 *
 			 * @return this {@link BatchIdentifier} has a parent matching the given {@link BatchIdentifier reference
 			 */
 			boolean hasParent(BatchIdentifier batchIdentifier) {

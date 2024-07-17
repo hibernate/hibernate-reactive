@@ -47,7 +47,7 @@ import org.hibernate.sql.ast.tree.predicate.ComparisonPredicate;
 import org.hibernate.sql.ast.tree.predicate.Predicate;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryInsert;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
 
@@ -162,7 +162,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 						)
 			);
 		}
-		final JdbcOperationQueryInsert jdbcInsert = sqlAstTranslatorFactory.buildInsertTranslator( factory, temporaryTableInsert )
+		final JdbcOperationQueryMutation jdbcInsert = sqlAstTranslatorFactory.buildMutationTranslator( factory, temporaryTableInsert )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		lockOptions.setLockMode( lockMode );
 
@@ -210,7 +210,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 
 		querySpec.getFromClause().addRoot( idTableGroup );
 
-		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart, executionContext );
+		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart );
 		applyIdTableRestrictions( querySpec, idTableReference, idTable, sessionUidAccess, executionContext );
 
 		return querySpec;
@@ -221,8 +221,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			QuerySpec querySpec,
 			TableReference tableReference,
 			TemporaryTable idTable,
-			ModelPart fkModelPart,
-			ExecutionContext executionContext) {
+			ModelPart fkModelPart) {
 		if ( fkModelPart == null ) {
 			final int size = idTable.getEntityDescriptor().getIdentifierMapping().getJdbcTypeCount();
 			for ( int i = 0; i < size; i++ ) {
@@ -245,20 +244,18 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		}
 		else {
 			fkModelPart.forEachSelectable(
-					(i, selectableMapping) -> {
-						querySpec.getSelectClause().addSqlSelection(
-								new SqlSelectionImpl(
-										i,
-										new ColumnReference(
-												tableReference,
-												selectableMapping.getSelectionExpression(),
-												false,
-												null,
-												selectableMapping.getJdbcMapping()
-										)
-								)
-						);
-					}
+					(i, selectableMapping) -> querySpec.getSelectClause()
+							.addSqlSelection( new SqlSelectionImpl(
+									i,
+									new ColumnReference(
+											tableReference,
+											selectableMapping.getSelectionExpression(),
+											false,
+											null,
+											selectableMapping.getJdbcMapping()
+									)
+							)
+					)
 			);
 		}
 	}
@@ -275,8 +272,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 							new ColumnReference(
 									idTableReference,
 									idTable.getSessionUidColumn().getColumnName(),
-									false,
-									null,
+									false, null,
 									idTable.getSessionUidColumn().getJdbcMapping()
 							),
 							ComparisonOperator.EQUAL,
@@ -312,14 +308,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final Dialect dialect = factory.getJdbcServices().getDialect();
-		switch ( afterUseAction ) {
-			case CLEAN:
-				return cleanTemporaryTableRows( temporaryTable, dialect.getTemporaryTableExporter(), sessionUidAccess, executionContext.getSession() );
-			case DROP:
-				return dropAction( temporaryTable, executionContext, factory, dialect );
-			default:
-				return voidFuture();
-		}
+		return switch ( afterUseAction ) {
+			case CLEAN -> cleanTemporaryTableRows( temporaryTable, dialect.getTemporaryTableExporter(), sessionUidAccess, executionContext.getSession() );
+			case DROP -> dropAction( temporaryTable, executionContext, factory, dialect );
+			default -> voidFuture();
+		};
 	}
 
 	private static CompletionStage<Void> dropAction(

@@ -31,22 +31,22 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 	public CompletionStage<Void> reactiveExecute() {
 		// this method is called when a new non-null collection is persisted
 		// or when an existing (non-null) collection is moved to a new owner
-		final PersistentCollection<?> collection = getCollection();
 		preRecreate();
+		return ( (ReactiveCollectionPersister) getPersister() )
+				.reactiveRecreate( getCollection(), getKey(), getSession() )
+				.thenRun( this::afterRecreate );
+	}
+
+	private void afterRecreate() {
+		final PersistentCollection<?> collection = getCollection();
 		final SharedSessionContractImplementor session = getSession();
-		final ReactiveCollectionPersister persister = (ReactiveCollectionPersister) getPersister();
-		return persister
-				.reactiveRecreate( collection, getKey(), session )
-				.thenAccept( v -> {
-					// FIXME: I think we could move everything in a method reference call
-					session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
-					evict();
-					postRecreate();
-					final StatisticsImplementor statistics = session.getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.recreateCollection( getPersister().getRole() );
-					}
-				} );
+		session.getPersistenceContextInternal().getCollectionEntry( collection ).afterAction( collection );
+		evict();
+		postRecreate();
+		final StatisticsImplementor statistics = session.getFactory().getStatistics();
+		if ( statistics.isStatisticsEnabled() ) {
+			statistics.recreateCollection( getPersister().getRole() );
+		}
 	}
 
 	@Override

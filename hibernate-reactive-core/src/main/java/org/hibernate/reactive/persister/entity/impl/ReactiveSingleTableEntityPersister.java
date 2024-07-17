@@ -8,6 +8,7 @@ package org.hibernate.reactive.persister.entity.impl;
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
@@ -22,7 +23,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
-import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -31,6 +31,7 @@ import org.hibernate.loader.ast.spi.SingleUniqueKeyEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
@@ -45,9 +46,9 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.generator.values.GeneratedValuesMutationDelegateAdaptor;
-import org.hibernate.reactive.generator.values.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveAbstractDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
@@ -58,12 +59,17 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.EntityType;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+
 
 /**
  * A {@link ReactiveEntityPersister} backed by {@link SingleTableEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersister implements ReactiveAbstractEntityPersister {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -146,15 +152,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public InsertGeneratedIdentifierDelegate getIdentityInsertDelegate() {
-		final GeneratedValuesMutationDelegate insertDelegate = super.getInsertDelegate();
-		if ( insertDelegate instanceof InsertGeneratedIdentifierDelegate ) {
-			return new ReactiveInsertGeneratedIdentifierDelegate( (InsertGeneratedIdentifierDelegate) insertDelegate );
-		}
-		return null;
-	}
-
-	@Override
 	public <T> DomainResult<T> createDomainResult(
 			NavigablePath navigablePath,
 			TableGroup tableGroup,
@@ -231,11 +228,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
-	}
-
-	@Override
 	public Object insert(Object[] fields, Object object, SharedSessionContractImplementor session) {
 		throw LOG.nonReactiveMethodCall( "insertReactive" );
 	}
@@ -277,6 +269,18 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			Object rowId,
 			SharedSessionContractImplementor session) throws HibernateException {
 		throw LOG.nonReactiveMethodCall( "mergeReactive" );
+	}
+
+	@Override
+	protected EntityIdentifierMapping generateIdentifierMapping(
+			Supplier<?> templateInstanceCreator,
+			PersistentClass bootEntityDescriptor,
+			MappingModelCreationProcess creationProcess) {
+		return reactiveDelegate.convertEntityIdentifierMapping( super.generateIdentifierMapping(
+				templateInstanceCreator,
+				bootEntityDescriptor,
+				creationProcess
+		) );
 	}
 
 	/**
@@ -436,7 +440,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName) {
+	protected SingleUniqueKeyEntityLoader<?> getUniqueKeyLoader(String attributeName, SharedSessionContractImplementor session) {
 		throw LOG.nonReactiveMethodCall( "getReactiveUniqueKeyLoader" );
 	}
 

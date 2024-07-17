@@ -25,8 +25,10 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 
 	@Override
 	public <T> EntityBatchLoader<T> createEntityBatchLoader(
-			int domainBatchSize, EntityMappingType entityDescriptor,
-			SessionFactoryImplementor factory) {
+			int domainBatchSize,
+			EntityMappingType entityDescriptor,
+			LoadQueryInfluencers loadQueryInfluencers) {
+		SessionFactoryImplementor factory = loadQueryInfluencers.getSessionFactory();
 		final Dialect dialect = factory.getJdbcServices().getDialect();
 
 		// NOTE : don't use the EntityIdentifierMapping here because it will not be known until later

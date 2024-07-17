@@ -38,12 +38,14 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
+import org.hibernate.event.spi.InitializeCollectionEventListener;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.LockEvent;
@@ -337,7 +339,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				}
 			}
 
-			return createCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
+			return createReactiveCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
 		}
 		catch (RuntimeException e) {
 			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
@@ -347,7 +349,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
-	private <T> ReactiveQueryImplementor<T> createCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
+	protected <T> ReactiveQueryImplementor<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
 		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
 		applyQuerySettingsAndHints( query );
 		return query;
@@ -522,7 +524,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
+			return createReactiveCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -533,7 +535,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete<R> deleteQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
+			return createReactiveCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -544,7 +546,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect<R> insertSelect) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
+			return createReactiveCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -689,7 +691,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		return fastSessionServices.eventListenerGroup_INIT_COLLECTION
+		EventListenerGroup<InitializeCollectionEventListener> eventListenerGroupInitCollection = fastSessionServices.eventListenerGroup_INIT_COLLECTION;
+		return eventListenerGroupInitCollection
 				.fireEventOnEachListener(
 						event,
 						(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection
