@@ -59,7 +59,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			Function<String, PreparedStatement> statementCreator) {
-		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator );
+		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, -1 );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
 	}
