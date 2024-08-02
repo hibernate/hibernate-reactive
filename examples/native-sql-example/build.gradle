@@ -7,6 +7,11 @@ buildscript {
             // Useful for local development, it should be disabled otherwise
             mavenLocal()
         }
+        // Optional: Enables snapshots repository
+        // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
+        if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        }
         mavenCentral()
     }
 }
