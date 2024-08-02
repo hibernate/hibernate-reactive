@@ -69,10 +69,7 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			batchKey = null;
 		}
 		else {
-			batchKey = new BasicBatchKey(
-					entityPersister.getEntityName() + "#INSERT",
-					null
-			);
+			batchKey = new BasicBatchKey( entityPersister.getEntityName() + "#INSERT" );
 		}
 
 		if ( entityPersister.getEntityMetamodel().isDynamicInsert() ) {

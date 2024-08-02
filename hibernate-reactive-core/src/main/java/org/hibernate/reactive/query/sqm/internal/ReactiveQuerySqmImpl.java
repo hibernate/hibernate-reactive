@@ -31,7 +31,6 @@ import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.IllegalQueryOperationException;
@@ -419,17 +418,16 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 		final SqmInsertStatement sqmInsert = (SqmInsertStatement) getSqmStatement();
 
 		final String entityNameToInsert = sqmInsert.getTarget().getModel().getHibernateEntityName();
-		final AbstractEntityPersister entityDescriptor = (AbstractEntityPersister) getSessionFactory().getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.getEntityDescriptor( entityNameToInsert );
+		final EntityPersister persister = getSessionFactory()
+				.getMappingMetamodel().getEntityDescriptor( entityNameToInsert );
 
-		boolean useMultiTableInsert = entityDescriptor.isMultiTable();
-		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, entityDescriptor ) ) {
-			final IdentifierGenerator identifierGenerator = entityDescriptor.getIdentifierGenerator();
+		boolean useMultiTableInsert = persister.hasMultipleTables();
+		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, persister ) ) {
+			final IdentifierGenerator identifierGenerator = persister.getIdentifierGenerator();
 			if ( identifierGenerator instanceof BulkInsertionCapableIdentifierGenerator && identifierGenerator instanceof OptimizableGenerator ) {
 				final Optimizer optimizer = ( (OptimizableGenerator) identifierGenerator ).getOptimizer();
 				if ( optimizer != null && optimizer.getIncrementSize() > 1 ) {
-					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, entityDescriptor );
+					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, persister );
 				}
 			}
 		}
@@ -440,7 +438,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			return new ReactiveMultiTableInsertQueryPlan(
 					sqmInsert,
 					getDomainParameterXref(),
-					(ReactiveSqmMultiTableInsertStrategy) entityDescriptor.getSqmMultiTableInsertStrategy()
+					(ReactiveSqmMultiTableInsertStrategy) persister.getSqmMultiTableInsertStrategy()
 			);
 		}
 	}

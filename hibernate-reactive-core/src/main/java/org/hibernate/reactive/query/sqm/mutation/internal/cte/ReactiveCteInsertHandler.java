@@ -288,11 +288,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 			targetPathCteColumns.add( rowNumberColumn );
 		}
 
-		final CteTable entityCteTable = createCteTable(
-				getCteTable(),
-				targetPathCteColumns,
-				factory
-		);
+		final CteTable entityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 
 		// Create the main query spec that will return the count of rows
 		final QuerySpec querySpec = new QuerySpec( true, 1 );
@@ -463,11 +459,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				}
 				else {
 					targetPathCteColumns.add( 0, getCteTable().getCteColumns().get( 0 ) );
-					finalEntityCteTable = createCteTable(
-							getCteTable(),
-							targetPathCteColumns,
-							factory
-					);
+					finalEntityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 				}
 				final List<CteColumn> cteColumns = finalEntityCteTable.getCteColumns();
 				for ( int i = 1; i < cteColumns.size(); i++ ) {
@@ -506,11 +498,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 			);
 			statement.addCteStatement( baseEntityCte );
 			targetPathCteColumns.add( 0, getCteTable().getCteColumns().get( 0 ) );
-			final CteTable finalEntityCteTable = createCteTable(
-					getCteTable(),
-					targetPathCteColumns,
-					factory
-			);
+			final CteTable finalEntityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 			final QuerySpec finalQuerySpec = new QuerySpec( true );
 			final SelectStatement finalQueryStatement = new SelectStatement( finalQuerySpec );
 			entityCte = new CteStatement(

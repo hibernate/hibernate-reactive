@@ -11,15 +11,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.tuple.DynamicMapInstantiator;
 
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
+import static java.util.Map.entry;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -36,15 +36,21 @@ public class DynamicEntityTest extends BaseReactiveTest {
 		book.put( "ISBN", "9781932394153" );
 		book.put( "title", "Hibernate in Action" );
 		book.put( "author", "Christian Bauer and Gavin King" );
-		book.put( DynamicMapInstantiator.KEY, "Book" );
 
-		test(
-				context,
-				getMutinySessionFactory()
-						.withTransaction( session -> session.persist( book ) )
-						.chain( v -> getMutinySessionFactory()
-								.withSession( session -> session.createSelectionQuery( "from Book", Map.class ).getSingleResult() )
-								.invoke( map -> assertEquals( "Christian Bauer and Gavin King", map.get( "author" ) ) ) )
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persist( book ) )
+				.chain( v -> getMutinySessionFactory()
+						.withSession( session -> session
+								.createSelectionQuery( "from Book", Map.class )
+								.getSingleResult() )
+						.invoke( map -> {
+							assertThat( map ).containsExactly(
+									entry( "author", "Christian Bauer and Gavin King" ),
+									entry( "ISBN", "9781932394153" ),
+									entry( "title", "Hibernate in Action" ),
+									entry( "author", "Christian Bauer and Gavin King" )
+							);
+						} ) )
 		);
 	}
 

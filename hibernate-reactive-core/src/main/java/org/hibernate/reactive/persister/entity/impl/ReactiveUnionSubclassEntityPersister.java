@@ -188,11 +188,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
-	}
-
-	@Override
 	public boolean check(int rows, Object id, int tableNumber, Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
 		return super.check(rows, id, tableNumber, expectation, statement, sql);
 	}

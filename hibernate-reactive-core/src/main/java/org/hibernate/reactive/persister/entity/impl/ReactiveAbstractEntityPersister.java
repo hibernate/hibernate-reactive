@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,7 +42,6 @@ import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesH
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNaturalIdMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -58,11 +56,13 @@ import org.hibernate.type.BasicType;
 
 import jakarta.persistence.metamodel.Attribute;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyMap;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
@@ -89,8 +89,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ReactiveSingleTableEntityPersister
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister {
-
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	default Parameters parameters() {
 		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
@@ -259,6 +257,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final Object nextVersion = getVersionJavaType()
 					.next( currentVersion, versionMapping.getLength(), versionMapping.getPrecision(), versionMapping.getScale(), session );
 
+			Log LOG = make( Log.class, lookup() );
 			if ( LOG.isTraceEnabled() ) {
 				LOG.trace( "Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
 								+ versionType.toLoggableString( currentVersion, getFactory() ) + " -> "
@@ -289,6 +288,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 */
 	@Override
 	default CompletionStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session) {
+		Log LOG = make( Log.class, lookup() );
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Getting version: {0}", infoString( this, id, getFactory() ) );
 		}
@@ -379,7 +379,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new AssertionFailure( "Expecting bytecode interceptor to be non-null" );
 		}
 
-		LOG.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
+		make( Log.class, lookup() )
+				.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
 		final String fetchGroup = getEntityPersister().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
@@ -459,7 +460,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		return resultStage.thenApply( result -> {
-			LOG.trace( "Done initializing lazy properties" );
+			make( Log.class, lookup() ).trace( "Done initializing lazy properties" );
 			return result;
 		} );
 	}
@@ -539,11 +540,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
 
-	String[][] getLazyPropertyColumnAliases();
-
 	ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup);
-
-	boolean isBatchable();
 
 	/**
 	 * @see AbstractEntityPersister#generateNaturalIdMapping(MappingModelCreationProcess, PersistentClass)
