@@ -1,12 +1,12 @@
-# GitHub actions for branch testing the latest Hibernate ORM 6.5 snapshot
+# GitHub actions for branch testing the latest Hibernate ORM 6.6 snapshot
 name: Hibernate Reactive CI
 
 on:
   push:
     branches:
-      - wip/2.3
+      - wip/2.4
   pull_request:
-    branches: wip/2.3
+    branches: wip/2.4
   schedule:
     # * is a special character in YAML, so you have to quote this string
     # Run every hour at minute 25
