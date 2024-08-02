@@ -1,13 +1,18 @@
+# GitHub actions for branch testing the latest Hibernate ORM 6.5 snapshot
 name: Hibernate Reactive CI
 
 on:
   push:
     branches:
-      - main
-    tags:
-      - '2.*'
+      - wip/2.3
   pull_request:
-    branches: main
+    branches: wip/2.3
+  schedule:
+    # * is a special character in YAML, so you have to quote this string
+    # Run every hour at minute 25
+    - cron: '25 * * * *'
+  # Allow running this workflow against a specific branch/tag
+  workflow_dispatch:
 
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
 concurrency:
@@ -85,6 +90,8 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 11
+    - name: Print the effective ORM version used
+      run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
       run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -122,6 +129,8 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 11
+    - name: Print the effective ORM version used
+      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Build and Test with ${{ matrix.db }}
       run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -200,6 +209,8 @@ jobs:
     - name: Display exact version of JDK ${{ matrix.java.name }}
       run: |
         ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
+    - name: Print the effective ORM version used
+      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
         ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
@@ -212,37 +223,25 @@ jobs:
         name: reports-java${{ matrix.java.name }}
         path: './**/build/reports/'
 
-  release:
-    name: Release
-    if: github.event_name == 'push' && startsWith( github.ref, 'refs/tags/' )
+  snapshot:
+    name: Create snapshot
+    if: github.event_name == 'push' && startsWith( github.ref, 'refs/heads/' )
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set git username and email
-      run: |
-        git config --global user.email "hibernate@users.noreply.github.com"
-        git config --global user.name "hibernate"
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: 11
-    - name: Create artifacts
-      run: ./gradlew assemble
-    - name: Install SSH key
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.HIBERNATE_ORG_SSH_KEY }}
-        name: id_rsa_hibernate.org
-        known_hosts: ${{ secrets.HIBERNATE_ORG_SSH_KNOWN_HOSTS }}
-        config: |
-          Host github.com
-            User hibernate
-            IdentityFile ~/.ssh/id_rsa_hibernate.org
-    - name: Publish documentation on Hibernate.org
-      run: ./gradlew publishDocumentation -PdocPublishBranch=production
-    - name: Publish artifacts to OSSRH, close repository and release
-      env:
-        ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
-        ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
-      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 11
+      - name: Create artifacts
+        run: ./gradlew assemble
+      - name: Detect the version of Hibernate Reactive
+        id: detect-version
+        run: |
+          sed -E 's/^projectVersion( *= *| +)([^ ]+)/::set-output name=version::\2/g' gradle/version.properties
+      - name: Publish snapshots to OSSRH, close repository and release
+        env:
+          ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
+          ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
+        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
