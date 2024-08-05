@@ -24,6 +24,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
@@ -45,6 +46,9 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
+import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderArrayParam;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderStandard;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
@@ -250,7 +254,13 @@ public class ReactiveAbstractPersisterDelegate {
 	}
 
 	public Generator reactive(Generator generator) {
-		return generator instanceof IdentityGenerator ? new ReactiveIdentityGenerator() : generator;
+		if ( generator instanceof IdentityGenerator) {
+			return new ReactiveIdentityGenerator();
+		}
+		if ( generator instanceof SequenceStyleGenerator ) {
+			return new ReactiveGeneratorWrapper( (SequenceStyleGenerator) generator );
+		}
+		return generator;
 	}
 
 	public CompletionStage<Object> loadEntityIdByNaturalId(

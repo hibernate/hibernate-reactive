@@ -190,7 +190,7 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 
 		mutationGroup.forEachOperation( (position, jdbcOperation) -> {
 			if ( id == null )  {
-				assert entityPersister().getIdentityInsertDelegate() != null;
+				assert entityPersister().getInsertDelegate() != null;
 			}
 			else {
 				final EntityTableMapping tableDetails = (EntityTableMapping) jdbcOperation.getTableDetails();

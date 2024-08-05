@@ -7,7 +7,6 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,9 +21,9 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
@@ -47,7 +46,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( GuineaPig.class );
+		return List.of( LongTypeEntity.class );
 	}
 
 	@BeforeEach
@@ -71,7 +70,7 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 
 	@Test
 	public void testORMWitMutinySession() {
-		final GuineaPig guineaPig = new GuineaPig( 61, "Mr. Peanutbutter" );
+		final LongTypeEntity guineaPig = new LongTypeEntity();
 
 		try (Session ormSession = ormFactory.openSession()) {
 			ormSession.beginTransaction();
@@ -80,59 +79,21 @@ public class ORMReactivePersistenceTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity(name = "GuineaPig")
-	@Table(name = "pig")
-	public static class GuineaPig {
+	interface TypeIdentity<T extends Number> {
+		T getId();
+	}
+
+	@Entity(name = "LongTypeEntity")
+	@Table(name = "LongTypeEntity")
+	static class LongTypeEntity implements TypeIdentity<Long> {
 		@Id
-		private Integer id;
-		private String name;
-		@Version
-		private int version;
+		@GeneratedValue
+		public Long id;
 
-		public GuineaPig() {
-		}
-
-		public GuineaPig(Integer id, String name) {
-			this.id = id;
-			this.name = name;
-		}
-
-		public Integer getId() {
+		@Override
+		public Long getId() {
 			return id;
 		}
-
-		public void setId(Integer id) {
-			this.id = id;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public String toString() {
-			return id + ": " + name;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if ( this == o ) {
-				return true;
-			}
-			if ( o == null || getClass() != o.getClass() ) {
-				return false;
-			}
-			GuineaPig guineaPig = (GuineaPig) o;
-			return Objects.equals( name, guineaPig.name );
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash( name );
-		}
 	}
+
 }
