@@ -4,9 +4,10 @@ name: Hibernate Reactive CI
 on:
   push:
     branches:
-      - wip/2.4
+      - 'wip/2.4'
   pull_request:
-    branches: [ wip/2.4 ]
+    branches:
+      - 'wip/2.4'
   schedule:
     # * is a special character in YAML, so you have to quote this string
     # Run every hour at minute 25
