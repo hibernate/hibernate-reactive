@@ -86,6 +86,8 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 11
+    - name: Print the effective ORM version used
+      run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
       run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -123,6 +125,8 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 11
+    - name: Print the effective ORM version used
+      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Build and Test with ${{ matrix.db }}
       run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
     - name: Upload reports (if build failed)
@@ -201,6 +205,8 @@ jobs:
     - name: Display exact version of JDK ${{ matrix.java.name }}
       run: |
         ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
+    - name: Print the effective ORM version used
+      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
     - name: Build and Test with Java ${{ matrix.java.name }}
       run: |
         ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
