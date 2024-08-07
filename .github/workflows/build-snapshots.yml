@@ -226,7 +226,7 @@ jobs:
         path: './**/build/reports/'
 
   snapshot:
-    name: Release snapshot only when the branch name starts with `wip/`
+    name: Release snapshot
     if: github.event_name == 'push' && startsWith( github.ref, 'refs/heads/wip/' )
     runs-on: ubuntu-latest
     steps:
