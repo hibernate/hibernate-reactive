@@ -31,6 +31,7 @@ concurrency:
 jobs:
   run_examples:
     name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
+    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -108,6 +109,7 @@ jobs:
 
   test_dbs:
     name: Test with ${{ matrix.db }}
+    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -147,6 +149,7 @@ jobs:
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
+    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
