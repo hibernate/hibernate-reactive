@@ -11,19 +11,20 @@ on:
     branches:
       - 'main'
       - 'wip/**'
-  # We run the build every hour to check for changes in the snapshots
-  schedule:
-    # * is a special character in YAML, so you have to quote this string
-    # Run every hour at minute 25
-    - cron: '25 * * * *'
+  # For building snapshots
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
   # Allow running this workflow against a specific branch/tag
   workflow_dispatch:
 
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
 concurrency:
   # Consider that two builds are in the same concurrency group (cannot run concurrently)
-  # if they use the same workflow and are about the same branch ("ref") or pull request.
-  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  # if they use the same workflow and are about the same branch ("ref"), pull request, and branch (for scheduled job).
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}, branch=${{ inputs.branch }}"
   # Cancel previous builds in the same concurrency group even if they are in process
   # for pull requests or pushes to forks (not the upstream repository).
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'hibernate/hibernate-reactive' }}
@@ -31,7 +32,6 @@ concurrency:
 jobs:
   run_examples:
     name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
-    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -42,7 +42,7 @@ jobs:
           - example: 'native-sql-example'
             db: 'MySQL'
     services:
-       # Label used to access the service container
+      # Label used to access the service container
       mysql:
         # Docker Hub image
         image: mysql:8.4.0
@@ -75,81 +75,85 @@ jobs:
         ports:
           - 5432:5432
     steps:
-    - uses: actions/checkout@v2
-    - name: Get year/month for cache key
-      id: get-date
-      run: |
-        echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
-      shell: bash
-    - name: Cache Gradle downloads
-      uses: actions/cache@v2
-      id: cache-gradle
-      with:
-        path: |
-          .gradle/caches
-          .gradle/jdks
-          .gradle/wrapper
-        # refresh cache every month to avoid unlimited growth
-        key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: 11
-    - name: Print the effective ORM version used
-      run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate.orm:hibernate-core
-    - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
-      run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
-    - name: Upload reports (if build failed)
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: reports-examples-${{ matrix.db }}
-        path: './**/build/reports/'
+      - name: Checkout ${{ inputs.branch }}
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Get year/month for cache key
+        id: get-date
+        run: |
+          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Gradle downloads
+        uses: actions/cache@v2
+        id: cache-gradle
+        with:
+          path: |
+            .gradle/caches
+            .gradle/jdks
+            .gradle/wrapper
+          # refresh cache every month to avoid unlimited growth
+          key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 11
+      - name: Print the effective ORM version used
+        run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate.orm:hibernate-core
+      - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
+        run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
+      - name: Upload reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: reports-examples-${{ matrix.db }}
+          path: './**/build/reports/'
 
   test_dbs:
     name: Test with ${{ matrix.db }}
-    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       matrix:
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB', 'Db2', 'Oracle' ]
     steps:
-    - uses: actions/checkout@v2
-    - name: Get year/month for cache key
-      id: get-date
-      run: |
-        echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
-      shell: bash
-    - name: Cache Gradle downloads
-      uses: actions/cache@v2
-      id: cache-gradle
-      with:
-        path: |
-          .gradle/caches
-          .gradle/jdks
-          .gradle/wrapper
-        # refresh cache every month to avoid unlimited growth
-        key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: 11
-    - name: Print the effective ORM version used
-      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
-    - name: Build and Test with ${{ matrix.db }}
-      run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
-    - name: Upload reports (if build failed)
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: reports-db-${{ matrix.db }}
-        path: './**/build/reports/'
+      - name: Checkout ${{ inputs.branch }}
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Get year/month for cache key
+        id: get-date
+        run: |
+          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Gradle downloads
+        uses: actions/cache@v2
+        id: cache-gradle
+        with:
+          path: |
+            .gradle/caches
+            .gradle/jdks
+            .gradle/wrapper
+          # refresh cache every month to avoid unlimited growth
+          key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 11
+      - name: Print the effective ORM version used
+        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
+      - name: Build and Test with ${{ matrix.db }}
+        run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
+      - name: Upload reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: reports-db-${{ matrix.db }}
+          path: './**/build/reports/'
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
-    if: ( github.event_name == 'schedule' && startsWith( github.ref, 'refs/heads/wip/' ) ) || ( github.event_name != 'schedule' )
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -172,71 +176,76 @@ jobs:
           - { name: "23-ea", java_version_numeric: 23, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "24-ea", java_version_numeric: 24, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
-    - uses: actions/checkout@v2
-    - name: Get year/month for cache key
-      id: get-date
-      run: |
-        echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
-      shell: bash
-    - name: Cache Gradle downloads
-      uses: actions/cache@v2
-      id: cache-gradle
-      with:
-        path: |
-          .gradle/caches
-          .gradle/jdks
-          .gradle/wrapper
-        # refresh cache every month to avoid unlimited growth
-        key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
-    - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
-      if: matrix.java.from == 'jdk.java.net'
-      uses: oracle-actions/setup-java@v1
-      with:
-        website: jdk.java.net
-        release: ${{ matrix.java.java_version_numeric }}
-    - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
-      if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: ${{ matrix.java.java_version_numeric }}
-        check-latest: true
-    - name: Export path to JDK ${{ matrix.java.name }}
-      id: testjdk-exportpath
-      run: echo "::set-output name=path::${JAVA_HOME}"
-    # Always use JDK 11 to build the main code: that's what we use for releases.
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: 11
-        check-latest: true
-    - name: Export path to JDK 11
-      id: mainjdk-exportpath
-      run: echo "::set-output name=path::${JAVA_HOME}"
-    - name: Display exact version of JDK ${{ matrix.java.name }}
-      run: |
-        ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
-    - name: Print the effective ORM version used
-      run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
-    - name: Build and Test with Java ${{ matrix.java.name }}
-      run: |
-        ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
-            -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
-            ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
-    - name: Upload reports (if build failed)
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: reports-java${{ matrix.java.name }}
-        path: './**/build/reports/'
+      - name: Checkout ${{ inputs.branch }}
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Get year/month for cache key
+        id: get-date
+        run: |
+          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+        shell: bash
+      - name: Cache Gradle downloads
+        uses: actions/cache@v2
+        id: cache-gradle
+        with:
+          path: |
+            .gradle/caches
+            .gradle/jdks
+            .gradle/wrapper
+          # refresh cache every month to avoid unlimited growth
+          key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
+      - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
+        if: matrix.java.from == 'jdk.java.net'
+        uses: oracle-actions/setup-java@v1
+        with:
+          website: jdk.java.net
+          release: ${{ matrix.java.java_version_numeric }}
+      - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
+        if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java.java_version_numeric }}
+          check-latest: true
+      - name: Export path to JDK ${{ matrix.java.name }}
+        id: testjdk-exportpath
+        run: echo "::set-output name=path::${JAVA_HOME}"
+      # Always use JDK 11 to build the main code: that's what we use for releases.
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 11
+          check-latest: true
+      - name: Export path to JDK 11
+        id: mainjdk-exportpath
+        run: echo "::set-output name=path::${JAVA_HOME}"
+      - name: Display exact version of JDK ${{ matrix.java.name }}
+        run: |
+          ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
+      - name: Print the effective ORM version used
+        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
+      - name: Build and Test with Java ${{ matrix.java.name }}
+        run: |
+          ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
+              -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
+              ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
+      - name: Upload reports (if build failed)
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: reports-java${{ matrix.java.name }}
+          path: './**/build/reports/'
 
   snapshot:
     name: Release snapshot
+    # Release the snapshots only if there are changes
     if: github.event_name == 'push' && startsWith( github.ref, 'refs/heads/wip/' )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout ${{ inputs.branch }}
+        uses: actions/checkout@v2
       - name: Set up JDK 11
         uses: actions/setup-java@v2.2.0
         with:
@@ -256,6 +265,7 @@ jobs:
 
   release:
     name: Release
+    # Releases only happen on tags
     if: github.event_name == 'push' && startsWith( github.ref, 'refs/tags/' )
     runs-on: ubuntu-latest
     steps:

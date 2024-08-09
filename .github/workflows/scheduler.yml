@@ -1,0 +1,17 @@
+# A scheduler can only run on the default branch.
+# With workflow_call, we can pass the branch we want to test as parameter so that we can check it out instead of the
+# default branch
+name: Scheduler for Hibernate Reactive CI build
+
+on:
+  schedule:
+    - cron: '25 * * * *'
+
+jobs:
+  build-snapshots:
+    strategy:
+      matrix:
+        branch: [ 'wip/2.3', 'wip/2.4' ]
+    uses: ./.github/workflows/build.yml
+    with:
+      branch: ${{ matrix.branch }}
