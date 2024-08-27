@@ -28,46 +28,50 @@ description = 'Release module'
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
 
 // The folder containing the rendered documentation
-final String documentationDir = rootProject.project( 'documentation' ).buildDir
+final String documentationDir = rootProject.layout.buildDirectory.dir( "documentation" )
 
 // Relative path on the static website where the documentation is located
 final String docWebsiteRelativePath = "reactive/documentation/${projectVersion.family}"
 
 // The location of the docs when the website has been cloned
-final String docWebsiteReactiveFolder = "${project.buildDir}/docs-website/${docWebsiteRelativePath}"
+final String docWebsiteReactiveFolder = project.layout.buildDirectory.dir( "docs-website/${docWebsiteRelativePath}" )
 
 /**
  * Assembles all documentation into the {buildDir}/documentation directory.
  */
-task assembleDocumentation(dependsOn: [rootProject.project( 'documentation' ).tasks.assemble]) {
-    group = 'Documentation'
-    description = 'Render the documentation'
+tasks.register( 'assembleDocumentation' ) {
+    dependsOn ':documentation:assemble'
+    group 'Documentation'
+    description 'Render the documentation'
 }
 assemble.dependsOn assembleDocumentation
 
 /**
 * Clone the website
 */
-task removeDocsWebsite( type: Delete ) {
-    delete "${project.buildDir}/docs-website/"
+tasks.register( 'removeDocsWebsite', Delete ) {
+    delete project.layout.buildDirectory.dir( "docs-website" )
 }
 
 // Depending on compileJava makes sure that the buildDir exists. Otherwise this task will fail.
-task cloneDocsWebsite( type: Exec, dependsOn: [removeDocsWebsite, compileJava] ) {
-    workingDir project.buildDir
+tasks.register( 'cloneDocsWebsite', Exec ) {
+    dependsOn removeDocsWebsite, compileJava
+    workingDir project.layout.buildDirectory
     commandLine 'git', 'clone', docPublishRepoUri, '-b', docPublishBranch, '--sparse', '--depth', '1', 'docs-website'
 }
 
-task sparseCheckoutDocumentation( type: Exec, dependsOn: cloneDocsWebsite ) {
-    workingDir "${project.buildDir}/docs-website"
+tasks.register( 'sparseCheckoutDocumentation', Exec ) {
+    dependsOn cloneDocsWebsite
+    workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'sparse-checkout', 'set', docWebsiteRelativePath
 }
 
 /**
 * Update the docs on the cloned website
 */
-task updateDocumentation( dependsOn: [assembleDocumentation, sparseCheckoutDocumentation] ) {
-    description = "Update the documentation o the cloned static website"
+tasks.register( 'updateDocumentation' ) {
+    dependsOn assembleDocumentation, sparseCheckoutDocumentation
+    description = "Update the documentation on the cloned static website"
 
     // copy documentation outputs into target/documentation:
     // * this is used in building the dist bundles
@@ -94,22 +98,26 @@ task updateDocumentation( dependsOn: [assembleDocumentation, sparseCheckoutDocum
 /**
 * Push documentation changes on the remote repository
 */
-task stageDocChanges( type: Exec, dependsOn: updateDocumentation ) {
-    workingDir "${project.buildDir}/docs-website"
+tasks.register( 'stageDocChanges', Exec ) {
+    dependsOn updateDocumentation
+    workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'add', '-A', '.'
 }
 
-task commitDocChanges( type: Exec, dependsOn: stageDocChanges ) {
+tasks.register( 'commitDocChanges', Exec ) {
+    dependsOn stageDocChanges
     workingDir "${project.buildDir}/docs-website"
     commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
 }
 
-task pushDocChanges( type: Exec, dependsOn: commitDocChanges ) {
-    workingDir "${project.buildDir}/docs-website"
+tasks.register( 'pushDocChanges', Exec ) {
+    dependsOn commitDocChanges
+    workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'push', '--atomic', 'origin', docPublishBranch
 }
 
-task publishDocumentation(dependsOn: pushDocChanges) {
+tasks.register( 'publishDocumentation' ) {
+    dependsOn pushDocChanges
     group = "Release"
     description = "Upload documentation on the website"
 
@@ -118,16 +126,50 @@ task publishDocumentation(dependsOn: pushDocChanges) {
     }
 }
 
+tasks.register( "releasePrepare" ) {
+    group = "Release"
+    description = "Performs release preparations on local check-out, including updating changelog"
+    doFirst {
+        if ( !project.hasProperty( 'releaseVersion' ) || !project.hasProperty( 'developmentVersion' )
+                || !project.hasProperty( 'gitRemote' ) || !project.hasProperty( 'gitBranch' ) ) {
+            throw new GradleException(
+                    "Task 'releasePrepare' requires all of the following properties to be set:"
+                            + "'releaseVersion', 'developmentVersion', 'gitRemote' and 'gitBranch'."
+            )
+        }
+    }
+
+    doLast {
+        logger.lifecycle( "Switching to branch '${project.gitBranch}'..." )
+        executeGitCommand( 'switch', project.gitBranch )
+
+        logger.lifecycle( "Checking that all commits are pushed..." )
+        String diffWithUpstream = executeGitCommand( 'diff', '@{u}' )
+        if ( !diffWithUpstream.isEmpty() ) {
+            throw new GradleException(
+                    "Cannot release because there are commits on the branch to release that haven't been pushed yet."
+                            + "\nPush your commits to the branch to release first."
+            )
+        }
+
+        logger.lifecycle( "Adding commit to update version to '${project.releaseVersion}'..." )
+        project.projectVersionFile.text = "projectVersion=${project.releaseVersion}"
+        executeGitCommand( 'add', '.' )
+        executeGitCommand( 'commit', '-m', project.releaseVersion )
+    }
+}
+
 /*
 * Release everything
 */
-task ciRelease {
+tasks.register( 'ciRelease' ) {
     group = "Release"
     description = "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
+    dependsOn releasePrepare
 
     doFirst {
-        if (!project.hasProperty('releaseVersion') || !project.hasProperty('developmentVersion')
-                || !project.hasProperty('gitRemote') ||!project.hasProperty('gitBranch')) {
+        if ( !project.hasProperty( 'releaseVersion' ) || !project.hasProperty( 'developmentVersion' )
+                || !project.hasProperty( 'gitRemote' ) || !project.hasProperty( 'gitBranch' ) ) {
             throw new GradleException(
                     "Task 'ciRelease' requires all of the following properties to be set:"
                             + "'releaseVersion', 'developmentVersion', 'gitRemote' and 'gitBranch'."
@@ -136,8 +178,8 @@ task ciRelease {
     }
 
     doLast {
-        logger.lifecycle("Checking that the working tree is clean...")
-        String uncommittedFiles = executeGitCommand('status', '--porcelain')
+        logger.lifecycle( "Checking that the working tree is clean..." )
+        String uncommittedFiles = executeGitCommand( 'status', '--porcelain' )
         if ( !uncommittedFiles.isEmpty() ) {
             throw new GradleException(
                     "Cannot release because there are uncommitted or untracked files in the working tree."
@@ -145,42 +187,25 @@ task ciRelease {
                             + "\nUncommitted files:\n" + uncommittedFiles
             )
         }
-
-        logger.lifecycle("Switching to branch '${project.gitBranch}'...")
-        executeGitCommand('switch', project.gitBranch)
-
-        logger.lifecycle("Checking that all commits are pushed...")
-        String diffWithUpstream = executeGitCommand('diff', '@{u}')
-        if ( !diffWithUpstream.isEmpty() ) {
-            throw new GradleException(
-                    "Cannot release because there are commits on the branch to release that haven't been pushed yet."
-                            + "\nPush your commits to the branch to release first."
-            )
-        }
-
-        logger.lifecycle("Adding commit to update version to '${project.releaseVersion}'...")
-        project.projectVersionFile.text = "projectVersion=${project.releaseVersion}"
-        executeGitCommand('add', '.')
-        executeGitCommand('commit', '-m', project.releaseVersion)
         String tag = project.releaseVersion
         if ( tag.endsWith( ".Final" ) ) {
             tag = tag.replace( ".Final", "" )
         }
+        logger.lifecycle( "Tagging '${tag}'..." )
+        executeGitCommand( 'tag', '-a', '-m', "Release ${project.releaseVersion}", tag )
 
-        logger.lifecycle("Tagging '${tag}'...")
-        executeGitCommand('tag', '-a', '-m', "Release ${project.releaseVersion}", tag)
-
-        logger.lifecycle("Adding commit to update version to '${project.developmentVersion}'...")
+        logger.lifecycle( "Adding commit to update version to '${project.developmentVersion}'..." )
         project.projectVersionFile.text = "projectVersion=${project.developmentVersion}"
-        executeGitCommand('add', '.')
-        executeGitCommand('commit', '-m', project.developmentVersion)
+        executeGitCommand( 'add', '.' )
+        executeGitCommand( 'commit', '-m', project.developmentVersion )
 
-        logger.lifecycle("Pushing branch and tag to remote '${project.gitRemote}'...")
-        executeGitCommand('push', '--atomic', project.gitRemote, project.gitBranch, tag)
+        logger.lifecycle( "Pushing branch and tag to remote '${project.gitRemote}'..." )
+        executeGitCommand( 'push', '--atomic', project.gitRemote, project.gitBranch, tag )
 
-        logger.lifecycle("Done!")
+        logger.lifecycle( "Done!" )
 
-        logger.lifecycle("Go to https://github.com/hibernate/hibernate-reactive/actions?query=branch%3A${tag} to check the progress of the automated release.")
+//        logger
+//                .lifecycle( "Go to https://github.com/hibernate/hibernate-reactive/actions?query=branch%3A${tag} to check the progress of the automated release." )
     }
 }
 
