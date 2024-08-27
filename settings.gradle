@@ -30,13 +30,19 @@ if ( hasProperty( 'main.jdk.version' ) || hasProperty( 'test.jdk.version' ) ) {
     gradle.ext.javaToolchainEnabled = true
     gradle.ext.javaVersions = [
             main: [
-                    compiler: JavaLanguageVersion.of( hasProperty( 'main.jdk.version' )
-                            ? getProperty( 'main.jdk.version' ) : gradle.ext.baselineJavaVersion.asInt() ),
+                    compiler: JavaLanguageVersion.of(
+                            hasProperty( 'main.jdk.version' )
+                                    ? getProperty( 'main.jdk.version' ) as Integer
+                                    : gradle.ext.baselineJavaVersion.asInt()
+                    ),
                     release: gradle.ext.baselineJavaVersion
             ],
             test: [
-                    compiler: JavaLanguageVersion.of( hasProperty( 'test.jdk.version' )
-                            ? getProperty( 'test.jdk.version' ) : gradle.ext.baselineJavaVersion.asInt() )
+                    compiler: JavaLanguageVersion.of(
+                            hasProperty( 'test.jdk.version' )
+                                    ? getProperty( 'test.jdk.version' ) as Integer
+                                    : gradle.ext.baselineJavaVersion.asInt()
+                    )
             ]
     ]
     def testCompilerVersion = gradle.ext.javaVersions.test.compiler
