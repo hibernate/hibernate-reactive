@@ -43,3 +43,6 @@ bin
 # Vim
 *.swp
 *.swo
+
+# Release scripts downloaded from hibernate/hibernate-release-scripts
+.release
