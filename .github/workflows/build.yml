@@ -23,7 +23,7 @@ on:
 # See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
 concurrency:
   # Consider that two builds are in the same concurrency group (cannot run concurrently)
-  # if they use the same workflow and are about the same branch ("ref"), pull request, and branch (for scheduled job).
+  # if they use the same workflow and are about the same branch ("ref"), pull request, and branch name input (for scheduled job).
   group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}, branch=${{ inputs.branch }}"
   # Cancel previous builds in the same concurrency group even if they are in process
   # for pull requests or pushes to forks (not the upstream repository).
@@ -237,64 +237,3 @@ jobs:
         with:
           name: reports-java${{ matrix.java.name }}
           path: './**/build/reports/'
-
-  snapshot:
-    name: Release snapshot
-    # Release the snapshots only if there are changes
-    if: github.event_name == 'push' && startsWith( github.ref, 'refs/heads/wip/' )
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@v2
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2.2.0
-        with:
-          distribution: 'temurin'
-          java-version: 11
-      - name: Create artifacts
-        run: ./gradlew assemble
-      - name: Detect the version of Hibernate Reactive
-        id: detect-version
-        run: |
-          sed -E 's/^projectVersion( *= *| +)([^ ]+)/::set-output name=version::\2/g' gradle/version.properties
-      - name: Publish snapshots to OSSRH, close repository and release
-        env:
-          ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
-          ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
-        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
-
-  release:
-    name: Release
-    # Releases only happen on tags
-    if: github.event_name == 'push' && startsWith( github.ref, 'refs/tags/' )
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set git username and email
-      run: |
-        git config --global user.email "hibernate@users.noreply.github.com"
-        git config --global user.name "hibernate"
-    - name: Set up JDK 11
-      uses: actions/setup-java@v2.2.0
-      with:
-        distribution: 'temurin'
-        java-version: 11
-    - name: Create artifacts
-      run: ./gradlew assemble
-    - name: Install SSH key
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.HIBERNATE_ORG_SSH_KEY }}
-        name: id_rsa_hibernate.org
-        known_hosts: ${{ secrets.HIBERNATE_ORG_SSH_KNOWN_HOSTS }}
-        config: |
-          Host github.com
-            User hibernate
-            IdentityFile ~/.ssh/id_rsa_hibernate.org
-    - name: Publish documentation on Hibernate.org
-      run: ./gradlew publishDocumentation -PdocPublishBranch=production
-    - name: Publish artifacts to OSSRH, close repository and release
-      env:
-        ORG_GRADLE_PROJECT_sonatypeOssrhUser: ${{ secrets.SONATYPE_OSSRH_USER }}
-        ORG_GRADLE_PROJECT_sonatypeOssrhPassword: ${{ secrets.SONATYPE_OSSRH_PASSWORD }}
-      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
