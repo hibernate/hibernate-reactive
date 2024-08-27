@@ -4,27 +4,16 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'com.diffplug.spotless' version '6.25.0'
-    id 'nu.studer.credentials' version '3.0'
     id 'org.asciidoctor.jvm.convert' version '4.0.2' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '1.3.0'
 }
 
 ext {
-    // Credentials can be specified on the command-line using project properties,
-    // or stored locally using the gradle-credentials-plugin.
-    // See below for the name of project properties.
-    // See https://github.com/etiennestuder/gradle-credentials-plugin to store credentials locally.
-    if ( !project.hasProperty( 'jbossNexusUser' ) ) {
-        jbossNexusUser = credentials.forKey( 'jbossNexusUser' )
-    }
-    if ( !project.hasProperty( 'jbossNexusPassword' ) ) {
-        jbossNexusPassword = credentials.forKey( 'jbossNexusPassword' )
-    }
     if ( !project.hasProperty( 'sonatypeOssrhUser' ) ) {
-        sonatypeOssrhUser = credentials.forKey( 'sonatypeOssrhUser' )
+        sonatypeOssrhUser = null
     }
     if ( !project.hasProperty( 'sonatypeOssrhPassword' ) ) {
-        sonatypeOssrhPassword = credentials.forKey( 'sonatypeOssrhPassword' )
+        sonatypeOssrhPassword = null
     }
 }
 
@@ -95,10 +84,6 @@ ext {
 }
 
 // To release, see task ciRelease in release/build.gradle
-
-// To publish snapshots:
-// ./gradlew publishToJBossNexus closeAndReleaseJBossNexusStagingRepository -PjbossNexusUser="<YOUR USERNAME>" -PjbossNexusPassword="<YOUR PASSWORD>"
-
 // To publish on Sonatype (Maven Central):
 // ./gradlew publishToSonatype closeAndReleaseStagingRepository -PsonatypeOssrhUser="<YOUR USERNAME>" -PsonatypeOssrhPassword="<YOUR PASSWORD>"
 nexusPublishing {
@@ -106,11 +91,6 @@ nexusPublishing {
         sonatype {
             username = project.sonatypeOssrhUser
             password = project.sonatypeOssrhPassword
-        }
-        jBossNexus {
-            snapshotRepositoryUrl = uri('https://repository.jboss.org/nexus/content/repositories/snapshots')
-            username = project.jbossNexusUser
-            password = project.jbossNexusPassword
         }
     }
 }

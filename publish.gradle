@@ -1,5 +1,4 @@
 apply plugin: 'maven-publish'
-apply plugin: 'nu.studer.credentials'
 
 task sourcesJar(type: Jar) {
     from sourceSets.main.allJava
