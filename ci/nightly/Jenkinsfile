@@ -1,0 +1,49 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+
+@Library('hibernate-jenkins-pipeline-helpers') _
+
+pipeline {
+	agent none
+	triggers {
+		cron '@midnight'
+	}
+	tools {
+		jdk 'OpenJDK 17 Latest'
+	}
+	options {
+		buildDiscarder logRotator(daysToKeepStr: '10', numToKeepStr: '3')
+		disableConcurrentBuilds(abortPrevious: true)
+		overrideIndexTriggers(false)
+	}
+	stages {
+		stage('Build reproducibility check') {
+			agent {
+				label 'Worker&&Containers'
+			}
+			steps {
+				timeout(time: 30, unit: 'MINUTES') {
+					script {
+						def tempDir = pwd(tmp: true)
+						def repo1 = tempDir + '/repo1'
+						def repo2 = tempDir + '/repo2'
+						// build Hibernate Reactive two times without any cache and "publish" the resulting artifacts
+						// to different maven repositories, so that we can compare them afterwards:
+						sh "./gradlew --no-daemon clean publishToMavenLocal --no-build-cache -Dmaven.repo.local=${repo1}"
+						sh "./gradlew --no-daemon clean publishToMavenLocal --no-build-cache -Dmaven.repo.local=${repo2}"
+
+						sh "sh ci/compare-build-results.sh ${repo1} ${repo2}"
+						sh "cat .buildcompare"
+					}
+				}
+			}
+		}
+	}
+	post {
+		always {
+			notifyBuildResult maintainers: 'davide@hibernate.org'
+		}
+	}
+}
