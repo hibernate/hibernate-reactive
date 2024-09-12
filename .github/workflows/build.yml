@@ -104,7 +104,7 @@ jobs:
       - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
         run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}
@@ -146,7 +146,7 @@ jobs:
       - name: Build and Test with ${{ matrix.db }}
         run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}
@@ -232,7 +232,7 @@ jobs:
               -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
               ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}
