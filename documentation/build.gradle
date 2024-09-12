@@ -2,7 +2,9 @@ import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 import java.time.Year
 
-apply plugin: 'org.asciidoctor.jvm.convert'
+plugins {
+	id "org.asciidoctor.jvm.convert"
+}
 
 ext {
 	projectsToSkipWhenAggregatingJavadocs = [
@@ -115,13 +117,11 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
 	options logDocuments: true
 
-	logger.lifecycle "---- Rendering docs with version $project.version"
-
 	attributes icons: 'font',
 			   'source-highlighter': 'rouge',
 			   experimental: true,
 			   linkcss: true,
-			   majorMinorVersion: project.version.family,
+			   majorMinorVersion: project.projectVersion.family,
 			   fullVersion: project.version.toString(),
 			   docinfo: 'private'
 }
@@ -134,8 +134,6 @@ def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
 	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
 	group 'Documentation'
 	description 'Grouping task for performing all documentation building tasks'
-
-	logger.lifecycle "Documentation groupId: '" + project.group + "', version: '" + project.version + "'"
 }
 
 assemble.dependsOn assembleDocumentationTask

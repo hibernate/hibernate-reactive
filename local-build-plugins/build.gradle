@@ -1,0 +1,30 @@
+plugins {
+	id "java-gradle-plugin"
+}
+
+repositories {
+	mavenCentral()
+}
+
+group = 'org.hibernate.reactive.build'
+version = '1.0.0-SNAPSHOT'
+
+
+dependencies {
+	implementation gradleApi()
+}
+
+java {
+	sourceCompatibility = 11
+	targetCompatibility = 11
+}
+
+
+gradlePlugin {
+	plugins {
+		projectEnv {
+			id = 'local.versions'
+			implementationClass = 'org.hibernate.reactive.env.VersionsPlugin'
+		}
+	}
+}
