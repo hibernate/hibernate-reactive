@@ -35,6 +35,7 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
+import org.hibernate.metamodel.mapping.internal.EmbeddedIdentifierMappingImpl;
 import org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationHelper;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
@@ -56,6 +57,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveEmbeddedIdentifierMappingImpl;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactivePluralAttributeMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonAggregatedIdentifierMappingFetch;
@@ -323,6 +325,9 @@ public class ReactiveAbstractPersisterDelegate {
 	public EntityIdentifierMapping convertEntityIdentifierMapping(EntityIdentifierMapping entityIdentifierMapping) {
 		if ( entityIdentifierMapping instanceof NonAggregatedIdentifierMappingImpl ) {
 			return new ReactiveNonAggregatedIdentifierMappingImpl( (NonAggregatedIdentifierMappingImpl) entityIdentifierMapping );
+		}
+		if ( entityIdentifierMapping instanceof EmbeddedIdentifierMappingImpl ) {
+			return new ReactiveEmbeddedIdentifierMappingImpl( (EmbeddedIdentifierMappingImpl) entityIdentifierMapping );
 		}
 		return entityIdentifierMapping;
 	}
