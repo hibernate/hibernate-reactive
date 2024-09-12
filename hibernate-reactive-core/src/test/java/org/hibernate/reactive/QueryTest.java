@@ -5,12 +5,14 @@
  */
 package org.hibernate.reactive;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,60 @@ public class QueryTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Book.class, Author.class );
+	}
+
+	private final static BigDecimal PIE = BigDecimal.valueOf( 3.1416 );
+	private final static BigDecimal TAO = BigDecimal.valueOf( 6.2832 );
+
+	@Test
+	public void testBigDecimalAsParameter(VertxTestContext context) {
+		Author author1 = new Author( "Iain M. Banks" );
+		Author author2 = new Author( "Neal Stephenson" );
+		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
+		book1.quantity = BigDecimal.valueOf( 11.2 );
+		Book book2 = new Book( "0-380-97346-4", "Cryptonomicon", author2 );
+		book2.quantity = PIE;
+		Book book3 = new Book( "0-553-08853-X", "Snow Crash", author2 );
+		book3.quantity = TAO;
+
+		author1.books.add( book1 );
+		author2.books.add( book2 );
+		author2.books.add( book3 );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persistAll( author1, author2 ) )
+				// HQL with named parameters
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createSelectionQuery( "from Book where quantity > :quantity", Book.class )
+						.setParameter( "quantity", PIE )
+						.getResultList()
+						.invoke( result -> assertThat( result ).containsExactlyInAnyOrder( book1, book3 ) )
+				) )
+				// HQL with positional parameters
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createSelectionQuery( "from Book where quantity > ?1", Book.class )
+						.setParameter( 1, PIE )
+						.getResultList()
+						.invoke( result -> assertThat( result ).containsExactlyInAnyOrder( book1, book3 ) )
+				) )
+				// Criteria
+				.call( () -> {
+					CriteriaBuilder builder = getSessionFactory().getCriteriaBuilder();
+					CriteriaQuery<Book> query = builder.createQuery( Book.class );
+					Root<Book> b = query.from( Book.class );
+					b.fetch( "author" );
+					query.where( builder.between(
+							b.get( "quantity" ),
+							BigDecimal.valueOf( 4.0 ),
+							BigDecimal.valueOf( 100.0 )
+					) );
+					return getMutinySessionFactory().withTransaction( s -> s
+							.createQuery( query )
+							.getResultList()
+							.invoke( result -> assertThat( result ).containsExactlyInAnyOrder( book1, book3 ) )
+					);
+				} )
+		);
 	}
 
 	@Test
@@ -711,6 +767,28 @@ public class QueryTest extends BaseReactiveTest {
 
 		Author() {
 		}
+
+		@Override
+		public String toString() {
+			return id + ":" + name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Author author = (Author) o;
+			return Objects.equals( name, author.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( name );
+		}
 	}
 
 	@Entity(name = "Book")
@@ -729,6 +807,8 @@ public class QueryTest extends BaseReactiveTest {
 		@ManyToOne(fetch = LAZY)
 		Author author;
 
+		BigDecimal quantity;
+
 		Book(String isbn, String title, Author author) {
 			this.title = title;
 			this.isbn = isbn;
@@ -736,6 +816,31 @@ public class QueryTest extends BaseReactiveTest {
 		}
 
 		Book() {
+		}
+
+		@Override
+		public String toString() {
+			return id + ":" + title + ":" + isbn + ":" + quantity;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Book book = (Book) o;
+			return Objects.equals( isbn, book.isbn ) && Objects.equals(
+					title,
+					book.title
+			);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( isbn, title );
 		}
 	}
 
