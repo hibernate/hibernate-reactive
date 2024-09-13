@@ -85,6 +85,15 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 	}
 
 	@Override
+	public void resolveInstance(EmbeddableInitializerData data) {
+		// We need to clean up the instance, otherwise the .find with multiple id is not going to work correctly.
+		// It will only return the first element of the list. See EmbeddedIdTest#testFindMultipleIds.
+		// ORM doesn't have this issue because they don't have a find with multiple ids.
+		data.setInstance( null );
+		super.resolveInstance( data );
+	}
+
+	@Override
 	public Object getResolvedInstance(EmbeddableInitializerData data) {
 		return super.getResolvedInstance( data );
 	}
