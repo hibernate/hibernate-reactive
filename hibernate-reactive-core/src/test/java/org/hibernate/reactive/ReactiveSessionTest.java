@@ -80,6 +80,21 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void reactiveFindMultipleIds(VertxTestContext context) {
+		final GuineaPig rump = new GuineaPig( 55, "Rumpelstiltskin" );
+		final GuineaPig emma = new GuineaPig( 77, "Emma" );
+		test( context, populateDB()
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.persist( emma, rump ) ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.find( GuineaPig.class, emma.getId(), rump.getId() ) )
+				)
+				.thenAccept( pigs -> {
+					org.assertj.core.api.Assertions.assertThat( pigs ).containsExactlyInAnyOrder( emma, rump );
+				} )
+		);
+	}
+
+	@Test
 	public void sessionClear(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 81, "Perry" );
 		test(
