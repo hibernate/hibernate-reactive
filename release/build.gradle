@@ -3,7 +3,7 @@ import java.nio.charset.StandardCharsets
 ext {
     // Select which repository to use for publishing the documentation
     // Example:
-    // ./gradlew publishDocumentation \
+    // ./gradlew uploadDocumentation \
     //           -PdocPublishRepoUri="git@github.com:DavideD/hibernate.org.git" \
     //           -PdocPublishBranch="staging"
     if ( !project.hasProperty('docPublishRepoUri') ) {
@@ -22,46 +22,99 @@ description = 'Release module'
 // To publish the documentation:
 //  1. Add the relevant SSH key to your SSH agent.
 //  2. Execute this:
-//     ./gradlew publishDocumentation -PdocPublishBranch=production
+//     ./gradlew uploadDocumentation -PdocPublishBranch=production
 
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
 
 // The folder containing the rendered documentation
-final String documentationDir = rootProject.layout.buildDirectory.dir( "documentation" )
+final Directory documentationDir = project(":documentation").layout.buildDirectory.get()
 
 // Relative path on the static website where the documentation is located
 final String docWebsiteRelativePath = "reactive/documentation/${projectVersion.family}"
 
 // The location of the docs when the website has been cloned
-final String docWebsiteReactiveFolder = project.layout.buildDirectory.dir( "docs-website/${docWebsiteRelativePath}" )
+final Directory docWebsiteReactiveFolder = project.layout.buildDirectory.dir( "docs-website/${docWebsiteRelativePath}" ).get()
+
+def releaseChecksTask = tasks.register( "releaseChecks" ) {
+    description 'Checks and preparation for release'
+    group 'Release'
+
+    doFirst {
+        logger.lifecycle("Checking that the working tree is clean...")
+        String uncommittedFiles = executeGitCommand('status', '--porcelain')
+        if (!uncommittedFiles.isEmpty()) {
+            throw new GradleException(
+                    "Cannot release because there are uncommitted or untracked files in the working tree.\n" +
+                            "Commit or stash your changes first.\n" +
+                            "Uncommitted files:\n    " +
+                            uncommittedFiles
+            )
+        }
+
+        String gitBranchLocal = project.hasProperty( 'gitBranch' ) && !project.property( 'gitBranch' ).isEmpty()
+                ? project.property( 'gitBranch' )
+                : executeGitCommand( 'branch', '--show-current' ).trim()
+
+        String gitRemoteLocal
+        if ( project.hasProperty( 'gitRemote' ) && !project.property( 'gitRemote' ).isEmpty() ) {
+            gitRemoteLocal = project.property( 'gitRemote' )
+        }
+        else {
+            final String remotes = executeGitCommand( 'remote', 'show' ).trim()
+            final List<String> tokens = remotes.tokenize()
+            if ( tokens.size() != 1 ) {
+                throw new GradleException( "Could not determine `gitRemote` property for `releaseChecks` tasks." )
+            }
+            gitRemoteLocal = tokens.get( 0 )
+        }
+
+        project.ext {
+            gitBranch = gitBranchLocal
+            gitRemote = gitRemoteLocal
+        }
+
+        logger.lifecycle( "Switching to branch '${project.gitBranch}'..." )
+        executeGitCommand( 'checkout', project.gitBranch )
+
+        logger.lifecycle( "Checking that all commits are pushed..." )
+        String diffWithUpstream = executeGitCommand( 'diff', '@{u}' )
+        if ( !diffWithUpstream.isEmpty() ) {
+            throw new GradleException(
+                    "Cannot perform `ciRelease` tasks because there are un-pushed local commits .\n" +
+                            "Push your commits first."
+            )
+        }
+    }
+}
 
 /**
  * Assembles all documentation into the {buildDir}/documentation directory.
  */
-tasks.register( 'assembleDocumentation' ) {
+def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
     dependsOn ':documentation:assemble'
     group 'Documentation'
     description 'Render the documentation'
 }
-assemble.dependsOn assembleDocumentation
+assemble.dependsOn assembleDocumentationTask
 
 /**
 * Clone the website
 */
-tasks.register( 'removeDocsWebsite', Delete ) {
+def removeDocsWebsiteTask = tasks.register( 'removeDocsWebsite', Delete ) {
     delete project.layout.buildDirectory.dir( "docs-website" )
 }
 
-// Depending on compileJava makes sure that the buildDir exists. Otherwise this task will fail.
-tasks.register( 'cloneDocsWebsite', Exec ) {
-    dependsOn removeDocsWebsite, compileJava
+def cloneDocsWebsiteTask = tasks.register( 'cloneDocsWebsite', Exec ) {
+    dependsOn removeDocsWebsiteTask
+    // Assure that the buildDir exists. Otherwise this task will fail.
+    dependsOn compileJava
     workingDir project.layout.buildDirectory
     commandLine 'git', 'clone', docPublishRepoUri, '-b', docPublishBranch, '--sparse', '--depth', '1', 'docs-website'
 }
 
-tasks.register( 'sparseCheckoutDocumentation', Exec ) {
-    dependsOn cloneDocsWebsite
+def sparseCheckoutDocumentationTask = tasks.register( 'sparseCheckoutDocumentation', Exec ) {
+    dependsOn cloneDocsWebsiteTask
     workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'sparse-checkout', 'set', docWebsiteRelativePath
 }
@@ -69,9 +122,22 @@ tasks.register( 'sparseCheckoutDocumentation', Exec ) {
 /**
 * Update the docs on the cloned website
 */
-tasks.register( 'updateDocumentation' ) {
-    dependsOn assembleDocumentation, sparseCheckoutDocumentation
-    description = "Update the documentation on the cloned static website"
+def changeToReleaseVersionTask = tasks.register( 'changeToReleaseVersion' ) {
+    description 'Updates `gradle/version.properties` file to the specified release-version'
+    group 'Release'
+
+    dependsOn releaseChecksTask
+
+    doFirst {
+        logger.lifecycle( "Updating version-file to release-version : `${project.releaseVersion}`" )
+        updateVersionFile( "${project.releaseVersion}" )
+    }
+}
+
+def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
+    description "Update the documentation on the cloned static website"
+    dependsOn assembleDocumentationTask, sparseCheckoutDocumentationTask
+    mustRunAfter changeToReleaseVersion
 
     // copy documentation outputs into target/documentation:
     // * this is used in building the dist bundles
@@ -79,134 +145,149 @@ tasks.register( 'updateDocumentation' ) {
 
     doLast {
         // delete the folders in case some files have been removed
-        delete "${docWebsiteReactiveFolder}/javadocs", "${docWebsiteReactiveFolder}/reference"
+        delete docWebsiteReactiveFolder.dir("javadocs"), docWebsiteReactiveFolder.dir("reference")
 
         // Aggregated JavaDoc
         copy {
-            from "${documentationDir}/javadocs"
-            into "${docWebsiteReactiveFolder}/javadocs"
+            from documentationDir.dir("javadocs")
+            into docWebsiteReactiveFolder.dir("javadocs")
         }
 
         // Reference Documentation
         copy {
-            from "${documentationDir}/asciidoc/reference/html_single"
-            into "${docWebsiteReactiveFolder}/reference/html_single"
+            from documentationDir.dir("asciidoc/reference/html_single")
+            into docWebsiteReactiveFolder.dir("reference/html_single")
         }
     }
 }
 
-/**
-* Push documentation changes on the remote repository
-*/
-tasks.register( 'stageDocChanges', Exec ) {
-    dependsOn updateDocumentation
+def stageDocChangesTask = tasks.register( 'stageDocChanges', Exec ) {
     workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'add', '-A', '.'
 }
 
-tasks.register( 'commitDocChanges', Exec ) {
-    dependsOn stageDocChanges
-    workingDir "${project.buildDir}/docs-website"
+def commitDocChangesTask = tasks.register( 'commitDocChanges', Exec ) {
+    dependsOn stageDocChangesTask
+    workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
 }
 
-tasks.register( 'pushDocChanges', Exec ) {
-    dependsOn commitDocChanges
+def pushDocChangesTask = tasks.register( 'pushDocChanges', Exec ) {
+    description "Push documentation changes on the remote repository"
+    dependsOn commitDocChangesTask
     workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'push', '--atomic', 'origin', docPublishBranch
 }
 
-tasks.register( 'publishDocumentation' ) {
-    dependsOn pushDocChanges
-    group = "Release"
-    description = "Upload documentation on the website"
+def uploadDocumentationTask = tasks.register( 'uploadDocumentation' ) {
+    description "Upload documentation on the website"
+    group "Release"
+    dependsOn pushDocChangesTask
 
     doLast {
         logger.lifecycle "Documentation published on '${docPublishRepoUri}' branch '${docPublishBranch}'"
     }
 }
 
-tasks.register( "releasePrepare" ) {
-    group = "Release"
-    description = "Performs release preparations on local check-out, including updating changelog"
-    doFirst {
-        if ( !project.hasProperty( 'releaseVersion' ) || !project.hasProperty( 'developmentVersion' )
-                || !project.hasProperty( 'gitRemote' ) || !project.hasProperty( 'gitBranch' ) ) {
-            throw new GradleException(
-                    "Task 'releasePrepare' requires all of the following properties to be set:"
-                            + "'releaseVersion', 'developmentVersion', 'gitRemote' and 'gitBranch'."
-            )
-        }
-    }
+def gitPreparationForReleaseTask = tasks.register( 'gitPreparationForRelease' ) {
+    dependsOn releaseChecksTask, changeToReleaseVersionTask
+    finalizedBy updateDocumentationTask
 
     doLast {
-        logger.lifecycle( "Switching to branch '${project.gitBranch}'..." )
-        executeGitCommand( 'switch', project.gitBranch )
+        logger.lifecycle( "Performing pre-steps Git commit : `${project.releaseVersion}`" )
+        executeGitCommand( 'add', '.' )
+        executeGitCommand( 'commit', '-m', "Update project version to : `${project.releaseVersion}`" )
+    }
+}
 
-        logger.lifecycle( "Checking that all commits are pushed..." )
-        String diffWithUpstream = executeGitCommand( 'diff', '@{u}' )
-        if ( !diffWithUpstream.isEmpty() ) {
-            throw new GradleException(
-                    "Cannot release because there are commits on the branch to release that haven't been pushed yet."
-                            + "\nPush your commits to the branch to release first."
-            )
+def changeToDevelopmentVersionTask = tasks.register( 'changeToDevelopmentVersion' ) {
+    description 'Updates `gradle/version.properties` file to the specified development-version'
+    group 'Release'
+
+    dependsOn releaseChecksTask
+
+    doFirst {
+        logger.lifecycle( "Updating version-file to development-version : `${project.developmentVersion}`" )
+        updateVersionFile( "${project.developmentVersion}" )
+    }
+}
+
+def releasePreparePostGitTask = tasks.register( 'gitTasksAfterRelease' ) {
+    dependsOn changeToDevelopmentVersionTask
+
+    doLast {
+        if ( project.createTag ) {
+            logger.lifecycle( "Tagging release : `${project.releaseTag}`..." )
+            executeGitCommand( 'tag', '-a', project.releaseTag, '-m', "Release $project.projectVersion" )
         }
 
-        logger.lifecycle( "Adding commit to update version to '${project.releaseVersion}'..." )
-        project.projectVersionFile.text = "projectVersion=${project.releaseVersion}"
+        logger.lifecycle( "Performing post-steps Git commit : `${project.releaseVersion}`" )
         executeGitCommand( 'add', '.' )
-        executeGitCommand( 'commit', '-m', project.releaseVersion )
+        executeGitCommand( 'commit', '-m', "Update project version to : `${project.developmentVersion}`" )
     }
+}
+
+void updateVersionFile(var version) {
+    logger.lifecycle( "Updating `gradle/version.properties` version to `${version}`" )
+    project.versionFile.text = "projectVersion=${version}"
+    project.version = version
+}
+
+def publishReleaseArtifactsTask = tasks.register( 'publishReleaseArtifacts' ) {
+    dependsOn uploadDocumentationTask
+    dependsOn ":publishToSonatype"
+
+    mustRunAfter gitPreparationForReleaseTask
+}
+
+def releasePerformPostGitTask = tasks.register( 'gitTasksAfterReleasePerform' ) {
+
+    doLast {
+        if ( project.createTag ) {
+            logger.lifecycle( "Pushing branch and tag to remote `${project.gitRemote}`..." )
+            executeGitCommand( 'push', '--atomic', project.gitRemote, project.gitBranch, project.releaseTag )
+        }
+        else {
+            logger.lifecycle( "Pushing branch to remote `${project.gitRemote}`..." )
+            executeGitCommand( 'push', project.gitRemote, project.gitBranch )
+        }
+    }
+}
+
+def releasePrepareTask = tasks.register( "releasePrepare" ) {
+    description "On a local checkout, performs all the changes required for the release, website updates included"
+    group "Release"
+
+    dependsOn gitPreparationForReleaseTask
+
+    finalizedBy releasePreparePostGitTask
+}
+
+def releasePerformTask = tasks.register( 'releasePerform' ) {
+    group 'Release'
+    description 'Performs a release on local check-out, including updating changelog and '
+
+    dependsOn publishReleaseArtifactsTask
+
+    finalizedBy releasePerformPostGitTask
 }
 
 /*
 * Release everything
 */
-tasks.register( 'ciRelease' ) {
-    group = "Release"
-    description = "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
-    dependsOn releasePrepare
+def releaseTask = tasks.register( 'release' ) {
+    description 'Performs a release on local check-out'
+    group 'Release'
 
-    doFirst {
-        if ( !project.hasProperty( 'releaseVersion' ) || !project.hasProperty( 'developmentVersion' )
-                || !project.hasProperty( 'gitRemote' ) || !project.hasProperty( 'gitBranch' ) ) {
-            throw new GradleException(
-                    "Task 'ciRelease' requires all of the following properties to be set:"
-                            + "'releaseVersion', 'developmentVersion', 'gitRemote' and 'gitBranch'."
-            )
-        }
-    }
+    dependsOn releasePrepareTask
+    dependsOn releasePerformTask
+}
 
-    doLast {
-        logger.lifecycle( "Checking that the working tree is clean..." )
-        String uncommittedFiles = executeGitCommand( 'status', '--porcelain' )
-        if ( !uncommittedFiles.isEmpty() ) {
-            throw new GradleException(
-                    "Cannot release because there are uncommitted or untracked files in the working tree."
-                            + "\nCommit or stash your changes first."
-                            + "\nUncommitted files:\n" + uncommittedFiles
-            )
-        }
-        String tag = project.releaseVersion
-        if ( tag.endsWith( ".Final" ) ) {
-            tag = tag.replace( ".Final", "" )
-        }
-        logger.lifecycle( "Tagging '${tag}'..." )
-        executeGitCommand( 'tag', '-a', '-m', "Release ${project.releaseVersion}", tag )
+def ciReleaseTask = tasks.register( 'ciRelease' ) {
+    description "Triggers the release on CI: creates commits to change the version (release, then development), creates a tag, pushes everything. Then CI will take over and perform the release."
+    group "Release"
 
-        logger.lifecycle( "Adding commit to update version to '${project.developmentVersion}'..." )
-        project.projectVersionFile.text = "projectVersion=${project.developmentVersion}"
-        executeGitCommand( 'add', '.' )
-        executeGitCommand( 'commit', '-m', project.developmentVersion )
-
-        logger.lifecycle( "Pushing branch and tag to remote '${project.gitRemote}'..." )
-        executeGitCommand( 'push', '--atomic', project.gitRemote, project.gitBranch, tag )
-
-        logger.lifecycle( "Done!" )
-
-//        logger
-//                .lifecycle( "Go to https://github.com/hibernate/hibernate-reactive/actions?query=branch%3A${tag} to check the progress of the automated release." )
-    }
+    dependsOn releaseTask
 }
 
 static String executeGitCommand(Object ... subcommand){
@@ -235,4 +316,62 @@ static String inputStreamToString(InputStream inputStream) {
             }
         }
     }
+}
+
+gradle.getTaskGraph().whenReady { tg->
+    if ( ( tg.hasTask( project.tasks.releasePrepare ) || tg.hasTask( project.tasks.releasePerform ) )
+            && ! project.getGradle().getStartParameter().isDryRun() ) {
+        String releaseVersionLocal
+        String developmentVersionLocal
+
+        def console = tg.hasTask( project.tasks.release ) && !tg.hasTask( project.tasks.ciRelease )
+                ? System.console()
+                : null
+
+        if (project.hasProperty('releaseVersion')) {
+            releaseVersionLocal = project.property('releaseVersion')
+        }
+        else {
+            if (console) {
+                // prompt for `releaseVersion`
+                releaseVersionLocal = console.readLine('> Enter the release version: ')
+            }
+            else {
+                throw new GradleException(
+                        "`release`-related tasks require the following properties: 'releaseVersion', 'developmentVersion'"
+                )
+            }
+        }
+
+        if (project.hasProperty('developmentVersion')) {
+            developmentVersionLocal = project.property('developmentVersion')
+        }
+        else {
+            if (console) {
+                // prompt for `developmentVersion`
+                developmentVersionLocal = console.readLine('> Enter the next development version: ')
+            }
+            else {
+                throw new GradleException(
+                        "`release`-related tasks require the following properties: 'releaseVersion', 'developmentVersion'"
+                )
+            }
+        }
+
+        assert releaseVersionLocal != null && developmentVersionLocal != null
+
+        // set up information for the release-related tasks
+        project.ext {
+            releaseVersion = releaseVersionLocal
+            developmentVersion = developmentVersionLocal
+            createTag = !project.hasProperty('noTag')
+            releaseTag = project.createTag ? determineReleaseTag(releaseVersionLocal) : ''
+        }
+    }
+}
+
+static String determineReleaseTag(String releaseVersion) {
+    return releaseVersion.endsWith( '.Final' )
+            ? releaseVersion.replace( ".Final", "" )
+            : releaseVersion
 }

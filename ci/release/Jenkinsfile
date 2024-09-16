@@ -156,6 +156,39 @@ pipeline {
 				}
 			}
 		}
+		stage('Release prepare') {
+			steps {
+				script {
+					checkoutReleaseScripts()
+
+					configFileProvider([
+							configFile(fileId: 'release.config.ssh', targetLocation: "${env.HOME}/.ssh/config"),
+							configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: "${env.HOME}/.ssh/known_hosts")
+					]) {
+						withCredentials([
+							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'OSSRH_PASSWORD', usernameVariable: 'OSSRH_USER'),
+							usernamePassword(credentialsId: 'gradle-plugin-portal-api-key', passwordVariable: 'PLUGIN_PORTAL_PASSWORD', usernameVariable: 'PLUGIN_PORTAL_USERNAME'),
+							file(credentialsId: 'release.gpg.private-key', variable: 'RELEASE_GPG_PRIVATE_KEY_PATH'),
+							string(credentialsId: 'release.gpg.passphrase', variable: 'RELEASE_GPG_PASSPHRASE')
+						]) {
+							sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
+								// set release version
+								// update changelog from JIRA
+								// tags the version
+								// changes the version to the provided development version
+								withEnv([
+										"BRANCH=${env.GIT_BRANCH}",
+										// Increase the amount of memory for this part since asciidoctor doc rendering consumes a lot of metaspace
+										"GRADLE_OPTS=-Dorg.gradle.jvmargs='-Dlog4j2.disableJmx -Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8'"
+								]) {
+									sh ".release/scripts/prepare-release.sh ${env.PROJECT} ${env.RELEASE_VERSION} ${env.DEVELOPMENT_VERSION}"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 		stage('Publish release') {
 			steps {
 				script {
