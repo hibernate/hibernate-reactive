@@ -203,7 +203,7 @@ subprojects {
 
 private static String readVersionFromProperties(File file) {
     if ( !file.exists() ) {
-        throw new GradleException( "Version file $file.canonicalPath does not exists" )
+        throw new FileNotFoundException( "Version file $file.canonicalPath does not exists" )
     }
     Properties versionProperties = new Properties()
     file.withInputStream {
