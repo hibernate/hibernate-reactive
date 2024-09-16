@@ -1,6 +1,6 @@
-import java.time.Year
-
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
+
+import java.time.Year
 
 apply plugin: 'org.asciidoctor.jvm.convert'
 
@@ -22,21 +22,21 @@ rootProject.subprojects { subproject ->
 // Aggregated JavaDoc
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-final File javadocDir = mkdir( new File( (File) project.buildDir, 'javadocs' ) )
+final File javadocDir = mkdir( project.layout.buildDirectory.dir( "javadocs" ) )
 
 /**
  * Builds the JavaDocs aggregated (unified) across all the sub-projects
  */
-task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
-    description = 'Builds the aggregated (unified) JavaDocs across all sub-projects'
+def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
+	description = 'Builds the aggregated (unified) JavaDocs across all sub-projects'
 
 	final int inceptionYear = 2020
-    final int currentYear = Year.now().getValue()
+	final int currentYear = Year.now().getValue()
 
-    // exclude any generated sources and internal packages
-    exclude( '**/generated-src/**' )
+	// exclude any generated sources and internal packages
+	exclude( '**/generated-src/**' )
 	exclude( '**/src/main/generated/**' )
-    exclude( '**/internal/**' )
+	exclude( '**/internal/**' )
 	exclude( '**/impl/**' )
 
 	// apply standard config
@@ -75,18 +75,18 @@ task aggregateJavadocs(type: Javadoc, group: 'Documentation') {
 		}
 	}
 
-    // process each project, building up:
-    //      1) appropriate sources
-    //      2) classpath
-    parent.subprojects.each { Project subProject->
-        // skip certain sub-projects
-		if ( ! project.projectsToSkipWhenAggregatingJavadocs.contains( subProject.name ) ) {
+	// process each project, building up:
+	//      1) appropriate sources
+	//      2) classpath
+	parent.subprojects.each { Project subProject ->
+		// skip certain sub-projects
+		if ( !project.projectsToSkipWhenAggregatingJavadocs.contains( subProject.name ) ) {
 			// we only care about the main SourceSet...
 			source subProject.sourceSets.main.java
 
 			classpath += subProject.sourceSets.main.output + subProject.sourceSets.main.compileClasspath
 		}
-    }
+	}
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,22 +98,25 @@ asciidoctor {
 	enabled = false
 }
 
-task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation') {
-    description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
-    sourceDir = file( 'src/main/asciidoc/reference' )
-    sources {
-        include 'index.adoc'
-    }
+def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumentation', AsciidoctorTask ) {
+	description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
+	sourceDir = file( 'src/main/asciidoc/reference' )
+	sources {
+		include 'index.adoc'
+	}
 
 	resources {
-		from(sourceDir) {
+		from( sourceDir ) {
 			include 'images/**'
 			include 'css/**'
 		}
 	}
 
-	outputDir = new File("$buildDir/asciidoc/reference/html_single")
-    options logDocuments: true
+	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
+	options logDocuments: true
+
+	logger.lifecycle "---- Rendering docs with version $project.version"
+
 	attributes icons: 'font',
 			   'source-highlighter': 'rouge',
 			   experimental: true,
@@ -121,18 +124,18 @@ task renderReferenceDocumentation(type: AsciidoctorTask, group: 'Documentation')
 			   majorMinorVersion: project.version.family,
 			   fullVersion: project.version.toString(),
 			   docinfo: 'private'
-
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // All
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-task assembleDocumentation(dependsOn: [aggregateJavadocs, renderReferenceDocumentation]) {
+def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
+	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
 	group 'Documentation'
 	description 'Grouping task for performing all documentation building tasks'
 
 	logger.lifecycle "Documentation groupId: '" + project.group + "', version: '" + project.version + "'"
 }
 
-assemble.dependsOn assembleDocumentation
+assemble.dependsOn assembleDocumentationTask
