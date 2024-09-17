@@ -15,6 +15,7 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
@@ -45,10 +46,10 @@ public class ReactiveIdentifierGeneratorFactory extends StandardIdentifierGenera
 	}
 
 	@Override
-	public Generator createIdentifierGenerator(String strategy, Type type, Properties config) {
+	public Generator createIdentifierGenerator(String strategy, Type type, GeneratorCreationContext creationContext, Properties config) {
 		Object generator;
 		try {
-			generator = super.createIdentifierGenerator( strategy, type, config );
+			generator = super.createIdentifierGenerator( strategy, type, creationContext, config );
 		}
 		catch ( MappingException ignored ) {
 			try {
