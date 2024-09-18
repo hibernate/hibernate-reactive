@@ -32,18 +32,13 @@ pipeline {
 			steps {
 				withCredentials([
 					usernamePassword(credentialsId: 'ossrh.sonatype.org', usernameVariable: 'hibernatePublishUsername', passwordVariable: 'hibernatePublishPassword'),
-					usernamePassword(credentialsId: 'plugins.gradle.org', usernameVariable: 'hibernatePluginPortalUsername', passwordVariable: 'hibernatePluginPortalPassword'),
 					string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_PASS'),
 					file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_KEYRING')
 				]) {
 					sh '''./gradlew clean publish \
 						-PhibernatePublishUsername=$hibernatePublishUsername \
 						-PhibernatePublishPassword=$hibernatePublishPassword \
-						-Pgradle.publish.key=$hibernatePluginPortalUsername \
-						-Pgradle.publish.secret=$hibernatePluginPortalPassword \
 						--no-scan \
-						-DsigningPassword=$SIGNING_PASS \
-						-DsigningKeyFile=$SIGNING_KEYRING \
 					'''
 				}
 			}
