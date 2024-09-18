@@ -13,11 +13,11 @@ group = "org.hibernate.reactive"
 version = project.projectVersion.fullName
 
 ext {
-    if ( !project.hasProperty( 'sonatypeOssrhUser' ) ) {
-        sonatypeOssrhUser = null
+    if ( !project.hasProperty( 'hibernatePublishUsername' ) ) {
+        hibernatePublishUsername = null
     }
-    if ( !project.hasProperty( 'sonatypeOssrhPassword' ) ) {
-        sonatypeOssrhPassword = null
+    if ( !project.hasProperty( 'hibernatePublishPassword' ) ) {
+        hibernatePublishPassword = null
     }
 }
 
@@ -41,12 +41,12 @@ ext {
 
 // To release, see task ciRelease in release/build.gradle
 // To publish on Sonatype (Maven Central):
-// ./gradlew publishToSonatype closeAndReleaseStagingRepository -PsonatypeOssrhUser="<YOUR USERNAME>" -PsonatypeOssrhPassword="<YOUR PASSWORD>"
+// ./gradlew publishToSonatype closeAndReleaseStagingRepository -PhibernatePublishUsername="<YOUR USERNAME>" -PhibernatePublishPassword="<YOUR PASSWORD>"
 nexusPublishing {
     repositories {
         sonatype {
-            username = project.sonatypeOssrhUser
-            password = project.sonatypeOssrhPassword
+            username = project.hibernatePublishUsername
+            password = project.hibernatePublishPassword
         }
     }
 }
