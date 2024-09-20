@@ -1323,10 +1323,25 @@ public class ResultSetAdaptor implements ResultSet {
 
 		private final List<String> columns;
 		private final List<ColumnDescriptor> descriptors;
+		private final String[] typeNames;
+
 
 		public MetaData(List<String> columnNames, List<ColumnDescriptor> columnDescriptors) {
 			columns = columnNames;
 			descriptors = columnDescriptors;
+			typeNames = initTypeNames( columnDescriptors );
+		}
+
+		private static String[] initTypeNames(List<ColumnDescriptor> columnDescriptors) {
+			if ( columnDescriptors == null ) {
+				return null;
+			}
+			final String[] typeNames = new String[columnDescriptors.size()];
+			int i = 0;
+			for ( ColumnDescriptor columnDescriptor : columnDescriptors ) {
+				typeNames[i++] = columnDescriptor.typeName();
+			}
+			return typeNames;
 		}
 
 		@Override
@@ -1412,9 +1427,7 @@ public class ResultSetAdaptor implements ResultSet {
 
 		@Override
 		public String getColumnTypeName(int column) {
-			// This information is in rows.columnDescriptors().get( column-1 ).dataType.name
-			// but does not appear to be accessible.
-			return null;
+			return typeNames[column - 1];
 		}
 
 		@Override
