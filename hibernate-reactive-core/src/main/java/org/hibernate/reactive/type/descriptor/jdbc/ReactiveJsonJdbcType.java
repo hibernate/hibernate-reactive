@@ -86,7 +86,6 @@ public class ReactiveJsonJdbcType extends JsonJdbcType {
 		if ( value == null ) {
 			return null;
 		}
-		// Value should be a JsonObject
-		return value.toString();
+		return ( (JsonObject) value ).encode();
 	}
 }
