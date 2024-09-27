@@ -6,7 +6,6 @@
 package org.hibernate.reactive.types;
 
 import io.vertx.core.json.JsonObject;
-
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -20,6 +19,6 @@ public class StringToJsonConverter implements AttributeConverter<String, JsonObj
 
     @Override
     public String convertToEntityAttribute(JsonObject dbData) {
-        return dbData == null ? null : dbData.encodePrettily();
+        return dbData == null ? null : dbData.encode();
     }
 }
