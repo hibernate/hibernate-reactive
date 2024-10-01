@@ -7,6 +7,8 @@ package org.hibernate.reactive.sql.results.graph.embeddable.internal;
 
 import org.hibernate.engine.FetchTiming;
 import org.hibernate.metamodel.mapping.NonAggregatedIdentifierMapping;
+import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchJoinedImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
@@ -50,8 +52,15 @@ public class ReactiveNonAggregatedIdentifierMappingFetch extends ReactiveEmbedda
 			boolean selected,
 			String resultVariable,
 			DomainResultCreationState creationState) {
+		// I don't think this is the right approach.
+		// Fetchable should already be an instance of ReactiveToOneAttributeMapping
+		// (if it's an instance of ToOneAttributeMapping). But I don't think there is a way right now
+		// to make it happen without changing ORM.
+		Fetchable reactiveFetchable = fetchable instanceof ToOneAttributeMapping && !( fetchable instanceof ReactiveToOneAttributeMapping )
+				? new ReactiveToOneAttributeMapping( (ToOneAttributeMapping) fetchable )
+				: fetchable;
 		Fetch fetch = super.generateFetchableFetch(
-				fetchable,
+				reactiveFetchable,
 				fetchablePath,
 				fetchTiming,
 				selected,
