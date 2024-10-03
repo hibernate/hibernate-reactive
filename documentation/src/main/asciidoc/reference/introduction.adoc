@@ -576,6 +576,44 @@ If you have very particular requirements, you can check out the Javadoc of
 `ReactiveIdentifierGenerator` for information on how to implement your own
 custom reactive identifier generator.
 
+=== JSON Mapping
+
+:orm-json-basic-mapping: https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#basic-mapping-json
+:orm-json-embeddable-mapping: https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#_jsonxml_aggregate_embeddable_mapping
+:string-to-json-converter: https://github.com/hibernate/hibernate-reactive/blob/main/hibernate-reactive-core/src/test/java/org/hibernate/reactive/types/StringToJsonConverter.java
+
+Like in Hibernate ORM, it's possible to map a JSON field using the {orm-json-basic-mapping}[SqlTypes.JSON]
+or {orm-json-embeddable-mapping}[an embeddable].
+
+IMPORTANT: Supports for JSON is limited to PostgreSQL and MySQL.
+Only PostgreSQL supports mapping a JSON using an embeddable
+
+Hibernate Reactive will recognize fields of type `io.vertx.core.json.JsonObject`
+as JSON columns:
+
+[source,java]
+----
+@Entity
+class Example {
+
+    JsonObject jsonField;
+}
+----
+
+Finally, the {string-to-json-converter}[org.hibernate.reactive.StringToJsonConverter] converter is available
+for mapping a string to a JSON column:
+
+[source,java]
+----
+@Entity
+class Example {
+
+    @Convert(converter = StringToJsonConverter.class)
+    String json;
+
+}
+----
+
 === Custom types
 
 Hibernate custom types based on the `UserType` interface are targeted toward
