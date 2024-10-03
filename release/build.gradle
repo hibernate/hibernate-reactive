@@ -162,6 +162,7 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
 }
 
 def stageDocChangesTask = tasks.register( 'stageDocChanges', Exec ) {
+    dependsOn updateDocumentationTask
     workingDir project.layout.buildDirectory.dir( "docs-website" )
     commandLine 'git', 'add', '-A', '.'
 }
