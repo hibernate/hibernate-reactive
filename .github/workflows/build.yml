@@ -184,16 +184,50 @@ jobs:
         run: |
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
-      - name: Cache Gradle downloads
-        uses: actions/cache@v2
-        id: cache-gradle
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-orm' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="buildtool-cache"
+          echo "buildtool-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "buildtool-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+      - name: Cache Maven/Gradle Dependency/Dist Caches
+        id: cache-maven
+        uses: actions/cache@v4
+        # if it's not a pull request, we restore and save the cache
+        if: github.event_name != 'pull_request'
         with:
           path: |
-            .gradle/caches
-            .gradle/jdks
-            .gradle/wrapper
-          # refresh cache every month to avoid unlimited growth
-          key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/
+          # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable, but it's not a problem.
+          # The whole cache is dropped monthly to prevent unlimited growth.
+          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+      - name: Restore Maven/Gradle Dependency/Dist Caches
+        uses: actions/cache/restore@v4
+        # if it's a pull request, we restore the cache, but we don't save it
+        if: github.event_name == 'pull_request'
+        with:
+          path: |
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/
+          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+
       - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
         if: matrix.java.from == 'jdk.java.net'
         uses: oracle-actions/setup-java@v1
