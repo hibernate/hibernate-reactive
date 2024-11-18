@@ -7,6 +7,8 @@ package org.hibernate.reactive.id.impl;
 
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.id.enhanced.TableStructure;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -24,6 +26,10 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  * guarantee that generated identifiers are sequential.
  */
 public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator {
+
+	public EmulatedSequenceReactiveIdentifierGenerator(TableStructure structure, RuntimeModelCreationContext runtimeModelCreationContext) {
+		super( structure, runtimeModelCreationContext );
+	}
 
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {

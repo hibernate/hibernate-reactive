@@ -280,6 +280,11 @@ public interface Log extends BasicLogger {
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = INFO)
+	@Message(value = "Could not find any META-INF/persistence.xml file in the classpath", id = 318)
+	void unableToFindPersistenceXmlInClasspath();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
 	@Message(id = 327, value = "Error performing load command")
 	void unableToLoadCommand(@Cause HibernateException e);
 

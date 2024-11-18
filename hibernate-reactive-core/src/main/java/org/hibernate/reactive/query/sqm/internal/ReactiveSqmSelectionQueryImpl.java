@@ -240,12 +240,6 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		return this;
 	}
 
-	@Override @Deprecated
-	public ReactiveSqmSelectionQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
-		super.setAliasSpecificLockMode( alias, lockMode );
-		return this;
-	}
-
 	@Override
 	public ReactiveSqmSelectionQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode( alias, lockMode );
@@ -259,7 +253,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setOrder(List<Order<? super R>> orders) {
+	public ReactiveSqmSelectionQueryImpl<R> setOrder(List<? extends Order<? super R>> orders) {
 		super.setOrder( orders );
 		return this;
 	}

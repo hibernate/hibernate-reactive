@@ -26,7 +26,6 @@ import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
-import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
 import org.hibernate.reactive.pool.impl.ReactiveConnectionPoolInitiator;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfigurationInitiator;
@@ -69,9 +68,6 @@ public final class ReactiveServiceInitiators {
 
 		// Custom for Hibernate Reactive: SessionFactoryBuilderService
 		serviceInitiators.add( ReactiveSessionFactoryBuilderInitiator.INSTANCE );
-
-		// Custom for Hibernate Reactive: IdentifierGeneratorFactory
-		serviceInitiators.add( ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
 		// [standard] BytecodeProvider
 		serviceInitiators.add( BytecodeProviderInitiator.INSTANCE );

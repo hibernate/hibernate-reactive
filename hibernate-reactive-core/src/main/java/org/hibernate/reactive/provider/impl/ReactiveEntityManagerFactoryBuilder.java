@@ -20,6 +20,8 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceException;
+
 import java.util.Map;
 
 /**
@@ -50,8 +52,6 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
                 ( (MetadataImpl) metadata).getBootstrapContext()
         );
         optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-        // FIXME [ORM-6]: This method does not exists anymore
-//        optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
         int batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, getConfigurationValues(), 0 );
         optionsBuilder.applyJdbcBatchSize(batchSize);
 
@@ -63,14 +63,13 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
                         .getBootstrapContext()
         );
         final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
-        populateSfBuilder( reactiveSessionFactoryBuilder, getStandardServiceRegistry() );
+//        populateSessionFactoryBuilder( reactiveSessionFactoryBuilder, getStandardServiceRegistry() );
 
         try {
             return reactiveSessionFactoryBuilder.build();
         }
         catch (Exception e) {
-            throw persistenceException( "Unable to build Hibernate SessionFactory", e );
+            throw new PersistenceException( "Unable to build Hibernate SessionFactory ", e );
         }
     }
-
 }

@@ -47,6 +47,7 @@ import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
 import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
+import org.hibernate.type.descriptor.jdbc.ObjectNullAsBinaryTypeJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
@@ -86,6 +87,10 @@ public class ReactiveTypeContributor implements TypeContributor {
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
 		jdbcTypeRegistry.addDescriptor( SqlTypes.JSON, ReactiveJsonJdbcType.INSTANCE );
+
+		if ( dialect instanceof MySQLDialect ) {
+			jdbcTypeRegistry.addDescriptor( ObjectNullAsBinaryTypeJdbcType.INSTANCE );
+		}
 
 		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect || dialect instanceof OracleDialect ) {
 			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
@@ -165,14 +170,13 @@ public class ReactiveTypeContributor implements TypeContributor {
 		public <X> ValueBinder<X> getBinder(final JavaType<X> javaType) {
 			return new BasicBinder<>( javaType, this ) {
 				@Override
-				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {
+				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) {
 					final Instant instant = javaType.unwrap( value, Instant.class, options );
 					( (PreparedStatementAdaptor) st).setTimestamp( index, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
 				}
 
 				@Override
-				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options)
-						throws SQLException {
+				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options) {
 					final Instant instant = javaType.unwrap( value, Instant.class, options );
 					( (PreparedStatementAdaptor) st).setTimestamp( name, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
 				}

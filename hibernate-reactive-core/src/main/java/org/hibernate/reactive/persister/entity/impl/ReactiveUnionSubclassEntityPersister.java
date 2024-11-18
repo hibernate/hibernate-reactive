@@ -6,7 +6,6 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -24,7 +23,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
-import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
@@ -74,7 +72,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final EntityDataAccess cacheAccessStrategy,
 			final NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
-		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
+		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext, new ReactiveEntityMetamodelFactory() );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
 	}
 
@@ -185,16 +183,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
-	}
-
-	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
-	}
-
-	@Override
-	public boolean check(int rows, Object id, int tableNumber, Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
-		return super.check(rows, id, tableNumber, expectation, statement, sql);
 	}
 
 	@Override

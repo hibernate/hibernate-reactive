@@ -252,7 +252,10 @@ public class ReactiveAbstractPersisterDelegate {
 	}
 
 	public Generator reactive(Generator generator) {
-		return generator instanceof IdentityGenerator ? new ReactiveIdentityGenerator() : generator;
+		if ( generator instanceof IdentityGenerator) {
+			return new ReactiveIdentityGenerator();
+		}
+		return generator;
 	}
 
 	public CompletionStage<Object> loadEntityIdByNaturalId(

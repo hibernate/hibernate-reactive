@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import org.hibernate.engine.jdbc.BlobProxy;
-import org.hibernate.engine.jdbc.ClobProxy;
+import org.hibernate.engine.jdbc.proxy.BlobProxy;
+import org.hibernate.engine.jdbc.proxy.ClobProxy;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 import io.vertx.core.buffer.Buffer;

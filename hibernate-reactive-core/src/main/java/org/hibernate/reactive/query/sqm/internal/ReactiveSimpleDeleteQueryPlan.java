@@ -134,14 +134,10 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,
 				jdbcParamsXref,
-				factory.getRuntimeMetamodels().getMappingMetamodel(),
-				sqmInterpretation.getFromClauseAccess()::findTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypeResolutions()
-								.get( parameter );
+						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypeResolutions().get(parameter);
 					}
 				},
 				session
