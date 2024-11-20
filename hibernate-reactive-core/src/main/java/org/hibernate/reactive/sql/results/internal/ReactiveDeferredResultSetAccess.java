@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -100,12 +99,18 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
+	public <J> BasicType<J> resolveType(
+			int position,
+			JavaType<J> explicitJavaType,
+			SessionFactoryImplementor sessionFactory) {
 		return super.resolveType( position, explicitJavaType, sessionFactory );
 	}
 
 	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, TypeConfiguration typeConfiguration) {
+	public <J> BasicType<J> resolveType(
+			int position,
+			JavaType<J> explicitJavaType,
+			TypeConfiguration typeConfiguration) {
 		return super.resolveType( position, explicitJavaType, typeConfiguration );
 	}
 
@@ -145,12 +150,13 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	private CompletionStage<ResultSet> executeQuery() {
-		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator().getLogicalConnection();
+		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator()
+				.getLogicalConnection();
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
 
-					Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
+					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
 					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
 					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
@@ -172,8 +178,8 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 							.thenCompose( this::reactiveSkipRows )
 							.handle( CompletionStages::handle )
 							.thenCompose( handler -> handler.hasFailed()
-										? convertException( resultSet, handler.getThrowable() )
-										: handler.getResultAsCompletionStage()
+									? convertException( resultSet, handler.getThrowable() )
+									: handler.getResultAsCompletionStage()
 							);
 				} )
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );
