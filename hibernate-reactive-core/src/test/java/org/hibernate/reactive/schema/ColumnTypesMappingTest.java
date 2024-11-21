@@ -81,6 +81,11 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testBigIntegerArray(VertxTestContext context) {
+		testDatatype( context, "bigIntegerArray", BigInteger[].class );
+	}
+
+	@Test
 	public void testStringType(VertxTestContext context) {
 		testDatatype( context, "aString", String.class );
 	}
