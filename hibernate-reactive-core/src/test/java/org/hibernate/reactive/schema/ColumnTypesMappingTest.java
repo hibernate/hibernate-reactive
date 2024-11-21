@@ -13,6 +13,7 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -215,4 +216,10 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	public void testSerializableType(VertxTestContext context) {
 		testDatatype( context, "serializable", Serializable.class );
 	}
+
+	@Test
+	public void testInstantType(VertxTestContext context) {
+		testDatatype( context, "instant", Instant.class );
+	}
+
 }
