@@ -42,7 +42,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatyp
  * Check that each property is mapped as the expected type in the database.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class ColumnTypesMappingTest extends BaseReactiveTest {
 
 	@Override
@@ -74,6 +73,11 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	@Test
 	public void testBigDecimal(VertxTestContext context) {
 		testDatatype( context, "bigDecimal", BigDecimal.class );
+	}
+
+	@Test
+	public void testBigDecimalArray(VertxTestContext context) {
+		testDatatype( context, "bigDecimalArray", BigDecimal[].class );
 	}
 
 	@Test
