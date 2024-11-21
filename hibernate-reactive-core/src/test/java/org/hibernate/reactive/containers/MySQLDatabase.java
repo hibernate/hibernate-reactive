@@ -75,8 +75,8 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( String.class, "varchar" );
 		expectedDBTypeForClass.put( String[].class, "varchar" );
 		expectedDBTypeForClass.put( Long[].class, "varbinary" );
-		expectedDBTypeForClass.put( BigDecimal[].class, "varbinary" );
-		expectedDBTypeForClass.put( BigInteger[].class, "varbinary" );
+		expectedDBTypeForClass.put( BigDecimal[].class, "json" );
+		expectedDBTypeForClass.put( BigInteger[].class, "json" );
 		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
 	}};
 
