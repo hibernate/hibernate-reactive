@@ -40,8 +40,8 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  * Test schema validation at startup for all the supported types:
  * - Missing table validation error
  * - No validation error when everything is fine
- * - TODO: Missing column
- * - TODO: Wrong column type
+ * - TODO: Test that validation fails when a column is missing
+ * - TODO: Test that validation fails when a column is the wrong type
  */
 @DisabledFor(value = DB2, reason = "We don't have an information extractor. See https://github.com/hibernate/hibernate-reactive/issues/911")
 public class SchemaValidationTest extends BaseReactiveTest {
@@ -49,8 +49,8 @@ public class SchemaValidationTest extends BaseReactiveTest {
 	static Stream<Arguments> settings() {
 		return Stream.of(
 				arguments( INDIVIDUALLY.toString(), null ),
-				arguments( INDIVIDUALLY.toString(), "VARBINARY" ),
 				arguments( GROUPED.toString(), null ),
+				arguments( INDIVIDUALLY.toString(), "VARBINARY" ),
 				arguments( GROUPED.toString(), "VARBINARY" )
 		);
 	}
