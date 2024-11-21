@@ -25,11 +25,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test schema validation at startup for all the supported types:
@@ -117,9 +116,9 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		final String errorMessage = "Schema-validation: missing table [" + Extra.TABLE_NAME + "]";
 		test( context, setupSessionFactory( validateConf )
 				.handle( (unused, throwable) -> {
-					assertNotNull( throwable );
-					assertEquals( throwable.getClass(), SchemaManagementException.class );
-					assertEquals( throwable.getMessage(), errorMessage );
+					assertThat( throwable ).isNotNull();
+					assertThat( throwable.getClass() ).isEqualTo( SchemaManagementException.class );
+					assertThat( throwable.getMessage() ).isEqualTo( errorMessage );
 					return null;
 				} )
 		);
