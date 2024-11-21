@@ -105,6 +105,9 @@ public abstract class BaseReactiveTest {
 		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
 		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
+		if ( DatabaseConfiguration.dbType() == DBType.MARIA || DatabaseConfiguration.dbType() == DBType.MYSQL || DatabaseConfiguration.dbType() == DBType.DB2 ) {
+			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", "VARBINARY" );
+		}
 	}
 
 	public static final SessionFactoryManager factoryManager = new SessionFactoryManager();
