@@ -34,6 +34,7 @@ import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.NonSelectQueryPlan;
 import org.hibernate.query.spi.QueryInterpretationCache;
@@ -236,6 +237,16 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public ReactiveNativeQueryImpl<R> applyFetchGraph(RootGraph graph) {
 		super.applyFetchGraph( graph );
 		return this;
+	}
+
+	@Override
+	public DynamicResultBuilderEntityStandard addRoot(String tableAlias, Class entityType) {
+		return super.addRoot( tableAlias, entityType );
+	}
+
+	@Override
+	public DynamicResultBuilderEntityStandard addRoot(String tableAlias, String entityName) {
+		return super.addRoot( tableAlias, entityName );
 	}
 
 	@Override
