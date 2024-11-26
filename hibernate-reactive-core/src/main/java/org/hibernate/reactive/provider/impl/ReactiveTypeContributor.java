@@ -21,12 +21,14 @@ import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonArrayJdbcTypeConstructor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonJdbcType;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
@@ -86,6 +88,11 @@ public class ReactiveTypeContributor implements TypeContributor {
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
 		jdbcTypeRegistry.addDescriptor( SqlTypes.JSON, ReactiveJsonJdbcType.INSTANCE );
+
+		if ( !(dialect instanceof MariaDBDialect) && dialect instanceof MySQLDialect ) {
+			// The two vert.x clients behave differently in this case
+			jdbcTypeRegistry.addTypeConstructor( ReactiveJsonArrayJdbcTypeConstructor.INSTANCE );
+		}
 
 		if ( dialect instanceof MySQLDialect ) {
 			jdbcTypeRegistry.addDescriptor( ObjectNullAsBinaryTypeJdbcType.INSTANCE );

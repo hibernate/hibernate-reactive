@@ -32,6 +32,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.SchemaToolingSettings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  * - TODO: Test that validation fails when a column is the wrong type
  */
 @DisabledFor(value = DB2, reason = "We don't have an information extractor. See https://github.com/hibernate/hibernate-reactive/issues/911")
+@DisabledFor( value = {MARIA, MYSQL}, reason = "HHH-18869: Schema creation creates an invalid schema")
 public class SchemaValidationTest extends BaseReactiveTest {
 
 	static Stream<Arguments> settings() {
@@ -60,6 +63,8 @@ public class SchemaValidationTest extends BaseReactiveTest {
 		configuration.setProperty( Settings.HBM2DDL_AUTO, action );
 		configuration.setProperty( HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, strategy );
 		if ( type != null ) {
+			// ORM 7 stores arrays as json for MariaDB and MySQL. By setting this property, users
+			// can keep the behaviour backward compatible. We need to test both.
 			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", type );
 		}
 		return configuration;

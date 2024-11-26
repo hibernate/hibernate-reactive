@@ -34,7 +34,7 @@ class MySQLDatabase implements TestableDatabase {
 
 	static MySQLDatabase INSTANCE = new MySQLDatabase();
 
-	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+	protected static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
 	static {{
 		expectedDBTypeForClass.put( boolean.class, "bit" );
@@ -75,9 +75,9 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( String.class, "varchar" );
 		expectedDBTypeForClass.put( String[].class, "varchar" );
 		expectedDBTypeForClass.put( Long[].class, "varbinary" );
+		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
 		expectedDBTypeForClass.put( BigDecimal[].class, "json" );
 		expectedDBTypeForClass.put( BigInteger[].class, "json" );
-		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
 	}};
 
 	/**

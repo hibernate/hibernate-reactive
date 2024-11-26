@@ -40,6 +40,8 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -80,17 +82,16 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		return Set.of( Basic.class );
 	}
 
-	private void testField(
-			VertxTestContext context, Basic
-			original, Consumer<Basic> consumer) {
-		test( context, getSessionFactory()
-				.withTransaction( s -> s.persist( original ) )
-				.thenCompose( v -> getSessionFactory().withSession( s -> s
-						.find( Basic.class, original.id )
-						.thenAccept( found -> {
-							assertNotNull( found );
-							consumer.accept( found );
-						} ) ) )
+	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
+		test(
+				context, getSessionFactory()
+						.withTransaction( s -> s.persist( original ) )
+						.thenCompose( v -> getSessionFactory().withSession( s -> s
+								.find( Basic.class, original.id )
+								.thenAccept( found -> {
+									assertNotNull( found );
+									consumer.accept( found );
+								} ) ) )
 		);
 	}
 
@@ -100,10 +101,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		String[] dataArray = {"Hello world!", "Hello earth"};
 		basic.stringArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.stringArray );
-			validateArrayColumn( "stringArray", null, 255 );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.stringArray );
+					validateArrayColumn( "stringArray", null, 255 );
+				}
+		);
 	}
 
 	@Test
@@ -112,10 +115,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		String[] dataArray = {"Hello world!", "Hello earth"};
 		basic.stringArrayWithArrayAnnotation = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.stringArrayWithArrayAnnotation );
-			validateArrayColumn( "stringArrayWithArrayAnnotation", 5, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.stringArrayWithArrayAnnotation );
+					validateArrayColumn( "stringArrayWithArrayAnnotation", 5, null );
+				}
+		);
 	}
 
 	@Test
@@ -124,10 +129,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		String[] dataArray = {"Hello world!", "Hello earth"};
 		basic.stringArrayWithColumnAnnotation = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.stringArrayWithColumnAnnotation );
-			validateArrayColumn( "stringArrayWithColumnAnnotation", null, 200 );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.stringArrayWithColumnAnnotation );
+					validateArrayColumn( "stringArrayWithColumnAnnotation", null, 200 );
+				}
+		);
 	}
 
 	@Test
@@ -136,10 +143,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		String[] dataArray = {"Hello world!", "Hello earth"};
 		basic.stringArrayWithBothAnnotations = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.stringArrayWithBothAnnotations );
-			validateArrayColumn( "stringArrayWithBothAnnotations", 5, 200 );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.stringArrayWithBothAnnotations );
+					validateArrayColumn( "stringArrayWithBothAnnotations", 5, 200 );
+				}
+		);
 	}
 
 	@Test
@@ -158,10 +167,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		boolean[] dataArray = {true, false, true};
 		basic.primitiveBooleanArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveBooleanArray );
-			validateArrayColumn( "primitiveBooleanArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveBooleanArray );
+					validateArrayColumn( "primitiveBooleanArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -170,10 +181,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Integer[] dataArray = {null, Integer.MIN_VALUE, 2, Integer.MAX_VALUE};
 		basic.integerArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.integerArray );
-			validateArrayColumn( "integerArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.integerArray );
+					validateArrayColumn( "integerArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -182,10 +195,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		int[] dataArray = {1, 2, 3};
 		basic.primitiveIntegerArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveIntegerArray );
-			validateArrayColumn( "primitiveIntegerArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveIntegerArray );
+					validateArrayColumn( "primitiveIntegerArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -194,10 +209,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Long[] dataArray = {Long.MIN_VALUE, Long.MAX_VALUE, 3L, null};
 		basic.longArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.longArray );
-			validateArrayColumn( "longArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.longArray );
+					validateArrayColumn( "longArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -206,10 +223,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		long[] dataArray = {Long.MIN_VALUE, Long.MAX_VALUE, 3L};
 		basic.primitiveLongArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveLongArray );
-			validateArrayColumn( "primitiveLongArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveLongArray );
+					validateArrayColumn( "primitiveLongArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -218,10 +237,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Float[] dataArray = {12.562f, null, 13.562f};
 		basic.floatArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.floatArray );
-			validateArrayColumn( "floatArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.floatArray );
+					validateArrayColumn( "floatArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -230,10 +251,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		float[] dataArray = {12.562f, 13.562f};
 		basic.primitiveFloatArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveFloatArray );
-			validateArrayColumn( "primitiveFloatArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveFloatArray );
+					validateArrayColumn( "primitiveFloatArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -242,10 +265,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Double[] dataArray = {12.562d, null, 13.562d};
 		basic.doubleArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.doubleArray );
-			validateArrayColumn( "doubleArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.doubleArray );
+					validateArrayColumn( "doubleArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -254,10 +279,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		double[] dataArray = {12.562d, 13.562d};
 		basic.primitiveDoubleArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveDoubleArray );
-			validateArrayColumn( "primitiveDoubleArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveDoubleArray );
+					validateArrayColumn( "primitiveDoubleArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -270,10 +297,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		};
 		basic.uuidArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.uuidArray );
-			validateArrayColumn( "uuidArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.uuidArray );
+					validateArrayColumn( "uuidArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -282,10 +311,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		AnEnum[] dataArray = {AnEnum.FOURTH, AnEnum.FIRST, AnEnum.THIRD};
 		basic.enumArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.enumArray );
-			validateArrayColumn( "enumArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.enumArray );
+					validateArrayColumn( "enumArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -294,10 +325,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		Short[] dataArray = {512, 112, null, 0};
 		basic.shortArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.shortArray );
-			validateArrayColumn( "shortArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.shortArray );
+					validateArrayColumn( "shortArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -306,10 +339,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		short[] dataArray = {500, 32, -1};
 		basic.primitiveShortArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.primitiveShortArray );
-			validateArrayColumn( "primitiveShortArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.primitiveShortArray );
+					validateArrayColumn( "primitiveShortArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -323,22 +358,27 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		};
 		basic.localDateArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.localDateArray );
-			validateArrayColumn( "localDateArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.localDateArray );
+					validateArrayColumn( "localDateArray", null, null );
+				}
+		);
 	}
 
 	@Test
+	@DisabledFor(value = {MYSQL, MARIA}, reason = "HHH-18881: Problem with the conversion of dates")
 	public void testDateArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
 		Date[] dataArray = {Calendar.getInstance().getTime(), Calendar.getInstance().getTime()};
 		basic.dateArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.dateArray );
-			validateArrayColumn( "dateArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.dateArray );
+					validateArrayColumn( "dateArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -352,13 +392,16 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		};
 		basic.localTimeArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.localTimeArray );
-			validateArrayColumn( "localTimeArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.localTimeArray );
+					validateArrayColumn( "localTimeArray", null, null );
+				}
+		);
 	}
 
 	@Test
+	@DisabledFor(value = {MYSQL, MARIA}, reason = "HHH-18881: Problem with the conversion of dates")
 	public void testLocalDateTimeArrayType(VertxTestContext context) {
 		Basic basic = new Basic();
 		LocalDateTime[] dataArray = {
@@ -373,10 +416,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		};
 		basic.localDateTimeArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.localDateTimeArray );
-			validateArrayColumn( "localDateTimeArray", null, null );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.localDateTimeArray );
+					validateArrayColumn( "localDateTimeArray", null, null );
+				}
+		);
 	}
 
 	@Test
@@ -385,10 +430,12 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		BigInteger[] dataArray = {BigInteger.TEN, BigInteger.ZERO};
 		basic.bigIntegerArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertArrayEquals( dataArray, found.bigIntegerArray );
-			validateArrayColumn( "bigIntegerArray", null, 5000 );
-		} );
+		testField(
+				context, basic, found -> {
+					assertArrayEquals( dataArray, found.bigIntegerArray );
+					validateArrayColumn( "bigIntegerArray", null, 5000 );
+				}
+		);
 	}
 
 	@Test
@@ -397,12 +444,14 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		BigDecimal[] dataArray = {BigDecimal.valueOf( 123384967L ), BigDecimal.ZERO};
 		basic.bigDecimalArray = dataArray;
 
-		testField( context, basic, found -> {
-			assertEquals( dataArray.length, found.bigDecimalArray.length );
-			assertEquals( 0, dataArray[0].compareTo( found.bigDecimalArray[0] ) );
-			assertEquals( 0, dataArray[1].compareTo( found.bigDecimalArray[1] ) );
-			validateArrayColumn( "bigDecimalArray", null, 5000  );
-		} );
+		testField(
+				context, basic, found -> {
+					assertEquals( dataArray.length, found.bigDecimalArray.length );
+					assertEquals( 0, dataArray[0].compareTo( found.bigDecimalArray[0] ) );
+					assertEquals( 0, dataArray[1].compareTo( found.bigDecimalArray[1] ) );
+					validateArrayColumn( "bigDecimalArray", null, 5000 );
+				}
+		);
 	}
 
 	@Test
@@ -411,12 +460,14 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		BigDecimal[] dataArray = {BigDecimal.valueOf( 123384967L ), BigDecimal.ZERO};
 		basic.bigDecimalArrayWithArrayAnnotation = dataArray;
 
-		testField( context, basic, found -> {
-			assertEquals( dataArray.length, found.bigDecimalArrayWithArrayAnnotation.length );
-			assertEquals( 0, dataArray[0].compareTo( found.bigDecimalArrayWithArrayAnnotation[0] ) );
-			assertEquals( 0, dataArray[1].compareTo( found.bigDecimalArrayWithArrayAnnotation[1] ) );
-			validateArrayColumn( "bigDecimalArrayWithArrayAnnotation", 5, 5000  );
-		} );
+		testField(
+				context, basic, found -> {
+					assertEquals( dataArray.length, found.bigDecimalArrayWithArrayAnnotation.length );
+					assertEquals( 0, dataArray[0].compareTo( found.bigDecimalArrayWithArrayAnnotation[0] ) );
+					assertEquals( 0, dataArray[1].compareTo( found.bigDecimalArrayWithArrayAnnotation[1] ) );
+					validateArrayColumn( "bigDecimalArrayWithArrayAnnotation", 5, 5000 );
+				}
+		);
 	}
 
 
@@ -426,13 +477,17 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	}
 
 	// A predicate that checks we apply the right size to the array when required
-	private static Predicate<String> arrayColumnPredicate(String columnName, Integer arrayLength, Integer columnLength) {
+	private static Predicate<String> arrayColumnPredicate(
+			String columnName,
+			Integer arrayLength,
+			Integer columnLength) {
 		switch ( dbType() ) {
 			case POSTGRESQL:
 			case COCKROACHDB:
 				return postgresPredicate( columnName, arrayLength, columnLength );
 			case MYSQL:
 			case MARIA:
+				return arrayAsJsonPredicate( columnName );
 			case SQLSERVER:
 			case DB2:
 				return arrayAsVarbinaryPredicate( columnName, columnLength );
@@ -444,9 +499,9 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	/**
 	 * For Postgres, we expect arrays to be defined as {@code array}.
 	 * <p>
-	 *     For example: {@code varchar(255) array[2]}
+	 * For example: {@code varchar(255) array[2]}
 	 * </p>
- 	 */
+	 */
 	private static Predicate<String> postgresPredicate(String columnName, Integer arrayLength, Integer columnLength) {
 		StringBuilder regexBuilder = new StringBuilder();
 		regexBuilder.append( ".*" );
@@ -466,6 +521,10 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		}
 		regexBuilder.append( ".*" );
 		return s -> s.matches( regexBuilder.toString() );
+	}
+
+	private static Predicate<String> arrayAsJsonPredicate(String columnName) {
+		return s -> s.contains( columnName + " json" );
 	}
 
 	private static Predicate<String> arrayAsVarbinaryPredicate(String columnName, Integer columnLength) {

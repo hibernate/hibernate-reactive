@@ -109,32 +109,27 @@ public class ReactiveJsonArrayJdbcType extends ReactiveArrayJdbcType {
 		return new BasicExtractor<>( javaType, this ) {
 			@Override
 			protected X doExtract(ResultSet rs, int paramIndex, WrapperOptions options) throws SQLException {
-				JsonArray array = (JsonArray) rs.getObject( paramIndex );
-				return getObject( array, options );
+				return getObject( rs.getObject( paramIndex ), options );
 			}
 
 			@Override
 			protected X doExtract(CallableStatement statement, int index, WrapperOptions options) throws SQLException {
-				JsonArray array = (JsonArray) statement.getObject( index );
-				return getObject( array, options );
+				return getObject( statement.getObject( index ), options );
 			}
-
 			@Override
 			protected X doExtract(CallableStatement statement, String name, WrapperOptions options)
 					throws SQLException {
-				JsonArray array = (JsonArray) statement.getObject( name );
-				return getObject( array, options );
+				return getObject( statement.getObject( name ), options );
 			}
 
-			private X getObject(JsonArray array, WrapperOptions options) throws SQLException {
+			private X getObject(Object array, WrapperOptions options) throws SQLException {
 				if ( array == null ) {
 					return null;
 				}
 
 				return ( (ReactiveJsonArrayJdbcType) getJdbcType() )
-						.fromString( array.encode(), getJavaType(), options );
+						.fromString( ( (JsonArray) array ).encode(), getJavaType(), options );
 			}
-
 		};
 	}
 }
