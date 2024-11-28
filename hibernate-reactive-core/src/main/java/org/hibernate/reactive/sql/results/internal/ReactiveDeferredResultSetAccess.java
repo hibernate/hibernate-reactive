@@ -231,6 +231,10 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			if ( cause instanceof HibernateException ) {
 				return failedFuture( cause );
 			}
+			// SQL server throws an exception as soon as we run the query
+			if ( cause instanceof UnsupportedOperationException && cause.getMessage().contains( "Unable to decode typeInfo for XML" ) ) {
+				return failedFuture( LOG.unsupportedXmlType() );
+			}
 			return failedFuture( new HibernateException( cause ) );
 		}
 		return completedFuture( object );

@@ -46,6 +46,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -87,7 +88,7 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	}
 
 	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
-		if ( List.of( DB2, ORACLE ).contains( dbType() ) ) {
+		if ( List.of( DB2, SQLSERVER ).contains( dbType() ) ) {
 			test( context, assertThrown( HibernateException.class, getSessionFactory()
 					.withTransaction( s -> s.persist( original ) ) )
 					.thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081" ) )
@@ -455,7 +456,6 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 			case MARIA:
 				return arrayAsJsonPredicate( columnName );
 			case SQLSERVER:
-				return arrayAsVarbinaryPredicate( columnName, columnLength );
 			case DB2:
 				return arrayAsXmlPredicate( columnName );
 			default:
