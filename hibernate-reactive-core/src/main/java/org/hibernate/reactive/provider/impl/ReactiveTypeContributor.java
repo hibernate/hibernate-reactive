@@ -30,6 +30,7 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonArrayJdbcTypeConstructor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonJdbcType;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveXmlArrayJdbcTypeConstructor;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -87,7 +88,9 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
+		jdbcTypeRegistry.addTypeConstructor( ReactiveXmlArrayJdbcTypeConstructor.INSTANCE );
 		jdbcTypeRegistry.addDescriptor( SqlTypes.JSON, ReactiveJsonJdbcType.INSTANCE );
+
 
 		if ( !(dialect instanceof MariaDBDialect) && dialect instanceof MySQLDialect ) {
 			// The two vert.x clients behave differently in this case

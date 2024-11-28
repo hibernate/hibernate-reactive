@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionStage;
 
 
 import org.hibernate.reactive.BaseReactiveTest;
@@ -37,6 +38,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Check that each property is mapped as the expected type in the database.
@@ -49,12 +51,21 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 		return List.of( BasicTypesTestEntity.class );
 	}
 
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		// Skip delete step.
+		// We don't insert any value, so there's nothing to delete
+		// Avoid having extra stuff in the log that's not relevant to the test
+		return voidFuture();
+	}
+
 	private void testDatatype(VertxTestContext context, String columnName, Class<?> type) {
-		test( context, openSession()
-				.thenCompose( s -> s
+		test( context, getSessionFactory()
+				.withTransaction( s -> s
 						.createNativeQuery( getDatatypeQuery( BasicTypesTestEntity.TABLE_NAME, columnName ), String.class )
 						.getSingleResult()
-						.thenAccept( typeOnTheDb -> assertThat( toString( typeOnTheDb ) ).isEqualTo( expectedDatatype( type ) ) ) )
+						.thenAccept( typeOnTheDb -> assertThat( toString( typeOnTheDb ) ).isEqualTo( expectedDatatype( type ) ) )
+				)
 		);
 	}
 
@@ -230,5 +241,4 @@ public class ColumnTypesMappingTest extends BaseReactiveTest {
 	public void testInstantType(VertxTestContext context) {
 		testDatatype( context, "instant", Instant.class );
 	}
-
 }
