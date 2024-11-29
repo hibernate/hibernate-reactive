@@ -42,6 +42,9 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, INDIVIDUALLY.toString() );
+			// The entity we are using for testing has some arrays. The default behaviour is to store them as XML and
+			// the Vert.x client doesn't support it at the moment.
+			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", "VARBINARY" );
 			return configuration;
 		}
 	}
@@ -53,6 +56,9 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, GROUPED.toString() );
+			// The entity we are using for testing has some arrays. The default behaviour is to store them as XML and
+			// the Vert.x client doesn't support it at the moment.
+			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", "VARBINARY" );
 			return configuration;
 		}
 	}
