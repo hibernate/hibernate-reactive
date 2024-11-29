@@ -228,22 +228,20 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		return interpreter.interpret( context, executionContext, localCopy, jdbcParameterBindings );
 	}
 
+	// Copy and paste from ORM
 	private JdbcParameterBindings createJdbcParameterBindings(CacheableSqmInterpretation sqmInterpretation, DomainQueryExecutionContext executionContext) {
-		final SharedSessionContractImplementor session = executionContext.getSession();
 		return SqmUtil.createJdbcParameterBindings(
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,
 				sqmInterpretation.getJdbcParamsXref(),
-				session.getFactory().getRuntimeMetamodels().getMappingMetamodel(),
-				sqmInterpretation.getTableGroupAccess()::findTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					//this is pretty ugly!
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypes().get( parameter );
+						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypes().get(parameter);
 					}
 				},
-				session
+				executionContext.getSession()
 		);
 	}
 
@@ -281,19 +279,15 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				executionContext.getQueryParameterBindings(),
 				domainParameterXref,
 				jdbcParamsXref,
-				session.getFactory().getRuntimeMetamodels().getMappingMetamodel(),
-				tableGroupAccess::findTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmInterpretation
-								.getSqmParameterMappingModelTypeResolutions()
-								.get( parameter );
+						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypeResolutions().get(parameter);
 					}
 				},
 				session
 		);
+
 		final JdbcOperationQuerySelect jdbcSelect = selectTranslator.translate(
 				jdbcParameterBindings,
 				executionContext.getQueryOptions()

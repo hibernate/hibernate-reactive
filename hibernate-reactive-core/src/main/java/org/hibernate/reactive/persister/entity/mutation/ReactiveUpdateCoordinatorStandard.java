@@ -7,7 +7,6 @@ package org.hibernate.reactive.persister.entity.mutation;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -22,7 +21,7 @@ import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
-import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.AttributeAnalysis;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
@@ -47,7 +46,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 	private CompletableFuture<GeneratedValues> updateResultStage;
 
 	public ReactiveUpdateCoordinatorStandard(
-			AbstractEntityPersister entityPersister,
+			EntityPersister entityPersister,
 			SessionFactoryImplementor factory,
 			MutationOperationGroup staticUpdateGroup,
 			BatchKey batchKey,
@@ -107,8 +106,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			return updateResultStage;
 		}
 
-		CompletionStage<Void> s = voidFuture();
-		return s.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration(entity, values, session) )
+		return voidFuture()
+				.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration( entity, values, session ) )
 				.thenCompose( preUpdateGeneratedAttributeIndexes -> {
 					final int[] dirtyAttributeIndexes = dirtyAttributeIndexes( incomingDirtyAttributeIndexes, preUpdateGeneratedAttributeIndexes );
 
@@ -129,7 +128,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					}
 					else if ( dirtyAttributeIndexes != null
 							&& entityPersister().hasUninitializedLazyProperties( entity )
-							&& entityPersister().hasLazyDirtyFields( dirtyAttributeIndexes ) ) {
+							&& hasLazyDirtyFields( entityPersister(), dirtyAttributeIndexes ) ) {
 						// we have an entity with dirty lazy attributes.  we need to use dynamic
 						// delete and add the dirty, lazy attributes plus the non-lazy attributes
 						forceDynamicUpdate = true;

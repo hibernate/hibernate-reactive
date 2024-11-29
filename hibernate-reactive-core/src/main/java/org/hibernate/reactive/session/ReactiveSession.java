@@ -50,6 +50,8 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	CompletionStage<Void> reactivePersist(Object entity);
 
+	CompletionStage<Void> reactivePersist(String entityName, Object object);
+
 	CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready);
 
 	CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready);

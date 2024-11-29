@@ -38,32 +38,30 @@ public class TableGeneratorTest extends BaseReactiveTest {
 		TableId b = new TableId();
 		b.string = "Hello World";
 
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s2 ->
-											  s2.find( TableId.class, b.getId() )
-													  .thenAccept( bb -> {
-														  assertNotNull( bb );
-														  assertEquals( bb.id, 6 );
-														  assertEquals( bb.string, b.string );
-														  assertEquals( bb.version, 0 );
+		test( context, openSession()
+				.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s2 ->
+									  s2.find( TableId.class, b.getId() )
+											  .thenAccept( bb -> {
+												  assertNotNull( bb );
+												  assertEquals( bb.id, 6 );
+												  assertEquals( bb.string, b.string );
+												  assertEquals( bb.version, 0 );
 
-														  bb.string = "Goodbye";
-													  } )
-													  .thenCompose( vv -> s2.flush() )
-													  .thenCompose( vv -> s2.find( TableId.class, b.getId() ) )
-													  .thenAccept( bt -> {
-														  assertEquals( bt.version, 1 );
-													  } ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
-						.thenAccept( bb -> {
-							assertEquals( bb.version, 1 );
-							assertEquals( bb.string, "Goodbye" );
-						} )
+												  bb.string = "Goodbye";
+											  } )
+											  .thenCompose( vv -> s2.flush() )
+											  .thenCompose( vv -> s2.find( TableId.class, b.getId() ) )
+											  .thenAccept( bt -> {
+												  assertEquals( bt.version, 1 );
+											  } ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
+				.thenAccept( bb -> {
+					assertEquals( bb.version, 1 );
+					assertEquals( bb.string, "Goodbye" );
+				} )
 		);
 	}
 

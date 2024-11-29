@@ -6,7 +6,6 @@
 package org.hibernate.reactive.query.sql.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -90,29 +89,28 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 			);
 		}
 
-		final ReactiveSharedSessionContractImplementor reactiveSession = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
-		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
-						.thenCompose( aBoolean -> {
-							final JdbcOperationQuerySelect jdbcSelect = new JdbcOperationQuerySelect(
-									sql,
-									jdbcParameterBinders,
-									resultSetMapping,
-									affectedTableNames,
-									Collections.emptySet()
+		return ( (ReactiveSharedSessionContractImplementor) executionContext.getSession() )
+				.reactiveAutoFlushIfRequired( affectedTableNames )
+				.thenCompose( aBoolean -> {
+					final JdbcOperationQuerySelect jdbcSelect = new JdbcOperationQuerySelect(
+							sql,
+							jdbcParameterBinders,
+							resultSetMapping,
+							affectedTableNames
+					);
+
+					return StandardReactiveSelectExecutor.INSTANCE
+							.list(
+									jdbcSelect,
+									jdbcParameterBindings,
+									SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext ),
+									null,
+									queryOptions.getUniqueSemantic() == null
+											? ReactiveListResultsConsumer.UniqueSemantic.NEVER
+											: reactiveUniqueSemantic( queryOptions )
 							);
 
-							return StandardReactiveSelectExecutor.INSTANCE
-									.list(
-											jdbcSelect,
-											jdbcParameterBindings,
-											SqmJdbcExecutionContextAdapter.usingLockingAndPaging( executionContext ),
-											null,
-											queryOptions.getUniqueSemantic() == null
-													? ReactiveListResultsConsumer.UniqueSemantic.NEVER
-													: reactiveUniqueSemantic( queryOptions )
-									);
-
-						} );
+				} );
 	}
 
 	private static ReactiveListResultsConsumer.UniqueSemantic reactiveUniqueSemantic(QueryOptions queryOptions) {

@@ -13,7 +13,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
@@ -128,7 +127,7 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 								.getSessionFactoryOptions()
 								.isCommentsEnabled()
 				);
-		final Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
+		final Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
 		return Parameters.instance( dialect ).process( sql );
 	}
 }

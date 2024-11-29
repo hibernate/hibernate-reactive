@@ -15,9 +15,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
-import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.InsertExecutionDelegate;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
+import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTableBasedInsertHandler;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.TableGroup;
@@ -32,9 +31,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
  */
 public class ReactiveInsertExecutionDelegate extends InsertExecutionDelegate implements ReactiveTableBasedInsertHandler.ReactiveExecutionDelegate {
 
-
 	public ReactiveInsertExecutionDelegate(
-			SqmInsertStatement<?> sqmInsert,
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable entityTable,
 			AfterUseAction afterUseAction,
@@ -48,7 +45,6 @@ public class ReactiveInsertExecutionDelegate extends InsertExecutionDelegate imp
 			JdbcParameter sessionUidParameter,
 			DomainQueryExecutionContext executionContext) {
 		super(
-				sqmInsert,
 				sqmConverter,
 				entityTable,
 				afterUseAction,

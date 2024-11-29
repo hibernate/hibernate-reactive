@@ -18,8 +18,8 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
-import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedInsertHandler;
+import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -92,7 +92,6 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			JdbcParameter sessionUidParameter,
 			DomainQueryExecutionContext executionContext) {
 		return new ReactiveInsertExecutionDelegate(
-				sqmInsert,
 				sqmConverter,
 				entityTable,
 				afterUseAction,

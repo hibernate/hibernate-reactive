@@ -25,7 +25,7 @@ import org.hibernate.event.internal.WrapVisitor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
-import org.hibernate.id.Assigned;
+import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
@@ -134,7 +134,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			// and is not yet available
 			generatedId = null;
 		}
-		else if ( generator instanceof Assigned ) {
+		else if ( !generator.generatesOnInsert() ) {
 			// get it from the entity later, since we need
 			// the @PrePersist callback to happen first
 			generatedId = null;
@@ -144,55 +144,58 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			// the entity instance, so it will be available
 			// to the entity in the @PrePersist callback
 			if ( generator instanceof ReactiveIdentifierGenerator ) {
-				return ( (ReactiveIdentifierGenerator<?>) generator )
-						.generate( ( ReactiveConnectionSupplier ) source, entity )
-						.thenApply( id -> castToIdentifierType( id, persister ) )
-						.thenCompose( gid -> performSaveWithId(
-								entity,
-								context,
-								source,
-								persister,
-								generator,
-								gid,
-								requiresImmediateIdAccess,
-								false
-						) );
+				return generateId( entity, source, (ReactiveIdentifierGenerator<?>) generator, persister )
+						.thenCompose( gid -> {
+							if ( gid == SHORT_CIRCUIT_INDICATOR ) {
+								source.getIdentifier( entity );
+								return voidFuture();
+							}
+							persister.setIdentifier( entity, gid, source );
+							return reactivePerformSave(
+									entity,
+									gid,
+									persister,
+									generatedOnExecution,
+									context,
+									source,
+									false
+							);
+						} );
 			}
 
 			generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
+			if ( generatedId == SHORT_CIRCUIT_INDICATOR ) {
+				source.getIdentifier( entity );
+				return voidFuture();
+			}
+			persister.setIdentifier( entity, generatedId, source );
 		}
 		final Object id =  castToIdentifierType( generatedId, persister );
-		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, requiresImmediateIdAccess );
+		final boolean delayIdentityInserts = !source.isTransactionInProgress() && !requiresImmediateIdAccess && generatedOnExecution;
+		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, delayIdentityInserts );
 	}
 
-	private CompletionStage<Void> performSaveWithId(
+	private CompletionStage<Object> generateId(
 			Object entity,
-			C context,
 			EventSource source,
-			EntityPersister persister,
-			Generator generator,
-			Object generatedId,
-			boolean requiresImmediateIdAccess,
-			boolean generatedOnExecution) {
-		if ( generatedId == null ) {
-			throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
-		}
-		if ( generatedId == SHORT_CIRCUIT_INDICATOR ) {
-			source.getIdentifier( entity );
-			return voidFuture();
-		}
-		if ( LOG.isDebugEnabled() ) {
-			LOG.debugf(
-					"Generated identifier: %s, using strategy: %s",
-					persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
-					generator.getClass().getName()
-			);
-		}
-		final boolean delayIdentityInserts =
-				!source.isTransactionInProgress()
-						&& !requiresImmediateIdAccess
-						&& generatedOnExecution;
-		return reactivePerformSave( entity, generatedId, persister, false, context, source, delayIdentityInserts );
+			ReactiveIdentifierGenerator<?> generator,
+			EntityPersister persister) {
+		return generator
+				.generate( (ReactiveConnectionSupplier) source, entity )
+				.thenApply( id -> castToIdentifierType( id, persister ) )
+				.thenCompose( generatedId -> {
+					if ( generatedId == null ) {
+						return failedFuture( new IdentifierGenerationException( "null id generated for: " + entity.getClass() ) );
+					}
+					if ( LOG.isDebugEnabled() ) {
+						LOG.debugf(
+								"Generated identifier: %s, using strategy: %s",
+								persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
+								generator.getClass().getName()
+						);
+					}
+					return completedFuture( generatedId );
+				} );
 	}
 
 	/**
@@ -229,13 +232,11 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 		processIfManagedEntity( entity, managedEntity -> managedEntity.$$_hibernate_setUseTracker( true ) );
 
-		if ( persister.getGenerator() instanceof Assigned ) {
+		final Generator generator = persister.getGenerator();
+		if ( !generator.generatesOnInsert() || generator instanceof CompositeNestedGeneratedValueGenerator ) {
 			id = persister.getIdentifier( entity, source );
 			if ( id == null ) {
-				throw new IdentifierGenerationException(
-						"Identifier of entity '" + persister.getEntityName()
-								+ "' must be manually assigned before calling 'persist()'"
-				);
+				return failedFuture( new IdentifierGenerationException( "Identifier of entity '" + persister.getEntityName() + "' must be manually assigned before calling 'persist()'" ) );
 			}
 		}
 
@@ -420,7 +421,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			boolean useIdentityColumn,
 			EventSource source,
 			boolean shouldDelayIdentityInserts) {
-		final ReactiveActionQueue actionQueue = source.unwrap( ReactiveSession.class ).getReactiveActionQueue();
+		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
 			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
 					values, entity, persister, false, source, shouldDelayIdentityInserts

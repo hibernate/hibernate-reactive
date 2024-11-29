@@ -11,7 +11,6 @@ import java.util.Map;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
@@ -39,8 +38,7 @@ public class NativeParametersHandling implements StandardServiceInitiator<Parame
 	@Override
 	public ParameterMarkerStrategy initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
 		final Dialect dialect = registry.getService( JdbcServices.class ).getDialect();
-		final Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
-		final ParameterMarkerStrategy renderer = recommendRendered( realDialect );
+		final ParameterMarkerStrategy renderer = recommendRendered( dialect );
 		LOG.debugf( "Initializing service JdbcParameterRenderer with implementation: %s", renderer.getClass() );
 		return renderer;
 	}
