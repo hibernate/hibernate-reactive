@@ -24,6 +24,17 @@ sudo docker run --rm --name HibernateTestingPGSQL postgres:14.0
 ```
 ---
 
+Testcontainers will work with Podman after starting the Podman service.
+In Fedora, you can enable the service using:
+```
+systemctl --user enable --now podman.socket
+```
+
+This will check the service status:
+```
+systemctl --user status podman.socket
+```
+
 [podman]:https://podman.io/
 [docker]:https://www.docker.com/
 
