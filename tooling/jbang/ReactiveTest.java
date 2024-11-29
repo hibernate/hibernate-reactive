@@ -23,7 +23,7 @@
 //// Hibernate Reactive doesn't use them
 //DEPS org.postgresql:postgresql:42.7.4
 //DEPS com.mysql:mysql-connector-j:8.0.33
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.1.4
+//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.1
 //
 
 import java.util.function.Supplier;
