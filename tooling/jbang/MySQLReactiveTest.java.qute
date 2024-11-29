@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS com.mysql:mysql-connector-j:8.0.33
+//DEPS com.mysql:mysql-connector-j:9.1.0
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
