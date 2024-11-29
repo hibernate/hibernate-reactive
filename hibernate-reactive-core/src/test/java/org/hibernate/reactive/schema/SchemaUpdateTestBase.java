@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
@@ -61,6 +62,11 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.HBM2DDL_AUTO, action );
 		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
 		return configuration;
+	}
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return voidFuture();
 	}
 
 	@BeforeEach

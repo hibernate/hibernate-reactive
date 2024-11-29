@@ -169,6 +169,7 @@ public abstract class BaseReactiveTest {
 	 * This method works for most common cases, but some tests might need to overrides it
 	 */
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		System.out.println( "Deleting rows in the tables" );
 		return getSessionFactory()
 				.withTransaction( s -> loop( entities, entityClass -> s
 						.createQuery( queryForDelete( entityClass ) )
@@ -275,6 +276,7 @@ public abstract class BaseReactiveTest {
 
 	@AfterEach
 	public void after(VertxTestContext context) {
+		System.out.println( "-- Test finished, closing session and cleaning the database" );
 		test( context, closeSession( session )
 				.thenAccept( v -> session = null )
 				.thenCompose( v -> closeSession( statelessSession ) )

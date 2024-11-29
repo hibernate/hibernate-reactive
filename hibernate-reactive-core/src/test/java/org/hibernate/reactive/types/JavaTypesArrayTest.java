@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -49,6 +50,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORA
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -74,6 +76,13 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 	}
 
 	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		// Deleting the entities after each test is not really necessary, and sometimes it causes errors in the log
+		// that make it harder to figure out what's going on
+		return voidFuture();
+	}
+
+	@Override
 	protected void addServices(StandardServiceRegistryBuilder builder) {
 		sqlTracker.registerService( builder );
 	}
@@ -91,7 +100,7 @@ public class JavaTypesArrayTest extends BaseReactiveTest {
 		if ( List.of( DB2, SQLSERVER ).contains( dbType() ) ) {
 			test( context, assertThrown( HibernateException.class, getSessionFactory()
 					.withTransaction( s -> s.persist( original ) ) )
-					.thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081" ) )
+					.thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081: " ) )
 			);
 		}
 		else {

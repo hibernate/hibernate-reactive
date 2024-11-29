@@ -150,8 +150,8 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	private CompletionStage<ResultSet> executeQuery() {
-		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator()
-				.getLogicalConnection();
+		final LogicalConnectionImplementor logicalConnection = getPersistenceContext()
+				.getJdbcCoordinator().getLogicalConnection();
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
@@ -182,6 +182,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 									: handler.getResultAsCompletionStage()
 							);
 				} )
+				// same as a finally block
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );
 	}
 
