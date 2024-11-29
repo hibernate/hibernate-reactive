@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.1.4
+//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.1
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
