@@ -68,7 +68,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( BigDecimal.class, "numeric" );
 			expectedDBTypeForClass.put( Serializable.class, "bytea" );
 			expectedDBTypeForClass.put( UUID.class, "binary" );
-			expectedDBTypeForClass.put( Instant.class, "timestamp without time zone" );
+			expectedDBTypeForClass.put( Instant.class, "timestamp with time zone" );
 			expectedDBTypeForClass.put( Duration.class, "bigint" );
 			expectedDBTypeForClass.put( Character.class, "character" );
 			expectedDBTypeForClass.put( char.class, "character" );

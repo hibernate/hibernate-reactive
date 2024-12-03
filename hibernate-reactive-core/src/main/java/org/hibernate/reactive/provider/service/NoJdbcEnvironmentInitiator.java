@@ -12,9 +12,9 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
+import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
-import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveJdbcEnvironment;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.provider.Settings;
@@ -46,11 +46,10 @@ public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<Jdbc
 		boolean explicitDialect = configurationValues.containsKey( Settings.DIALECT );
 		if ( explicitDialect ) {
 			DialectFactory dialectFactory = registry.getService( DialectFactory.class );
-			Dialect dialect = dialectFactory.buildDialect( configurationValues, null );
-			return new ReactiveJdbcEnvironment( registry, dialect );
+			return new JdbcEnvironmentImpl( registry, dialectFactory.buildDialect( configurationValues, null ) );
 		}
 
-		return new ReactiveJdbcEnvironment( registry, new DialectBuilder( configurationValues, registry ).build() );
+		return new JdbcEnvironmentImpl( registry, new DialectBuilder( configurationValues, registry ).build() );
 	}
 
 	private static class DialectBuilder {

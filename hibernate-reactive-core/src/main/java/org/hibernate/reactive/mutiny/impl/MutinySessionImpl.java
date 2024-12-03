@@ -237,6 +237,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public Uni<Void> persist(String entityName, Object entity) {
+		return uni( () -> delegate.reactivePersist( entityName, entity ) );
+	}
+
+	@Override
 	public Uni<Void> persistAll(Object... entity) {
 		return uni( () -> applyToAll( delegate::reactivePersist, entity ) );
 	}

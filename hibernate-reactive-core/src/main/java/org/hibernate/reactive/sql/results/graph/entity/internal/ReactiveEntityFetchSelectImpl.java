@@ -32,7 +32,7 @@ public class ReactiveEntityFetchSelectImpl extends EntityFetchSelectImpl {
 	}
 
 	@Override
-	protected EntityAssembler buildEntityAssembler(EntityInitializer entityInitializer) {
+	protected EntityAssembler<?> buildEntityAssembler(EntityInitializer<?> entityInitializer) {
 		return new ReactiveEntityAssembler( getFetchedMapping().getJavaType(), entityInitializer );
 	}
 }

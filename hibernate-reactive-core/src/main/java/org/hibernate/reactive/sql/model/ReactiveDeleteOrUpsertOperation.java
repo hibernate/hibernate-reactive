@@ -38,8 +38,6 @@ import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER
 public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
 		implements ReactiveSelfExecutingUpdateOperation {
 	private static final Log LOG = make( Log.class, lookup() );
-	private final OptionalTableUpdate upsert;
-	private final UpsertOperation upsertOperation;
 
 	public ReactiveDeleteOrUpsertOperation(
 			EntityMutationTarget mutationTarget,
@@ -47,8 +45,10 @@ public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
 			UpsertOperation upsertOperation,
 			OptionalTableUpdate optionalTableUpdate) {
 		super( mutationTarget, tableMapping, upsertOperation, optionalTableUpdate );
-		this.upsert = optionalTableUpdate;
-		this.upsertOperation = upsertOperation;
+	}
+
+	public ReactiveDeleteOrUpsertOperation(DeleteOrUpsertOperation original) {
+		super( original );
 	}
 
 	@Override
@@ -92,10 +92,7 @@ public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
 		final String tableName = getTableDetails().getTableName();
 		MODEL_MUTATION_LOGGER.tracef( "#performReactiveUpsert(%s)", tableName );
 
-		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable(
-				upsertOperation,
-				session
-		);
+		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable( getUpsertOperation(), session );
 		final PreparedStatementDetails statementDetails = statementGroup.resolvePreparedStatementDetails( tableName );
 
 		session.getJdbcServices().getSqlStatementLogger().logStatement( statementDetails.getSqlString() );
@@ -123,10 +120,10 @@ public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
 		MODEL_MUTATION_LOGGER.tracef( "#performReactiveDelete(%s)", tableName );
 
 		final TableDeleteStandard upsertDeleteAst = new TableDeleteStandard(
-				upsert.getMutatingTable(),
+				getOptionalTableUpdate().getMutatingTable(),
 				getMutationTarget(),
 				"upsert delete",
-				upsert.getKeyBindings(),
+				getOptionalTableUpdate().getKeyBindings(),
 				emptyList(),
 				emptyList()
 		);

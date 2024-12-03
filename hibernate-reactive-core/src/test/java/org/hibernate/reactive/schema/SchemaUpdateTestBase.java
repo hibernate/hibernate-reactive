@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 
@@ -41,6 +42,9 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, INDIVIDUALLY.toString() );
+			// The entity we are using for testing has some arrays. The default behaviour is to store them as XML and
+			// the Vert.x client doesn't support it at the moment.
+			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", "VARBINARY" );
 			return configuration;
 		}
 	}
@@ -52,6 +56,9 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
 			final Configuration configuration = super.constructConfiguration( hbm2DdlOption );
 			configuration.setProperty( Settings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY, GROUPED.toString() );
+			// The entity we are using for testing has some arrays. The default behaviour is to store them as XML and
+			// the Vert.x client doesn't support it at the moment.
+			configuration.setProperty( "hibernate.type.preferred_array_jdbc_type", "VARBINARY" );
 			return configuration;
 		}
 	}
@@ -61,6 +68,11 @@ public abstract class SchemaUpdateTestBase extends BaseReactiveTest {
 		configuration.setProperty( Settings.HBM2DDL_AUTO, action );
 		configuration.addAnnotatedClass( BasicTypesTestEntity.class );
 		return configuration;
+	}
+
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		return voidFuture();
 	}
 
 	@BeforeEach

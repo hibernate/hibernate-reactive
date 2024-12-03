@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -104,15 +103,14 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 	private static String createInsert(String insertSql, String identifierColumnName, Dialect dialect) {
 		String sql = insertSql;
 		final String sqlEnd = " returning " + identifierColumnName;
-		Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
-		if ( realDialect instanceof MySQLDialect ) {
+		if ( dialect instanceof MySQLDialect ) {
 			// For some reason ORM generates a query with an invalid syntax
 			int index = sql.lastIndexOf( sqlEnd );
 			return index > -1
 					? sql.substring( 0, index )
 					: sql;
 		}
-		if ( realDialect instanceof SQLServerDialect ) {
+		if ( dialect instanceof SQLServerDialect ) {
 			int index = sql.lastIndexOf( sqlEnd );
 			// FIXME: this is a hack for HHH-16365
 			if ( index > -1 ) {
@@ -128,12 +126,12 @@ public interface ReactiveMutationExecutor extends MutationExecutor {
 			}
 			return sql;
 		}
-		if ( realDialect instanceof DB2Dialect ) {
+		if ( dialect instanceof DB2Dialect ) {
 			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
 			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
 			return sql.replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
 		}
-		if ( realDialect instanceof OracleDialect ) {
+		if ( dialect instanceof OracleDialect ) {
 			final String valuesStr = " values ( )";
 			int index = sql.lastIndexOf( sqlEnd );
 			// remove "returning id" since it's added via

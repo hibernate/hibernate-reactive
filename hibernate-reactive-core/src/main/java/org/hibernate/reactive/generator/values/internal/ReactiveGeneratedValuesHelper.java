@@ -63,14 +63,14 @@ public class ReactiveGeneratedValuesHelper {
 	 *
 	 * @see GeneratedValuesHelper#getGeneratedValuesDelegate(EntityPersister, EventType)
 	 */
-	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(
-			EntityPersister persister,
-			EventType timing) {
+	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(EntityPersister persister, EventType timing) {
 		final boolean hasGeneratedProperties = !persister.getGeneratedProperties( timing ).isEmpty();
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 
-		if ( hasRowId && dialect.supportsInsertReturning() && dialect.supportsInsertReturningRowId()
+		if ( hasRowId
+				&& dialect.supportsInsertReturning()
+				&& dialect.supportsInsertReturningRowId()
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it

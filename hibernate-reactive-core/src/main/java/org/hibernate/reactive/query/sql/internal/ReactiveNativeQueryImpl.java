@@ -34,6 +34,7 @@ import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
 import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.NonSelectQueryPlan;
 import org.hibernate.query.spi.QueryInterpretationCache;
@@ -57,7 +58,7 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.SingularAttribute;
 
 public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
-		implements ReactiveNativeQueryImplementor<R>  {
+		implements ReactiveNativeQueryImplementor<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -73,17 +74,26 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(NamedNativeQueryMemento memento, Class<R> resultJavaType, SharedSessionContractImplementor session) {
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento memento,
+			Class<R> resultJavaType,
+			SharedSessionContractImplementor session) {
 		super( memento, resultJavaType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(NamedNativeQueryMemento memento, String resultSetMappingName, SharedSessionContractImplementor session) {
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento memento,
+			String resultSetMappingName,
+			SharedSessionContractImplementor session) {
 		super( memento, resultSetMappingName, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(String sqlString, NamedResultSetMappingMemento resultSetMappingMemento, AbstractSharedSessionContract session) {
+	public ReactiveNativeQueryImpl(
+			String sqlString,
+			NamedResultSetMappingMemento resultSetMappingMemento,
+			AbstractSharedSessionContract session) {
 		super( sqlString, resultSetMappingMemento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
@@ -119,6 +129,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				null
 		);
 	}
+
 	private CompletionStage<List<R>> doReactiveList() {
 		return reactiveSelectPlan().reactivePerformList( this );
 	}
@@ -138,7 +149,11 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		}
 
 		final String sqlString = expandParameterLists();
-		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan( sqlString, getQuerySpaces(), getParameterOccurrences() );
+		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan(
+				sqlString,
+				getQuerySpaces(),
+				getParameterOccurrences()
+		);
 		if ( cacheKey != null ) {
 			getSession().getFactory().getQueryEngine().getInterpretationCache()
 					.cacheNonSelectQueryPlan( cacheKey, queryPlan );
@@ -225,8 +240,18 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
+	public DynamicResultBuilderEntityStandard addRoot(String tableAlias, Class entityType) {
+		return super.addRoot( tableAlias, entityType );
+	}
+
+	@Override
+	public DynamicResultBuilderEntityStandard addRoot(String tableAlias, String entityName) {
+		return super.addRoot( tableAlias, entityName );
+	}
+
+	@Override
 	public void addResultTypeClass(Class<?> resultClass) {
-		super.addResultTypeClass(resultClass);
+		super.addResultTypeClass( resultClass );
 	}
 
 	@Override
@@ -260,31 +285,48 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <C> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<C> relationalJavaType, AttributeConverter<?, C> converter) {
+	public <C> ReactiveNativeQueryImpl<R> addScalar(
+			String columnAlias,
+			Class<C> relationalJavaType,
+			AttributeConverter<?, C> converter) {
 		super.addScalar( columnAlias, relationalJavaType, converter );
 		return this;
 	}
 
 	@Override
-	public <O, J> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<O> domainJavaType, Class<J> jdbcJavaType, AttributeConverter<O, J> converter) {
+	public <O, J> ReactiveNativeQueryImpl<R> addScalar(
+			String columnAlias,
+			Class<O> domainJavaType,
+			Class<J> jdbcJavaType,
+			AttributeConverter<O, J> converter) {
 		super.addScalar( columnAlias, domainJavaType, jdbcJavaType, converter );
 		return this;
 	}
 
 	@Override
-	public <C> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<C> relationalJavaType, Class<? extends AttributeConverter<?, C>> converter) {
+	public <C> ReactiveNativeQueryImpl<R> addScalar(
+			String columnAlias,
+			Class<C> relationalJavaType,
+			Class<? extends AttributeConverter<?, C>> converter) {
 		super.addScalar( columnAlias, relationalJavaType, converter );
 		return this;
 	}
 
 	@Override
-	public <O, J> ReactiveNativeQueryImpl<R> addScalar(String columnAlias, Class<O> domainJavaType, Class<J> jdbcJavaType, Class<? extends AttributeConverter<O, J>> converter) {
+	public <O, J> ReactiveNativeQueryImpl<R> addScalar(
+			String columnAlias,
+			Class<O> domainJavaType,
+			Class<J> jdbcJavaType,
+			Class<? extends AttributeConverter<O, J>> converter) {
 		super.addScalar( columnAlias, domainJavaType, jdbcJavaType, converter );
 		return this;
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> addAttributeResult(String columnAlias, Class entityJavaType, String attributePath) {
+	public ReactiveNativeQueryImpl<R> addAttributeResult(
+			String columnAlias,
+			Class entityJavaType,
+			String attributePath) {
 		super.addAttributeResult( columnAlias, entityJavaType, attributePath );
 		return this;
 	}
@@ -318,6 +360,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		super.addEntity( tableAlias, entityName, lockMode );
 		return this;
 	}
+
 	@Override
 	public ReactiveNativeQueryImpl<R> addEntity(Class entityType) {
 		super.addEntity( entityType );
@@ -379,12 +422,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	@Override
 	public ReactiveNativeQueryImpl<R> applyLoadGraph(RootGraph graph) {
 		super.applyLoadGraph( graph );
-		return this;
-	}
-
-	@Override @Deprecated
-	public ReactiveNativeQueryImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
-		super.setAliasSpecificLockMode( alias, lockMode );
 		return this;
 	}
 
@@ -485,7 +522,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setOrder(List<Order<? super R>> orders) {
+	public ReactiveNativeQueryImpl<R> setOrder(List<? extends Order<? super R>> orders) {
 		super.setOrder( orders );
 		return this;
 	}
@@ -635,7 +672,10 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public ReactiveNativeQueryImpl<R> setParameter(Parameter<Calendar> param, Calendar value, TemporalType temporalType) {
+	public ReactiveNativeQueryImpl<R> setParameter(
+			Parameter<Calendar> param,
+			Calendar value,
+			TemporalType temporalType) {
 		super.setParameter( param, value, temporalType );
 		return this;
 	}
@@ -653,7 +693,10 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			String name,
+			Collection<? extends P> values,
+			BindableType<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -683,13 +726,19 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Class<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			int position,
+			Collection<? extends P> values,
+			Class<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			int position,
+			Collection<? extends P> values,
+			BindableType<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -713,19 +762,27 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values) {
 		super.setParameterList( parameter, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values,
+			Class<P> javaType) {
 		super.setParameterList( parameter, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			Collection<? extends P> values,
+			BindableType<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
@@ -743,7 +800,10 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(
+			QueryParameter<P> parameter,
+			P[] values,
+			BindableType<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
@@ -767,6 +827,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> enableFetchProfile(String profileName) {
-		throw new UnsupportedOperationException("A native SQL query cannot use fetch profiles");
+		throw new UnsupportedOperationException( "A native SQL query cannot use fetch profiles" );
 	}
 }
