@@ -80,6 +80,15 @@ dependencies {
     testImplementation "org.testcontainers:oracle-xe:${testcontainersVersion}"
 }
 
+// Reproducible Builds
+
+// https://docs.gradle.org/current/userguide/working_with_files.html#sec:reproducible_archives
+// Configure archive tasks to produce reproducible archives:
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
 // Print a summary of the results of the tests (number of failures, successes and skipped)
 def loggingSummary(db, result, desc) {
     if ( !desc.parent ) { // will match the outermost suite
