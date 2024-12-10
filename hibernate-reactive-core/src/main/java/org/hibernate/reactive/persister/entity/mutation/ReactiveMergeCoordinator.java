@@ -7,7 +7,7 @@ package org.hibernate.reactive.persister.entity.mutation;
 
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
@@ -20,7 +20,7 @@ import org.hibernate.sql.model.ast.builder.TableMergeBuilder;
  */
 public class ReactiveMergeCoordinator extends ReactiveUpdateCoordinatorStandard {
 	public ReactiveMergeCoordinator(
-			AbstractEntityPersister entityPersister,
+			EntityPersister entityPersister,
 			SessionFactoryImplementor factory,
 			MutationOperationGroup staticUpdateGroup,
 			BatchKey batchKey,

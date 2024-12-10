@@ -97,7 +97,6 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 		assertType( context, IntegerTypeEntity.class, new IntegerTypeEntity(), 1 );
 	}
 
-
 	interface TypeIdentity<T extends Number> {
 		T getId();
 	}

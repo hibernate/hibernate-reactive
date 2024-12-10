@@ -43,7 +43,7 @@ public class ReactiveEntityDelayedFetchImpl extends EntityDelayedFetchImpl {
 	}
 
 	@Override
-	protected EntityAssembler buildEntityAssembler(EntityInitializer<?> entityInitializer) {
+	protected EntityAssembler<?> buildEntityAssembler(EntityInitializer<?> entityInitializer) {
 		return new ReactiveEntityAssembler( getFetchedMapping().getJavaType(), entityInitializer );
 	}
 }

@@ -6,11 +6,26 @@
 package org.hibernate.reactive.containers;
 
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.testcontainers.containers.MariaDBContainer;
 
+import static org.hibernate.reactive.containers.DockerImage.imageName;
+
 class MariaDatabase extends MySQLDatabase {
+
+	private static final Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
+
+	static {{
+		expectedDBTypeForClass.putAll( MySQLDatabase.expectedDBTypeForClass );
+
+		// Even if the column is created using `json`, the client will return `longtext` as the type.
+		expectedDBTypeForClass.put( BigDecimal[].class, "longtext" );
+		expectedDBTypeForClass.put( BigInteger[].class, "longtext" );
+	}}
 
 	static MariaDatabase INSTANCE = new MariaDatabase();
 
@@ -29,6 +44,11 @@ class MariaDatabase extends MySQLDatabase {
 
 	private String getRegularJdbcUrl() {
 		return "jdbc:mariadb://localhost:3306/" + maria.getDatabaseName();
+	}
+
+	@Override
+	public String getExpectedNativeDatatype(Class<?> dataType) {
+		return expectedDBTypeForClass.get( dataType );
 	}
 
 	@Override

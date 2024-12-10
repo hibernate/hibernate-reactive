@@ -26,8 +26,8 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.sqm.ComparisonOperator;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
-import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
-import org.hibernate.query.sqm.mutation.internal.temptable.BeforeUseAction;
+import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
+import org.hibernate.query.sqm.mutation.spi.BeforeUseAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.TemporaryTableCreationWork;
@@ -47,7 +47,7 @@ import org.hibernate.sql.ast.tree.predicate.ComparisonPredicate;
 import org.hibernate.sql.ast.tree.predicate.Predicate;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryInsert;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
 
@@ -162,7 +162,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 						)
 			);
 		}
-		final JdbcOperationQueryInsert jdbcInsert = sqlAstTranslatorFactory.buildInsertTranslator( factory, temporaryTableInsert )
+		final JdbcOperationQueryMutation jdbcInsert = sqlAstTranslatorFactory.buildMutationTranslator( factory, temporaryTableInsert )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		lockOptions.setLockMode( lockMode );
 
@@ -210,7 +210,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 
 		querySpec.getFromClause().addRoot( idTableGroup );
 
-		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart, executionContext );
+		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart );
 		applyIdTableRestrictions( querySpec, idTableReference, idTable, sessionUidAccess, executionContext );
 
 		return querySpec;
@@ -221,8 +221,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			QuerySpec querySpec,
 			TableReference tableReference,
 			TemporaryTable idTable,
-			ModelPart fkModelPart,
-			ExecutionContext executionContext) {
+			ModelPart fkModelPart) {
 		if ( fkModelPart == null ) {
 			final int size = idTable.getEntityDescriptor().getIdentifierMapping().getJdbcTypeCount();
 			for ( int i = 0; i < size; i++ ) {
@@ -245,20 +244,18 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		}
 		else {
 			fkModelPart.forEachSelectable(
-					(i, selectableMapping) -> {
-						querySpec.getSelectClause().addSqlSelection(
-								new SqlSelectionImpl(
-										i,
-										new ColumnReference(
-												tableReference,
-												selectableMapping.getSelectionExpression(),
-												false,
-												null,
-												selectableMapping.getJdbcMapping()
-										)
-								)
-						);
-					}
+					(i, selectableMapping) -> querySpec.getSelectClause()
+							.addSqlSelection( new SqlSelectionImpl(
+									i,
+									new ColumnReference(
+											tableReference,
+											selectableMapping.getSelectionExpression(),
+											false,
+											null,
+											selectableMapping.getJdbcMapping()
+									)
+							)
+					)
 			);
 		}
 	}
@@ -275,8 +272,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 							new ColumnReference(
 									idTableReference,
 									idTable.getSessionUidColumn().getColumnName(),
-									false,
-									null,
+									false, null,
 									idTable.getSessionUidColumn().getJdbcMapping()
 							),
 							ComparisonOperator.EQUAL,
