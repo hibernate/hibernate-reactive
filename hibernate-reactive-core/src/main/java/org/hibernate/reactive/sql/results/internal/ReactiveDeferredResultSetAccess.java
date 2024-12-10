@@ -156,7 +156,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
 
 					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
-					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
 					final String sql = getFinalSql();
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 

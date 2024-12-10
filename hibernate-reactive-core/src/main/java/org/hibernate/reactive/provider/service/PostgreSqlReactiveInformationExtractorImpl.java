@@ -101,6 +101,11 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 	}
 
 	@Override
+	protected String parameterMarker(int pos) {
+		return "$" + pos;
+	}
+
+	@Override
 	protected <T> T processImportedKeysResultSet(
 			String catalog,
 			String schema,
@@ -135,7 +140,6 @@ public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactive
 
 		// No need to order by catalog since it is always null.
 		sb.append( " order by pkn.nspname, pkc.relname, con.conname, pos.n" );
-
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}
 

@@ -183,7 +183,11 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		final List<Object> parameters = new ArrayList<>();
 		appendClauseAndParameterIfNotNullOrEmpty( " and catalog_name = ", catalog, sb, parameters );
 		appendClauseAndParameterIfNotNullOrEmpty( " and schema_name like ", schemaPattern, sb, parameters );
-		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
+		return getExtractionContext().getQueryResults(
+				sb.toString(),
+				parameters.toArray(),
+				processor
+		);
 	}
 
 	protected boolean appendClauseAndParameterIfNotNullOrEmpty(
@@ -195,10 +199,14 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		if ( parameter != null && ( ! String.class.isInstance( parameter ) || ! ( (String) parameter ).isEmpty() ) ) {
 			parameters.add( parameter );
 			sb.append( clause );
-			sb.append( "?");
+			sb.append( parameterMarker( parameters.size() ) );
 			return true;
 		}
 		return false;
+	}
+
+	protected String parameterMarker(int pos) {
+		return "?";
 	}
 
 	@Override
