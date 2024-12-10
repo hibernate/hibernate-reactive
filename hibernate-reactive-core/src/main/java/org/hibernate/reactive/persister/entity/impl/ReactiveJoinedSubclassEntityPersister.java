@@ -140,12 +140,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
-	}
-
-	@Override
 	protected InsertCoordinator buildInsertCoordinator() {
 		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
 	}

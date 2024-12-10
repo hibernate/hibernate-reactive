@@ -14,7 +14,11 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -26,7 +30,6 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
@@ -79,10 +82,9 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 
 		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 		Dialect dialect = jdbcEnvironment.getDialect();
-		Parameters parameters = Parameters.instance( dialect );
-		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
-		updateQuery = parameters.process( buildUpdateQuery() );
-		insertQuery = parameters.process( buildInsertQuery() );
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
 	}
 
 	public TableReactiveIdentifierGenerator(
@@ -100,10 +102,9 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		segmentColumnName = null;
 		segmentValue = null;
 
-		Parameters parameters = Parameters.instance( dialect );
-		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
-		updateQuery = parameters.process( buildUpdateQuery() );
-		insertQuery = parameters.process( buildInsertQuery() );
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
 	}
 
 	@Override
@@ -118,10 +119,9 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		renderedTableName = determineTableName( type, params, serviceRegistry );
 
 		Dialect dialect = jdbcEnvironment.getDialect();
-		Parameters parameters = Parameters.instance( dialect );
-		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
-		updateQuery = parameters.process( buildUpdateQuery() );
-		insertQuery = parameters.process( buildInsertQuery() );
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
 	}
 
 	@Override
@@ -265,19 +265,48 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		return new Object[]{ segmentValue };
 	}
 
-	protected String buildSelectQuery() {
-		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl"
-				+ " where tbl." + segmentColumnName + "=?";
+	protected String buildSelectQuery(Dialect dialect) {
+		final String sql = "select tbl." + valueColumnName + " from " + renderedTableName + " tbl where tbl." + segmentColumnName;
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return sql + "=$1";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return sql + "=@P1";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return sql + "=:1";
+		}
+		return sql + "=?";
 	}
 
-	protected String buildUpdateQuery() {
+	protected String buildUpdateQuery(Dialect dialect) {
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=$1"
+					+ " where " + valueColumnName + "=$2 and " + segmentColumnName + "=$3";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=@P1"
+					+ " where " + valueColumnName + "=@P2 and " + segmentColumnName + "=@P3";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=:1"
+					+ " where " + valueColumnName + "=:2 and " + segmentColumnName + "=:3";
+		}
 		return "update " + renderedTableName + " set " + valueColumnName + "=?"
 				+ " where " + valueColumnName + "=?  and " + segmentColumnName + "=?";
 	}
 
-	protected String buildInsertQuery() {
-		return "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") "
-				+ " values (?, ?)";
+	protected String buildInsertQuery(Dialect dialect) {
+		final String sql = "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") ";
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return sql + " values ($1, $2)";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return sql + " values (@P1, @P2)";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return sql + " values (:1, :2)";
+		}
+		return sql + " values (?, ?)";
 	}
-
 }

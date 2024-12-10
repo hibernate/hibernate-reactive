@@ -102,12 +102,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
-	}
-
-	@Override
 	protected UpdateCoordinator buildUpdateCoordinator() {
 		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
 	}

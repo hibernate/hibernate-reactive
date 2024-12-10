@@ -21,7 +21,6 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
@@ -158,7 +157,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
 					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
-					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
+					final String sql = getFinalSql();
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 
 					final SessionEventListenerManager eventListenerManager = executionContext

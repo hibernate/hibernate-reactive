@@ -144,11 +144,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 
-	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
-	}
 
 	@Override
 	protected void validateGenerator() {

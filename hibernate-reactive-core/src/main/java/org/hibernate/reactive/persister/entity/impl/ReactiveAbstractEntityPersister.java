@@ -63,7 +63,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNaturalIdMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
@@ -108,10 +107,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister {
 
-	default Parameters parameters() {
-		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
-	}
-
 	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
 	 *
@@ -150,7 +145,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return parameters().process( select.toStatementString() );
+		return select.toStatementString();
 	}
 
 	default String generateUpdateLockString(LockOptions lockOptions) {
@@ -163,7 +158,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return parameters().process( update.toStatementString() );
+		return update.toStatementString();
 	}
 
 	@Override

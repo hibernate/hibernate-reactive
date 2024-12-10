@@ -39,7 +39,6 @@ import java.util.concurrent.Executor;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.resource.transaction.spi.DdlTransactionIsolator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl;
@@ -79,8 +78,7 @@ public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionCon
 			String queryString,
 			Object[] positionalParameters) {
 		final Object[] parametersToUse = positionalParameters != null ? positionalParameters : new Object[0];
-		final Parameters parametersDialectSpecific = Parameters.instance( getJdbcEnvironment().getDialect() );
-		final String queryToUse = parametersDialectSpecific.process( queryString, parametersToUse.length );
+		final String queryToUse = queryString;
 		return connectionPool
 				// DDL needs to run outside the current transaction. For example:
 				// - increment on a table-based id generator should happen outside the current tx.

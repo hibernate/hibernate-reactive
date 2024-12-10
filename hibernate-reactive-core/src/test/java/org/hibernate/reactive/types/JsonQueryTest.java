@@ -150,6 +150,18 @@ public class JsonQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	@Disabled
+	public void nativeQueryWithEscapedQuestionMark(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s
+						.createNativeQuery( "select * from BookWithJson where author -> 'name' \\? 'Jo'", Book.class )
+						.getSingleResult()
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( fakeHistory ) )
+		);
+	}
+
 	@Entity(name = "Book")
 	@Table(name = "BookWithJson")
 	public static class Book {
