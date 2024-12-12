@@ -5,8 +5,8 @@ apply plugin: 'signing'
 // Java / publishing
 
 java {
-    // include javadoc and sources jar in the Java component
-    // 		- classes jar included by default
+    // Configure the Java "software component" to include javadoc and sources jars in addition to the classes jar.
+    // Ultimately, this component is what makes up the publication for this project.
     withJavadocJar()
     withSourcesJar()
 }
@@ -36,7 +36,7 @@ javadoc {
 
 publishing {
     publications {
-        publishedArtifacts(MavenPublication) {
+        register( "publishedArtifacts", MavenPublication) {
             from components.java
 
             pom {
@@ -78,35 +78,39 @@ publishing {
 }
 
 
-// signing
+// Signing
 
 var signingExtension = project.getExtensions().getByType(SigningExtension) as SigningExtension
 
-// create a `signPublications` "grouping" task which will execute all Sign tasks
-def signPublicationsTask = tasks.register('signPublications')
+def signPublicationsTask = tasks.register('signPublications') {
+    description "Grouping task which executes all Sign tasks"
+    dependsOn tasks.withType( Sign )
+}
+
 tasks.named( "publishPublishedArtifactsPublicationToSonatypeRepository" ) {
+    // publishing depends on signing
     dependsOn signPublicationsTask
 }
 
 gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
     boolean wasSigningRequested = false
     boolean wasPublishingRequested = false
-    List<Sign> signingTasks = []
 
     graph.allTasks.each {task ->
-        logger.lifecycle( "Checking task : $task" )
         if ( task instanceof Sign ) {
-            logger.lifecycle( "    - Task is Sign" )
-            signingTasks.add( task )
             wasSigningRequested = true
         }
         else if ( task instanceof PublishToMavenRepository ) {
-            logger.lifecycle( "    - Task is PublishToMavenRepository" )
             wasPublishingRequested = true
         }
     }
 
     if ( wasPublishingRequested ) {
+        def publishUser = resolvePublishUser()
+        def publishPass = resolvePublishPass()
+        if ( publishUser == null || publishPass == null ) {
+            throw new RuntimeException( "Cannot perform publishing to OSSRH without credentials." )
+        }
         logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
     }
 
@@ -119,14 +123,47 @@ gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
         var signingPassword = resolveSigningPassphrase()
         signingExtension.useInMemoryPgpKeys( signingKey, signingPassword )
         signingExtension.sign publishing.publications.publishedArtifacts
-
-        signPublicationsTask.get().dependsOn( signingTasks )
     }
     else {
         // signing was not explicitly requested and we are not publishing to OSSRH,
         // 		- disable all Sign tasks
-        signingTasks.each { enabled = false }
+        tasks.withType( Sign ).each { enabled = false }
     }
+}
+
+String resolvePublishUser() {
+    var envVar = System.getenv().get( "ORG_GRADLE_PROJECT_sonatypeUsername" )
+    if ( envVar != null ) {
+        return envVar
+    }
+
+    def projectProp = projectPropOrNull( "sonatypeUsername" )
+    if ( projectProp != null ) {
+        return projectProp
+    }
+
+    return null
+}
+
+String resolvePublishPass() {
+    var envVar = System.getenv().get( "ORG_GRADLE_PROJECT_sonatypePassword" )
+    if ( envVar != null ) {
+        return envVar
+    }
+
+    def projectProp = projectPropOrNull( "sonatypePassword" )
+    if ( projectProp != null ) {
+        return projectProp
+    }
+
+    return null
+}
+
+String projectPropOrNull(String name) {
+    if ( project.hasProperty( name ) ) {
+        return project.findProperty( name )
+    }
+    return null;
 }
 
 
