@@ -31,15 +31,12 @@ pipeline {
 		stage('Publish') {
 			steps {
 				withCredentials([
-					usernamePassword(credentialsId: 'ossrh.sonatype.org', usernameVariable: 'hibernatePublishUsername', passwordVariable: 'hibernatePublishPassword'),
+					// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
+					usernamePassword(credentialsId: 'ossrh.sonatype.org', usernameVariable: 'ORG_GRADLE_PROJECT_sonatypeUsername', passwordVariable: 'ORG_GRADLE_PROJECT_sonatypePassword'),
 					file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_GPG_PRIVATE_KEY_PATH'),
 					string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_GPG_PASSPHRASE')
 				]) {
-					sh '''./gradlew clean publish \
-						-PhibernatePublishUsername=$hibernatePublishUsername \
-						-PhibernatePublishPassword=$hibernatePublishPassword \
-						--no-scan \
-					'''
+					sh "./gradlew clean publish --no-scan"
 				}
 			}
         }
