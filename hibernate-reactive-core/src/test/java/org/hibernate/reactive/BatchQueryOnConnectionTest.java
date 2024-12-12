@@ -13,9 +13,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.OracleParameters;
-import org.hibernate.reactive.pool.impl.PostgresParameters;
-import org.hibernate.reactive.pool.impl.SQLServerParameters;
 
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +38,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	@Test
 	public void testBatchInsertSizeEqMultiple(VertxTestContext context) {
-		test( context, doBatchInserts( context, 50, BATCH_SIZE )
+		test( context, doBatchInserts( 50, BATCH_SIZE )
 				.thenAccept( paramsBatches -> {
 					assertEquals( 3, paramsBatches.size() );
 					assertEquals( 20, paramsBatches.get( 0 ).size() );
@@ -53,7 +50,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	@Test
 	public void testBatchInsertUpdateSizeLtMultiple(VertxTestContext context) {
-		test( context, doBatchInserts( context, 50, BATCH_SIZE - 1 )
+		test( context, doBatchInserts( 50, BATCH_SIZE - 1 )
 				.thenAccept( paramsBatches -> {
 					assertEquals( 3, paramsBatches.size() );
 					assertEquals( 19, paramsBatches.get( 0 ).size() );
@@ -65,7 +62,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 
 	@Test
 	public void testBatchInsertUpdateSizeGtMultiple(VertxTestContext context) {
-		test( context, doBatchInserts( context, 50, BATCH_SIZE + 1 )
+		test( context, doBatchInserts( 50, BATCH_SIZE + 1 )
 				.thenAccept( paramsBatches -> {
 					assertEquals( 5, paramsBatches.size() );
 					assertEquals( 20, paramsBatches.get( 0 ).size() );
@@ -77,8 +74,8 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 		);
 	}
 
-	public CompletionStage<List<List<Object[]>>> doBatchInserts(VertxTestContext context, int nEntities, int nEntitiesMultiple) {
-		final String insertSql = process( "insert into DataPoint (description, x, y, id) values (?, ?, ?, ?)" );
+	public CompletionStage<List<List<Object[]>>> doBatchInserts(int nEntities, int nEntitiesMultiple) {
+		final String insertSql = createInsertSql();
 
 		List<List<Object[]>> paramsBatches = new ArrayList<>();
 		List<Object[]> paramsBatch = new ArrayList<>( BATCH_SIZE );
@@ -99,7 +96,7 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 			}
 		}
 
-		if ( paramsBatch.size() > 0 ) {
+		if ( !paramsBatch.isEmpty() ) {
 			paramsBatches.add( paramsBatch );
 		}
 
@@ -124,17 +121,17 @@ public class BatchQueryOnConnectionTest extends BaseReactiveTest {
 				.thenApply( v -> paramsBatches );
 	}
 
-	private String process(String sql) {
+	private String createInsertSql() {
 		switch ( dbType() ) {
 			case POSTGRESQL:
 			case COCKROACHDB:
-				return PostgresParameters.INSTANCE.process( sql );
+				return "insert into DataPoint (description, x, y, id) values ($1, $2, $3, $4)";
 			case SQLSERVER:
-				return SQLServerParameters.INSTANCE.process( sql );
+				return "insert into DataPoint (description, x, y, id) values (@P1, @P2, @P3, @P4)";
 			case ORACLE:
-				return OracleParameters.INSTANCE.process( sql );
+				return "insert into DataPoint (description, x, y, id) values (:1, :2, :3, :4)";
 			default:
-				return sql;
+				return "insert into DataPoint (description, x, y, id) values (?,?,?,?)";
 		}
 	}
 

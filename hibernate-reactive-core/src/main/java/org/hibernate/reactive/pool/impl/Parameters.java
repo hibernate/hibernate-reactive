@@ -9,7 +9,6 @@ import java.util.function.IntConsumer;
 
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
 
@@ -40,9 +39,6 @@ public abstract class Parameters {
 	}
 
 	public static Parameters instance(Dialect dialect) {
-		if ( dialect instanceof DialectDelegateWrapper ) {
-			dialect = ( (DialectDelegateWrapper) dialect ).getWrappedDialect();
-		}
 		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
 			return PostgresParameters.INSTANCE;
 		}

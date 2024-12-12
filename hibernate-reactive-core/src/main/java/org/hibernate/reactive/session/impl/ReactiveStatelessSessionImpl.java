@@ -26,11 +26,16 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.spi.PostInsertEvent;
+import org.hibernate.event.spi.PostInsertEventListener;
+import org.hibernate.event.spi.PreInsertEvent;
+import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.internal.RootGraphImpl;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.StatelessSessionImpl;
@@ -76,6 +81,7 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.stat.spi.StatisticsImplementor;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Tuple;
@@ -253,10 +259,20 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public CompletionStage<Void> reactiveInsert(Object entity) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
+		return reactiveInsert( entity, persister )
+				.thenAccept( v -> {
+					final StatisticsImplementor statistics = getFactory().getStatistics();
+					if ( statistics.isStatisticsEnabled() ) {
+						statistics.insertEntity( persister.getEntityName() );
+					}
+				} );
+	}
+
+	private CompletionStage<Void> reactiveInsert(Object entity, ReactiveEntityPersister persister) {
 		final Object[] state = persister.getValues( entity );
 		final Generator generator = persister.getGenerator();
 		if ( !generator.generatedOnExecution() ) {
-			return generateId( entity, generator )
+			return generateId( persister, entity, generator )
 					.thenCompose( generatedId -> {
 						final Object id = castToIdentifierType( generatedId, persister );
 						if ( persister.isVersioned() ) {
@@ -264,21 +280,76 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 								persister.setValues( entity, state );
 							}
 						}
-						return persister.insertReactive( id, state, entity, this )
-								.thenAccept( ignore -> persister.setIdentifier( entity, id, this ) );
+						if ( firePreInsert( entity, id, state, persister ) ) {
+							return voidFuture();
+						}
+						getInterceptor()
+								.onInsert(
+										entity,
+										id,
+										state,
+										persister.getPropertyNames(),
+										persister.getPropertyTypes()
+								);
+						return persister
+								.insertReactive( id, state, entity, this )
+								.thenAccept( ignore -> {
+									persister.setIdentifier( entity, id, this );
+									firePostInsert( entity, id, state, persister );
+								} );
 					} );
 		}
 		else {
-			return persister.insertReactive( state, entity, this )
-					.thenAccept( id -> persister.setIdentifier( entity, id, this ) );
+			if ( firePreInsert( entity, null, state, persister ) ) {
+				return voidFuture();
+			}
+			getInterceptor()
+					.onInsert( entity, null, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+			return persister
+					.insertReactive( state, entity, this )
+					.thenAccept( id -> {
+						persister.setIdentifier( entity, id, this );
+						firePostInsert( entity, id, state, persister );
+					} );
 		}
 	}
 
-	private CompletionStage<?> generateId(Object entity, Generator generator) {
-		return generator instanceof ReactiveIdentifierGenerator
-				? ( (ReactiveIdentifierGenerator<?>) generator ).generate( this, this )
-				: completedFuture( ( (BeforeExecutionGenerator) generator )
-										   .generate( this, entity, null, INSERT ) );
+	private boolean firePreInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
+		if ( fastSessionServices.eventListenerGroup_PRE_INSERT.isEmpty() ) {
+			return false;
+		}
+		else {
+			boolean veto = false;
+			final PreInsertEvent event = new PreInsertEvent( entity, id, state, persister, null );
+			for ( PreInsertEventListener listener : fastSessionServices.eventListenerGroup_PRE_INSERT.listeners() ) {
+				veto |= listener.onPreInsert( event );
+			}
+			return veto;
+		}
+	}
+
+	private void firePostInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
+		if ( !fastSessionServices.eventListenerGroup_POST_INSERT.isEmpty() ) {
+			final PostInsertEvent event = new PostInsertEvent( entity, id, state, persister, null );
+			for ( PostInsertEventListener listener : fastSessionServices.eventListenerGroup_POST_INSERT.listeners() ) {
+				listener.onPostInsert( event );
+			}
+		}
+	}
+
+	private CompletionStage<?> generateId(EntityPersister persister, Object entity, Generator generator) {
+		if ( generator.generatesOnInsert() ) {
+			return generator instanceof ReactiveIdentifierGenerator
+					? ( (ReactiveIdentifierGenerator<?>) generator ).generate( this, this )
+					: completedFuture( ( (BeforeExecutionGenerator) generator ).generate( this, entity, null, INSERT ) );
+		}
+		else {
+			Object id = persister.getIdentifier( entity, this );
+			if ( id == null ) {
+				throw new IdentifierGenerationException( "Identifier of entity '" + persister.getEntityName() + "' must be manually assigned before calling 'insert()'" );
+			}
+			return completedFuture( id );
+		}
 	}
 
 	@Override
@@ -720,7 +791,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				}
 			}
 
-			return createCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
+			return createReactiveCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
 		}
 		catch (RuntimeException e) {
 			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
@@ -730,7 +801,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-	private <T> ReactiveQuery<T> createCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
+	private <T> ReactiveQuery<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
 		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
 		applyQuerySettingsAndHints( query );
 		return query;
@@ -908,7 +979,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
+			return createReactiveCriteriaQuery( (SqmUpdateStatement<R>) updateQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -919,7 +990,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaDelete<R> deleteQuery) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
+			return createReactiveCriteriaQuery( (SqmDeleteStatement<R>) deleteQuery, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );
@@ -930,7 +1001,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsertSelect<R> insertSelect) {
 		checkOpen();
 		try {
-			return createCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
+			return createReactiveCriteriaQuery( (SqmInsertSelectStatement<R>) insertSelect, null );
 		}
 		catch ( RuntimeException e ) {
 			throw getExceptionConverter().convert( e );

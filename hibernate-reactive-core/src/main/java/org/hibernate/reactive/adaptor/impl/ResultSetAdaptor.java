@@ -36,8 +36,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import org.hibernate.engine.jdbc.BlobProxy;
-import org.hibernate.engine.jdbc.ClobProxy;
+import org.hibernate.engine.jdbc.proxy.BlobProxy;
+import org.hibernate.engine.jdbc.proxy.ClobProxy;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 import io.vertx.core.buffer.Buffer;
@@ -48,14 +49,18 @@ import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.RowBase;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
 /**
  * An adaptor that allows Hibernate core code which expects a JDBC
  * {@code ResultSet} to read values from Vert.x's {@code RowSet}.
  */
 public class ResultSetAdaptor implements ResultSet {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private final Iterator<? extends Row> iterator;
 
@@ -866,12 +871,12 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public SQLXML getSQLXML(int columnIndex) {
-		throw new UnsupportedOperationException();
+		throw LOG.unsupportedXmlType();
 	}
 
 	@Override
 	public SQLXML getSQLXML(String columnLabel) {
-		throw new UnsupportedOperationException();
+		throw LOG.unsupportedXmlType();
 	}
 
 	@Override

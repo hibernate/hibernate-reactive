@@ -170,7 +170,7 @@ public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R>,
 	ReactiveSqmSelectionQuery<R> setTimeout(int timeout);
 
 	@Override
-	ReactiveSqmSelectionQuery<R> setOrder(List<Order<? super R>> orders);
+	ReactiveSqmSelectionQuery<R> setOrder(List<? extends Order<? super R>> orderList);
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setOrder(Order<? super R> order);

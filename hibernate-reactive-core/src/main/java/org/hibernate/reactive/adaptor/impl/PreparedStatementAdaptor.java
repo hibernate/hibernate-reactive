@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.adaptor.impl;
 
-import io.vertx.core.buffer.Buffer;
-
-import org.hibernate.AssertionFailure;
-import org.hibernate.HibernateException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,11 +34,22 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.function.Function;
 
+import org.hibernate.AssertionFailure;
+import org.hibernate.HibernateException;
+import org.hibernate.reactive.logging.impl.Log;
+
+import io.vertx.core.buffer.Buffer;
+
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+
 /**
  * Collects parameter bindings from Hibernate core code
  * that expects a JDBC {@link PreparedStatement}.
  */
 public class PreparedStatementAdaptor implements PreparedStatement {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	@FunctionalInterface
 	public interface Binder {
@@ -315,7 +321,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setSQLXML(int parameterIndex, SQLXML xmlObject) {
-		throw new UnsupportedOperationException();
+		throw LOG.unsupportedXmlType();
 	}
 
 	@Override
@@ -540,7 +546,7 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public Connection getConnection() {
-		throw new UnsupportedOperationException();
+		throw LOG.unexpectedConnectionRequest();
 	}
 
 	@Override

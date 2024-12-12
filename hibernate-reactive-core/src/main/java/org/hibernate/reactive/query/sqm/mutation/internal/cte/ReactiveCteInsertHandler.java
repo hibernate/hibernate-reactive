@@ -8,8 +8,6 @@ package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -25,7 +23,7 @@ import org.hibernate.metamodel.mapping.BasicValuedMapping;
 import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.metamodel.mapping.SqlExpressible;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.query.results.TableGroupImpl;
+import org.hibernate.query.results.internal.TableGroupImpl;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.BinaryArithmeticOperator;
 import org.hibernate.query.sqm.ComparisonOperator;
@@ -62,7 +60,6 @@ import org.hibernate.sql.ast.tree.cte.CteTableGroup;
 import org.hibernate.sql.ast.tree.expression.BinaryArithmeticExpression;
 import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.expression.QueryLiteral;
 import org.hibernate.sql.ast.tree.expression.SelfRenderingSqlFragmentExpression;
 import org.hibernate.sql.ast.tree.from.NamedTableReference;
@@ -126,14 +123,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				factory
 		);
 		final TableGroup insertingTableGroup = sqmConverter.getMutatingTableGroup();
-
-		final Map<SqmParameter<?>, List<List<JdbcParameter>>> parameterResolutions;
-		if ( getDomainParameterXref().getSqmParameterCount() == 0 ) {
-			parameterResolutions = Collections.emptyMap();
-		}
-		else {
-			parameterResolutions = new IdentityHashMap<>();
-		}
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// visit the insertion target using our special converter, collecting
@@ -288,11 +277,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 			targetPathCteColumns.add( rowNumberColumn );
 		}
 
-		final CteTable entityCteTable = createCteTable(
-				getCteTable(),
-				targetPathCteColumns,
-				factory
-		);
+		final CteTable entityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 
 		// Create the main query spec that will return the count of rows
 		final QuerySpec querySpec = new QuerySpec( true, 1 );
@@ -463,11 +448,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				}
 				else {
 					targetPathCteColumns.add( 0, getCteTable().getCteColumns().get( 0 ) );
-					finalEntityCteTable = createCteTable(
-							getCteTable(),
-							targetPathCteColumns,
-							factory
-					);
+					finalEntityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 				}
 				final List<CteColumn> cteColumns = finalEntityCteTable.getCteColumns();
 				for ( int i = 1; i < cteColumns.size(); i++ ) {
@@ -506,11 +487,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 			);
 			statement.addCteStatement( baseEntityCte );
 			targetPathCteColumns.add( 0, getCteTable().getCteColumns().get( 0 ) );
-			final CteTable finalEntityCteTable = createCteTable(
-					getCteTable(),
-					targetPathCteColumns,
-					factory
-			);
+			final CteTable finalEntityCteTable = createCteTable( getCteTable(), targetPathCteColumns );
 			final QuerySpec finalQuerySpec = new QuerySpec( true );
 			final SelectStatement finalQueryStatement = new SelectStatement( finalQuerySpec );
 			entityCte = new CteStatement(
@@ -537,7 +514,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				targetPathColumns,
 				assignsId,
 				sqmConverter,
-				parameterResolutions,
 				factory
 		);
 
@@ -564,12 +540,12 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				executionContext.getQueryParameterBindings(),
 				getDomainParameterXref(),
 				SqmUtil.generateJdbcParamsXref( getDomainParameterXref(), sqmConverter ),
-				factory.getRuntimeMetamodels().getMappingMetamodel(),
-				navigablePath -> sqmConverter.getMutatingTableGroup(),
 				new SqmParameterMappingModelResolutionAccess() {
 					@Override
+					@SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmConverter.getSqmParameterMappingModelExpressibleResolutions().get( parameter );
+						return (MappingModelExpressible<T>) sqmConverter.getSqmParameterMappingModelExpressibleResolutions()
+								.get( parameter );
 					}
 				},
 				executionContext.getSession()

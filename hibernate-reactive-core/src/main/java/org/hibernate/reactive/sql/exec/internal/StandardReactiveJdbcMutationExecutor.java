@@ -12,8 +12,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
@@ -22,7 +20,6 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcMutationExecutor;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
@@ -117,7 +114,7 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			ExecutionContext executionContext,
 			JdbcServices jdbcServices,
 			QueryOptions queryOptions) {
-		String sql = queryOptions == null
+		return queryOptions == null
 				? jdbcMutation.getSqlString()
 				: jdbcServices.getDialect()
 				.addSqlHintOrComment(
@@ -128,7 +125,5 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 								.getSessionFactoryOptions()
 								.isCommentsEnabled()
 				);
-		final Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
-		return Parameters.instance( dialect ).process( sql );
 	}
 }

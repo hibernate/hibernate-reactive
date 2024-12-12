@@ -578,8 +578,8 @@ custom reactive identifier generator.
 
 === JSON Mapping
 
-:orm-json-basic-mapping: https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#basic-mapping-json
-:orm-json-embeddable-mapping: https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#_jsonxml_aggregate_embeddable_mapping
+:orm-json-basic-mapping: https://docs.jboss.org/hibernate/orm/7.0/userguide/html_single/Hibernate_User_Guide.html#basic-mapping-json
+:orm-json-embeddable-mapping: https://docs.jboss.org/hibernate/orm/7.0/userguide/html_single/Hibernate_User_Guide.html#_jsonxml_aggregate_embeddable_mapping
 :string-to-json-converter: https://github.com/hibernate/hibernate-reactive/blob/main/hibernate-reactive-core/src/test/java/org/hibernate/reactive/types/StringToJsonConverter.java
 
 Like in Hibernate ORM, it's possible to map a JSON field using the {orm-json-basic-mapping}[SqlTypes.JSON]

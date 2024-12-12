@@ -9,8 +9,8 @@ package org.hibernate.reactive.persister.entity.impl;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.identity.CockroachDBIdentityColumnSupport;
 import org.hibernate.id.IdentityGenerator;
-import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
 
 /**
@@ -22,7 +22,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 	 * @see CockroachDBIdentityColumnSupport#supportsIdentityColumns() for some limitations related to CockroachDB
 	 */
 	@Override
-	public InsertGeneratedIdentifierDelegate getGeneratedIdentifierDelegate(PostInsertIdentityPersister persister) {
+	public InsertGeneratedIdentifierDelegate getGeneratedIdentifierDelegate(EntityPersister persister) {
 		Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 		// Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`.
 		// But that's a specific JDBC property and with Vert.x we only have one viable option for each supported database.

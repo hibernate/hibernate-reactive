@@ -150,6 +150,30 @@ public class JsonQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	@Disabled("https://github.com/hibernate/hibernate-reactive/issues/1999")
+	public void nativeQueryWithEscapedQuestionMark(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s
+						.createNativeQuery( "select * from BookWithJson where author -> 'name' \\? 'Jo'", Book.class )
+						.getSingleResult()
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( fakeHistory ) )
+		);
+	}
+
+	@Test
+	@Disabled("https://github.com/hibernate/hibernate-reactive/issues/2012")
+	public void nativeQuerySelectScalarWithEscapedQuestionMark(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s
+						.createNativeQuery( "select 123 from BookWithJson where author -> 'name' \\? 'Jo'", Object.class )
+						.getSingleResult()
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( 123 ) )
+		);
+	}
+
 	@Entity(name = "Book")
 	@Table(name = "BookWithJson")
 	public static class Book {

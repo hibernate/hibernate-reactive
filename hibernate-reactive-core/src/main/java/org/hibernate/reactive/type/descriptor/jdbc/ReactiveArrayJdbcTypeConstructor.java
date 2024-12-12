@@ -15,8 +15,6 @@ import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeConstructor;
 import org.hibernate.type.spi.TypeConfiguration;
 
-import static org.hibernate.dialect.DialectDelegateWrapper.extractRealDialect;
-
 /**
  * Factory for {@link ReactiveArrayJdbcType}.
  */
@@ -29,8 +27,7 @@ public class ReactiveArrayJdbcTypeConstructor implements JdbcTypeConstructor {
 			Dialect dialect,
 			BasicType<?> elementType,
 			ColumnTypeInformation columnTypeInformation) {
-		Dialect realDialect = extractRealDialect( dialect );
-		if ( realDialect instanceof OracleDialect ) {
+		if ( dialect instanceof OracleDialect ) {
 			String typeName = columnTypeInformation == null ? null : columnTypeInformation.getTypeName();
 			if ( typeName == null || typeName.isBlank() ) {
 				typeName = ReactiveOracleArrayJdbcType.getTypeName( elementType, dialect );
@@ -46,8 +43,7 @@ public class ReactiveArrayJdbcTypeConstructor implements JdbcTypeConstructor {
 			Dialect dialect,
 			JdbcType elementType,
 			ColumnTypeInformation columnTypeInformation) {
-		Dialect realDialect = extractRealDialect( dialect );
-		if ( realDialect instanceof OracleDialect ) {
+		if ( dialect instanceof OracleDialect ) {
 			// a bit wrong, since columnTypeInformation.getTypeName() is typically null!
 			return new ReactiveOracleArrayJdbcType(
 					elementType,

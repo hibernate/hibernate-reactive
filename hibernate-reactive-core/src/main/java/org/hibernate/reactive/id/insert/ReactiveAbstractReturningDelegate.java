@@ -12,7 +12,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -21,8 +20,8 @@ import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.values.GeneratedValues;
-import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.Binder;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
@@ -35,7 +34,7 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	@Override
 	PreparedStatement prepareStatement(String insertSql, SharedSessionContractImplementor session);
 
-	PostInsertIdentityPersister getPersister();
+	EntityPersister getPersister();
 
 	@Override
 	default CompletionStage<GeneratedValues> reactivePerformInsertReturning(String sql, SharedSessionContractImplementor session, Binder binder) {
@@ -89,15 +88,14 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 	private static String createInsert(String insertSql, String identifierColumnName, Dialect dialect) {
 		String sql = insertSql;
 		final String sqlEnd = " returning " + identifierColumnName;
-		Dialect realDialect = DialectDelegateWrapper.extractRealDialect( dialect );
-		if ( realDialect instanceof MySQLDialect ) {
+		if ( dialect instanceof MySQLDialect ) {
 			// For some reason ORM generates a query with an invalid syntax
 			int index = sql.lastIndexOf( sqlEnd );
 			return index > -1
 					? sql.substring( 0, index )
 					: sql;
 		}
-		if ( realDialect instanceof SQLServerDialect ) {
+		if ( dialect instanceof SQLServerDialect ) {
 			int index = sql.lastIndexOf( sqlEnd );
 			// FIXME: this is a hack for HHH-16365
 			if ( index > -1 ) {
@@ -113,12 +111,12 @@ public interface ReactiveAbstractReturningDelegate extends ReactiveInsertGenerat
 			}
 			return sql;
 		}
-		if ( realDialect instanceof DB2Dialect ) {
+		if ( dialect instanceof DB2Dialect ) {
 			// ORM query: select id from new table ( insert into IntegerTypeEntity values ( ))
 			// Correct  : select id from new table ( insert into LongTypeEntity (id) values (default))
 			return sql.replace( " values ( ))", " (" + identifierColumnName + ") values (default))" );
 		}
-		if ( realDialect instanceof OracleDialect ) {
+		if ( dialect instanceof OracleDialect ) {
 			final String valuesStr = " values ( )";
 			int index = sql.lastIndexOf( sqlEnd );
 			// remove "returning id" since it's added via

@@ -45,7 +45,7 @@ import org.hibernate.type.spi.TypeConfiguration;
  *
  * @see org.hibernate.type.descriptor.jdbc.ArrayJdbcType
  */
-public class  ReactiveArrayJdbcType implements JdbcType {
+public class ReactiveArrayJdbcType implements JdbcType {
 
 	private final JdbcType elementJdbcType;
 
@@ -98,7 +98,7 @@ public class  ReactiveArrayJdbcType implements JdbcType {
 			protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options)
 					throws SQLException {
 
-				ArrayAdaptor arrayObject = getArrayObject( value, options );
+				ArrayAdaptor arrayObject = getArrayObject( value, options, getJdbcType(), getJavaType() );
 				st.setArray( index, arrayObject );
 			}
 
@@ -107,10 +107,10 @@ public class  ReactiveArrayJdbcType implements JdbcType {
 				throw new UnsupportedOperationException();
 			}
 
-			private ArrayAdaptor getArrayObject(X value, WrapperOptions options) {
+			private static <X> ArrayAdaptor getArrayObject(X value, WrapperOptions options, JdbcType jdbcType, JavaType<X> javaType) {
 				final TypeConfiguration typeConfiguration = options.getSessionFactory().getTypeConfiguration();
-				ReactiveArrayJdbcType jdbcType = (ReactiveArrayJdbcType) getJdbcType();
-				final JdbcType elementJdbcType = jdbcType.getElementJdbcType();
+				ReactiveArrayJdbcType arrayJdbcType = (ReactiveArrayJdbcType) jdbcType;
+				final JdbcType elementJdbcType = arrayJdbcType.getElementJdbcType();
 				final JdbcType underlyingJdbcType = typeConfiguration.getJdbcTypeRegistry()
 						.getDescriptor( elementJdbcType.getDefaultSqlTypeCode() );
 				final Class<?> elementJdbcJavaTypeClass = elementJdbcJavaTypeClass(
@@ -122,11 +122,11 @@ public class  ReactiveArrayJdbcType implements JdbcType {
 				//noinspection unchecked
 				final Class<Object[]> arrayClass = (Class<Object[]>) Array.newInstance( elementJdbcJavaTypeClass, 0 )
 						.getClass();
-				final Object[] objects = getJavaType().unwrap( value, arrayClass, options );
+				final Object[] objects = javaType.unwrap( value, arrayClass, options );
 				return new ArrayAdaptor( elementJdbcType, objects );
 			}
 
-			private Class<?> elementJdbcJavaTypeClass(
+			private static Class<?> elementJdbcJavaTypeClass(
 					WrapperOptions options,
 					JdbcType elementJdbcType,
 					JdbcType underlyingJdbcType,
@@ -144,7 +144,7 @@ public class  ReactiveArrayJdbcType implements JdbcType {
 				return convertTypes( elementJdbcJavaTypeClass );
 			}
 
-			private Class<?> convertTypes(Class<?> elementJdbcJavaTypeClass) {
+			private static Class<?> convertTypes(Class<?> elementJdbcJavaTypeClass) {
 				if ( Timestamp.class.equals( elementJdbcJavaTypeClass ) ) {
 					return LocalDateTime.class;
 				}

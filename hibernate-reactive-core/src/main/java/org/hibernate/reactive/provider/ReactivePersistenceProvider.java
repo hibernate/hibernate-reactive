@@ -6,15 +6,16 @@
 package org.hibernate.reactive.provider;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
-import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -22,6 +23,8 @@ import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
 import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.spi.LoadState;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -37,6 +40,12 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 	private static final Log log = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
+
+	@Override
+	public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration persistenceConfiguration) {
+		// Same as ORM
+		throw log.notYetImplemented();
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -55,21 +64,11 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 		return builder.build();
 	}
 
-	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(
-			String persistenceUnitName,
-			Map<?, ?> properties) {
-		log.tracef(
-				"Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
-				persistenceUnitName
-		);
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map<?, ?> properties) {
+		log.tracef( "Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s", persistenceUnitName );
 
-		final List<ParsedPersistenceXmlDescriptor> units;
-		try {
-			units = PersistenceXmlParser.locatePersistenceUnits( properties );
-		}
-		catch (Exception e) {
-			throw log.unableToLocatePersistenceUnits( e );
-		}
+		final Map<?,?> integration = immutable( properties );
+		final Collection<PersistenceUnitDescriptor> units = locatePersistenceUnits( integration );
 
 		log.debugf( "Located and parsed %s persistence units; checking each", units.size() );
 
@@ -78,7 +77,7 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 			throw log.noNameProvidedAndMultiplePersistenceUnitsFound();
 		}
 
-		for ( ParsedPersistenceXmlDescriptor persistenceUnit : units ) {
+		for ( PersistenceUnitDescriptor persistenceUnit : units ) {
 			log.debugf(
 					"Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
 					persistenceUnit.getName(),
@@ -104,6 +103,24 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 
 		log.debug( "Found no matching persistence units" );
 		return null;
+	}
+
+	// Check before changing: may be overridden in Quarkus
+	// This is basically a copy and paste of the method in HibernatePersistenceProvider
+	protected Collection<PersistenceUnitDescriptor> locatePersistenceUnits(Map<?, ?> integration) {
+		try {
+			var parser = PersistenceXmlParser.create( integration, null, null );
+			final List<URL> xmlUrls = parser.getClassLoaderService().locateResources( "META-INF/persistence.xml" );
+			if ( xmlUrls.isEmpty() ) {
+				log.unableToFindPersistenceXmlInClasspath();
+				return List.of();
+			}
+			return parser.parse( xmlUrls ).values();
+		}
+		catch (Exception e) {
+			log.debug( "Unable to locate persistence units", e );
+			throw new PersistenceException( "Unable to locate persistence units", e );
+		}
 	}
 
 	private static Map<?, ?> immutable(Map<?, ?> properties) {

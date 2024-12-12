@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.event.impl;
 
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
@@ -20,7 +19,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.internal.AbstractReassociateEventListener;
+import org.hibernate.event.internal.DefaultLockEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.LockEventListener;
@@ -33,19 +32,24 @@ import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveSession;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class DefaultReactiveLockEventListener extends AbstractReassociateEventListener
-		implements LockEventListener, ReactiveLockEventListener {
+public class DefaultReactiveLockEventListener extends DefaultLockEventListener implements LockEventListener, ReactiveLockEventListener {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+	private static final Log LOG = make( Log.class, lookup() );
+
+	@Override
+	public void onLock(LockEvent event) throws HibernateException {
+		throw LOG.nonReactiveMethodCall( "reactiveOnLock" );
+	}
 
 	@Override
 	public CompletionStage<Void> reactiveOnLock(LockEvent event) throws HibernateException {
@@ -96,11 +100,13 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		if ( entry == null ) {
 			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
 			final Object id = persister.getIdentifier( entity, source );
-			return ForeignKeys.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source )
+			return ForeignKeys
+					.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source )
 					.thenCompose( trans -> {
 									  if ( !trans ) {
 										  return failedFuture( new TransientObjectException(
-												  "cannot lock an unsaved transient instance: " + persister.getEntityName() ) );
+												  "Cannot lock unsaved transient instance of entity '" + persister.getEntityName() + "'"
+										  ) );
 									  }
 
 									  final EntityEntry e = reassociate( event, entity, id, persister );
@@ -226,10 +232,5 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 			}
 			throw he;
 		}
-	}
-
-	@Override
-	public void onLock(LockEvent event) throws HibernateException {
-		throw new UnsupportedOperationException();
 	}
 }

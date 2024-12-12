@@ -19,7 +19,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.tool.schema.internal.exec.GenerationTarget;
+import org.hibernate.tool.schema.spi.GenerationTarget;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 

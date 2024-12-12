@@ -27,7 +27,6 @@ import org.hibernate.metamodel.mapping.MappingModelExpressible;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationHelper;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.persister.entity.Joinable;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
@@ -36,10 +35,10 @@ import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.TableKeyExpressionCollector;
-import org.hibernate.query.sqm.mutation.internal.temptable.AfterUseAction;
 import org.hibernate.query.sqm.mutation.internal.temptable.ColumnReferenceCheckingSqlAstWalker;
 import org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithoutIdTableHelper;
 import org.hibernate.query.sqm.mutation.internal.temptable.RestrictedDeleteExecutionDelegate;
+import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.spi.SqmParameterMappingModelResolutionAccess;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
@@ -48,6 +47,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveSqmMutationStrategyHelper;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.impl.CompletionStages.Completable;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.spi.SqlExpressionResolver;
 import org.hibernate.sql.ast.tree.delete.DeleteStatement;
@@ -65,11 +65,10 @@ import org.hibernate.sql.ast.tree.predicate.Predicate;
 import org.hibernate.sql.ast.tree.predicate.PredicateCollector;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQueryDelete;
+import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import static org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithTemporaryTableHelper.createIdTableSelectQuerySpec;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -127,7 +126,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		final EntityPersister entityDescriptor = sessionFactory.getRuntimeMetamodels()
 				.getMappingMetamodel()
 				.getEntityDescriptor( sqmDelete.getTarget().getEntityName() );
-		final String hierarchyRootTableName = ( (Joinable) entityDescriptor ).getTableName();
+		final String hierarchyRootTableName = entityDescriptor.getTableName();
 
 		final TableGroup deletingTableGroup = converter.getMutatingTableGroup();
 
@@ -150,6 +149,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				deletingTableGroup,
 				true,
 				executionContext.getSession().getLoadQueryInfluencers().getEnabledFilters(),
+				false,
 				null,
 				converter
 		);
@@ -175,7 +175,6 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		if ( needsIdTable ) {
 			return executeWithIdTable(
 					predicateCollector.getPredicate(),
-					deletingTableGroup,
 					converter.getJdbcParamsBySqmParam(),
 					converter.getSqmParameterMappingModelExpressibleResolutions(),
 					executionContextAdapter
@@ -203,7 +202,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		assert entityDescriptor == entityDescriptor.getRootEntityDescriptor();
 
 		final EntityPersister rootEntityPersister = entityDescriptor.getEntityPersister();
-		final String rootTableName = ( (Joinable) rootEntityPersister ).getTableName();
+		final String rootTableName = rootEntityPersister.getTableName();
 		final NamedTableReference rootTableReference = (NamedTableReference) tableGroup.resolveTableReference(
 				tableGroup.getNavigablePath(),
 				rootTableName
@@ -225,17 +224,15 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 						domainParameterXref,
 						() -> restrictionSqmParameterResolutions
 				),
-				sessionFactory.getRuntimeMetamodels().getMappingMetamodel(),
-				navigablePath -> tableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) paramTypeResolutions.get( parameter );
+						return (MappingModelExpressible<T>) paramTypeResolutions.get(parameter);
 					}
 				},
 				executionContext.getSession()
 		);
+
 
 		CompletionStage<Void> cleanUpCollectionTablesStage = ReactiveSqmMutationStrategyHelper.cleanUpCollectionTables(
 				entityDescriptor,
@@ -480,9 +477,9 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 
 		final JdbcServices jdbcServices = factory.getJdbcServices();
 
-		final JdbcOperationQueryDelete jdbcDelete = jdbcServices.getJdbcEnvironment()
+		final JdbcOperationQueryMutation jdbcDelete = jdbcServices.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildDeleteTranslator( factory, sqlAst )
+				.buildMutationTranslator( factory, sqlAst )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 
 		return StandardReactiveJdbcMutationExecutor.INSTANCE
@@ -500,7 +497,6 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 
 	private CompletionStage<Integer> executeWithIdTable(
 			Predicate predicate,
-			TableGroup deletingTableGroup,
 			Map<SqmParameter<?>, List<List<JdbcParameter>>> restrictionSqmParameterResolutions,
 			Map<SqmParameter<?>, MappingModelExpressible<?>> paramTypeResolutions,
 			ExecutionContext executionContext) {
@@ -511,13 +507,10 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 						domainParameterXref,
 						() -> restrictionSqmParameterResolutions
 				),
-				sessionFactory.getRuntimeMetamodels().getMappingMetamodel(),
-				navigablePath -> deletingTableGroup,
 				new SqmParameterMappingModelResolutionAccess() {
-					@Override
-					@SuppressWarnings("unchecked")
+					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) paramTypeResolutions.get( parameter );
+						return (MappingModelExpressible<T>) paramTypeResolutions.get(parameter);
 					}
 				},
 				executionContext.getSession()
@@ -589,20 +582,20 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				} );
 	}
 
-	private CompletionStage<Void> visitConstraintOrderedTables(QuerySpec idTableIdentifierSubQuery, ExecutionContext executionContext) {
-		final CompletionStage<Integer>[] resultStage = new CompletionStage[]{ completedFuture( -1 ) };
-		entityDescriptor.visitConstraintOrderedTables(
-				(tableExpression, tableKeyColumnVisitationSupplier) -> {
-					resultStage[0] = resultStage[0].thenCompose( ignore -> deleteFromTableUsingIdTable(
-							tableExpression,
-							tableKeyColumnVisitationSupplier,
-							idTableIdentifierSubQuery,
-							executionContext
-					) );
-				}
-		);
-		return resultStage[0]
-				.thenCompose( CompletionStages::voidFuture );
+	private CompletionStage<Void> visitConstraintOrderedTables(
+			QuerySpec idTableIdentifierSubQuery,
+			ExecutionContext executionContext) {
+		final Completable<Integer> completable = new Completable<>();
+		entityDescriptor
+				.visitConstraintOrderedTables( (tableExpression, tableKeyColumnVisitationSupplier) -> deleteFromTableUsingIdTable(
+								tableExpression,
+								tableKeyColumnVisitationSupplier,
+								idTableIdentifierSubQuery,
+								executionContext
+						)
+						.handle( completable::complete )
+				);
+		return completable.getStage().thenCompose( CompletionStages::voidFuture );
 	}
 
 	private CompletionStage<Integer> deleteFromTableUsingIdTable(

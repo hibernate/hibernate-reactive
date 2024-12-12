@@ -21,7 +21,6 @@ import org.hibernate.generator.EventType;
 import org.hibernate.generator.values.GeneratedValueBasicResultBuilder;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.internal.TableUpdateReturningBuilder;
-import org.hibernate.id.PostInsertIdentityPersister;
 import org.hibernate.id.insert.AbstractReturningDelegate;
 import org.hibernate.id.insert.InsertReturningDelegate;
 import org.hibernate.id.insert.TableInsertReturningBuilder;
@@ -36,6 +35,7 @@ import org.hibernate.sql.model.ast.MutatingTableReference;
 import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
 
 import static java.sql.Statement.NO_GENERATED_KEYS;
+import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.getActualGeneratedModelPart;
 import static org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper.getGeneratedValues;
 
@@ -46,27 +46,26 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final PostInsertIdentityPersister persister;
+	private final EntityPersister persister;
 	private final MutatingTableReference tableReference;
 	private final List<ColumnReference> generatedColumns;
 
 	public ReactiveInsertReturningDelegate(EntityPersister persister, EventType timing) {
-		this( (PostInsertIdentityPersister) persister, timing, false );
-
+		this( persister, timing, false );
 	}
 
-	public ReactiveInsertReturningDelegate(PostInsertIdentityPersister persister, Dialect dialect) {
+	public ReactiveInsertReturningDelegate(EntityPersister persister, Dialect dialect) {
 		// With JDBC it's possible to enabled GetGeneratedKeys for identity generation.
 		// Vert.x doesn't have this option, so we always use the same strategy for all database.
 		// But MySQL requires setting supportsArbitraryValues to false or it's not going to work.
-		this( persister, EventType.INSERT, supportsArbitraryValues( dialect ) );
+		this( persister, INSERT, supportsArbitraryValues( dialect ) );
 	}
 
 	private static boolean supportsArbitraryValues( Dialect dialect) {
 		return !( dialect instanceof MySQLDialect );
 	}
 
-	private ReactiveInsertReturningDelegate(PostInsertIdentityPersister persister, EventType timing, boolean supportsArbitraryValues) {
+	private ReactiveInsertReturningDelegate(EntityPersister persister, EventType timing, boolean supportsArbitraryValues) {
 		super(
 				persister,
 				timing,
@@ -88,7 +87,7 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 	public TableMutationBuilder<?> createTableMutationBuilder(
 			Expectation expectation,
 			SessionFactoryImplementor sessionFactory) {
-		if ( getTiming() == EventType.INSERT ) {
+		if ( getTiming() == INSERT ) {
 			return new TableInsertReturningBuilder( persister, tableReference, generatedColumns, sessionFactory );
 		}
 		else {
@@ -110,7 +109,7 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 	}
 
 	@Override
-	public PostInsertIdentityPersister getPersister() {
+	public EntityPersister getPersister() {
 		return persister;
 	}
 

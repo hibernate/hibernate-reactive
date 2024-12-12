@@ -6,18 +6,20 @@
 package org.hibernate.reactive;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.MappingException;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
+import org.hibernate.generator.EventType;
+import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.service.ServiceRegistry;
-import org.hibernate.type.Type;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,36 +46,31 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testSequenceGenerator(VertxTestContext context) {
-
 		CustomId b = new CustomId();
 		b.string = "Hello World";
 
-		test(
-				context,
-				openSession()
-						.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2
-								.find( CustomId.class, b.getId() )
-								.thenAccept( bb -> {
-									assertNotNull( bb );
-									assertEquals( bb.id, 1100 );
-									assertEquals( bb.string, b.string );
-									assertEquals( bb.version, 0 );
-
-									bb.string = "Goodbye";
-								} )
-								.thenCompose( vv -> s2.flush() )
-								.thenCompose( vv -> s2.find( CustomId.class, b.getId() ) )
-								.thenAccept( bt -> {
-									assertEquals( bt.version, 1 );
-								} ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
+		test( context, openSession()
+				.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s2 -> s2
+						.find( CustomId.class, b.getId() )
 						.thenAccept( bb -> {
-							assertEquals( bb.version, 1 );
-							assertEquals( bb.string, "Goodbye" );
+							assertNotNull( bb );
+							assertEquals( 1100, bb.id );
+							assertEquals( bb.string, b.string );
+							assertEquals( 0, bb.version );
+
+							bb.string = "Goodbye";
 						} )
+						.thenCompose( vv -> s2.flush() )
+						.thenCompose( vv -> s2.find( CustomId.class, b.getId() ) )
+						.thenAccept( bt -> assertEquals( 1, bt.version ) ) )
+				.thenCompose( v -> openSession() )
+				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
+				.thenAccept( bb -> {
+					assertEquals( 1, bb.version );
+					assertEquals( "Goodbye", bb.string );
+				} )
 		);
 	}
 
@@ -87,15 +84,25 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		}
 
 		@Override
-		public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
-			current = Integer.parseInt( params.getProperty( "offset", "0" ) );
+		public void configure(GeneratorCreationContext creationContext, Properties parameters) throws MappingException {
+			current = Integer.parseInt( parameters.getProperty( "offset", "0" ) );
+		}
+
+		@Override
+		public boolean generatedOnExecution() {
+			return false;
+		}
+
+		@Override
+		public EnumSet<EventType> getEventTypes() {
+			return EnumSet.of( EventType.INSERT );
 		}
 	}
 
 	@Entity
 	@GenericGenerator(
 			name = "thousands",
-			strategy = "org.hibernate.reactive.CustomGeneratorTest$Thousands",
+			type = Thousands.class,
 			parameters = @Parameter(name = "offset", value = "100")
 	)
 	public static class CustomId {

@@ -5,11 +5,14 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.AssertionFailure;
@@ -20,22 +23,36 @@ import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
-import org.hibernate.bytecode.enhance.spi.interceptor.*;
+import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributesMetadata;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.internal.ManagedTypeHelper;
-import org.hibernate.engine.spi.*;
+import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.LoadQueryInfluencers;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.NaturalIdLoader;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.metamodel.mapping.*;
+import org.hibernate.metamodel.mapping.AttributeMapping;
+import org.hibernate.metamodel.mapping.AttributeMappingsList;
+import org.hibernate.metamodel.mapping.EntityVersionMapping;
+import org.hibernate.metamodel.mapping.ModelPart;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
+import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -43,11 +60,9 @@ import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesH
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNaturalIdMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
@@ -58,11 +73,13 @@ import org.hibernate.type.BasicType;
 
 import jakarta.persistence.metamodel.Attribute;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyMap;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
 import static org.hibernate.pretty.MessageHelper.infoString;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
@@ -78,7 +95,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * three flavors of {@link ReactiveEntityPersister}. Therefore, this
  * interface is defined as a mixin. This design avoid duplicating
  * the code in this class in the three different subclasses.
- *
+ * <p>
  * Concrete implementations of this interface _must_ also extend
  * {@code AbstractEntityPersister} or one of its concrete
  * subclasses.
@@ -89,12 +106,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ReactiveSingleTableEntityPersister
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister {
-
-	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	default Parameters parameters() {
-		return Parameters.instance( getFactory().getJdbcServices().getDialect() );
-	}
 
 	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
@@ -121,13 +132,6 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection();
 	}
 
-	boolean check(
-			int rows,
-			Object id,
-			int tableNumber,
-			Expectation expectation,
-			PreparedStatement statement, String sql) throws HibernateException;
-
 	default String generateSelectLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
 		final SimpleSelect select = new SimpleSelect( factory )
@@ -141,20 +145,20 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			select.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return parameters().process( select.toStatementString() );
+		return select.toStatementString();
 	}
 
 	default String generateUpdateLockString(LockOptions lockOptions) {
 		final SessionFactoryImplementor factory = getFactory();
 		final Update update = new Update( factory );
-		update.setTableName( getEntityMappingType().getMappedTableDetails().getTableName()  );
+		update.setTableName( getEntityMappingType().getMappedTableDetails().getTableName() );
 		update.addAssignment( getVersionMapping().getVersionAttribute().getAttributeName() );
 		update.addRestriction( getIdentifierPropertyName() );
 		update.addRestriction( getVersionMapping().getVersionAttribute().getAttributeName() );
 		if ( factory.getSessionFactoryOptions().isCommentsEnabled() ) {
 			update.setComment( lockOptions.getLockMode() + " lock " + getEntityName() );
 		}
-		return parameters().process( update.toStatementString() );
+		return update.toStatementString();
 	}
 
 	@Override
@@ -172,7 +176,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		String sql;
 		boolean writeLock;
-		switch (lockMode) {
+		switch ( lockMode ) {
 			// 0) noop
 			case NONE:
 				return voidFuture();
@@ -201,14 +205,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			//    locks obtained in the before completion phase
 			case OPTIMISTIC:
 			case OPTIMISTIC_FORCE_INCREMENT:
-				throw new AssertionFailure("optimistic lock mode is not supported here");
+				throw new AssertionFailure( "optimistic lock mode is not supported here" );
 			// 7) READ and WRITE are obtained implicitly by
 			//    other operations
 			case READ:
 			case WRITE:
-				throw new AssertionFailure("implicit lock mode is not supported here");
+				throw new AssertionFailure( "implicit lock mode is not supported here" );
 			default:
-				throw new AssertionFailure("illegal lock mode");
+				throw new AssertionFailure( "illegal lock mode" );
 		}
 
 		Object[] arguments = PreparedStatementAdaptor.bind( statement -> {
@@ -259,6 +263,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final Object nextVersion = getVersionJavaType()
 					.next( currentVersion, versionMapping.getLength(), versionMapping.getPrecision(), versionMapping.getScale(), session );
 
+			Log LOG = make( Log.class, lookup() );
 			if ( LOG.isTraceEnabled() ) {
 				LOG.trace( "Forcing version increment [" + infoString( this, id, getFactory() ) + "; "
 								+ versionType.toLoggableString( currentVersion, getFactory() ) + " -> "
@@ -289,6 +294,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	 */
 	@Override
 	default CompletionStage<Object> reactiveGetCurrentVersion(Object id, SharedSessionContractImplementor session) {
+		Log LOG = make( Log.class, lookup() );
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracev( "Getting version: {0}", infoString( this, id, getFactory() ) );
 		}
@@ -339,7 +345,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			// collection. That's inconsistent with what happens
 			// for other lazy fields, so let's set the field here
 			final String[] propertyNames = getPropertyNames();
-			for ( int index=0; index<propertyNames.length; index++ ) {
+			for ( int index = 0; index < propertyNames.length; index++ ) {
 				if ( propertyNames[index].equals( field ) ) {
 					setValue( entity, index, result );
 					break;
@@ -354,7 +360,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final PersistentCollection<?> collection = (PersistentCollection<?>) result;
 			return collection.wasInitialized()
 					? completedFuture( (T) collection )
-					: ((ReactiveSession) session).reactiveInitializeCollection( collection, false )
+					: ( (ReactiveSession) session ).reactiveInitializeCollection( collection, false )
 							.thenApply( v -> (T) result );
 		}
 		else {
@@ -379,7 +385,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new AssertionFailure( "Expecting bytecode interceptor to be non-null" );
 		}
 
-		LOG.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
+		make( Log.class, lookup() ).tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
 		final String fetchGroup = getEntityPersister().getBytecodeEnhancementMetadata()
 				.getLazyAttributesMetadata()
@@ -418,7 +424,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object[] values) {    // Load all the lazy properties that are in the same fetch group
 		CompletionStage<Object> resultStage = nullFuture();
 		int i = 0;
-		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor: fetchGroupAttributeDescriptors ) {
+		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor : fetchGroupAttributeDescriptors ) {
 			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
 				// Already initialized
 				if ( fetchGroupAttributeDescriptor.getName().equals( fieldName ) ) {
@@ -427,7 +433,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				continue;
 			}
 
-			final Object selectedValue =  values[i++];
+			final Object selectedValue = values[i++];
 			if ( selectedValue instanceof CompletionStage ) {
 				// This happens with a lazy one-to-one (bytecode enhancement enabled)
 				CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
@@ -459,7 +465,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		}
 
 		return resultStage.thenApply( result -> {
-			LOG.trace( "Done initializing lazy properties" );
+			make( Log.class, lookup() ).trace( "Done initializing lazy properties" );
 			return result;
 		} );
 	}
@@ -471,7 +477,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		final BytecodeEnhancementMetadata enhancementMetadata = getEntityPersister().getBytecodeEnhancementMetadata();
 		final BytecodeLazyAttributeInterceptor currentInterceptor = enhancementMetadata.extractLazyInterceptor( entity );
-		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor) {
+		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 			final EnhancementAsProxyLazinessInterceptor proxyInterceptor =
 					(EnhancementAsProxyLazinessInterceptor) currentInterceptor;
 
@@ -539,11 +545,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
 
-	String[][] getLazyPropertyColumnAliases();
-
 	ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup);
-
-	boolean isBatchable();
 
 	/**
 	 * @see AbstractEntityPersister#generateNaturalIdMapping(MappingModelCreationProcess, PersistentClass)
@@ -558,7 +560,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		assert naturalIdAttributeIndexes.length > 0;
 
 		if ( naturalIdAttributeIndexes.length == 1 ) {
-			final String propertyName = getEntityPersister().getAttributeMappings().get(naturalIdAttributeIndexes[0]).getAttributeName();
+			final String propertyName = getEntityPersister().getAttributeMappings()
+					.get( naturalIdAttributeIndexes[0] )
+					.getAttributeName();
 			final AttributeMapping attributeMapping = findAttributeMapping( propertyName );
 			final SingularAttributeMapping singularAttributeMapping = (SingularAttributeMapping) attributeMapping;
 			return new ReactiveSimpleNaturalIdMapping( singularAttributeMapping, this, creationProcess );
@@ -597,14 +601,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 	/**
 	 * @see AbstractEntityPersister#getLazyLoadPlanByFetchGroup()
 	 */
-	default Map<String, ReactiveSingleIdArrayLoadPlan> getLazyLoadPlanByFetchGroup(String[] subclassPropertyNameClosure ) {
+	default Map<String, ReactiveSingleIdArrayLoadPlan> getLazyLoadPlanByFetchGroup(String[] subclassPropertyNameClosure) {
 		final BytecodeEnhancementMetadata metadata = delegate().getEntityPersister().getBytecodeEnhancementMetadata();
 		return metadata.isEnhancedForLazyLoading() && metadata.getLazyAttributesMetadata().hasLazyAttributes()
 				? createLazyLoadPlanByFetchGroup( metadata, subclassPropertyNameClosure )
 				: emptyMap();
 	}
 
-	default Map<String, ReactiveSingleIdArrayLoadPlan> createLazyLoadPlanByFetchGroup(BytecodeEnhancementMetadata metadata,  String[] subclassPropertyNameClosure ) {
+	default Map<String, ReactiveSingleIdArrayLoadPlan> createLazyLoadPlanByFetchGroup(BytecodeEnhancementMetadata metadata,  String[] subclassPropertyNameClosure) {
 		final Map<String, ReactiveSingleIdArrayLoadPlan> result = new HashMap<>();
 		final LazyAttributesMetadata attributesMetadata = metadata.getLazyAttributesMetadata();
 		for ( String groupName : attributesMetadata.getFetchGroupNames() ) {
@@ -617,7 +621,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return result;
 	}
 
-	default ReactiveSingleIdArrayLoadPlan createLazyLoadPlan(List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors, String[] subclassPropertyNameClosure ) {
+	default ReactiveSingleIdArrayLoadPlan createLazyLoadPlan(List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors, String[] subclassPropertyNameClosure) {
 		final List<ModelPart> partsToSelect = new ArrayList<>( fetchGroupAttributeDescriptors.size() );
 		for ( LazyAttributeDescriptor lazyAttributeDescriptor : fetchGroupAttributeDescriptors ) {
 			// all this only really needs to consider properties

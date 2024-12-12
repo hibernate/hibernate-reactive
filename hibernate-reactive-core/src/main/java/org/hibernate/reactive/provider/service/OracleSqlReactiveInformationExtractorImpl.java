@@ -61,9 +61,14 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 		appendClauseAndParameterIfNotNullOrEmpty( " and ui.table_owner = ", schema, sb, parameters );
 		appendClauseAndParameterIfNotNullOrEmpty( " and ui.table_name = ", table, sb, parameters );
 
-
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
 	}
+
+	@Override
+	protected String parameterMarker(int pos) {
+		return ":" + pos;
+	}
+
 
 	@Override
 	protected <T> T processImportedKeysResultSet(

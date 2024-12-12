@@ -14,17 +14,22 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
+import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
@@ -64,6 +69,60 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	private String selectQuery;
 	private String insertQuery;
 	private String updateQuery;
+
+	public TableReactiveIdentifierGenerator(TableGenerator generator, RuntimeModelCreationContext runtimeModelCreationContext) {
+		ServiceRegistry serviceRegistry = runtimeModelCreationContext.getServiceRegistry();
+		segmentColumnName = generator.getSegmentColumnName();
+		valueColumnName = generator.getValueColumnName();
+		segmentValue = generator.getSegmentValue();
+		initialValue =  generator.getInitialValue();
+		increment = generator.getIncrementSize();
+		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
+		renderedTableName = generator.getTableName();
+
+		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
+		Dialect dialect = jdbcEnvironment.getDialect();
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
+	}
+
+	public TableReactiveIdentifierGenerator(
+			TableStructure structure,
+			RuntimeModelCreationContext runtimeModelCreationContext) {
+		ServiceRegistry serviceRegistry = runtimeModelCreationContext.getServiceRegistry();
+		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
+		Dialect dialect = jdbcEnvironment.getDialect();
+
+		valueColumnName = structure.getLogicalValueColumnNameIdentifier().render( dialect );
+		initialValue =  structure.getInitialValue();
+		increment = structure.getIncrementSize();
+		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
+		renderedTableName = structure.getPhysicalName().render();
+		segmentColumnName = null;
+		segmentValue = null;
+
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
+	}
+
+	@Override
+	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
+		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
+		segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
+		valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
+		segmentValue = determineSegmentValue( params );
+		initialValue = determineInitialValue( params );
+		increment = determineIncrement( params );
+		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
+		renderedTableName = determineTableName( type, params, serviceRegistry );
+
+		Dialect dialect = jdbcEnvironment.getDialect();
+		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
+		updateQuery = buildUpdateQuery( dialect );
+		insertQuery = buildInsertQuery( dialect );
+	}
 
 	@Override
 	protected int getBlockSize() {
@@ -128,24 +187,6 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 									}
 							);
 				} );
-	}
-
-	@Override
-	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
-		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
-		segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
-		valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
-		segmentValue = determineSegmentValue( params );
-		initialValue = determineInitialValue( params );
-		increment = determineIncrement( params );
-		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
-		renderedTableName = determineTableName( type, params, serviceRegistry );
-
-		Dialect dialect = jdbcEnvironment.getDialect();
-		Parameters parameters = Parameters.instance( dialect );
-		selectQuery = parameters.process( applyLocksToSelect( dialect, "tbl", buildSelectQuery() ) );
-		updateQuery = parameters.process( buildUpdateQuery() );
-		insertQuery = parameters.process( buildInsertQuery() );
 	}
 
 	@Override
@@ -224,19 +265,48 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		return new Object[]{ segmentValue };
 	}
 
-	protected String buildSelectQuery() {
-		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl"
-				+ " where tbl." + segmentColumnName + "=?";
+	protected String buildSelectQuery(Dialect dialect) {
+		final String sql = "select tbl." + valueColumnName + " from " + renderedTableName + " tbl where tbl." + segmentColumnName;
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return sql + "=$1";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return sql + "=@P1";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return sql + "=:1";
+		}
+		return sql + "=?";
 	}
 
-	protected String buildUpdateQuery() {
+	protected String buildUpdateQuery(Dialect dialect) {
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=$1"
+					+ " where " + valueColumnName + "=$2 and " + segmentColumnName + "=$3";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=@P1"
+					+ " where " + valueColumnName + "=@P2 and " + segmentColumnName + "=@P3";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=:1"
+					+ " where " + valueColumnName + "=:2 and " + segmentColumnName + "=:3";
+		}
 		return "update " + renderedTableName + " set " + valueColumnName + "=?"
 				+ " where " + valueColumnName + "=?  and " + segmentColumnName + "=?";
 	}
 
-	protected String buildInsertQuery() {
-		return "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") "
-				+ " values (?, ?)";
+	protected String buildInsertQuery(Dialect dialect) {
+		final String sql = "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") ";
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return sql + " values ($1, $2)";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return sql + " values (@P1, @P2)";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return sql + " values (:1, :2)";
+		}
+		return sql + " values (?, ?)";
 	}
-
 }

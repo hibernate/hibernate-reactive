@@ -16,9 +16,9 @@ import java.util.function.Consumer;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.results.LegacyFetchBuilder;
 import org.hibernate.query.results.ResultBuilder;
 import org.hibernate.query.results.ResultSetMapping;
-import org.hibernate.query.results.dynamic.DynamicFetchBuilderLegacy;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
@@ -88,7 +88,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	}
 
 	@Override
-	public void visitLegacyFetchBuilders(Consumer<DynamicFetchBuilderLegacy> resultBuilderConsumer) {
+	public void visitLegacyFetchBuilders(Consumer<LegacyFetchBuilder> resultBuilderConsumer) {
 		delegate.visitLegacyFetchBuilders( resultBuilderConsumer );
 	}
 
@@ -98,7 +98,7 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 	}
 
 	@Override
-	public void addLegacyFetchBuilder(DynamicFetchBuilderLegacy fetchBuilder) {
+	public void addLegacyFetchBuilder(LegacyFetchBuilder fetchBuilder) {
 		delegate.addLegacyFetchBuilder( fetchBuilder );
 	}
 

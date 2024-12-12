@@ -9,6 +9,7 @@ import java.lang.invoke.MethodHandles;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.jdbc.batch.spi.Batch;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
@@ -99,7 +100,8 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	@Override
 	protected void performBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
-			TableInclusionChecker inclusionChecker) {
+			TableInclusionChecker inclusionChecker,
+			Batch.StaleStateMapper staleStateMapper) {
 		throw LOG.nonReactiveMethodCall( "performReactiveBatchedOperations" );
 	}
 

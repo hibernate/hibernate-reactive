@@ -93,6 +93,12 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
 	}
 
+
+	@Override
+	protected String parameterMarker(int pos) {
+		return "@P" + pos;
+	}
+
 	@Override
 	protected <T> T processColumnsResultSet(
 			String catalog,

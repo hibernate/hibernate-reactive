@@ -22,6 +22,8 @@ import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedSqmQueryMemento;
 
+import jakarta.persistence.TypedQueryReference;
+
 public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository {
 
 	private final NamedObjectRepository delegate;
@@ -31,12 +33,17 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	}
 
 	@Override
-	public NamedSqmQueryMemento getSqmQueryMemento(String queryName) {
+	public <R> Map<String, TypedQueryReference<R>> getNamedQueries(Class<R> resultType) {
+		return delegate.getNamedQueries( resultType );
+	}
+
+	@Override
+	public NamedSqmQueryMemento<?> getSqmQueryMemento(String queryName) {
 		return wrapSqmQueryMemento( delegate.getSqmQueryMemento( queryName ) );
 	}
 
 	@Override
-	public void visitSqmQueryMementos(Consumer<NamedSqmQueryMemento> action) {
+	public void visitSqmQueryMementos(Consumer<NamedSqmQueryMemento<?>> action) {
 		delegate.visitSqmQueryMementos( action );
 	}
 
@@ -46,12 +53,12 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	}
 
 	@Override
-	public NamedNativeQueryMemento getNativeQueryMemento(String queryName) {
+	public NamedNativeQueryMemento<?> getNativeQueryMemento(String queryName) {
 		return wrapNativeQueryMemento( delegate.getNativeQueryMemento( queryName ) );
 	}
 
 	@Override
-	public void visitNativeQueryMementos(Consumer<NamedNativeQueryMemento> action) {
+	public void visitNativeQueryMementos(Consumer<NamedNativeQueryMemento<?>> action) {
 		delegate.visitNativeQueryMementos( action );
 	}
 
@@ -101,11 +108,11 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	}
 
 	@Override
-	public NamedQueryMemento resolve(
+	public NamedQueryMemento<?> resolve(
 			SessionFactoryImplementor sessionFactory,
 			MetadataImplementor bootMetamodel,
 			String registrationName) {
-		return wrap(delegate.resolve( sessionFactory, bootMetamodel, registrationName ));
+		return wrap( delegate.resolve( sessionFactory, bootMetamodel, registrationName ) );
 	}
 
 	@Override
@@ -118,17 +125,19 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 		delegate.close();
 	}
 
-	private static NamedQueryMemento wrap(final NamedQueryMemento namedQueryMemento) {
+	private static NamedQueryMemento<?> wrap(final NamedQueryMemento<?> namedQueryMemento) {
 		if ( namedQueryMemento == null ) {
 			return null;
-		} else if( namedQueryMemento instanceof  NamedSqmQueryMemento ) {
-			return wrapSqmQueryMemento( (NamedSqmQueryMemento) namedQueryMemento );
-		} else {
-			return wrapNativeQueryMemento( (NamedNativeQueryMemento) namedQueryMemento );
+		}
+		else if ( namedQueryMemento instanceof NamedSqmQueryMemento ) {
+			return wrapSqmQueryMemento( (NamedSqmQueryMemento<?>) namedQueryMemento );
+		}
+		else {
+			return wrapNativeQueryMemento( (NamedNativeQueryMemento<?>) namedQueryMemento );
 		}
 	}
 
-	private static NamedSqmQueryMemento wrapSqmQueryMemento(final NamedSqmQueryMemento sqmQueryMemento) {
+	private static NamedSqmQueryMemento<?> wrapSqmQueryMemento(final NamedSqmQueryMemento<?> sqmQueryMemento) {
 		if ( sqmQueryMemento == null ) {
 			return null;
 		}
@@ -141,7 +150,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 		}
 	}
 
-	private static NamedNativeQueryMemento wrapNativeQueryMemento(final NamedNativeQueryMemento nativeQueryMemento) {
+	private static NamedNativeQueryMemento<?> wrapNativeQueryMemento(final NamedNativeQueryMemento<?> nativeQueryMemento) {
 		if ( nativeQueryMemento == null ) {
 			return null;
 		}

@@ -69,10 +69,7 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			batchKey = null;
 		}
 		else {
-			batchKey = new BasicBatchKey(
-					entityPersister.getEntityName() + "#INSERT",
-					null
-			);
+			batchKey = new BasicBatchKey( entityPersister.getEntityName() + "#INSERT" );
 		}
 
 		if ( entityPersister.getEntityMetamodel().isDynamicInsert() ) {
@@ -193,7 +190,7 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 
 		mutationGroup.forEachOperation( (position, jdbcOperation) -> {
 			if ( id == null )  {
-				assert entityPersister().getIdentityInsertDelegate() != null;
+				assert entityPersister().getInsertDelegate() != null;
 			}
 			else {
 				final EntityTableMapping tableDetails = (EntityTableMapping) jdbcOperation.getTableDetails();

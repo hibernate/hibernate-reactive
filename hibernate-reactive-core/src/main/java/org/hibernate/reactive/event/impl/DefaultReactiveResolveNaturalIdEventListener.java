@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.NaturalIdResolutions;
-import org.hibernate.event.internal.AbstractLockUpgradeEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.event.spi.ResolveNaturalIdEventListener;
@@ -27,10 +26,9 @@ import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
- * A reactific {@link org.hibernate.event.internal.DefaultResolveNaturalIdEventListener}.
+ * A reactive {@link org.hibernate.event.internal.DefaultResolveNaturalIdEventListener}.
  */
-public class DefaultReactiveResolveNaturalIdEventListener extends AbstractLockUpgradeEventListener
-		implements ReactiveResolveNaturalIdEventListener, ResolveNaturalIdEventListener {
+public class DefaultReactiveResolveNaturalIdEventListener implements ReactiveResolveNaturalIdEventListener, ResolveNaturalIdEventListener {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 

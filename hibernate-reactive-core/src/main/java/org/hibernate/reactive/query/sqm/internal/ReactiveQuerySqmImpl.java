@@ -23,15 +23,14 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.Generator;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.IllegalQueryOperationException;
@@ -414,22 +413,23 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			? new ReactiveSimpleUpdateQueryPlan( sqmUpdate, getDomainParameterXref() )
 			: new ReactiveMultiTableUpdateQueryPlan( sqmUpdate, getDomainParameterXref(), multiTableStrategy );
 	}
+
 	private ReactiveNonSelectQueryPlan buildInsertQueryPlan() {
 		//noinspection rawtypes
 		final SqmInsertStatement sqmInsert = (SqmInsertStatement) getSqmStatement();
 
 		final String entityNameToInsert = sqmInsert.getTarget().getModel().getHibernateEntityName();
-		final AbstractEntityPersister entityDescriptor = (AbstractEntityPersister) getSessionFactory().getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.getEntityDescriptor( entityNameToInsert );
+		final EntityPersister persister = getSessionFactory()
+				.getMappingMetamodel().getEntityDescriptor( entityNameToInsert );
 
-		boolean useMultiTableInsert = entityDescriptor.isMultiTable();
-		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, entityDescriptor ) ) {
-			final IdentifierGenerator identifierGenerator = entityDescriptor.getIdentifierGenerator();
+		boolean useMultiTableInsert = persister.hasMultipleTables();
+		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, persister ) ) {
+			final Generator identifierGenerator = persister.getGenerator();
+
 			if ( identifierGenerator instanceof BulkInsertionCapableIdentifierGenerator && identifierGenerator instanceof OptimizableGenerator ) {
 				final Optimizer optimizer = ( (OptimizableGenerator) identifierGenerator ).getOptimizer();
 				if ( optimizer != null && optimizer.getIncrementSize() > 1 ) {
-					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, entityDescriptor );
+					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, persister );
 				}
 			}
 		}
@@ -440,7 +440,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 			return new ReactiveMultiTableInsertQueryPlan(
 					sqmInsert,
 					getDomainParameterXref(),
-					(ReactiveSqmMultiTableInsertStrategy) entityDescriptor.getSqmMultiTableInsertStrategy()
+					(ReactiveSqmMultiTableInsertStrategy) persister.getSqmMultiTableInsertStrategy()
 			);
 		}
 	}
@@ -473,7 +473,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public ReactiveQuerySqmImpl<R> setOrder(List<Order<? super R>> orders) {
+	public ReactiveQuerySqmImpl<R> setOrder(List<? extends Order<? super R>> orders) {
 		super.setOrder( orders );
 		return this;
 	}
@@ -508,7 +508,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	@Override
 	public ReactiveQuerySqmImpl<R> setFirstResult(int startPosition) {
-		applyFirstResult( startPosition );
+		super.setFirstResult( startPosition );
 		return this;
 	}
 
@@ -532,13 +532,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// covariance
-
-
-	@Override @Deprecated
-	public ReactiveQuerySqmImpl<R> setAliasSpecificLockMode(String alias, LockMode lockMode) {
-		super.setAliasSpecificLockMode( alias, lockMode );
-		return this;
-	}
 
 	@Override
 	public ReactiveQuerySqmImpl<R> applyGraph(RootGraph graph, GraphSemantic semantic) {

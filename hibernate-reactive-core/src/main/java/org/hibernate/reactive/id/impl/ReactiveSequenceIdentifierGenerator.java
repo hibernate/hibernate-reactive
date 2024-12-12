@@ -19,11 +19,13 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.enhanced.DatabaseStructure;
 import org.hibernate.id.enhanced.ImplicitDatabaseObjectNamingStrategy;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.StandardNamingStrategy;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
@@ -51,6 +53,16 @@ public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGener
 
 	private String sql;
 	private int increment;
+
+	public ReactiveSequenceIdentifierGenerator() {
+	}
+
+	public ReactiveSequenceIdentifierGenerator(DatabaseStructure structure, RuntimeModelCreationContext creationContext) {
+		qualifiedName = structure.getPhysicalName();
+		increment = structure.getIncrementSize();
+		dialect = creationContext.getDialect();
+	}
+
 	@Override
 	protected int getBlockSize() {
 		return increment;

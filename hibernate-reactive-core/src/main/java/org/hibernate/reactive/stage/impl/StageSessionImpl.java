@@ -160,6 +160,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public CompletionStage<Void> persist(String entityName, Object entity) {
+		return delegate.reactivePersist( entityName, entity );
+	}
+
+	@Override
 	public CompletionStage<Void> persist(Object... entity) {
 		return applyToAll( delegate::reactivePersist, entity );
 	}

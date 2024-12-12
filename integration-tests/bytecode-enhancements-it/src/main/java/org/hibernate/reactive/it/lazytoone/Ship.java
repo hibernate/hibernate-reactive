@@ -15,9 +15,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.LazyToOne;
-import org.hibernate.annotations.LazyToOneOption;
-
 @Entity(name = "Ship")
 @Table(name = "Ship")
 public class Ship {
@@ -30,7 +27,6 @@ public class Ship {
 	@Basic(fetch = FetchType.LAZY)
 	private byte[] picture;
 
-	@LazyToOne(LazyToOneOption.NO_PROXY)
 	@OneToOne(fetch = FetchType.LAZY, mappedBy = "ship", cascade = CascadeType.ALL)
 	private Captain captain;
 

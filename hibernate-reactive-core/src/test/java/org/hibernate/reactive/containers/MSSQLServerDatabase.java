@@ -77,16 +77,16 @@ class MSSQLServerDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( BigDecimal.class, "numeric" );
 		expectedDBTypeForClass.put( Serializable.class, "varbinary" );
 		expectedDBTypeForClass.put( UUID.class, "binary" );
-		expectedDBTypeForClass.put( Instant.class, "datetime2" );
+		expectedDBTypeForClass.put( Instant.class, "datetimeoffset" );
 		expectedDBTypeForClass.put( Duration.class, "bigint" );
 		expectedDBTypeForClass.put( Character.class, "char" );
 		expectedDBTypeForClass.put( char.class, "char" );
 		expectedDBTypeForClass.put( String.class, "varchar" );
-		expectedDBTypeForClass.put( String[].class, "varbinary" );
-		expectedDBTypeForClass.put( Long[].class, "varbinary" );
-		expectedDBTypeForClass.put( BigDecimal[].class, "varbinary" );
-		expectedDBTypeForClass.put( BigInteger[].class, "varbinary" );
-		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
+		expectedDBTypeForClass.put( String[].class, "xml" );
+		expectedDBTypeForClass.put( Long[].class, "xml" );
+		expectedDBTypeForClass.put( BigDecimal[].class, "xml" );
+		expectedDBTypeForClass.put( BigInteger[].class, "xml" );
+		expectedDBTypeForClass.put( Boolean[].class, "xml" );
 	}}
 
 	/**

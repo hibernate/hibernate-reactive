@@ -258,6 +258,12 @@ public interface Log extends BasicLogger {
 	@Message(id = 80, value = "No results were returned by the query (you can try running it with '.executeUpdate()'): %1$s")
 	HibernateException noResultException(String sql);
 
+	@Message(id = 81, value = "The Vert.x SQL client doesn't support the SQL XML data type. If it's the mapping of an array, you can also try setting the property `hibernate.type.preferred_array_jdbc_type`")
+	HibernateException unsupportedXmlType();
+
+	@Message(id = 83, value = "Unexpected request of a non reactive connection")
+	HibernateException unexpectedConnectionRequest();
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
@@ -277,6 +283,11 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 245, value = "Manipulation query [%s] resulted in [%s] split queries" )
 	void splitQueries(String sourceQuery, int length);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
+	@Message(value = "Could not find any META-INF/persistence.xml file in the classpath", id = 318)
+	void unableToFindPersistenceXmlInClasspath();
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = INFO)

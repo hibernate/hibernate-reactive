@@ -6,7 +6,6 @@
 package org.hibernate.reactive.provider.impl;
 
 import org.hibernate.boot.internal.MetadataImpl;
-import org.hibernate.boot.internal.SessionFactoryBuilderImpl;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -20,6 +19,8 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceException;
+
 import java.util.Map;
 
 /**
@@ -44,33 +45,24 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
     @Override
     public EntityManagerFactory build() {
         final MetadataImplementor metadata = metadata();
-
         SessionFactoryOptionsBuilder optionsBuilder = new SessionFactoryOptionsBuilder(
                 metadata.getMetadataBuildingOptions().getServiceRegistry(),
-                ( (MetadataImpl) metadata).getBootstrapContext()
+                ( (MetadataImpl) metadata ).getBootstrapContext()
         );
         optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-        // FIXME [ORM-6]: This method does not exists anymore
-//        optionsBuilder.applyMultiTableBulkIdStrategy( new ReactiveBulkIdStrategy( metadata ) );
         int batchSize = ConfigurationHelper.getInt( Settings.STATEMENT_BATCH_SIZE, getConfigurationValues(), 0 );
         optionsBuilder.applyJdbcBatchSize(batchSize);
 
-        final SessionFactoryBuilderImpl defaultBuilder = new SessionFactoryBuilderImpl(
+        final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder(
                 metadata,
-                optionsBuilder,
-                metadata.getTypeConfiguration()
-                        .getMetadataBuildingContext()
-                        .getBootstrapContext()
-        );
-        final SessionFactoryBuilderImplementor reactiveSessionFactoryBuilder = new ReactiveSessionFactoryBuilder( metadata, defaultBuilder );
-        populateSfBuilder( reactiveSessionFactoryBuilder, getStandardServiceRegistry() );
+                (SessionFactoryBuilderImplementor) populateSessionFactoryBuilder()
+		);
 
         try {
             return reactiveSessionFactoryBuilder.build();
         }
         catch (Exception e) {
-            throw persistenceException( "Unable to build Hibernate SessionFactory", e );
+            throw new PersistenceException( "Unable to build Hibernate SessionFactory ", e );
         }
     }
-
 }

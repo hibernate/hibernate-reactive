@@ -696,6 +696,22 @@ public interface Stage {
 		CompletionStage<Void> persist(Object entity);
 
 		/**
+		 * Make a transient instance persistent and mark it for later insertion in the
+		 * database. This operation cascades to associated instances if the association
+		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 * <p>
+		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
+		 * {@code persist()} ultimately results in generation of an identifier for the
+		 * given instance. But this may happen asynchronously, when the session is
+		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
+		 *
+		 * @param entityName the entity name
+		 * @param object a transient instance to be made persistent
+		 * @see #persist(Object)
+		 */
+		CompletionStage<Void> persist(String entityName, Object object);
+
+		/**
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)

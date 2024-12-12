@@ -11,9 +11,9 @@ import java.util.List;
 
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.generator.EventType;
 import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
@@ -152,7 +152,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 		public String lastname;
 
-		@Generated(GenerationTime.ALWAYS)
+		@Generated( event = {EventType.INSERT, EventType.UPDATE} )
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
@@ -171,7 +171,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	@Entity(name = "GeneratedRegular")
 	static class GeneratedRegular extends GeneratedRegularParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
-		@Generated(GenerationTime.INSERT)
+		@Generated( event = {EventType.INSERT} )
 		@Column(columnDefinition = "timestamp")
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
@@ -179,7 +179,6 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@CurrentUser.LoggedUserMutinyAlways
 		public String updatedBy;
 
-		@Generated(GenerationTime.NEVER)
 		public String never;
 
 		public GeneratedRegular() {
@@ -201,7 +200,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 
 		public String lastname;
 
-		@Generated(GenerationTime.ALWAYS)
+		@Generated( event = {EventType.INSERT, EventType.UPDATE} )
 		@Column(columnDefinition = "varchar(600) generated always as (firstname || ' ' || lastname) stored")
 		public String fullName;
 
@@ -220,7 +219,7 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 	@Entity(name = "GeneratedWithIdentity")
 	static class GeneratedWithIdentity extends GeneratedWithIdentityParent {
 		@Temporal(value = TemporalType.TIMESTAMP)
-		@Generated(GenerationTime.INSERT)
+		@Generated( event = {EventType.INSERT} )
 		@Column(columnDefinition = "timestamp")
 		@ColumnDefault("current_timestamp")
 		public Date createdAt;
@@ -228,7 +227,6 @@ public class GeneratedPropertyJoinedTableTest extends BaseReactiveTest {
 		@CurrentUser.LoggedUserStageAlways
 		public String updatedBy;
 
-		@Generated(GenerationTime.NEVER)
 		public String never;
 
 		public GeneratedWithIdentity() {

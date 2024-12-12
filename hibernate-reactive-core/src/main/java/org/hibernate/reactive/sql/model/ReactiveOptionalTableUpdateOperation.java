@@ -6,16 +6,13 @@
 package org.hibernate.reactive.sql.model;
 
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
-import org.hibernate.engine.jdbc.mutation.internal.MutationQueryOptions;
 import org.hibernate.engine.jdbc.mutation.internal.PreparedStatementGroupSingleTable;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.persister.entity.mutation.UpdateValuesAnalysis;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
@@ -23,22 +20,10 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.model.MutationTarget;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
-import org.hibernate.sql.model.ast.MutatingTableReference;
-import org.hibernate.sql.model.ast.TableDelete;
-import org.hibernate.sql.model.ast.TableInsert;
-import org.hibernate.sql.model.ast.TableUpdate;
 import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.internal.TableDeleteCustomSql;
-import org.hibernate.sql.model.internal.TableDeleteStandard;
-import org.hibernate.sql.model.internal.TableInsertCustomSql;
-import org.hibernate.sql.model.internal.TableInsertStandard;
-import org.hibernate.sql.model.internal.TableUpdateCustomSql;
-import org.hibernate.sql.model.internal.TableUpdateStandard;
 import org.hibernate.sql.model.jdbc.JdbcDeleteMutation;
 import org.hibernate.sql.model.jdbc.JdbcInsertMutation;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
@@ -196,43 +181,6 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 				} );
 	}
 
-	// FIXME: Adding this to ORM will save us some duplicated code (similar to createJdbcInsert and createJdbcDelete)
-	private JdbcMutationOperation createJdbcUpdate(SharedSessionContractImplementor session) {
-		MutationTarget<?> mutationTarget = super.getMutationTarget();
-		TableUpdate<JdbcMutationOperation> tableUpdate;
-		if ( getTableDetails().getUpdateDetails() != null
-				&& getTableDetails().getUpdateDetails().getCustomSql() != null ) {
-			tableUpdate = new TableUpdateCustomSql(
-					new MutatingTableReference( getTableDetails() ),
-					mutationTarget,
-					"upsert update for " + mutationTarget.getRolePath(),
-					upsert.getValueBindings(),
-					upsert.getKeyBindings(),
-					upsert.getOptimisticLockBindings(),
-					upsert.getParameters()
-			);
-		}
-		else {
-			tableUpdate = new TableUpdateStandard(
-					new MutatingTableReference( getTableDetails() ),
-					mutationTarget,
-					"upsert update for " + mutationTarget.getRolePath(),
-					upsert.getValueBindings(),
-					upsert.getKeyBindings(),
-					upsert.getOptimisticLockBindings(),
-					upsert.getParameters()
-			);
-		}
-
-		final SqlAstTranslator<JdbcMutationOperation> translator = session
-				.getJdbcServices()
-				.getJdbcEnvironment()
-				.getSqlAstTranslatorFactory()
-				.buildModelMutationTranslator( tableUpdate, session.getFactory() );
-
-		return translator.translate( null, MutationQueryOptions.INSTANCE );
-	}
-
 	private CompletionStage<Void> performReactiveInsert(
 			JdbcValueBindings jdbcValueBindings,
 			SharedSessionContractImplementor session) {
@@ -248,86 +196,5 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 
 		ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 		return reactiveConnection.update( statementDetails.getSqlString(), params ).thenCompose(CompletionStages::voidFuture);
-	}
-
-	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#createJdbcInsert(SharedSessionContractImplementor)
-	 */
-	// FIXME: change visibility to protected in ORM and remove this method
-	private JdbcInsertMutation createJdbcInsert(SharedSessionContractImplementor session) {
-		final TableInsert tableInsert;
-		if ( getTableDetails().getInsertDetails() != null
-				&& getTableDetails().getInsertDetails().getCustomSql() != null ) {
-			tableInsert = new TableInsertCustomSql(
-					new MutatingTableReference( getTableDetails() ),
-					getMutationTarget(),
-					CollectionHelper.combine( upsert.getValueBindings(), upsert.getKeyBindings() ),
-					upsert.getParameters()
-			);
-		}
-		else {
-			tableInsert = new TableInsertStandard(
-					new MutatingTableReference( getTableDetails() ),
-					getMutationTarget(),
-					CollectionHelper.combine( upsert.getValueBindings(), upsert.getKeyBindings() ),
-					Collections.emptyList(),
-					upsert.getParameters()
-			);
-		}
-
-		final SessionFactoryImplementor factory = session.getSessionFactory();
-		final SqlAstTranslatorFactory sqlAstTranslatorFactory = factory
-				.getJdbcServices()
-				.getJdbcEnvironment()
-				.getSqlAstTranslatorFactory();
-
-		final SqlAstTranslator<JdbcInsertMutation> translator = sqlAstTranslatorFactory.buildModelMutationTranslator(
-				tableInsert,
-				factory
-		);
-
-		return translator.translate( null, MutationQueryOptions.INSTANCE );
-	}
-
-	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#createJdbcDelete(SharedSessionContractImplementor)
-	 */
-	// FIXME: change visibility to protected in ORM and remove this method
-	private JdbcDeleteMutation createJdbcDelete(SharedSessionContractImplementor session) {
-		final TableDelete tableDelete;
-		if ( getTableDetails().getDeleteDetails() != null
-				&& getTableDetails().getDeleteDetails().getCustomSql() != null ) {
-			tableDelete = new TableDeleteCustomSql(
-					new MutatingTableReference( getTableDetails() ),
-					getMutationTarget(),
-					"upsert delete for " + upsert.getMutationTarget().getRolePath(),
-					upsert.getKeyBindings(),
-					upsert.getOptimisticLockBindings(),
-					upsert.getParameters()
-			);
-		}
-		else {
-			tableDelete = new TableDeleteStandard(
-					new MutatingTableReference( getTableDetails() ),
-					getMutationTarget(),
-					"upsert delete for " + getMutationTarget().getRolePath(),
-					upsert.getKeyBindings(),
-					upsert.getOptimisticLockBindings(),
-					upsert.getParameters()
-			);
-		}
-
-		final SessionFactoryImplementor factory = session.getSessionFactory();
-		final SqlAstTranslatorFactory sqlAstTranslatorFactory = factory
-				.getJdbcServices()
-				.getJdbcEnvironment()
-				.getSqlAstTranslatorFactory();
-
-		final SqlAstTranslator<JdbcDeleteMutation> translator = sqlAstTranslatorFactory.buildModelMutationTranslator(
-				tableDelete,
-				factory
-		);
-
-		return translator.translate( null, MutationQueryOptions.INSTANCE );
 	}
 }

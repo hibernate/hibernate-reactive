@@ -6,6 +6,7 @@
 package org.hibernate.reactive.id;
 
 import org.hibernate.Incubating;
+import org.hibernate.generator.Generator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
@@ -24,7 +25,7 @@ import java.util.concurrent.CompletionStage;
  * @see IdentifierGenerator
  */
 @Incubating
-public interface ReactiveIdentifierGenerator<Id> {
+public interface ReactiveIdentifierGenerator<Id> extends Generator {
 
 	/**
 	 * Returns a generated identifier, via a {@link CompletionStage}.

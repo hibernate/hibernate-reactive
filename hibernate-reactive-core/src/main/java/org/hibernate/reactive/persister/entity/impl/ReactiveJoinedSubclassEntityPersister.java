@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.persister.entity.impl;
 
-import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -21,7 +20,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
-import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
@@ -44,6 +42,8 @@ import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveRuntimeModelCreationContext;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
@@ -54,12 +54,17 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.EntityType;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+
 /**
  * An {@link ReactiveEntityPersister} backed by {@link JoinedSubclassEntityPersister}
  * and {@link ReactiveAbstractEntityPersister}.
  */
 public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityPersister
 		implements ReactiveAbstractEntityPersister {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
@@ -68,8 +73,8 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			final EntityDataAccess cacheAccessStrategy,
 			final NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
-		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
-		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
+		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
+		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
 	}
 
 	@Override
@@ -132,12 +137,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 				fetchMode,
 				creationProcess
 		);
-	}
-
-	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
 	}
 
 	@Override
@@ -282,18 +281,8 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public boolean check(int rows, Object id, int tableNumber, Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
-		return super.check(rows, id, tableNumber, expectation, statement, sql);
-	}
-
-	@Override
 	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
 		return super.initializeLazyProperty( fieldName, entity, entry, lazyIndex, selectedValue );
-	}
-
-	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
 	}
 
 	/**
