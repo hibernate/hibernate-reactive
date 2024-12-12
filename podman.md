@@ -158,7 +158,7 @@ and schema to run the tests:
 podman run --rm -e LICENSE=accept --privileged=true --group-add keep-groups \
     --name HibernateTestingDB2 -e DBNAME=hreact -e DB2INSTANCE=hreact \
     -e DB2INST1_PASSWORD=hreact -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false \
-    -e AUTOCONFIG=false -p 50000:50000 docker.io/icr.io/db2_community/db2:11.5.9.0
+    -e AUTOCONFIG=false -p 50000:50000 docker.io/icr.io/db2_community/db2:12.1.0.0
 ```
 
 When the database has started, you can run the tests on Db2 with:
