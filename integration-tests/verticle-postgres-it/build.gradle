@@ -14,7 +14,7 @@ description = 'Bytecode enhancements integration tests'
 ext {
     jacksonDatabindVersion = '2.15.2'
     jbossLoggingVersion = '3.5.0.Final'
-    assertjVersion = '3.24.2'
+    assertjVersion = '3.26.3'
     vertxWebVersion = project.hasProperty( 'vertxWebVersion' )
             ? project.property( 'vertxWebVersion' )
             : vertxSqlClientVersion
