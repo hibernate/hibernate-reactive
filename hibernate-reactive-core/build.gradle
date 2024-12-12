@@ -16,9 +16,9 @@ dependencies {
     implementation 'org.jboss.logging:jboss-logging:3.6.1.Final'
     annotationProcessor 'org.jboss.logging:jboss-logging:3.6.1.Final'
 
-    compileOnly 'org.jboss.logging:jboss-logging-annotations:2.2.1.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging-annotations:2.2.1.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging-processor:2.2.1.Final'
+    compileOnly 'org.jboss.logging:jboss-logging-annotations:3.0.3.Final'
+    annotationProcessor 'org.jboss.logging:jboss-logging-annotations:3.0.3.Final'
+    annotationProcessor 'org.jboss.logging:jboss-logging-processor:3.0.3.Final'
 
 
     //Specific implementation details of Hibernate Reactive:
