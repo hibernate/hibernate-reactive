@@ -1,13 +1,14 @@
+apply plugin: 'java'
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
-tasks.register( 'sourcesJar', Jar ) {
-    from sourceSets.main.allJava
-    archiveClassifier = 'sources'
-}
+// Java / publishing
 
-tasks.register( 'javadocJar', Jar ) {
-    from javadoc
-    archiveClassifier = 'javadoc'
+java {
+    // include javadoc and sources jar in the Java component
+    // 		- classes jar included by default
+    withJavadocJar()
+    withSourcesJar()
 }
 
 jar {
@@ -35,14 +36,9 @@ javadoc {
 
 publishing {
     publications {
-        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
-
         publishedArtifacts(MavenPublication) {
-            groupId = project.group
-            version = project.version
             from components.java
-            artifact sourcesJar
-            artifact javadocJar
+
             pom {
                 name = project.mavenPomName
                 description = project.description
@@ -79,4 +75,79 @@ publishing {
             }
         }
     }
+}
+
+
+// signing
+
+var signingExtension = project.getExtensions().getByType(SigningExtension) as SigningExtension
+
+// create a `signPublications` "grouping" task which will execute all Sign tasks
+def signPublicationsTask = tasks.register('signPublications')
+tasks.named( "publishPublishedArtifactsPublicationToSonatypeRepository" ) {
+    dependsOn signPublicationsTask
+}
+
+gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+    boolean wasSigningRequested = false
+    boolean wasPublishingRequested = false
+    List<Sign> signingTasks = []
+
+    graph.allTasks.each {task ->
+        logger.lifecycle( "Checking task : $task" )
+        if ( task instanceof Sign ) {
+            logger.lifecycle( "    - Task is Sign" )
+            signingTasks.add( task )
+            wasSigningRequested = true
+        }
+        else if ( task instanceof PublishToMavenRepository ) {
+            logger.lifecycle( "    - Task is PublishToMavenRepository" )
+            wasPublishingRequested = true
+        }
+    }
+
+    if ( wasPublishingRequested ) {
+        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
+    }
+
+    if ( wasSigningRequested || wasPublishingRequested ) {
+        // signing was explicitly requested and/or we are publishing to Sonatype OSSRH
+        // 		- we need the signing to happen
+        signingExtension.required = true
+
+        var signingKey = resolveSigningKey()
+        var signingPassword = resolveSigningPassphrase()
+        signingExtension.useInMemoryPgpKeys( signingKey, signingPassword )
+        signingExtension.sign publishing.publications.publishedArtifacts
+
+        signPublicationsTask.get().dependsOn( signingTasks )
+    }
+    else {
+        // signing was not explicitly requested and we are not publishing to OSSRH,
+        // 		- disable all Sign tasks
+        signingTasks.each { enabled = false }
+    }
+}
+
+
+static String resolveSigningKey() {
+    var key = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY" )
+    if ( key != null ) {
+        return key
+    }
+
+    var keyFile = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY_PATH" )
+    if ( keyFile != null ) {
+        return new File( keyFile ).text
+    }
+
+    throw new RuntimeException( "Cannot perform signing without GPG details." )
+}
+
+static String resolveSigningPassphrase() {
+    var passphrase = System.getenv().get( "SIGNING_GPG_PASSPHRASE" )
+    if ( passphrase == null ) {
+        throw new RuntimeException( "Cannot perform signing without GPG details." )
+    }
+    return passphrase
 }
