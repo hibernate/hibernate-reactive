@@ -677,11 +677,27 @@ public interface Mutiny {
 		 * {@code session.persist(newBook).map(v -> session.flush());}
 		 * </pre>
 		 *
-		 * @param entity a transient instance of a persistent class
+		 * @param object a transient instance of a persistent class
 		 *
 		 * @see jakarta.persistence.EntityManager#persist(Object)
 		 */
-		Uni<Void> persist(Object entity);
+		Uni<Void> persist(Object object);
+
+		/**
+		 * Make a transient instance persistent and mark it for later insertion in the
+		 * database. This operation cascades to associated instances if the association
+		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 * <p>
+		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
+		 * {@code persist()} ultimately results in generation of an identifier for the
+		 * given instance. But this may happen asynchronously, when the session is
+		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
+		 *
+		 * @param entityName the entity name
+		 * @param object a transient instance to be made persistent
+		 * @see #persist(Object)
+		 */
+		Uni<Void> persist(String entityName, Object object);
 
 		/**
 		 * Persist multiple transient entity instances at once.

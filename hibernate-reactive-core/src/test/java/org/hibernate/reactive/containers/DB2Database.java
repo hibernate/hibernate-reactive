@@ -73,11 +73,11 @@ class DB2Database implements TestableDatabase {
 		expectedDBTypeForClass.put( Character.class, "CHARACTER" );
 		expectedDBTypeForClass.put( char.class, "CHARACTER" );
 		expectedDBTypeForClass.put( String.class, "VARCHAR" );
-		expectedDBTypeForClass.put( String[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( Long[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( BigDecimal[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( BigInteger[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( Boolean[].class, "VARBINARY" );
+		expectedDBTypeForClass.put( String[].class, "XML" );
+		expectedDBTypeForClass.put( Long[].class, "XML" );
+		expectedDBTypeForClass.put( BigDecimal[].class, "XML" );
+		expectedDBTypeForClass.put( BigInteger[].class, "XML" );
+		expectedDBTypeForClass.put( Boolean[].class, "XML" );
 	}}
 
 	/**

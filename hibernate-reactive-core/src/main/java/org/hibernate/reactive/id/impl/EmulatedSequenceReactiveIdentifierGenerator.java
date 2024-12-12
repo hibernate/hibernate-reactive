@@ -5,8 +5,15 @@
  */
 package org.hibernate.reactive.id.impl;
 
+import org.hibernate.dialect.CockroachDialect;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.id.enhanced.TableStructure;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
@@ -24,6 +31,10 @@ import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
  * guarantee that generated identifiers are sequential.
  */
 public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator {
+
+	public EmulatedSequenceReactiveIdentifierGenerator(TableStructure structure, RuntimeModelCreationContext runtimeModelCreationContext) {
+		super( structure, runtimeModelCreationContext );
+	}
 
 	@Override
 	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
@@ -86,20 +97,44 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 	}
 
 	@Override
-	protected String buildSelectQuery() {
+	protected String buildSelectQuery(Dialect dialect) {
 		return "select tbl." + valueColumnName + " from " + renderedTableName + " tbl";
 	}
 
 	@Override
-	protected String buildUpdateQuery() {
+	protected String buildUpdateQuery(Dialect dialect) {
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=$1"
+					+ " where " + valueColumnName + "=$2";
+
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=@P1"
+					+ " where " + valueColumnName + "=@P2";
+
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return "update " + renderedTableName + " set " + valueColumnName + "=:1"
+					+ " where " + valueColumnName + "=:2";
+
+		}
 		return "update " + renderedTableName + " set " + valueColumnName + "=?"
 				+ " where " + valueColumnName + "=?";
 	}
 
 	@Override
-	protected String buildInsertQuery() {
-		return "insert into " + renderedTableName + " (" + valueColumnName + ") "
-				+ " values (?)";
+	protected String buildInsertQuery(Dialect dialect) {
+		final String sql = "insert into " + renderedTableName + " (" + valueColumnName + ") values ";
+		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
+			return sql + "($1)";
+		}
+		if ( dialect instanceof SQLServerDialect ) {
+			return sql + "(@P1)";
+		}
+		if ( dialect instanceof OracleDialect ) {
+			return sql + "(:1)";
+		}
+		return sql + "(?)";
 	}
 
 }

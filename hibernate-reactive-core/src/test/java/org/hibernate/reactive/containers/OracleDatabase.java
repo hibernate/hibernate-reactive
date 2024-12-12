@@ -66,16 +66,16 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( URL.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( TimeZone.class, "VARCHAR2" );
 			expectedDBTypeForClass.put( Date.class, "DATE" );
-			expectedDBTypeForClass.put( Timestamp.class, "TIMESTAMP(6)" );
-			expectedDBTypeForClass.put( Time.class, "TIMESTAMP(6)" );
+			expectedDBTypeForClass.put( Timestamp.class, "TIMESTAMP(9)" );
+			expectedDBTypeForClass.put( Time.class, "TIMESTAMP(0)" );
 			expectedDBTypeForClass.put( LocalDate.class, "DATE" );
 			expectedDBTypeForClass.put( LocalTime.class, "DATE" );
-			expectedDBTypeForClass.put( LocalDateTime.class, "TIMESTAMP(6)" );
+			expectedDBTypeForClass.put( LocalDateTime.class, "TIMESTAMP(9)" );
 			expectedDBTypeForClass.put( BigInteger.class, "NUMBER" );
 			expectedDBTypeForClass.put( BigDecimal.class, "NUMBER" );
 			expectedDBTypeForClass.put( Serializable.class, "RAW" );
 			expectedDBTypeForClass.put( UUID.class, "RAW" );
-			expectedDBTypeForClass.put( Instant.class, "TIMESTAMP(6)" );
+			expectedDBTypeForClass.put( Instant.class, "TIMESTAMP(9) WITH TIME ZONE" );
 			expectedDBTypeForClass.put( Duration.class, "NUMBER" );
 			expectedDBTypeForClass.put( Character.class, "CHAR" );
 			expectedDBTypeForClass.put( char.class, "CHAR" );
@@ -83,7 +83,7 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( String[].class, "STRINGARRAY" );
 			expectedDBTypeForClass.put( Long[].class, "LONGARRAY" );
 			expectedDBTypeForClass.put( BigDecimal[].class, "BIGDECIMALARRAY" );
-			expectedDBTypeForClass.put( BigInteger[].class, "BIGINTEGERARRAY" );
+			expectedDBTypeForClass.put( BigInteger[].class, "BIGINTEGERBIGDECIMALARRAY" );
 			expectedDBTypeForClass.put( Boolean[].class, "BOOLEANARRAY" );
 		}
 	}

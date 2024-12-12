@@ -117,8 +117,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 						true,
 						restriction,
 						sqmConverter,
-						executionContext,
-						factory
+						executionContext
 				),
 				// The id-select cte will be reused multiple times
 				CteMaterialization.MATERIALIZED
@@ -159,8 +158,6 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 				executionContext.getQueryParameterBindings(),
 				getDomainParameterXref(),
 				SqmUtil.generateJdbcParamsXref( getDomainParameterXref(), sqmConverter ),
-				factory.getRuntimeMetamodels().getMappingMetamodel(),
-				navigablePath -> sqmConverter.getMutatingTableGroup(),
 				new SqmParameterMappingModelResolutionAccess() {
 					@Override @SuppressWarnings("unchecked")
 					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {

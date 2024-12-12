@@ -13,8 +13,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -22,7 +20,6 @@ import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
@@ -100,12 +97,18 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
+	public <J> BasicType<J> resolveType(
+			int position,
+			JavaType<J> explicitJavaType,
+			SessionFactoryImplementor sessionFactory) {
 		return super.resolveType( position, explicitJavaType, sessionFactory );
 	}
 
 	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, TypeConfiguration typeConfiguration) {
+	public <J> BasicType<J> resolveType(
+			int position,
+			JavaType<J> explicitJavaType,
+			TypeConfiguration typeConfiguration) {
 		return super.resolveType( position, explicitJavaType, typeConfiguration );
 	}
 
@@ -145,14 +148,11 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	}
 
 	private CompletionStage<ResultSet> executeQuery() {
-		final LogicalConnectionImplementor logicalConnection = getPersistenceContext().getJdbcCoordinator().getLogicalConnection();
+		final LogicalConnectionImplementor logicalConnection = getPersistenceContext()
+				.getJdbcCoordinator().getLogicalConnection();
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
-
-					Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
-					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
-					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 
 					final SessionEventListenerManager eventListenerManager = executionContext
@@ -162,7 +162,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 					eventListenerManager.jdbcExecuteStatementStart();
 					return connection()
-							.selectJdbc( sql, parameters )
+							.selectJdbc( getFinalSql(), parameters )
 							.thenCompose( this::validateResultSet )
 							.whenComplete( (resultSet, throwable) -> {
 								// FIXME: I don't know if this event makes sense for Vert.x
@@ -172,10 +172,11 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 							.thenCompose( this::reactiveSkipRows )
 							.handle( CompletionStages::handle )
 							.thenCompose( handler -> handler.hasFailed()
-										? convertException( resultSet, handler.getThrowable() )
-										: handler.getResultAsCompletionStage()
+									? convertException( resultSet, handler.getThrowable() )
+									: handler.getResultAsCompletionStage()
 							);
 				} )
+				// same as a finally block
 				.whenComplete( (o, throwable) -> logicalConnection.afterStatement() );
 	}
 
@@ -224,6 +225,10 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 			}
 			if ( cause instanceof HibernateException ) {
 				return failedFuture( cause );
+			}
+			// SQL server throws an exception as soon as we run the query
+			if ( cause instanceof UnsupportedOperationException && cause.getMessage().contains( "Unable to decode typeInfo for XML" ) ) {
+				return failedFuture( LOG.unsupportedXmlType() );
 			}
 			return failedFuture( new HibernateException( cause ) );
 		}

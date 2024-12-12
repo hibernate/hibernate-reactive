@@ -7,7 +7,6 @@ package org.hibernate.reactive.boot.spi;
 
 import org.hibernate.boot.spi.AbstractDelegatingMetadata;
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.named.NamedObjectRepository;
 import org.hibernate.reactive.query.internal.ReactiveNamedObjectRepositoryImpl;
 
@@ -18,7 +17,7 @@ public class ReactiveMetadataImplementor extends AbstractDelegatingMetadata {
 	}
 
 	@Override
-	public NamedObjectRepository buildNamedQueryRepository(SessionFactoryImplementor sessionFactory) {
-		return new ReactiveNamedObjectRepositoryImpl( delegate().buildNamedQueryRepository( sessionFactory ) );
+	public NamedObjectRepository buildNamedQueryRepository() {
+		return new ReactiveNamedObjectRepositoryImpl( super.buildNamedQueryRepository() );
 	}
 }

@@ -137,7 +137,7 @@ public class MultithreadedInsertionTest {
 					context.completeNow();
 				} )
 				.onFailure( context::failNow )
-				.eventually( unused -> vertx.close() );
+				.eventually( () -> vertx.close() );
 	}
 
 	private static class InsertEntitiesVerticle extends AbstractVerticle {

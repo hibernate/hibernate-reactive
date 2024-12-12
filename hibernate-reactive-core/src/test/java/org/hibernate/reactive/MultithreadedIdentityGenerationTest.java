@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.hibernate.AssertionFailure;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -45,6 +46,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
@@ -67,7 +69,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Timeout(value = MultithreadedIdentityGenerationTest.TIMEOUT_MINUTES, timeUnit = MINUTES)
 public class MultithreadedIdentityGenerationTest {
 
-	/* The number of threads should be higher than the default size of the connection pool so that
+	/*
+	 * The number of threads should be higher than the default size of the connection pool so that
 	 * this test is also effective in detecting problems with resource starvation.
 	 */
 	private static final int N_THREADS = 48;
@@ -93,14 +96,7 @@ public class MultithreadedIdentityGenerationTest {
 
 	@BeforeAll
 	public static void setupSessionFactory() {
-		final VertxOptions vertxOptions = new VertxOptions();
-		vertxOptions.setEventLoopPoolSize( N_THREADS );
-		//We relax the blocked thread checks as we'll actually use latches to block them
-		//intentionally for the purpose of the test; functionally this isn't required
-		//but it's useful as self-test in the design of this, to ensure that the way
-		//things are setup are indeed being run in multiple, separate threads.
-		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
-		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+		final VertxOptions vertxOptions = createVertxOptions();
 		vertx = Vertx.vertx( vertxOptions );
 		Configuration configuration = new Configuration();
 		setDefaultProperties( configuration );
@@ -116,6 +112,18 @@ public class MultithreadedIdentityGenerationTest {
 		stageSessionFactory = sessionFactory.unwrap( Stage.SessionFactory.class );
 	}
 
+	private static @NotNull VertxOptions createVertxOptions() {
+		final VertxOptions vertxOptions = new VertxOptions();
+		vertxOptions.setEventLoopPoolSize( N_THREADS );
+		//We relax the blocked thread checks as we'll actually use latches to block them
+		//intentionally for the purpose of the test; functionally this isn't required,
+		//but it's useful as self-test in the design of this, to ensure that the way
+		//things are set up are indeed being run in multiple, separate threads.
+		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
+		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+		return vertxOptions;
+	}
+
 	@AfterAll
 	public static void closeSessionFactory() {
 		stageSessionFactory.close();
@@ -123,9 +131,11 @@ public class MultithreadedIdentityGenerationTest {
 
 	private ReactiveGeneratorWrapper getIdGenerator() {
 		final ReactiveSessionFactoryImpl hibernateSessionFactory = (ReactiveSessionFactoryImpl) sessionFactory;
-		final ReactiveGeneratorWrapper identifierGenerator = (ReactiveGeneratorWrapper) hibernateSessionFactory.getIdentifierGenerator(
-				"org.hibernate.reactive.MultithreadedIdentityGenerationTest$EntityWithGeneratedId" );
-		return identifierGenerator;
+		return (ReactiveGeneratorWrapper) hibernateSessionFactory
+				.getRuntimeMetamodels()
+				.getMappingMetamodel()
+				.getEntityDescriptor( "org.hibernate.reactive.MultithreadedIdentityGenerationTest$EntityWithGeneratedId" )
+				.getGenerator();
 	}
 
 	@Test
@@ -150,7 +160,7 @@ public class MultithreadedIdentityGenerationTest {
 					}
 				} )
 				.onFailure( context::failNow )
-				.eventually( unused -> vertx.close() );
+				.eventually( () -> vertx.close() );
 	}
 
 	private boolean allResultsAreUnique(ResultsCollector allResults) {
@@ -190,24 +200,23 @@ public class MultithreadedIdentityGenerationTest {
 				startLatch.reached();
 				startLatch.waitForEveryone();//Not essential, but to ensure a good level of parallelism
 				final String initialThreadName = Thread.currentThread().getName();
-				stageSessionFactory.withSession(
-							s -> generateMultipleIds( idGenerator, s, generatedIds )
-					)
-					.whenComplete( (o, throwable) -> {
-						endLatch.reached();
-						if ( throwable != null ) {
-							startPromise.fail( throwable );
-						}
-						else {
-							if ( !initialThreadName.equals( Thread.currentThread().getName() ) ) {
-								startPromise.fail( "Thread switch detected!" );
+				stageSessionFactory
+						.withSession( s -> generateMultipleIds( idGenerator, s, generatedIds ) )
+						.whenComplete( (o, throwable) -> {
+							endLatch.reached();
+							if ( throwable != null ) {
+								startPromise.fail( throwable );
 							}
 							else {
-								allResults.deliverResulst( generatedIds );
-								startPromise.complete();
+								if ( !initialThreadName.equals( Thread.currentThread().getName() ) ) {
+									startPromise.fail( "Thread switch detected!" );
+								}
+								else {
+									allResults.deliverResulst( generatedIds );
+									startPromise.complete();
+								}
 							}
-						}
-					} );
+						} );
 			}
 			catch (RuntimeException e) {
 				startPromise.fail( e );
@@ -222,7 +231,7 @@ public class MultithreadedIdentityGenerationTest {
 
 	private static class ResultsCollector {
 
-		private final ConcurrentMap<String,List<Long>> resultsByThread = new ConcurrentHashMap<>();
+		private final ConcurrentMap<String, List<Long>> resultsByThread = new ConcurrentHashMap<>();
 
 		public void deliverResulst(List<Long> generatedIds) {
 			final String threadName = Thread.currentThread().getName();
@@ -242,8 +251,8 @@ public class MultithreadedIdentityGenerationTest {
 			Stage.Session s,
 			ArrayList<Long> collector) {
 		final Thread beforeOperationThread = Thread.currentThread();
-		return idGenerator.generate( ( (StageSessionImpl) s )
-											 .unwrap( ReactiveConnectionSupplier.class ), new EntityWithGeneratedId() )
+		return idGenerator
+				.generate( ( (StageSessionImpl) s ).unwrap( ReactiveConnectionSupplier.class ), new EntityWithGeneratedId() )
 				.thenAccept( o -> {
 					if ( beforeOperationThread != Thread.currentThread() ) {
 						throw new IllegalStateException( "Detected an unexpected switch of carrier threads!" );
@@ -256,7 +265,7 @@ public class MultithreadedIdentityGenerationTest {
 	 * Trivial entity using a Sequence for Id generation
 	 */
 	@Entity
-	@Table(name="Entity")
+	@Table(name = "Entity")
 	private static class EntityWithGeneratedId {
 		@Id
 		@GeneratedValue
@@ -288,10 +297,12 @@ public class MultithreadedIdentityGenerationTest {
 
 		public void waitForEveryone() {
 			try {
-				countDownLatch.await( TIMEOUT_MINUTES, TimeUnit.MINUTES );
+				if ( !countDownLatch.await( TIMEOUT_MINUTES, MINUTES ) ) {
+					throw new AssertionFailure( "Time out reached!" );
+				}
 				prettyOut( "Everyone has now breached '" + label + "'" );
 			}
-			catch ( InterruptedException e ) {
+			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}

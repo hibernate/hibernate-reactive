@@ -226,6 +226,59 @@ public class  CompletionStages {
 		return new CompletionStageHandler<>( result, throwable );
 	}
 
+	/**
+	 * Makes the code simpler when dealing with ORM visitor pattern.
+	 * <p>
+	 * For example:
+	 * <pre>{@code
+	 * 	private CompletionStage<Void> visitConstraintOrderedTables(QuerySpec idTableIdentifierSubQuery, ExecutionContext executionContext) {
+	 * 		final Completable<Integer> completable = new Completable<>();
+	 * 		entityDescriptor
+	 * 				.visitConstraintOrderedTables( (tableExpression, tableKeyColumnVisitationSupplier) -> deleteFromTableUsingIdTable(
+	 * 								tableExpression,
+	 * 								tableKeyColumnVisitationSupplier,
+	 * 								idTableIdentifierSubQuery,
+	 * 								executionContext
+	 * 						)
+	 * 						.handle( completable::complete )
+	 * 				);
+	 * 		return completable.getStage().thenCompose( CompletionStages::voidFuture );
+	 *  }
+	 * }</pre>
+	 * </p>
+	 */
+	public static class Completable<T> {
+
+		private final CompletableFuture<T> stage;
+
+		public Completable() {
+			this.stage = new CompletableFuture<>();
+		}
+
+		/**
+		 * It will complete the underlying {@link CompletionStage} based on the parameters.
+		 *
+		 * @return {@code null}
+		 * @see #getStage()
+		 */
+		public Object complete(T result, Throwable throwable) {
+			if ( throwable != null ) {
+				stage.completeExceptionally( throwable );
+			}
+			else {
+				stage.complete( result );
+			}
+			return null;
+		}
+
+		/**
+		 * @return a {@link CompletionStage} that will complete (successfully or exceptionally) after {@link #complete(Object, Throwable)} gets called
+		 */
+		public CompletionStage<T> getStage() {
+			return stage;
+		}
+	}
+
 	public static class CompletionStageHandler<R, T extends Throwable> {
 
 		private final R result;

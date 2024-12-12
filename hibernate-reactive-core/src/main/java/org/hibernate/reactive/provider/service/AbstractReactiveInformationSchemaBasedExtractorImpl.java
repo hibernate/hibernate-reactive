@@ -12,14 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.hibernate.boot.model.TruthValue;
 import org.hibernate.boot.model.naming.DatabaseIdentifier;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.tool.schema.extract.internal.AbstractInformationExtractorImpl;
 import org.hibernate.tool.schema.extract.internal.ColumnInformationImpl;
-import org.hibernate.tool.schema.extract.spi.ColumnInformation;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 import org.hibernate.tool.schema.extract.spi.InformationExtractor;
 import org.hibernate.tool.schema.extract.spi.TableInformation;
@@ -197,10 +195,14 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 		if ( parameter != null && ( ! String.class.isInstance( parameter ) || ! ( (String) parameter ).isEmpty() ) ) {
 			parameters.add( parameter );
 			sb.append( clause );
-			sb.append( "?");
+			sb.append( parameterMarker( parameters.size() ) );
 			return true;
 		}
 		return false;
+	}
+
+	protected String parameterMarker(int pos) {
+		return "?";
 	}
 
 	@Override
@@ -364,9 +366,9 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	}
 
 	@Override
-	protected void addExtractedColumnInformation(TableInformation tableInformation, ResultSet resultSet) throws SQLException {
+	protected ColumnInformationImpl columnInformation(TableInformation tableInformation, ResultSet resultSet) throws SQLException {
 		final String typeName = new StringTokenizer( resultSet.getString( getResultSetTypeNameLabel() ), "() " ).nextToken();
-		final ColumnInformation columnInformation = new ColumnInformationImpl(
+		return new ColumnInformationImpl(
 				tableInformation,
 				DatabaseIdentifier.toIdentifier( resultSet.getString( getResultSetColumnNameLabel() ) ),
 				dataTypeCode( typeName ),
@@ -375,7 +377,6 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 				resultSet.getInt( getResultSetDecimalDigitsLabel() ),
 				interpretTruthValue( resultSet.getString( getResultSetIsNullableLabel() ) )
 		);
-		tableInformation.addColumn( columnInformation );
 	}
 
 	/**
@@ -383,15 +384,5 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	 */
 	protected int dataTypeCode(String typeName) {
 		return 0;
-	}
-
-	private TruthValue interpretTruthValue(String nullable) {
-		if ( "yes".equalsIgnoreCase( nullable ) ) {
-			return TruthValue.TRUE;
-		}
-		else if ( "no".equalsIgnoreCase( nullable ) ) {
-			return TruthValue.FALSE;
-		}
-		return TruthValue.UNKNOWN;
 	}
 }

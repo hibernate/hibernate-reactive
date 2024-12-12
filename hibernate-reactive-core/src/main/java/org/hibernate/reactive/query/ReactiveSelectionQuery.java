@@ -119,14 +119,11 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	ReactiveSelectionQuery<R> setLockMode(String alias, LockMode lockMode);
 
-	@Deprecated
-	ReactiveSelectionQuery<R> setAliasSpecificLockMode(String alias, LockMode lockMode);
-
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
 
 	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
 
-	ReactiveSelectionQuery<R> setOrder(List<Order<? super R>> orderList);
+	ReactiveSelectionQuery<R> setOrder(List<? extends Order<? super R>> orderList);
 
 	ReactiveSelectionQuery<R> setOrder(Order<? super R> order);
 

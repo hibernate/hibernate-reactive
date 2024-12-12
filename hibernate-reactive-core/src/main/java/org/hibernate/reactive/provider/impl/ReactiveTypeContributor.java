@@ -21,14 +21,16 @@ import org.hibernate.boot.model.TypeContributor;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DialectDelegateWrapper;
+import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonArrayJdbcTypeConstructor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveJsonJdbcType;
+import org.hibernate.reactive.type.descriptor.jdbc.ReactiveXmlArrayJdbcTypeConstructor;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 import org.hibernate.type.BasicTypeRegistry;
@@ -47,6 +49,7 @@ import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
 import org.hibernate.type.descriptor.jdbc.ObjectJdbcType;
+import org.hibernate.type.descriptor.jdbc.ObjectNullAsBinaryTypeJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
@@ -85,7 +88,16 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		JdbcTypeRegistry jdbcTypeRegistry = typeConfiguration.getJdbcTypeRegistry();
 		jdbcTypeRegistry.addTypeConstructor( ReactiveArrayJdbcTypeConstructor.INSTANCE );
+		jdbcTypeRegistry.addTypeConstructor( ReactiveXmlArrayJdbcTypeConstructor.INSTANCE );
 		jdbcTypeRegistry.addDescriptor( SqlTypes.JSON, ReactiveJsonJdbcType.INSTANCE );
+
+		if ( !( dialect instanceof MariaDBDialect ) && dialect instanceof MySQLDialect ) {
+			jdbcTypeRegistry.addTypeConstructor( ReactiveJsonArrayJdbcTypeConstructor.INSTANCE );
+		}
+
+		if ( dialect instanceof MySQLDialect ) {
+			jdbcTypeRegistry.addDescriptor( ObjectNullAsBinaryTypeJdbcType.INSTANCE );
+		}
 
 		if ( dialect instanceof MySQLDialect || dialect instanceof DB2Dialect || dialect instanceof OracleDialect ) {
 			jdbcTypeRegistry.addDescriptor( TimestampAsLocalDateTimeJdbcType.INSTANCE );
@@ -101,7 +113,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 	}
 
 	private Dialect dialect(ServiceRegistry serviceRegistry) {
-		return DialectDelegateWrapper.extractRealDialect( serviceRegistry.getService( JdbcEnvironment.class ).getDialect() );
+		return serviceRegistry.getService( JdbcEnvironment.class ).getDialect();
 	}
 
 	/**
@@ -116,7 +128,8 @@ public class ReactiveTypeContributor implements TypeContributor {
 		public <X> ValueBinder<X> getBinder(final JavaType<X> javaType) {
 			return new BasicBinder<>( javaType, this ) {
 				@Override
-				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {
+				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options)
+						throws SQLException {
 					final Timestamp timestamp = javaType.unwrap( value, Timestamp.class, options );
 					if ( value instanceof Calendar ) {
 						( (PreparedStatementAdaptor) st )
@@ -124,7 +137,12 @@ public class ReactiveTypeContributor implements TypeContributor {
 					}
 					else if ( options.getJdbcTimeZone() != null ) {
 						( (PreparedStatementAdaptor) st )
-								.setTimestamp( index, timestamp, Calendar.getInstance( options.getJdbcTimeZone() ), ZonedDateTime::toLocalDateTime );
+								.setTimestamp(
+										index,
+										timestamp,
+										Calendar.getInstance( options.getJdbcTimeZone() ),
+										ZonedDateTime::toLocalDateTime
+								);
 					}
 					else {
 						st.setTimestamp( index, timestamp );
@@ -141,7 +159,12 @@ public class ReactiveTypeContributor implements TypeContributor {
 					}
 					else if ( options.getJdbcTimeZone() != null ) {
 						( (PreparedStatementAdaptor) st )
-								.setTimestamp( name, timestamp, Calendar.getInstance( options.getJdbcTimeZone() ), ZonedDateTime::toLocalDateTime );
+								.setTimestamp(
+										name,
+										timestamp,
+										Calendar.getInstance( options.getJdbcTimeZone() ),
+										ZonedDateTime::toLocalDateTime
+								);
 					}
 					else {
 						st.setTimestamp( name, timestamp );
@@ -165,16 +188,25 @@ public class ReactiveTypeContributor implements TypeContributor {
 		public <X> ValueBinder<X> getBinder(final JavaType<X> javaType) {
 			return new BasicBinder<>( javaType, this ) {
 				@Override
-				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {
+				protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) {
 					final Instant instant = javaType.unwrap( value, Instant.class, options );
-					( (PreparedStatementAdaptor) st).setTimestamp( index, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
+					( (PreparedStatementAdaptor) st ).setTimestamp(
+							index,
+							Timestamp.from( instant ),
+							UTC_CALENDAR,
+							ZonedDateTime::toLocalDateTime
+					);
 				}
 
 				@Override
-				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options)
-						throws SQLException {
+				protected void doBind(CallableStatement st, X value, String name, WrapperOptions options) {
 					final Instant instant = javaType.unwrap( value, Instant.class, options );
-					( (PreparedStatementAdaptor) st).setTimestamp( name, Timestamp.from( instant ), UTC_CALENDAR, ZonedDateTime::toLocalDateTime );
+					( (PreparedStatementAdaptor) st ).setTimestamp(
+							name,
+							Timestamp.from( instant ),
+							UTC_CALENDAR,
+							ZonedDateTime::toLocalDateTime
+					);
 				}
 			};
 		}
@@ -203,7 +235,12 @@ public class ReactiveTypeContributor implements TypeContributor {
 		}
 
 		@Override
-		public String getCastTypeName(JdbcType jdbcType, JavaType<?> javaType, Long length, Integer precision, Integer scale) {
+		public String getCastTypeName(
+				JdbcType jdbcType,
+				JavaType<?> javaType,
+				Long length,
+				Integer precision,
+				Integer scale) {
 			return "json";
 		}
 	}
@@ -253,7 +290,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		@Override
 		public String[] getRegistrationKeys() {
-			return new String[] { "json", JsonObject.class.getName() };
+			return new String[] {"json", JsonObject.class.getName()};
 		}
 	}
 

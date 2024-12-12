@@ -6,7 +6,6 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -24,7 +23,6 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
-import org.hibernate.jdbc.Expectation;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
@@ -49,6 +47,7 @@ import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.metamodel.mapping.internal.ReactiveRuntimeModelCreationContext;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
@@ -74,8 +73,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final EntityDataAccess cacheAccessStrategy,
 			final NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
-		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, creationContext );
-		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, creationContext );
+		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
+		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
 	}
 
 	@Override
@@ -145,11 +144,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 
-	@Override
-	public String generateSelectVersionString() {
-		String sql = super.generateSelectVersionString();
-		return parameters().process( sql );
-	}
 
 	@Override
 	protected void validateGenerator() {
@@ -185,16 +179,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
-	}
-
-	@Override
-	public String[][] getLazyPropertyColumnAliases() {
-		return super.getLazyPropertyColumnAliases();
-	}
-
-	@Override
-	public boolean check(int rows, Object id, int tableNumber, Expectation expectation, PreparedStatement statement, String sql) throws HibernateException {
-		return super.check(rows, id, tableNumber, expectation, statement, sql);
 	}
 
 	@Override
