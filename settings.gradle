@@ -13,7 +13,7 @@ pluginManagement {
 
 rootProject.name = 'hibernate-reactive'
 
-gradle.ext.baselineJavaVersion = JavaLanguageVersion.of( 11 )
+gradle.ext.baselineJavaVersion = JavaLanguageVersion.of( 17 )
 
 // Gradle does bytecode transformation on tests.
 // You can't use bytecode higher than what Gradle supports, even with toolchains.
