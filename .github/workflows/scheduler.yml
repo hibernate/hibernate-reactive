@@ -11,7 +11,7 @@ jobs:
   build-snapshots:
     strategy:
       matrix:
-        branch: [ 'wip/2.3', 'wip/2.4' ]
+        branch: [ 'wip/2.3', 'wip/2.4', 'wip/3.0' ]
     uses: ./.github/workflows/build.yml
     with:
       branch: ${{ matrix.branch }}
