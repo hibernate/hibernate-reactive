@@ -73,7 +73,7 @@ pipeline {
 		string(
 				name: 'RELEASE_VERSION',
 				defaultValue: '',
-				description: 'The version to be released, e.g. 2.4.0.Final. Mandatory for manual releases, to prevent mistakes.',
+				description: 'The version to be released, e.g. 3.0.0.Beta1. Mandatory for manual releases, to prevent mistakes.',
 				trim: true
 		)
 		string(
