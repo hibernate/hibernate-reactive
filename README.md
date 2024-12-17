@@ -30,20 +30,20 @@ Learn more at <http://hibernate.org/reactive>.
 
 Hibernate Reactive has been tested with:
 
-- Java 17, 21, 24
+- Java 11, 17, 21, 23
 - PostgreSQL 16
-- MySQL 9
+- MySQL 8
 - MariaDB 11
-- Db2 12
+- Db2 11
 - CockroachDB v24
 - MS SQL Server 2022
 - Oracle 23
-- [Hibernate ORM][] 7.0.0.CR1
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.5.14
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.5.14
-- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.5.14
-- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 4.5.14
-- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 4.5.14
+- [Hibernate ORM][] 7.0.0.CR2
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 5.0.0
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 5.0.0
+- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 5.0.0
+- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 5.0.0
+- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 5.0.0
 - [Quarkus][Quarkus] via the Hibernate Reactive extension
 
 [PostgreSQL]: https://www.postgresql.org

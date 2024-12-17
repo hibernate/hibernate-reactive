@@ -5,19 +5,19 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.14}
-//DEPS com.ongres.scram:client:2.1
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.14}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.14}
-//DEPS io.vertx:vertx-unit:${vertx.version:4.5.14}
+//DEPS io.vertx:vertx-pg-client:${vertx.version:5.0.0}
+//DEPS com.ongres.scram:scram-client:3.1
+//DEPS io.vertx:vertx-db2-client:${vertx.version:5.0.0}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.0.0}
+//DEPS io.vertx:vertx-unit:${vertx.version:5.0.0}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.0.0.Beta1}
 //DEPS org.assertj:assertj-core:3.26.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:postgresql:1.20.6
-//DEPS org.testcontainers:mysql:1.20.6
-//DEPS org.testcontainers:db2:1.20.6
-//DEPS org.testcontainers:mariadb:1.20.6
-//DEPS org.testcontainers:cockroachdb:1.20.6
+//DEPS org.testcontainers:postgresql:1.20.4
+//DEPS org.testcontainers:mysql:1.20.4
+//DEPS org.testcontainers:db2:1.20.4
+//DEPS org.testcontainers:mariadb:1.20.4
+//DEPS org.testcontainers:cockroachdb:1.20.4
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
@@ -228,11 +228,11 @@ public class ReactiveTest {
 	 * It's a wrapper around the testcontainers classes.
 	 */
 	enum Database {
-		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:17.4" ) ),
-		MYSQL( () -> new MySQLContainer( "mysql:9.2.0" ) ),
+		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:16.3" ) ),
+		MYSQL( () -> new MySQLContainer( "mysql:8.4.0" ) ),
 		DB2( () -> new Db2Container( "docker.io/icr.io/db2_community/db2:12.1.0.0" ).acceptLicense() ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:11.7.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v24.1.15" ) );
+		MARIADB( () -> new MariaDBContainer( "mariadb:11.4.2" ) ),
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v24.1.0" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 
