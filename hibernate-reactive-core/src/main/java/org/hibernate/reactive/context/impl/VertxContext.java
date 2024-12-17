@@ -8,7 +8,7 @@ package org.hibernate.reactive.context.impl;
 import java.lang.invoke.MethodHandles;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.logging.impl.Log;
