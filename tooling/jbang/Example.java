@@ -5,7 +5,7 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS com.ongres.scram:client:2.1
+//DEPS com.ongres.scram:scram-client:3.1
 //DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.13}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.13}
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.13}
