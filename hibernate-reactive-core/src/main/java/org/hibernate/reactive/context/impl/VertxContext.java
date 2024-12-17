@@ -8,7 +8,7 @@ package org.hibernate.reactive.context.impl;
 import java.lang.invoke.MethodHandles;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.internal.ContextInternal;
 
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.logging.impl.Log;
@@ -36,7 +36,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public <T> void put(Key<T> key, T instance) {
-		final io.vertx.core.Context context = Vertx.currentContext();
+		final ContextInternal context = currentContext();
 		if ( context != null ) {
 			if ( trace ) LOG.tracef( "Putting key,value in context: [%1$s, %2$s]", key, instance );
 			context.putLocal( key, instance );
@@ -47,9 +47,13 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 		}
 	}
 
+	private static ContextInternal currentContext() {
+		return (ContextInternal) Vertx.currentContext();
+	}
+
 	@Override
 	public <T> T get(Key<T> key) {
-		final io.vertx.core.Context context = Vertx.currentContext();
+		final ContextInternal context = currentContext();
 		if ( context != null ) {
 			T local = context.getLocal( key );
 			if ( trace ) LOG.tracef( "Getting value %2$s from context for key %1$s", key, local  );
@@ -63,7 +67,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public void remove(Key<?> key) {
-		final io.vertx.core.Context context = Vertx.currentContext();
+		final ContextInternal context = currentContext();
 		if ( context != null ) {
 			boolean removed = context.removeLocal( key );
 			if ( trace ) LOG.tracef( "Key %s removed from context: %s", key, removed );
@@ -75,7 +79,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public void execute(Runnable runnable) {
-		final io.vertx.core.Context currentContext = Vertx.currentContext();
+		final io.vertx.core.Context currentContext = currentContext();
 		if ( currentContext == null ) {
 			if ( trace ) LOG.tracef( "Not in a Vert.x context, checking the VertxInstance service" );
 			final io.vertx.core.Context newContext = vertxInstance.getVertx().getOrCreateContext();
@@ -83,6 +87,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 			// that could lead to unintentionally share the same session with other streams.
 			ContextInternal newContextInternal = (ContextInternal) newContext;
 			final ContextInternal duplicate = newContextInternal.duplicate();
+
 			if ( trace ) LOG.tracef( "Using duplicated context from VertxInstance: %s", duplicate );
 			duplicate.runOnContext( x -> runnable.run() );
 		}

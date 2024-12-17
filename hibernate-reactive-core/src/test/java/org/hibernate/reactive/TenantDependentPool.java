@@ -7,16 +7,12 @@ package org.hibernate.reactive;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
@@ -58,8 +54,18 @@ public class TenantDependentPool extends DefaultSqlClientPool {
 		return pools;
 	}
 
-	private Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx, Tenant tenant) {
-		return super.createPool( changeDbName( uri, tenant ), changeDbName( connectOptions, tenant ), poolOptions, vertx );
+	private Pool createPool(
+			URI uri,
+			SqlConnectOptions connectOptions,
+			PoolOptions poolOptions,
+			Vertx vertx,
+			Tenant tenant) {
+		return super.createPool(
+				changeDbName( uri, tenant ),
+				changeDbName( connectOptions, tenant ),
+				poolOptions,
+				vertx
+		);
 	}
 
 	/**
@@ -101,11 +107,6 @@ public class TenantDependentPool extends DefaultSqlClientPool {
 		}
 
 		@Override
-		public void getConnection(Handler<AsyncResult<SqlConnection>> handler) {
-			poolMap.get( defaultTenantId ).getConnection( handler );
-		}
-
-		@Override
 		public Future<SqlConnection> getConnection() {
 			return poolMap.get( defaultTenantId ).getConnection();
 		}
@@ -123,21 +124,6 @@ public class TenantDependentPool extends DefaultSqlClientPool {
 		@Override
 		public PreparedQuery<RowSet<Row>> preparedQuery(String sql, PrepareOptions options) {
 			return poolMap.get( defaultTenantId ).preparedQuery( sql, options );
-		}
-
-		@Override
-		public void close(Handler<AsyncResult<Void>> handler) {
-			poolMap.forEach( (tenant, pool) -> pool.close( handler ) );
-		}
-
-		@Override
-		public Pool connectHandler(Handler<SqlConnection> handler) {
-			return poolMap.get( defaultTenantId ).connectHandler( handler );
-		}
-
-		@Override
-		public Pool connectionProvider(Function<Context, Future<SqlConnection>> provider) {
-			return poolMap.get( defaultTenantId ).connectionProvider( provider );
 		}
 
 		@Override

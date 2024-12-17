@@ -39,7 +39,7 @@ dependencies {
     testImplementation "io.vertx:vertx-micrometer-metrics:${vertxSqlClientVersion}"
 
     // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
-    testImplementation 'com.ongres.scram:client:2.1'
+    testImplementation 'com.ongres.scram:scram-client:3.1'
 
     // JUnit Jupiter
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'

@@ -31,7 +31,6 @@ import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 
-import static io.vertx.core.CompositeFuture.all;
 import static io.vertx.core.Future.all;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
@@ -88,7 +87,7 @@ public class LocalContextTest {
 				.compose( this::findProducts )
 				.onSuccess( res -> context.completeNow() )
 				.onFailure( context::failNow )
-				.eventually( unused -> vertx.close() );
+				.eventually( vertx::close );
 	}
 
 	/**
@@ -97,7 +96,7 @@ public class LocalContextTest {
 	 * @see #REQUEST_NUMBER
 	 */
 	private Future<?> createProducts(WebClient webClient) {
-		List<Future> postRequests = new ArrayList<>();
+		List<Future<?>> postRequests = new ArrayList<>();
 		for ( int i = 0; i < REQUEST_NUMBER; i++ ) {
 			final Product product = new Product( i + 1 );
 
