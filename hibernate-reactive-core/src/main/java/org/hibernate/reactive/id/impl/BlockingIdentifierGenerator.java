@@ -14,9 +14,9 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.net.impl.pool.CombinerExecutor;
-import io.vertx.core.net.impl.pool.Executor;
-import io.vertx.core.net.impl.pool.Task;
+import io.vertx.core.internal.pool.CombinerExecutor;
+import io.vertx.core.internal.pool.Executor;
+import io.vertx.core.internal.pool.Task;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -44,7 +44,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	//modification access.
 	//This replaces the synchronization blocks one would see in a similar
 	//service in Hibernate ORM, but using a non-blocking cooperative design.
-	private final CombinerExecutor executor = new CombinerExecutor( state );
+	private final CombinerExecutor<GeneratorState> executor = new CombinerExecutor<>( state );
 
 	/**
 	 * Allocate a new block, by obtaining the next "hi" value from the database

@@ -7,7 +7,6 @@ package org.hibernate.reactive.it;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -20,6 +19,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -29,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Promise;
 import io.vertx.core.VertxOptions;
 import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.VertxExtension;
@@ -73,7 +72,7 @@ public abstract class BaseReactiveIT {
 	 * Configure Vertx JUnit5 test context
 	 */
 	@RegisterExtension
-	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions() );
+	static RunTestOnContext testOnContext = new RunTestOnContext( vertxOptions(), false );
 
 	private static VertxOptions vertxOptions() {
 		return new VertxOptions()
@@ -202,33 +201,19 @@ public abstract class BaseReactiveIT {
 	 * @return a {@link CompletionStage} void that succeeds when the factory is ready.
 	 */
 	protected CompletionStage<Void> setupSessionFactory(Supplier<Configuration> confSupplier) {
-		CompletableFuture<Void> future = new CompletableFuture<>();
-		testOnContext.vertx()
+		return testOnContext.vertx()
 				.executeBlocking(
 						// schema generation is a blocking operation and so it causes an
 						// exception when run on the Vert.x event loop. So call it using
 						// Vertx.executeBlocking()
-						promise -> startFactoryManager( promise, confSupplier ),
-						event -> {
-							if ( event.succeeded() ) {
-								future.complete( null );
-							}
-							else {
-								future.completeExceptionally( event.cause() );
-							}
-						}
-				);
-		return future;
+						() -> startFactoryManager( confSupplier ),
+						true
+				).toCompletionStage().thenCompose( CompletionStages::voidFuture );
 	}
 
-	private void startFactoryManager(Promise<Object> p, Supplier<Configuration> confSupplier) {
-		try {
-			ormSessionFactory = createHibernateSessionFactory( confSupplier.get() );
-			p.complete();
-		}
-		catch (Throwable e) {
-			p.fail( e );
-		}
+	private Object startFactoryManager(Supplier<Configuration> confSupplier) {
+		ormSessionFactory = createHibernateSessionFactory( confSupplier.get() );
+		return null;
 	}
 
 	private SessionFactory createHibernateSessionFactory(Configuration configuration) {

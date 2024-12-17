@@ -34,6 +34,7 @@ import static org.hibernate.cfg.SchemaToolingSettings.HBM2DDL_JDBC_METADATA_EXTR
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -126,13 +127,8 @@ public class SchemaValidationTest extends BaseReactiveTest {
 							validateConf.addAnnotatedClass( BasicTypesTestEntity.class );
 							// The table mapping this entity shouldn't be in the db
 							validateConf.addAnnotatedClass( Extra.class );
-							return setupSessionFactory( validateConf )
-									.handle( (unused, throwable) -> {
-										assertThat( throwable )
-												.isInstanceOf( SchemaManagementException.class )
-												.hasMessage( errorMessage );
-										return null;
-									} );
+							return assertThrown( SchemaManagementException.class, setupSessionFactory( validateConf ) )
+									.thenAccept( throwable -> assertThat( throwable ).hasMessage( errorMessage ) );
 						} )
 		);
 	}

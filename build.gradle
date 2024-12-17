@@ -22,7 +22,7 @@ ext {
     // Example:
     // ./gradlew build -PvertxSqlClientVersion=4.0.0-SNAPSHOT
     if ( !project.hasProperty( 'vertxSqlClientVersion' ) ) {
-        vertxSqlClientVersion = '4.5.15'
+        vertxSqlClientVersion = '5.0.0'
     }
 
     testcontainersVersion = '1.21.0'
