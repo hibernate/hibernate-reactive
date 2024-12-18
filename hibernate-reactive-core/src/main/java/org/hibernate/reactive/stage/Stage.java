@@ -1917,6 +1917,17 @@ public interface Stage {
 		<T> CompletionStage<T> fetch(T association);
 
 		/**
+		 * Return the identifier value of the given entity, which may be detached.
+		 *
+		 * @param entity a persistent instance associated with this session
+		 *
+		 * @return the identifier
+		 *
+		 * @since 3.0
+		 */
+		Object getIdentifier(Object entity);
+
+		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
 		 * {@link jakarta.persistence.SqlResultSetMapping}.
 		 */

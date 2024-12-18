@@ -133,6 +133,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public Object getIdentifier(Object entity) {
+		return delegate.getIdentifier(entity);
+	}
+
+	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
 		return currentTransaction == null
 				? new Transaction<T>().execute( work )

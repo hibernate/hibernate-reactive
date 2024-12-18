@@ -71,4 +71,6 @@ public interface ReactiveStatelessSession extends ReactiveQueryProducer, Reactiv
 	boolean isOpen();
 
 	void close(CompletableFuture<Void> closing);
+
+	Object getIdentifier(Object entity);
 }
