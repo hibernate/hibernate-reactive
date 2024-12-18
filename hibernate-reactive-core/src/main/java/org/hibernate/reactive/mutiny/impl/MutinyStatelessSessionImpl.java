@@ -193,6 +193,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		return uni( () -> delegate.reactiveFetch( association, false ) );
 	}
 
+	@Override
+	public Object getIdentifier(Object entity) {
+		return delegate.getIdentifier(entity);
+	}
+
 //	@Override
 //	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
 //		return delegate.getResultSetMapping( resultType, mappingName );
