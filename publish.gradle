@@ -82,25 +82,19 @@ publishing {
 
 var signingExtension = project.getExtensions().getByType(SigningExtension) as SigningExtension
 
-def signPublicationsTask = tasks.register('signPublications') {
-    description "Grouping task which executes all Sign tasks"
-    dependsOn tasks.withType( Sign )
-}
+var publishingExtension = project.getExtensions().getByType(PublishingExtension) as PublishingExtension
+signingExtension.sign publishingExtension.publications.publishedArtifacts
 
-tasks.named( "publishPublishedArtifactsPublicationToSonatypeRepository" ) {
-    // publishing depends on signing
-    dependsOn signPublicationsTask
-}
+var signingKey = resolveSigningKey()
+var signingPassphrase = resolveSigningPassphrase()
+signingExtension.useInMemoryPgpKeys(signingKey, signingPassphrase)
 
 gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
-    boolean wasSigningRequested = false
     boolean wasPublishingRequested = false
 
     graph.allTasks.each {task ->
-        if ( task instanceof Sign ) {
-            wasSigningRequested = true
-        }
-        else if ( task instanceof PublishToMavenRepository ) {
+        if ( task instanceof PublishToMavenRepository ) {
+            logger.lifecycle( "Found PublishToMavenRepository task : {}", task.path )
             wasPublishingRequested = true
         }
     }
@@ -111,24 +105,34 @@ gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
         if ( publishUser == null || publishPass == null ) {
             throw new RuntimeException( "Cannot perform publishing to OSSRH without credentials." )
         }
-        logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
-    }
 
-    if ( wasSigningRequested || wasPublishingRequested ) {
-        // signing was explicitly requested and/or we are publishing to Sonatype OSSRH
-        // 		- we need the signing to happen
+        logger.lifecycle "Publishing {} : {} : {}", project.group, project.name, project.version
+
+        // require signing if publishing to OSSRH
         signingExtension.required = true
+    }
+    else if ( signingKey == null || signingPassphrase == null ) {
+        tasks.withType( Sign ).each { t-> t.enabled = false }
+    }
+}
 
-        var signingKey = resolveSigningKey()
-        var signingPassword = resolveSigningPassphrase()
-        signingExtension.useInMemoryPgpKeys( signingKey, signingPassword )
-        signingExtension.sign publishing.publications.publishedArtifacts
+
+static String resolveSigningKey() {
+    var key = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY" )
+    if ( key != null ) {
+        return key
     }
-    else {
-        // signing was not explicitly requested and we are not publishing to OSSRH,
-        // 		- disable all Sign tasks
-        tasks.withType( Sign ).each { enabled = false }
+
+    var keyFile = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY_PATH" )
+    if ( keyFile != null ) {
+        return new File( keyFile ).text
     }
+
+    return null
+}
+
+static String resolveSigningPassphrase() {
+    return System.getenv().get( "SIGNING_GPG_PASSPHRASE" )
 }
 
 String resolvePublishUser() {
@@ -164,27 +168,4 @@ String projectPropOrNull(String name) {
         return project.findProperty( name )
     }
     return null;
-}
-
-
-static String resolveSigningKey() {
-    var key = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY" )
-    if ( key != null ) {
-        return key
-    }
-
-    var keyFile = System.getenv().get( "SIGNING_GPG_PRIVATE_KEY_PATH" )
-    if ( keyFile != null ) {
-        return new File( keyFile ).text
-    }
-
-    throw new RuntimeException( "Cannot perform signing without GPG details." )
-}
-
-static String resolveSigningPassphrase() {
-    var passphrase = System.getenv().get( "SIGNING_GPG_PASSPHRASE" )
-    if ( passphrase == null ) {
-        throw new RuntimeException( "Cannot perform signing without GPG details." )
-    }
-    return passphrase
 }
