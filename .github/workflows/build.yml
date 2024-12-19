@@ -5,12 +5,17 @@ on:
     branches:
       - 'main'
       - 'wip/**'
+      - '2.*'
+      - '3.*'
     tags:
       - '2.*'
+      - '3.*'
   pull_request:
     branches:
       - 'main'
       - 'wip/**'
+      - '2.*'
+      - '3.*'
   # For building snapshots
   workflow_call:
     inputs:
