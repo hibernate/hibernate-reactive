@@ -1776,6 +1776,16 @@ public interface Stage {
 		CompletionStage<Void> insert(int batchSize, Object... entities);
 
 		/**
+		 * Insert multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		CompletionStage<Void> insertMultiple(List<?> entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1802,6 +1812,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		CompletionStage<Void> delete(int batchSize, Object... entities);
+
+		/**
+		 * Delete multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		CompletionStage<Void> deleteMultiple(List<?> entities);
 
 		/**
 		 * Update a row.
@@ -1832,6 +1852,16 @@ public interface Stage {
 		CompletionStage<Void> update(int batchSize, Object... entities);
 
 		/**
+		 * Update multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		CompletionStage<Void> updateMultiple(List<?> entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1858,6 +1888,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		CompletionStage<Void> refresh(int batchSize, Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database,
+		 * using the size of the given list as the batch size.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		CompletionStage<Void> refreshMultiple(List<?> entities);
 
 		/**
 		 * Refresh the entity instance state from the database.

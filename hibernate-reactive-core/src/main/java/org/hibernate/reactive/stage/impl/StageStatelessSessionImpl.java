@@ -19,6 +19,7 @@ import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -68,6 +69,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public CompletionStage<Void> insertMultiple(List<?> entities) {
+		return delegate.reactiveInsertAll( entities.size(), entities.toArray() );
+	}
+
+	@Override
 	public CompletionStage<Void> delete(Object entity) {
 		return delegate.reactiveDelete( entity );
 	}
@@ -80,6 +86,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public CompletionStage<Void> delete(int batchSize, Object... entities) {
 		return delegate.reactiveDeleteAll( batchSize, entities );
+	}
+
+	@Override
+	public CompletionStage<Void> deleteMultiple(List<?> entities) {
+		return delegate.reactiveDeleteAll( entities.size(), entities.toArray() );
 	}
 
 	@Override
@@ -98,6 +109,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public CompletionStage<Void> updateMultiple(List<?> entities) {
+		return delegate.reactiveUpdateAll( entities.size(), entities.toArray() );
+	}
+
+	@Override
 	public CompletionStage<Void> refresh(Object entity) {
 		return delegate.reactiveRefresh( entity );
 	}
@@ -110,6 +126,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public CompletionStage<Void> refresh(int batchSize, Object... entities) {
 		return delegate.reactiveRefreshAll( batchSize, entities );
+	}
+
+	@Override
+	public CompletionStage<Void> refreshMultiple(List<?> entities) {
+		return delegate.reactiveRefreshAll( entities.size(), entities.toArray() );
 	}
 
 	@Override

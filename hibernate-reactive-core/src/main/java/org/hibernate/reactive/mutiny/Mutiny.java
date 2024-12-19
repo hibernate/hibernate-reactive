@@ -1731,6 +1731,16 @@ public interface Mutiny {
 		Uni<Void> insertAll(int batchSize, Object... entities);
 
 		/**
+		 * Insert multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		Uni<Void> insertMultiple(List<?> entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1757,6 +1767,16 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		Uni<Void> deleteAll(int batchSize, Object... entities);
+
+		/**
+		 * Delete multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		Uni<Void> deleteMultiple(List<?> entities);
 
 		/**
 		 * Update a row.
@@ -1787,13 +1807,14 @@ public interface Mutiny {
 		Uni<Void> updateAll(int batchSize, Object... entities);
 
 		/**
-		 * Refresh the entity instance state from the database.
+		 * Update multiple rows, using the size of the
+		 * given list as the batch size.
 		 *
-		 * @param entity The entity to be refreshed.
+		 * @param entities detached entity instances
 		 *
-		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		Uni<Void> refresh(Object entity);
+		Uni<Void> updateMultiple(List<?> entities);
 
 		/**
 		 * Use a SQL {@code merge into} statement to perform an upsert.
@@ -1820,6 +1841,15 @@ public interface Mutiny {
 		/**
 		 * Refresh the entity instance state from the database.
 		 *
+		 * @param entity The entity to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refresh(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
 		 * @param entities The entities to be refreshed.
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
@@ -1836,6 +1866,16 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		Uni<Void> refreshAll(int batchSize, Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database
+		 * using the size of the given list as the batch size.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refreshMultiple(List<?> entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
