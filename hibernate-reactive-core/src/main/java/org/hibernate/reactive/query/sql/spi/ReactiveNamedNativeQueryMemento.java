@@ -53,6 +53,11 @@ public class ReactiveNamedNativeQueryMemento implements NamedNativeQueryMemento 
 	}
 
 	@Override
+	public Class<?> getResultType() {
+		return delegate.getResultType();
+	}
+
+	@Override
 	public Integer getFirstResult() {
 		return delegate.getFirstResult();
 	}
