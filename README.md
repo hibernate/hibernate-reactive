@@ -11,6 +11,8 @@
 A reactive API for [Hibernate ORM][], supporting non-blocking database
 drivers and a reactive style of interaction with the database.
 
+TESTING
+
 Hibernate Reactive may be used in any plain Java program, but is 
 especially targeted toward usage in reactive environments like 
 [Quarkus][] and [Vert.x][].
