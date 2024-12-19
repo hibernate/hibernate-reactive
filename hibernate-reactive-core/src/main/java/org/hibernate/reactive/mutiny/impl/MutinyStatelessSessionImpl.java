@@ -17,6 +17,7 @@ import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -129,6 +130,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
+	public Uni<Void> insertMultiple(List<?> entities) {
+		return insertAll( entities.size(), entities.toArray() );
+	}
+
+	@Override
 	public Uni<Void> delete(Object entity) {
 		return uni( () -> delegate.reactiveDelete( entity ) );
 	}
@@ -144,6 +150,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
+	public Uni<Void> deleteMultiple(List<?> entities) {
+		return deleteAll( entities.size(), entities.toArray() );
+	}
+
+	@Override
 	public Uni<Void> update(Object entity) {
 		return uni( () -> delegate.reactiveUpdate( entity ) );
 	}
@@ -156,6 +167,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public Uni<Void> updateAll(int batchSize, Object... entities) {
 		return uni( () -> delegate.reactiveUpdateAll( batchSize, entities ) );
+	}
+
+	@Override
+	public Uni<Void> updateMultiple(List<?> entities) {
+		return updateAll( entities.size(), entities.toArray() );
 	}
 
 	@Override
@@ -181,6 +197,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public Uni<Void> refreshAll(int batchSize, Object... entities) {
 		return uni( () -> delegate.reactiveRefreshAll( batchSize, entities ) );
+	}
+
+	@Override
+	public Uni<Void> refreshMultiple(List<?> entities) {
+		return refreshAll( entities.size(), entities.toArray() );
 	}
 
 	@Override
