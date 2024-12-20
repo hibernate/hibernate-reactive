@@ -90,7 +90,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-gradle
         with:
           path: |
@@ -139,7 +139,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-gradle
         with:
           path: |
