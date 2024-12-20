@@ -5,18 +5,18 @@
  */
 package org.hibernate.reactive.id.impl;
 
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.impl.pool.CombinerExecutor;
-import io.vertx.core.net.impl.pool.Executor;
-import io.vertx.core.net.impl.pool.Task;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+import io.vertx.core.internal.pool.CombinerExecutor;
+import io.vertx.core.internal.pool.Executor;
+import io.vertx.core.internal.pool.Task;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -44,7 +44,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	//modification access.
 	//This replaces the synchronization blocks one would see in a similar
 	//service in Hibernate ORM, but using a non-blocking cooperative design.
-	private final CombinerExecutor executor = new CombinerExecutor( state );
+	private final CombinerExecutor<GeneratorState> executor = new CombinerExecutor<>( state );
 
 	/**
 	 * Allocate a new block, by obtaining the next "hi" value from the database
@@ -138,7 +138,6 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 				// value in the table, so just increment the lo
 				// value and return the next id in the block
 				completedFuture( local ).whenComplete( this::acceptAsReturnValue );
-				return null;
 			}
 			else {
 				nextHiValue( connectionSupplier )
@@ -155,8 +154,8 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 								} );
 							}
 						} );
-				return null;
 			}
+			return null;
 		}
 
 		private void acceptAsReturnValue(final Long aLong, final Throwable throwable) {
