@@ -196,7 +196,7 @@ pipeline {
 							// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
 							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'ORG_GRADLE_PROJECT_sonatypePassword', usernameVariable: 'ORG_GRADLE_PROJECT_sonatypeUsername'),
 							file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_GPG_PRIVATE_KEY_PATH'),
-							string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_GPG_PASSPHRASE')
+							string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_GPG_PASSPHRASE'),
 							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default')
 						]) {
 							sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
