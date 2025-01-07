@@ -60,9 +60,8 @@ public class ReactiveNonAggregatedIdentifierMappingInitializer extends NonAggreg
 		}
 		else {
 			final RowProcessingState rowProcessingState = data.getRowProcessingState();
-			final boolean[] dataIsMissing = {false};
 			return loop( getInitializers(), initializer -> {
-				if ( dataIsMissing[0] || initializer == null ) {
+				if ( initializer == null ) {
 					return voidFuture();
 				}
 				final InitializerData subData = ( (ReactiveInitializer<?>) initializer )
@@ -72,7 +71,6 @@ public class ReactiveNonAggregatedIdentifierMappingInitializer extends NonAggreg
 						.thenAccept( v -> {
 							if ( subData.getState() == State.MISSING ) {
 								data.setState( State.MISSING );
-								dataIsMissing[0] = true;
 							}
 						} );
 			} );
