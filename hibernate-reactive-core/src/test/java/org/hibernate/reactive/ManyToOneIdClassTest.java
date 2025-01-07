@@ -8,7 +8,6 @@ package org.hibernate.reactive;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,26 +39,21 @@ public class ManyToOneIdClassTest extends BaseReactiveTest {
 		SystemUser systemUser = new SystemUser( subsystem, USER_NAME, "system 1" );
 		test(
 				context, getMutinySessionFactory()
-						.withTransaction( (s, t) -> s.persistAll( subsystem, systemUser ) )
+						.withTransaction( s -> s.persistAll( subsystem, systemUser ) )
 		);
-	}
-
-	@AfterEach
-	public void after(VertxTestContext context) {
-		test( context, cleanDb() );
 	}
 
 	@Test
 	public void testQuery(VertxTestContext context) {
 		test(
-				context, openSession()
-						.thenAccept( session -> session.createQuery( "SELECT s FROM SystemUser s", SystemUser.class )
-								.getResultList().thenAccept( list -> {
-									assertThat( list.size() ).isEqualTo( 1 );
-									SystemUser systemUser = list.get( 0 );
-									assertThat( systemUser.getSubsystem().getId() ).isEqualTo( SUBSYSTEM_ID );
-									assertThat( systemUser.getUsername() ).isEqualTo( USER_NAME );
-								} ) )
+				context, openSession().thenAccept( session -> session
+						.createQuery( "FROM SystemUser s", SystemUser.class )
+						.getResultList().thenAccept( list -> {
+							assertThat( list ).hasSize( 1 );
+							SystemUser systemUser = list.get( 0 );
+							assertThat( systemUser.getSubsystem().getId() ).isEqualTo( SUBSYSTEM_ID );
+							assertThat( systemUser.getUsername() ).isEqualTo( USER_NAME );
+						} ) )
 		);
 	}
 
