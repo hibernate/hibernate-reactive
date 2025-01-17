@@ -131,7 +131,7 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 				final String uniqueKeyPropertyName = referencedModelPart.getReferencedPropertyName();
 				final Type uniqueKeyPropertyType = uniqueKeyPropertyName == null
 						? concreteDescriptor.getIdentifierType()
-						: session.getFactory().getReferencedPropertyType( concreteDescriptor.getEntityName(), uniqueKeyPropertyName );
+						: session.getFactory().getRuntimeMetamodels().getReferencedPropertyType( concreteDescriptor.getEntityName(), uniqueKeyPropertyName );
 				final EntityUniqueKey euk = new EntityUniqueKey(
 						concreteDescriptor.getEntityName(),
 						uniqueKeyPropertyName,

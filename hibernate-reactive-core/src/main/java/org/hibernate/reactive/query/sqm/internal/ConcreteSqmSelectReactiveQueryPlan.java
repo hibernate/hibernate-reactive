@@ -261,7 +261,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 				domainParameterXref,
 				executionContext.getQueryParameterBindings(),
 				executionContext.getSession().getLoadQueryInfluencers(),
-				sessionFactory,
+				sessionFactory.getSqlTranslationEngine(),
 				true
 		);
 

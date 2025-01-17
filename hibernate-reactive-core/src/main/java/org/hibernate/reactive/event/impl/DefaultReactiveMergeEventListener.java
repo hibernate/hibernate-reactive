@@ -94,7 +94,9 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 	@Override
 	public CompletionStage<Void> reactiveOnMerge(MergeEvent event) throws HibernateException {
 		final EventSource session = event.getSession();
-		final EntityCopyObserver entityCopyObserver = createEntityCopyObserver( session );
+		final EntityCopyObserver entityCopyObserver = session.getFactory()
+				.getEntityCopyObserver()
+				.createEntityCopyObserver();
 		final MergeContext mergeContext = new MergeContext( session, entityCopyObserver );
 		return reactiveOnMerge( event, mergeContext )
 				.thenAccept( v -> entityCopyObserver.topLevelMergeComplete( session ) )
@@ -102,10 +104,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 					entityCopyObserver.clear();
 					mergeContext.clear();
 				} );
-	}
-
-	private EntityCopyObserver createEntityCopyObserver(final EventSource session) {
-		return session.getFactory().getFastSessionServices().entityCopyObserverFactory.createEntityCopyObserver();
 	}
 
 	/**

@@ -82,7 +82,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 				domainParameterXref,
 				executionContext.getQueryParameterBindings(),
 				executionContext.getSession().getLoadQueryInfluencers(),
-				factory
+				factory.getSqlTranslationEngine()
 		);
 
 		sqmInterpretation = (SqmTranslation<? extends AbstractUpdateOrDeleteStatement>) translator.translate();

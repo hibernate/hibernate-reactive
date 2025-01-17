@@ -13,7 +13,6 @@ import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
-import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.spi.EntityEntry;
@@ -22,13 +21,13 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.internal.PostDeleteEventListenerStandardImpl;
+import org.hibernate.event.service.spi.EventListenerGroups;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.EmptyInterceptor;
-import org.hibernate.internal.FastSessionServices;
 import org.hibernate.jpa.event.spi.CallbackRegistry;
 import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.jpa.event.spi.CallbackType;
@@ -205,17 +204,6 @@ public class DefaultReactiveDeleteEventListener
 
 	}
 
-	protected boolean invokeDeleteLifecycle(EventSource session, Object entity, EntityPersister persister) {
-		if ( persister.implementsLifecycle() ) {
-			LOG.debug( "Calling onDelete()" );
-			if ( ( (Lifecycle) entity ).onDelete( session ) ) {
-				LOG.debug( "Deletion vetoed by onDelete()" );
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private CompletionStage<Void> deleteTransientInstance(DeleteEvent event, DeleteContext transientEntities, Object entity) {
 		LOG.trace( "Entity was not persistent in delete processing" );
 
@@ -291,23 +279,20 @@ public class DefaultReactiveDeleteEventListener
 			Object version,
 			EntityEntry entry) {
 		callbackRegistry.preRemove( entity );
-		if ( !invokeDeleteLifecycle( source, entity, persister ) ) {
-			return deleteEntity(
-					source,
-					entity,
-					entry,
-					event.isCascadeDeleteEnabled(),
-					event.isOrphanRemovalBeforeUpdates(),
-					persister,
-					transientEntities
-			)
-					.thenAccept( v -> {
-						if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
-							persister.resetIdentifier( entity, id, version, source );
-						}
-					} );
-		}
-		return voidFuture();
+		return deleteEntity(
+				source,
+				entity,
+				entry,
+				event.isCascadeDeleteEnabled(),
+				event.isOrphanRemovalBeforeUpdates(),
+				persister,
+				transientEntities
+		)
+				.thenAccept( v -> {
+					if ( source.getFactory().getSessionFactoryOptions().isIdentifierRollbackEnabled() ) {
+						persister.resetIdentifier( entity, id, version, source );
+					}
+				} );
 	}
 
 	/**
@@ -315,7 +300,6 @@ public class DefaultReactiveDeleteEventListener
 	 */
 	private boolean canBeDeletedWithoutLoading(EventSource source, EntityPersister persister) {
 		return source.getInterceptor() == EmptyInterceptor.INSTANCE
-				&& !persister.implementsLifecycle()
 				&& !persister.hasSubclasses() //TODO: should be unnecessary, using EntityPersister.getSubclassPropertyTypeClosure(), etc
 				&& !persister.hasCascadeDelete()
 				&& !persister.hasNaturalIdentifier()
@@ -325,7 +309,7 @@ public class DefaultReactiveDeleteEventListener
 	}
 
 	private static boolean hasCustomEventListeners(EventSource source) {
-		final FastSessionServices fss = source.getFactory().getFastSessionServices();
+		final EventListenerGroups fss = source.getFactory().getEventListenerGroups();
 		// Bean Validation adds a PRE_DELETE listener
 		// and Envers adds a POST_DELETE listener
 		return fss.eventListenerGroup_PRE_DELETE.count() > 0

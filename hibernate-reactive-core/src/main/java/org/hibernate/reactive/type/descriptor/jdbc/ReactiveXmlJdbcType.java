@@ -48,7 +48,7 @@ public class ReactiveXmlJdbcType extends XmlJdbcType {
 		if ( javaType.getJavaType() == SQLXML.class ) {
 			throw LOG.unsupportedXmlType();
 		}
-		return options.getSessionFactory().getFastSessionServices().getXmlFormatMapper()
+		return options.getSessionFactory().getSessionFactoryOptions().getXmlFormatMapper()
 				.fromString( string, javaType, options );
 	}
 

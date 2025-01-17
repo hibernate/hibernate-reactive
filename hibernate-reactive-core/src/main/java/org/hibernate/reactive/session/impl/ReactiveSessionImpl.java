@@ -55,7 +55,6 @@ import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.RefreshContext;
 import org.hibernate.event.spi.RefreshEvent;
-import org.hibernate.event.spi.ResolveNaturalIdEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
@@ -63,7 +62,11 @@ import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
+import org.hibernate.loader.LoaderLogging;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.internal.LoadAccessContext;
+import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
@@ -95,9 +98,9 @@ import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.event.ReactivePersistEventListener;
 import org.hibernate.reactive.event.ReactiveRefreshEventListener;
-import org.hibernate.reactive.event.ReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveAutoFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveInitializeCollectionEventListener;
+import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -691,7 +694,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		EventListenerGroup<InitializeCollectionEventListener> eventListenerGroupInitCollection = fastSessionServices.eventListenerGroup_INIT_COLLECTION;
+		EventListenerGroup<InitializeCollectionEventListener> eventListenerGroupInitCollection = getFactory().getEventListenerGroups().eventListenerGroup_INIT_COLLECTION;
 		return eventListenerGroupInitCollection
 				.fireEventOnEachListener(
 						event,
@@ -732,7 +735,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return getFactory().getEventListenerGroups().eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
@@ -750,7 +753,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersist(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return getFactory().getEventListenerGroups().eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -774,7 +777,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersistOnFlush(PersistContext copiedAlready, PersistEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_PERSIST
+		return getFactory().getEventListenerGroups().eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, copiedAlready, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.whenComplete( (v, e) -> delayedAfterCompletion() );
 	}
@@ -830,10 +833,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener(
-						event,
-						(ReactiveDeleteEventListener l) -> l::reactiveOnDelete
-				)
+		return getFactory().getEventListenerGroups().eventListenerGroup_DELETE
+				.fireEventOnEachListener( event, (ReactiveDeleteEventListener l) -> l::reactiveOnDelete )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -854,9 +855,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRemove(DeleteEvent event, DeleteContext transientEntities) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_DELETE.fireEventOnEachListener( event, transientEntities,
-																					  (ReactiveDeleteEventListener l) -> l::reactiveOnDelete
-				)
+		return getFactory().getEventListenerGroups().eventListenerGroup_DELETE
+				.fireEventOnEachListener( event, transientEntities, (ReactiveDeleteEventListener l) -> l::reactiveOnDelete )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -892,7 +892,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
-		return fastSessionServices.eventListenerGroup_MERGE
+		return getFactory().getEventListenerGroups().eventListenerGroup_MERGE
 				.fireEventOnEachListener( event, (ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( (v, e) -> {
 					checkNoUnresolvedActionsAfterOperation();
@@ -914,7 +914,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireMerge(MergeContext copiedAlready, MergeEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_MERGE
+		return getFactory().getEventListenerGroups().eventListenerGroup_MERGE
 				.fireEventOnEachListener( event, copiedAlready,(ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -954,7 +954,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 //		}
 
 		AutoFlushEvent event = new AutoFlushEvent( querySpaces, this );
-		return fastSessionServices.eventListenerGroup_AUTO_FLUSH
+		return getFactory().getEventListenerGroups().eventListenerGroup_AUTO_FLUSH
 				.fireEventOnEachListener( event, (DefaultReactiveAutoFlushEventListener l) -> l::reactiveOnAutoFlush )
 				.thenApply( v -> event.isFlushRequired() );
 	}
@@ -987,7 +987,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw LOG.flushDuringCascadeIsDangerous();
 		}
 
-		return fastSessionServices.eventListenerGroup_FLUSH
+		return getFactory().getEventListenerGroups().eventListenerGroup_FLUSH
 				.fireEventOnEachListener( new FlushEvent( this ), (ReactiveFlushEventListener l) -> l::reactiveOnFlush )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
@@ -1036,10 +1036,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH.fireEventOnEachListener(
-						event,
-						(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh
-				)
+		return getFactory().getEventListenerGroups().eventListenerGroup_REFRESH
+				.fireEventOnEachListener( event, (ReactiveRefreshEventListener l) -> l::reactiveOnRefresh )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1059,12 +1057,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireRefresh(RefreshContext refreshedAlready, RefreshEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_REFRESH
-				.fireEventOnEachListener(
-						event,
-						refreshedAlready,
-						(ReactiveRefreshEventListener l) -> l::reactiveOnRefresh
-				)
+		return getFactory().getEventListenerGroups().eventListenerGroup_REFRESH
+				.fireEventOnEachListener( event, refreshedAlready, (ReactiveRefreshEventListener l) -> l::reactiveOnRefresh )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1084,10 +1078,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOCK.fireEventOnEachListener(
-						event,
-						(ReactiveLockEventListener l) -> l::reactiveOnLock
-				)
+		return getFactory().getEventListenerGroups().eventListenerGroup_LOCK
+				.fireEventOnEachListener( event, (ReactiveLockEventListener l) -> l::reactiveOnLock )
 				.handle( (v, e) -> {
 					delayedAfterCompletion();
 
@@ -1175,9 +1167,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
-		final EntityPersister persister = getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
-		return new NaturalIdLoadAccessImpl<T>( persister ).resolveNaturalId( ids )
+		final ReactiveEntityPersister persister = entityPersister( entityClass );
+		final Object normalizedIdValues = persister.getNaturalIdMapping().normalizeInput( ids );
+		return new NaturalIdLoadAccessImpl<T>( this, persister, requireEntityPersister( entityClass ) )
+				.resolveNaturalId( normalizedIdValues )
 				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
+	}
+
+	private <T> ReactiveEntityPersister entityPersister(Class<T> entityClass) {
+		return (ReactiveEntityPersister) getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
+	}
+
+	private EntityPersister requireEntityPersister(Class<?> entityClass) {
+		return getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
 	}
 
 	private CompletionStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
@@ -1190,18 +1192,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
-		return fastSessionServices.eventListenerGroup_LOAD
+		return getFactory().getEventListenerGroups().eventListenerGroup_LOAD
 				.fireEventOnEachListener( event, loadType,(ReactiveLoadEventListener l) -> l::reactiveOnLoad
 		);
-	}
-
-	private CompletionStage<Void> fireResolveNaturalId(ResolveNaturalIdEvent event) {
-		checkOpenOrWaitingForAutoClose();
-		return fastSessionServices.eventListenerGroup_RESOLVE_NATURAL_ID.fireEventOnEachListener(
-						event,
-						(ReactiveResolveNaturalIdEventListener l) -> l::onReactiveResolveNaturalId
-				)
-				.whenComplete( (c, e) -> delayedAfterCompletion() );
 	}
 
 	@Override
@@ -1472,8 +1465,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			Object[] sids = new Object[ids.length];
 			System.arraycopy( ids, 0, sids, 0, ids.length );
 
-			return perform( () -> (CompletionStage)
-					( (ReactiveEntityPersister) entityPersister )
+			return perform( () -> (CompletionStage) ( (ReactiveEntityPersister) entityPersister )
 							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
 		}
 
@@ -1517,12 +1509,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private class NaturalIdLoadAccessImpl<T> {
-		private final EntityPersister entityPersister;
+		private final LoadAccessContext context;
+		private final ReactiveEntityPersister entityPersister;
+		private final EntityMappingType entityDescriptor;
 		private LockOptions lockOptions;
 		private boolean synchronizationEnabled = true;
 
-		private NaturalIdLoadAccessImpl(EntityPersister entityPersister) {
+		private NaturalIdLoadAccessImpl(LoadAccessContext context, ReactiveEntityPersister entityPersister, EntityMappingType entityDescriptor) {
+			this.context = context;
 			this.entityPersister = entityPersister;
+			this.entityDescriptor = entityDescriptor;
 
 			if ( !entityPersister.hasNaturalIdentifier() ) {
 				throw LOG.entityDidNotDefinedNaturalId( entityPersister.getEntityName() );
@@ -1538,13 +1534,35 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			this.synchronizationEnabled = synchronizationEnabled;
 		}
 
-		protected final CompletionStage<Object> resolveNaturalId(Map<String, Object> naturalIdParameters) {
+		/**
+		 * @see org.hibernate.loader.internal.BaseNaturalIdLoadAccessImpl#doGetReference(Object)
+		 */
+		protected final CompletionStage<Object> resolveNaturalId(Object normalizedNaturalIdValue) {
 			performAnyNeededCrossReferenceSynchronizations();
 
-			ResolveNaturalIdEvent event =
-					new ResolveNaturalIdEvent( naturalIdParameters, entityPersister, ReactiveSessionImpl.this );
-			return fireResolveNaturalId( event )
-					.thenApply( v -> event.getEntityId() == INVALID_NATURAL_ID_REFERENCE ? null : event.getEntityId() );
+			context.checkOpenOrWaitingForAutoClose();
+			context.pulseTransactionCoordinator();
+
+			final SessionImplementor session = getSession();
+			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+			final Object cachedResolution = persistenceContext.getNaturalIdResolutions()
+					.findCachedIdByNaturalId( normalizedNaturalIdValue, entityPersister() );
+			if ( cachedResolution == INVALID_NATURAL_ID_REFERENCE ) {
+				// the entity is deleted, although not yet flushed - return null
+				return nullFuture();
+			}
+			else if ( cachedResolution != null ) {
+				return completedFuture( cachedResolution );
+			}
+			else {
+				LoaderLogging.LOADER_LOGGER.debugf(
+						"Selecting entity identifier by natural-id for `#getReference` handling - %s : %s",
+						entityPersister().getEntityName(),
+						normalizedNaturalIdValue
+				);
+				return ( (ReactiveNaturalIdLoader) entityPersister().getNaturalIdLoader() )
+						.resolveNaturalIdToId( normalizedNaturalIdValue, session );
+			}
 		}
 
 		protected void performAnyNeededCrossReferenceSynchronizations() {
@@ -1552,7 +1570,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				// synchronization (this process) was disabled
 				return;
 			}
-			if ( entityPersister.getEntityMetamodel().hasImmutableNaturalId() ) {
+
+			final NaturalIdMapping naturalIdMapping = entityDescriptor.getNaturalIdMapping();
+			if ( !naturalIdMapping.isMutable() ) {
 				// only mutable natural-ids need this processing
 				return;
 			}
@@ -1562,7 +1582,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			}
 
 			final PersistenceContext persistenceContext = getPersistenceContextInternal();
-//			final boolean debugEnabled = log.isDebugEnabled();
+			final boolean loggerDebugEnabled = LoaderLogging.LOADER_LOGGER.isDebugEnabled();
 			for ( Object pk : persistenceContext.getNaturalIdResolutions()
 					.getCachedPkResolutions( entityPersister ) ) {
 				final EntityKey entityKey = generateEntityKey( pk, entityPersister );
@@ -1570,12 +1590,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				final EntityEntry entry = persistenceContext.getEntry( entity );
 
 				if ( entry == null ) {
-//					if ( debugEnabled ) {
-//						log.debug(
-//								"Cached natural-id/pk resolution linked to null EntityEntry in persistence context : "
-//										+ MessageHelper.infoString( entityPersister, pk, getFactory() )
-//						);
-//					}
+					if ( loggerDebugEnabled ) {
+						LoaderLogging.LOADER_LOGGER.debugf(
+								"Cached natural-id/pk resolution linked to null EntityEntry in persistence context : %s#%s",
+								entityDescriptor.getEntityName(),
+								pk
+						);
+					}
 					continue;
 				}
 
@@ -1588,21 +1609,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					continue;
 				}
 
-				persistenceContext.getNaturalIdResolutions()
-						.handleSynchronization( pk, entity, entityPersister );
+				persistenceContext.getNaturalIdResolutions().handleSynchronization( pk, entity, entityPersister() );
 			}
 		}
 
 		protected final ReactiveIdentifierLoadAccessImpl<T> getIdentifierLoadAccess() {
-			final ReactiveIdentifierLoadAccessImpl<T> identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl<>(
-					entityPersister );
+			final ReactiveIdentifierLoadAccessImpl<T> identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl<>( entityPersister );
 			if ( this.lockOptions != null ) {
 				identifierLoadAccess.with( lockOptions );
 			}
 			return identifierLoadAccess;
 		}
 
-		protected EntityPersister entityPersister() {
+		protected ReactiveEntityPersister entityPersister() {
 			return entityPersister;
 		}
 	}

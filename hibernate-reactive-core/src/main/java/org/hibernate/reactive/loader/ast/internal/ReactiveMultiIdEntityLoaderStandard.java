@@ -20,19 +20,15 @@ import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.LoadEvent;
-import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.internal.util.collections.CollectionHelper;
-import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
-import org.hibernate.loader.ast.internal.LoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.internal.CacheLoadHelper.PersistenceContextEntry;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
@@ -50,6 +46,8 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
+import static org.hibernate.event.spi.LoadEventListener.GET;
+import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSessionCache;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -114,24 +112,17 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 
 			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
 			if ( loadOptions.isSessionCheckingEnabled() || loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-				LoadEvent loadEvent = new LoadEvent(
-						id,
-						getLoadable().getJavaType().getJavaTypeClass().getName(),
-						lockOptions,
-						session,
-						LoaderHelper.getReadOnlyFromLoadQueryInfluencers( session )
-				);
-
 				Object managedEntity = null;
 
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					// look for it in the Session first
-					CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE.loadFromSessionCache(
-							loadEvent,
+					PersistenceContextEntry persistenceContextEntry = loadFromSessionCache(
 							entityKey,
-							LoadEventListener.GET
+							lockOptions,
+							GET,
+							session
 					);
-					managedEntity = persistenceContextEntry.getEntity();
+					managedEntity = persistenceContextEntry.entity();
 
 					if ( managedEntity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() && !persistenceContextEntry.isManaged() ) {
 						// put a null in the result
@@ -141,12 +132,10 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 				}
 
 				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
+					final EntityPersister persister = getLoadable().getEntityPersister();
 					// look for it in the SessionFactory
-					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-							loadEvent,
-							getLoadable().getEntityPersister(),
-							entityKey
-					);
+					managedEntity = session
+							.loadFromSecondLevelCache( persister, entityKey, null, lockOptions.getLockMode() );
 				}
 
 				if ( managedEntity != null ) {
@@ -324,34 +313,26 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 			final List<Object> nonManagedIds = new ArrayList<>();
 
 			final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
-			for ( int i = 0; i < ids.length; i++ ) {
+			for ( Object o : ids ) {
 				final Object id = coerce
-						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i], session )
-						: ids[i];
+						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( o, session )
+						: o;
 
 				final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
 
-				LoadEvent loadEvent = new LoadEvent(
-						id,
-						getLoadable().getJavaType().getJavaTypeClass().getName(),
-						lockOptions,
-						session,
-						getReadOnlyFromLoadQueryInfluencers( session )
-				);
-
-				Object managedEntity = null;
+				Object cachedEntity = null;
 
 				// look for it in the Session first
-				CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.INSTANCE
-						.loadFromSessionCache(
-								loadEvent,
-								entityKey,
-								LoadEventListener.GET
-						);
+				PersistenceContextEntry persistenceContextEntry = loadFromSessionCache(
+						entityKey,
+						lockOptions,
+						GET,
+						session
+				);
 				if ( loadOptions.isSessionCheckingEnabled() ) {
-					managedEntity = persistenceContextEntry.getEntity();
+					cachedEntity = persistenceContextEntry.entity();
 
-					if ( managedEntity != null
+					if ( cachedEntity != null
 							&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
 							&& !persistenceContextEntry.isManaged() ) {
 						foundAnyManagedEntities = true;
@@ -360,18 +341,20 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 					}
 				}
 
-				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-							loadEvent,
-							getLoadable().getEntityPersister(),
-							entityKey
+				if ( cachedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
+					final EntityPersister persister = getLoadable().getEntityPersister();
+					cachedEntity = session.loadFromSecondLevelCache(
+							persister,
+							entityKey,
+							null,
+							lockOptions.getLockMode()
 					);
 				}
 
-				if ( managedEntity != null ) {
+				if ( cachedEntity != null ) {
 					foundAnyManagedEntities = true;
 					//noinspection unchecked
-					result.add( (T) managedEntity );
+					result.add( (T) cachedEntity );
 				}
 				else {
 					nonManagedIds.add( id );
@@ -427,14 +410,4 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		} )
 				.thenApply( v -> result );
 	}
-
-	private Boolean getReadOnlyFromLoadQueryInfluencers(SharedSessionContractImplementor session) {
-		Boolean readOnly = null;
-		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
-		if ( loadQueryInfluencers != null ) {
-			readOnly = loadQueryInfluencers.getReadOnly();
-		}
-		return readOnly;
-	}
-
 }

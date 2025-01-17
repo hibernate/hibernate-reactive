@@ -140,6 +140,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session) {
+		return super.determineLoaderToUse( session );
+	}
+
+	@Override
 	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
