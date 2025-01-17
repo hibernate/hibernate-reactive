@@ -311,4 +311,8 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(id = 448, value = "Warnings creating temp table : %s")
 	void warningsCreatingTempTable(SQLWarning warning);
+
+	@LogMessage(level = WARN)
+	@Message( id= 494, value = "Attempt to merge an uninitialized collection with queued operations; queued operations will be ignored: %s")
+	void ignoreQueuedOperationsOnMerge(String collectionInfoString);
 }

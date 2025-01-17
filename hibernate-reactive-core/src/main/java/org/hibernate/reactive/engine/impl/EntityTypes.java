@@ -25,6 +25,7 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
+import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.OneToOneType;
@@ -158,42 +159,11 @@ public class EntityTypes {
 			final Object owner,
 			final Map<Object, Object> copyCache) {
 		Object[] copied = new Object[original.length];
-		for ( int i = 0; i < types.length; i++ ) {
-			if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
-				copied[i] = target[i];
-			}
-			else {
-				if ( !( types[i] instanceof EntityType ) ) {
-					copied[i] = types[i].replace(
-							original[i],
-							target[i] == UNFETCHED_PROPERTY ? null : target[i],
-							session,
-							owner,
-							copyCache
-					);
-				}
-			}
-		}
-		return loop( 0, types.length,
-					 i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
-							 && types[i] instanceof EntityType,
-					 i -> replace(
-							 (EntityType) types[i],
-							 original[i],
-							 target[i] == UNFETCHED_PROPERTY ? null : target[i],
-							 session,
-							 owner,
-							 copyCache
-					 ).thenCompose( copy -> {
-						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage<?>) copy )
-									 .thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-						 }
-						 else {
-							 copied[i] = copy;
-							 return voidFuture();
-						 }
-					 } )
+		return loop(
+				0, types.length,
+				i ->
+						replace( original, target, types, session, owner, copyCache, i, copied )
+
 		).thenApply( v -> copied );
 	}
 
@@ -209,43 +179,11 @@ public class EntityTypes {
 			final Map<Object, Object> copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
 		Object[] copied = new Object[original.length];
-		for ( int i = 0; i < types.length; i++ ) {
-			if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
-				copied[i] = target[i];
-			}
-			else {
-				if ( !( types[i] instanceof EntityType ) ) {
-					copied[i] = types[i].replace(
-							original[i],
-							target[i] == UNFETCHED_PROPERTY ? null : target[i],
-							session,
-							owner,
-							copyCache,
-							foreignKeyDirection
-					);
-				}
-			}
-		}
-		return loop( 0, types.length,
-					 i -> original[i] != UNFETCHED_PROPERTY && original[i] != UNKNOWN
-							 && types[i] instanceof EntityType,
-					 i -> replace(
-							 (EntityType) types[i],
-							 original[i],
-							 target[i] == UNFETCHED_PROPERTY ? null : target[i],
-							 session,
-							 owner,
-							 copyCache,
-							 foreignKeyDirection
-					 ).thenCompose( copy -> {
-						 if ( copy instanceof CompletionStage ) {
-							 return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-						 }
-						 else {
-							 copied[i] = copy;
-							 return voidFuture();
-						 }
-					 } )
+		return loop(
+				0, types.length,
+				i ->
+						replace( original, target, types, session, owner, copyCache, foreignKeyDirection, i, copied )
+
 		).thenApply( v -> copied );
 	}
 
@@ -272,7 +210,7 @@ public class EntityTypes {
 	/**
 	 * @see EntityType#replace(Object, Object, SharedSessionContractImplementor, Object, Map)
 	 */
-	private static CompletionStage<Object> replace(
+	protected static CompletionStage<Object> replace(
 			EntityType entityType,
 			Object original,
 			Object target,
@@ -449,5 +387,134 @@ public class EntityTypes {
 			return completedFuture( entity );
 		}
 	}
+
+	private static CompletionStage<Void> replace(
+			Object[] original,
+			Object[] target,
+			Type[] types,
+			SessionImplementor session,
+			Object owner,
+			Map<Object, Object> copyCache,
+			int i,
+			Object[] copied) {
+		if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
+			copied[i] = target[i];
+			return voidFuture();
+		}
+		else if ( types[i] instanceof CollectionType ) {
+			return CollectionTypes.replace(
+					(CollectionType) types[i],
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache
+			).thenCompose( copy -> {
+				if ( copy instanceof CompletionStage ) {
+					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+				}
+				else {
+					copied[i] = copy;
+					return voidFuture();
+				}
+			} );
+		}
+		else if ( types[i] instanceof EntityType ) {
+			return replace(
+					(EntityType) types[i],
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache
+			).thenCompose( copy -> {
+				if ( copy instanceof CompletionStage ) {
+					return ( (CompletionStage<?>) copy )
+							.thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+				}
+				else {
+					copied[i] = copy;
+					return voidFuture();
+				}
+			} );
+		}
+		else {
+			final Type type = types[i];
+			copied[i] = type.replace(
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache
+			);
+			return voidFuture();
+		}
+	}
+
+	private static CompletionStage<Void> replace(
+			Object[] original,
+			Object[] target,
+			Type[] types,
+			SessionImplementor session,
+			Object owner,
+			Map<Object, Object> copyCache,
+			ForeignKeyDirection foreignKeyDirection,
+			int i,
+			Object[] copied) {
+		if ( original[i] == UNFETCHED_PROPERTY || original[i] == UNKNOWN ) {
+			copied[i] = target[i];
+			return voidFuture();
+		}
+		else if ( types[i] instanceof CollectionType ) {
+			return CollectionTypes.replace(
+					(CollectionType) types[i],
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache,
+					foreignKeyDirection
+			).thenCompose( copy -> {
+				if ( copy instanceof CompletionStage ) {
+					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+				}
+				else {
+					copied[i] = copy;
+					return voidFuture();
+				}
+			} );
+		}
+		else if ( types[i] instanceof EntityType ) {
+			return replace(
+					(EntityType) types[i],
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache,
+					foreignKeyDirection
+			).thenCompose( copy -> {
+				if ( copy instanceof CompletionStage ) {
+					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
+				}
+				else {
+					copied[i] = copy;
+					return voidFuture();
+				}
+			} );
+		}
+		else {
+			copied[i] = types[i].replace(
+					original[i],
+					target[i] == UNFETCHED_PROPERTY ? null : target[i],
+					session,
+					owner,
+					copyCache,
+					foreignKeyDirection
+			);
+			return voidFuture();
+		}
+	}
+
 
 }
