@@ -79,7 +79,7 @@ class DatabaseSnapshotExecutor {
 				DatabaseSnapshotExecutor::visitEmptyFetchList,
 				true,
 				new LoadQueryInfluencers( sessionFactory ),
-				sessionFactory
+				sessionFactory.getSqlTranslationEngine()
 		);
 
 		final NavigablePath rootPath = new NavigablePath( entityDescriptor.getEntityName() );

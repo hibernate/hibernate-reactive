@@ -139,9 +139,8 @@ public abstract class AbstractReactiveFlushingEventListener {
 				session.getActionQueue().numberOfCollectionRemovals(),
 				persistenceContext.getCollectionEntriesSize()
 		);
-		new EntityPrinter( session.getFactory() ).toString(
-				persistenceContext.getEntityHoldersByKey().entrySet()
-		);
+		new EntityPrinter( session.getFactory() )
+				.logEntities( persistenceContext.getEntityHoldersByKey().entrySet() );
 	}
 
 	/**
@@ -227,7 +226,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		final EventSource source = event.getSession();
 		final Iterable<FlushEntityEventListener> flushListeners =
 				source.getFactory()
-						.getFastSessionServices()
+						.getEventListenerGroups()
 						.eventListenerGroup_FLUSH_ENTITY
 						.listeners();
 

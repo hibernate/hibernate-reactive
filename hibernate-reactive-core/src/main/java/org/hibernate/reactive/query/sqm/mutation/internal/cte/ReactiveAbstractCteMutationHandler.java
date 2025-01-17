@@ -96,7 +96,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 				executionContext.getQueryOptions(),
 				executionContext.getSession().getLoadQueryInfluencers(),
 				executionContext.getQueryParameterBindings(),
-				factory
+				factory.getSqlTranslationEngine()
 		);
 		final Map<SqmParameter<?>, List<JdbcParameter>> parameterResolutions;
 		if ( getDomainParameterXref().getSqmParameterCount() == 0 ) {

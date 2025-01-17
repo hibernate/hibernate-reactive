@@ -238,7 +238,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 fetchProcessor,
                 true,
                 new LoadQueryInfluencers( sessionFactory ),
-                sessionFactory
+                sessionFactory.getSqlTranslationEngine()
         );
 
         final TableGroup rootTableGroup = entityDescriptor().createRootTableGroup(

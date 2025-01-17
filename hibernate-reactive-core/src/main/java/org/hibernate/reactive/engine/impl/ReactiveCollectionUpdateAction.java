@@ -118,7 +118,8 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void preUpdate() {
-		getFastSessionServices().eventListenerGroup_PRE_COLLECTION_UPDATE
+		getEventListenerGroups()
+				.eventListenerGroup_PRE_COLLECTION_UPDATE
 				.fireLazyEventOnEachListener( this::newPreCollectionUpdateEvent,
 						PreCollectionUpdateEventListener::onPreUpdateCollection );
 	}
@@ -132,7 +133,8 @@ public class ReactiveCollectionUpdateAction extends CollectionAction implements 
 	}
 
 	private void postUpdate() {
-		getFastSessionServices().eventListenerGroup_POST_COLLECTION_UPDATE
+		getEventListenerGroups()
+				.eventListenerGroup_POST_COLLECTION_UPDATE
 				.fireLazyEventOnEachListener( this::newPostCollectionUpdateEvent,
 						PostCollectionUpdateEventListener::onPostUpdateCollection );
 	}

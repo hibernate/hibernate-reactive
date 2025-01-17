@@ -315,13 +315,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private boolean firePreInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
-		if ( fastSessionServices.eventListenerGroup_PRE_INSERT.isEmpty() ) {
+		if ( getFactory().getEventListenerGroups().eventListenerGroup_PRE_INSERT.isEmpty() ) {
 			return false;
 		}
 		else {
 			boolean veto = false;
 			final PreInsertEvent event = new PreInsertEvent( entity, id, state, persister, null );
-			for ( PreInsertEventListener listener : fastSessionServices.eventListenerGroup_PRE_INSERT.listeners() ) {
+			for ( PreInsertEventListener listener : getFactory().getEventListenerGroups().eventListenerGroup_PRE_INSERT.listeners() ) {
 				veto |= listener.onPreInsert( event );
 			}
 			return veto;
@@ -329,9 +329,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private void firePostInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
-		if ( !fastSessionServices.eventListenerGroup_POST_INSERT.isEmpty() ) {
+		if ( !getFactory().getEventListenerGroups().eventListenerGroup_POST_INSERT.isEmpty() ) {
 			final PostInsertEvent event = new PostInsertEvent( entity, id, state, persister, null );
-			for ( PostInsertEventListener listener : fastSessionServices.eventListenerGroup_POST_INSERT.listeners() ) {
+			for ( PostInsertEventListener listener : getFactory().getEventListenerGroups().eventListenerGroup_POST_INSERT.listeners() ) {
 				listener.onPostInsert( event );
 			}
 		}

@@ -83,12 +83,15 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
+	private final SessionFactoryImplementor sessionFactory;
+
 	public ReactiveCteInsertHandler(
 			CteTable cteTable,
 			SqmInsertStatement<?> sqmStatement,
 			DomainParameterXref domainParameterXref,
 			SessionFactoryImplementor sessionFactory) {
 		super( cteTable, sqmStatement, domainParameterXref, sessionFactory );
+		this.sessionFactory = sessionFactory;
 	}
 
 	@Override
@@ -120,7 +123,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				executionContext.getQueryOptions(),
 				executionContext.getSession().getLoadQueryInfluencers(),
 				executionContext.getQueryParameterBindings(),
-				factory
+				factory.getSqlTranslationEngine()
 		);
 		final TableGroup insertingTableGroup = sqmConverter.getMutatingTableGroup();
 
@@ -182,7 +185,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 					querySpec -> {
 						// This returns true if the insertion target uses a sequence with an optimizer
 						// in which case we will fill the row_number column instead of the id column
-						if ( additionalInsertValues.applySelections( querySpec, getSessionFactory() ) ) {
+						if ( additionalInsertValues.applySelections( querySpec, sessionFactory ) ) {
 							final CteColumn rowNumberColumn = getCteTable().getCteColumns()
 									.get( getCteTable().getCteColumns().size() - 1 );
 							final ColumnReference columnReference = new ColumnReference(
@@ -207,7 +210,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 											0,
 											SqmInsertStrategyHelper.createRowNumberingExpression(
 													querySpec,
-													getSessionFactory()
+													sessionFactory
 											)
 									)
 							);
@@ -342,7 +345,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				);
 				final String fragment = ( (BulkInsertionCapableIdentifierGenerator) entityDescriptor.getGenerator() )
 						.determineBulkInsertionIdentifierGenerationSelectFragment(
-								getSessionFactory().getSqlStringGenerationContext()
+								sessionFactory.getSqlStringGenerationContext()
 						);
 				rowsWithSequenceQuery.getSelectClause().addSqlSelection(
 						new SqlSelectionImpl(

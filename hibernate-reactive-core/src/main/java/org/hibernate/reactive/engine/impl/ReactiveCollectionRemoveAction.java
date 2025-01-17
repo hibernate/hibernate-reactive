@@ -100,7 +100,8 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 	}
 
 	private void preRemove() {
-		getFastSessionServices().eventListenerGroup_PRE_COLLECTION_REMOVE
+		getEventListenerGroups()
+				.eventListenerGroup_PRE_COLLECTION_REMOVE
 				.fireLazyEventOnEachListener( this::newPreCollectionRemoveEvent,
 						PreCollectionRemoveEventListener::onPreRemoveCollection );
 	}
@@ -115,7 +116,8 @@ public class ReactiveCollectionRemoveAction extends CollectionAction implements 
 	}
 
 	private void postRemove() {
-		getFastSessionServices().eventListenerGroup_POST_COLLECTION_REMOVE
+		getEventListenerGroups()
+				.eventListenerGroup_POST_COLLECTION_REMOVE
 				.fireLazyEventOnEachListener( this::newPostCollectionRemoveEvent,
 						PostCollectionRemoveEventListener::onPostRemoveCollection );
 	}
