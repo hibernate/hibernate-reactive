@@ -138,7 +138,7 @@ public class EntityTypes {
 		else {
 			return persister
 					.reactiveLoadByUniqueKey( uniqueKeyPropertyName, key, session )
-					.thenApply( ukResult -> loadHibernateProxyEntity( ukResult, session )
+					.thenCompose( ukResult -> loadHibernateProxyEntity( ukResult, session )
 							.thenApply( targetUK -> {
 								persistenceContext.addEntity( euk, targetUK );
 								return targetUK;
@@ -364,9 +364,9 @@ public class EntityTypes {
 						if ( type.isEntityIdentifierMapping() ) {
 							propertyValue = getIdentifier( (EntityType) type, propertyValue, (SessionImplementor) session );
 						}
-						return completedFuture( propertyValue );
+						return propertyValue;
 					}
-					return nullFuture();
+					return null;
 				} );
 	}
 
@@ -409,15 +409,7 @@ public class EntityTypes {
 					session,
 					owner,
 					copyCache
-			).thenCompose( copy -> {
-				if ( copy instanceof CompletionStage ) {
-					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-				}
-				else {
-					copied[i] = copy;
-					return voidFuture();
-				}
-			} );
+			).thenAccept( copy -> copied[i] = copy );
 		}
 		else if ( types[i] instanceof EntityType ) {
 			return replace(
@@ -427,16 +419,7 @@ public class EntityTypes {
 					session,
 					owner,
 					copyCache
-			).thenCompose( copy -> {
-				if ( copy instanceof CompletionStage ) {
-					return ( (CompletionStage<?>) copy )
-							.thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-				}
-				else {
-					copied[i] = copy;
-					return voidFuture();
-				}
-			} );
+			).thenAccept( copy -> copied[i] = copy );
 		}
 		else {
 			final Type type = types[i];
@@ -474,15 +457,7 @@ public class EntityTypes {
 					owner,
 					copyCache,
 					foreignKeyDirection
-			).thenCompose( copy -> {
-				if ( copy instanceof CompletionStage ) {
-					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-				}
-				else {
-					copied[i] = copy;
-					return voidFuture();
-				}
-			} );
+			).thenAccept( copy -> copied[i] = copy );
 		}
 		else if ( types[i] instanceof EntityType ) {
 			return replace(
@@ -493,15 +468,7 @@ public class EntityTypes {
 					owner,
 					copyCache,
 					foreignKeyDirection
-			).thenCompose( copy -> {
-				if ( copy instanceof CompletionStage ) {
-					return ( (CompletionStage<?>) copy ).thenAccept( nonStageCopy -> copied[i] = nonStageCopy );
-				}
-				else {
-					copied[i] = copy;
-					return voidFuture();
-				}
-			} );
+			).thenAccept( copy -> copied[i] = copy );
 		}
 		else {
 			copied[i] = types[i].replace(
