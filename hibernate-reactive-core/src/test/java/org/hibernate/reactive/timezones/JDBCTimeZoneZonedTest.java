@@ -10,15 +10,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.SybaseDialect;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
 
@@ -38,6 +34,9 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
+/**
+ * Test adapted from {@link org.hibernate.orm.test.timezones.JDBCTimeZoneZonedTest}
+ */
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
@@ -58,15 +57,7 @@ public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
 	public void test(VertxTestContext context) {
 		final ZonedDateTime nowZoned;
 		final OffsetDateTime nowOffset;
-		final Dialect dialect = getDialect();
-		if ( dialect instanceof SybaseDialect || dialect instanceof MySQLDialect ) {
-			// Sybase has 1/300th sec precision
-			nowZoned = ZonedDateTime.now().withZoneSameInstant( ZoneId.of("CET") )
-					.with( ChronoField.NANO_OF_SECOND, 0L );
-			nowOffset = OffsetDateTime.now().withOffsetSameInstant( ZoneOffset.ofHours(3) )
-					.with( ChronoField.NANO_OF_SECOND, 0L );
-		}
-		else if ( dialect.getDefaultTimestampPrecision() == 6 ) {
+		if ( getDialect().getDefaultTimestampPrecision() == 6 ) {
 			nowZoned = ZonedDateTime.now().withZoneSameInstant( ZoneId.of("CET") ).truncatedTo( ChronoUnit.MICROS );
 			nowOffset = OffsetDateTime.now().withOffsetSameInstant( ZoneOffset.ofHours(3) ).truncatedTo( ChronoUnit.MICROS );
 		}
