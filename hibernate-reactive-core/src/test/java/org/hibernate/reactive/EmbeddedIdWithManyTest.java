@@ -24,7 +24,17 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class EmbeddedIdWithManyTest extends BaseReactiveTest {
+
+	Fruit cherry;
+	Fruit apple;
+	Fruit banana;
+
+	Flower sunflower;
+	Flower chrysanthemum;
+	Flower rose;
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -34,21 +44,21 @@ public class EmbeddedIdWithManyTest extends BaseReactiveTest {
 	@BeforeEach
 	public void populateDb(VertxTestContext context) {
 		Seed seed1 = new Seed( 1 );
-		Flower rose = new Flower( seed1, "Rose" );
+		rose = new Flower( seed1, "Rose" );
 
-		Fruit cherry = new Fruit( seed1, "Cherry" );
+		cherry = new Fruit( seed1, "Cherry" );
 		cherry.addFriend( rose );
 
 		Seed seed2 = new Seed( 2 );
-		Flower sunflower = new Flower( seed2, "Sunflower" );
+		sunflower = new Flower( seed2, "Sunflower" );
 
-		Fruit apple = new Fruit( seed2, "Apple" );
+		apple = new Fruit( seed2, "Apple" );
 		apple.addFriend( sunflower );
 
 		Seed seed3 = new Seed( 3 );
-		Flower chrysanthemum = new Flower( seed3, "Chrysanthemum" );
+		chrysanthemum = new Flower( seed3, "Chrysanthemum" );
 
-		Fruit banana = new Fruit( seed3, "Banana" );
+		banana = new Fruit( seed3, "Banana" );
 		banana.addFriend( chrysanthemum );
 
 		test(
@@ -60,11 +70,28 @@ public class EmbeddedIdWithManyTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void test(VertxTestContext context) {
+	public void testFindWithEmbeddedId(VertxTestContext context) {
+		test(
+				context, getMutinySessionFactory().withTransaction( s -> s
+						.find( Flower.class, chrysanthemum.getSeed() )
+						.invoke( flower -> assertThat( flower.getName() ).isEqualTo( chrysanthemum.getName() ) )
+				)
+		);
+	}
+
+	@Test
+	public void testSelectQueryWithEmbeddedId(VertxTestContext context) {
 		test(
 				context, getMutinySessionFactory().withTransaction( s -> s
 						.createSelectionQuery( "from Flower", Flower.class )
 						.getResultList()
+						.invoke( list -> assertThat( list.stream().map( Flower::getName ) )
+								.containsExactlyInAnyOrder(
+										sunflower.getName(),
+										chrysanthemum.getName(),
+										rose.getName()
+								)
+						)
 				)
 		);
 	}
