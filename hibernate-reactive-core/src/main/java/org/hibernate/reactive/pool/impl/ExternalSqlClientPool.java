@@ -59,7 +59,7 @@ public final class ExternalSqlClientPool extends SqlClientPool {
 
 	private final Pool pool;
 	private final SqlStatementLogger sqlStatementLogger;
-	private SqlExceptionHelper sqlExceptionHelper;
+	private final SqlExceptionHelper sqlExceptionHelper;
 
 	public ExternalSqlClientPool(Pool pool, SqlStatementLogger sqlStatementLogger, SqlExceptionHelper sqlExceptionHelper) {
 		this.pool = pool;

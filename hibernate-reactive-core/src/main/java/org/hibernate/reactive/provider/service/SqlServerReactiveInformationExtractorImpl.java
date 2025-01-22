@@ -158,7 +158,7 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 			String catalogFilter,
 			String schemaFilter,
 			Identifier tableName,
-			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+			ExtractionContext.ResultSetProcessor<T> processor) {
 		throw new UnsupportedOperationException();
 	}
 

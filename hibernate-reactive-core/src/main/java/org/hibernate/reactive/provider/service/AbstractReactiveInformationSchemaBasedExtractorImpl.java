@@ -192,7 +192,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 			StringBuilder sb,
 			List<Object> parameters) {
 
-		if ( parameter != null && ( ! String.class.isInstance( parameter ) || ! ( (String) parameter ).isEmpty() ) ) {
+		if ( parameter != null && ( !( parameter instanceof String ) || !( (String) parameter ).isEmpty() ) ) {
 			parameters.add( parameter );
 			sb.append( clause );
 			sb.append( parameterMarker( parameters.size() ) );

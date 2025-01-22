@@ -19,7 +19,6 @@ import org.hibernate.type.Type;
 
 import java.util.Properties;
 
-import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 
 /**
@@ -69,16 +68,6 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 	@Override
 	protected String determineSegmentValue(Properties params) {
 		return null;
-	}
-
-	@Override
-	protected int determineInitialValue(Properties params) {
-		return getInt( SequenceStyleGenerator.INITIAL_PARAM, params, SequenceStyleGenerator.DEFAULT_INITIAL_VALUE );
-	}
-
-	@Override
-	protected int determineIncrement(Properties params) {
-		return getInt( SequenceStyleGenerator.INCREMENT_PARAM, params, SequenceStyleGenerator.DEFAULT_INCREMENT_SIZE );
 	}
 
 	@Override

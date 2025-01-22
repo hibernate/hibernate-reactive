@@ -284,8 +284,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 		}
 
 		public boolean add(R result) {
-			results.add( result );
-			return true;
+			return results.add( result );
 		}
 
 		public List<R> getResults() {

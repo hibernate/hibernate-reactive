@@ -72,9 +72,8 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 	}
 
 	private static GeneratedValuesMutationDelegate generatedValuesDelegate(MutationOperationGroup operationGroup) {
-		GeneratedValuesMutationDelegate generatedValuesMutationDelegate = operationGroup.asEntityMutationOperationGroup() != null
+		return operationGroup.asEntityMutationOperationGroup() != null
 				? operationGroup.asEntityMutationOperationGroup().getMutationDelegate()
 				: null;
-		return generatedValuesMutationDelegate;
 	}
 }

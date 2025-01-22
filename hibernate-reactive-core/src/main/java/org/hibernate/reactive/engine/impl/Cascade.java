@@ -235,10 +235,7 @@ public final class Cascade {
 										false
 								) );
 					}
-					else {
-						// Nothing to do, so just skip cascading to this lazy attribute.
-						continue;
-					}
+					// Nothing to do, so just skip cascading to this lazy attribute.
 				}
 				else {
 					Object child = persister.getValue( parent, i );
