@@ -41,7 +41,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 		configuration.setProperty( AvailableSettings.STATEMENT_BATCH_SIZE, "5");
 
 		// Construct a tracker that collects query statements via the SqlStatementLogger framework.
-		// Pass in configuration properties to hand-off any actual logging properties
+		// Pass in configuration properties to hand off any actual logging properties
 		sqlTracker = new SqlStatementTracker( BatchingConnectionTest::filter, configuration.getProperties() );
 		return configuration;
 	}

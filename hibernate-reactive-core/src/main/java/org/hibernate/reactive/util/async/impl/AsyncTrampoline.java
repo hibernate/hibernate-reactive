@@ -174,7 +174,7 @@ public final class AsyncTrampoline {
 	 *
 	 * <p>
 	 * Effectively produces {@code fn(seed).thenCompose(fn).thenCompose(fn)... .thenCompose(fn)} until
-	 * an value fails the predicate. Note that predicate will be applied on seed (like a while loop,
+	 * a value fails the predicate. Note that predicate will be applied on seed (like a while loop,
 	 * the initial value is tested). If the predicate or fn throw an exception,
 	 * or the {@link CompletionStage} returned by fn completes exceptionally, iteration will stop and
 	 * an exceptional stage will be returned.

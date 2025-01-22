@@ -17,7 +17,7 @@ import java.util.concurrent.CompletionStage;
  * <p>
  * Examples of such resources are manually managed memory, open file handles, socket descriptors
  * etc. While similar to {@link AutoCloseable}, this interface should be used when the resource
- * release operation may possibly be async. For example, if an object is thread-safe and has many
+ * release operation may be async. For example, if an object is thread-safe and has many
  * consumers, an implementation may require all current ongoing operations to complete before
  * resources are relinquished.
  *
