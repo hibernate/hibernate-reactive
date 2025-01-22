@@ -45,9 +45,6 @@ public class OneToManyTest extends BaseReactiveTest {
 		Author author = new Author( "Iain M Banks" );
 		author.books.add( book1 );
 		author.books.add( book2 );
-		final Book[] bookArray = new Book[2];
-		bookArray[0] = book1;
-		bookArray[1] = book2;
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
@@ -67,9 +64,6 @@ public class OneToManyTest extends BaseReactiveTest {
 		Author author = new Author( "Iain M Banks" );
 		author.books.add( book1 );
 		author.books.add( book2 );
-		final Book[] bookArray = new Book[2];
-		bookArray[0] = book1;
-		bookArray[1] = book2;
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persistAll( book1, book2, author ) )
