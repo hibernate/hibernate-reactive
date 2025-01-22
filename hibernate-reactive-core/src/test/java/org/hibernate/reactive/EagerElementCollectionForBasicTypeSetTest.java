@@ -442,7 +442,7 @@ public class EagerElementCollectionForBasicTypeSetTest extends BaseReactiveTest 
 		assertNotNull( person );
 		String[] sortedExpected = Arrays.stream( expectedPhones ).sorted()
 				.sorted( String.CASE_INSENSITIVE_ORDER )
-				.collect( Collectors.toList() )
+				.toList()
 				.toArray( new String[expectedPhones.length] );
 		List<String> sortedActual = person.getPhones().stream()
 				.sorted( String.CASE_INSENSITIVE_ORDER )
