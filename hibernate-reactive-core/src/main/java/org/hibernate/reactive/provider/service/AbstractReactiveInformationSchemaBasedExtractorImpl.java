@@ -351,7 +351,7 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 	 * used for storing the schema name, or <code null/>, if there
 	 * is no valid column containing the schema name.
 	 * <p/>
-	 * MySQL, for example, does not have a valid column in
+	 * MySQL, for example, does not have a valid column
 	 * in the information_schema to store the schema name.
 	 * (@see MySqlReactiveInformationExtractorImpl)
 	 *

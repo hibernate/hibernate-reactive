@@ -447,7 +447,7 @@ public final class Cascade {
 	 *
 	 * @param type The type representing the attribute metadata
 	 *
-	 * @return True if the attribute represents a logical one to one association
+	 * @return True if the attribute represents a logical one-to-one association
 	 */
 	private static boolean isLogicalOneToOne(Type type) {
 		return type.isEntityType() && ( (EntityType) type ).isLogicalOneToOne();

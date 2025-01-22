@@ -74,7 +74,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 	/**
 	 * Coordinates the processing necessary to get things ready for executions
-	 * as db calls by preping the session caches and moving the appropriate
+	 * as db calls by prepping the session caches and moving the appropriate
 	 * entities and collections to their respective execution queues.
 	 *
 	 * @param event The flush event.
