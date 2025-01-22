@@ -144,55 +144,59 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			// the entity instance, so it will be available
 			// to the entity in the @PrePersist callback
 			if ( generator instanceof ReactiveIdentifierGenerator ) {
-				return ( (ReactiveIdentifierGenerator<?>) generator )
-						.generate( ( ReactiveConnectionSupplier ) source, entity )
-						.thenApply( id -> castToIdentifierType( id, persister ) )
-						.thenCompose( gid -> performSaveWithId(
-								entity,
-								context,
-								source,
-								persister,
-								generator,
-								gid,
-								requiresImmediateIdAccess,
-								false
-						) );
+				return generateId( entity, source, (ReactiveIdentifierGenerator<?>) generator, persister )
+						.thenCompose( gid -> {
+							if ( gid == SHORT_CIRCUIT_INDICATOR ) {
+								source.getIdentifier( entity );
+								return voidFuture();
+							}
+							persister.setIdentifier( entity, gid, source );
+							return reactivePerformSave(
+									entity,
+									gid,
+									persister,
+									generatedOnExecution,
+									context,
+									source,
+									false
+							);
+						} );
 			}
 
 			generatedId = ( (BeforeExecutionGenerator) generator ).generate( source, entity, null, INSERT );
+			if ( generatedId == SHORT_CIRCUIT_INDICATOR ) {
+				source.getIdentifier( entity );
+				return voidFuture();
+			}
+			persister.setIdentifier( entity, generatedId, source );
 		}
 		final Object id =  castToIdentifierType( generatedId, persister );
-		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, requiresImmediateIdAccess );
+		final boolean delayIdentityInserts = !source.isTransactionInProgress() && !requiresImmediateIdAccess && generatedOnExecution;
+		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, delayIdentityInserts );
 	}
 
-	private CompletionStage<Void> performSaveWithId(
+	private CompletionStage<Object> generateId(
 			Object entity,
-			C context,
 			EventSource source,
-			EntityPersister persister,
-			Generator generator,
-			Object generatedId,
-			boolean requiresImmediateIdAccess,
-			boolean generatedOnExecution) {
-		if ( generatedId == null ) {
-			throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
-		}
-		if ( generatedId == SHORT_CIRCUIT_INDICATOR ) {
-			source.getIdentifier( entity );
-			return voidFuture();
-		}
-		if ( LOG.isDebugEnabled() ) {
-			LOG.debugf(
-					"Generated identifier: %s, using strategy: %s",
-					persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
-					generator.getClass().getName()
-			);
-		}
-		final boolean delayIdentityInserts =
-				!source.isTransactionInProgress()
-						&& !requiresImmediateIdAccess
-						&& generatedOnExecution;
-		return reactivePerformSave( entity, generatedId, persister, false, context, source, delayIdentityInserts );
+			ReactiveIdentifierGenerator<?> generator,
+			EntityPersister persister) {
+		return generator
+				.generate( (ReactiveConnectionSupplier) source, entity )
+				.thenApply( id -> {
+								final Object generatedId = castToIdentifierType( id, persister );
+								if ( generatedId == null ) {
+									throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
+								}
+								if ( LOG.isDebugEnabled() ) {
+									LOG.debugf(
+											"Generated identifier: %s, using strategy: %s",
+											persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
+											generator.getClass().getName()
+									);
+								}
+								return generatedId;
+							}
+				);
 	}
 
 	/**
@@ -232,10 +236,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		if ( persister.getGenerator() instanceof Assigned ) {
 			id = persister.getIdentifier( entity, source );
 			if ( id == null ) {
-				throw new IdentifierGenerationException(
-						"Identifier of entity '" + persister.getEntityName()
-								+ "' must be manually assigned before calling 'persist()'"
-				);
+				return failedFuture( new IdentifierGenerationException( "Identifier of entity '" + persister.getEntityName() + "' must be manually assigned before calling 'persist()'" ) );
 			}
 		}
 
