@@ -51,7 +51,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  * below. The difference is that the parallelization in that case is from <b>producing</b> values in
  * parallel, <b>not consuming</b> values in parallel.
  *
- * <p>To implement an AsyncIterator you must only implement the {@link #nextStage()} method-
+ * <p>To implement an AsyncIterator you must only implement the {@link #nextStage()} method -
  * however, it is recommended that users avoid actually using nextStage to consume the results of
  * iteration. It is less expressive and it can also be error prone; it is easy to cause a stack
  * overflow by incorrectly recursing on calls to nextStage. You should prefer to use the other

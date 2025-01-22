@@ -63,7 +63,7 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 	}
 
 	/**
-	 * Temporary tables support is experimental but we need it when updating entities in a hierarchy
+	 * We need temporary tables when updating entities in a hierarchy
 	 */
 	private static void enableTemporaryTables() {
 		runSql( "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';" );

@@ -100,7 +100,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 		throw new IllegalStateException( "Should be unreachable" );
 	}
 
-	// FIXME: Use the one in ORM
+	// FIXME: Use the one in ORM: EntitySelectFetchInitializerBuilder#determineBatchMode
 	public static BatchMode determineBatchMode(
 			EntityPersister entityPersister,
 			InitializerParent<?> parent,

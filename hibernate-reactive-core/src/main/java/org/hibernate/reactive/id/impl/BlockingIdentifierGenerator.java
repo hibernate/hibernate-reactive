@@ -51,7 +51,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	 */
 	protected abstract CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session);
 
-	//Not strictly necessary to put these fields into a dedicated class, but it help
+	//Not strictly necessary to put these fields into a dedicated class, but it helps
 	//to reason about what the current state is and what the CombinerExecutor is
 	//supposed to work on.
 	private static class GeneratorState {
