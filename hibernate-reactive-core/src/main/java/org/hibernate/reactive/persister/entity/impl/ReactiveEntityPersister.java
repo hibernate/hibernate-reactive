@@ -16,6 +16,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinator;
 
 import jakarta.persistence.metamodel.Attribute;
 
@@ -33,7 +34,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 	 * @see EntityPersister#insert(Object, Object[], Object, SharedSessionContractImplementor)
 	 */
 	default CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object object, SharedSessionContractImplementor session) {
-		return insertReactive( id, fields, object, session );
+		return ( (ReactiveInsertCoordinator) getInsertCoordinator() ).reactiveInsert( object, id, fields, session );
 	};
 
 	/**

@@ -12,8 +12,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.boot.model.relational.Database;
-import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.OracleDialect;
@@ -187,14 +185,6 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 									}
 							);
 				} );
-	}
-
-	@Override
-	public void registerExportables(Database database) {
-	}
-
-	@Override
-	public void initialize(SqlStringGenerationContext context) {
 	}
 
 	@Override

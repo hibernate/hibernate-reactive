@@ -28,7 +28,6 @@ import org.hibernate.reactive.event.impl.DefaultReactiveRefreshEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
 /**
  * Integrates Hibernate Reactive with Hibernate ORM by
@@ -45,10 +44,6 @@ public class ReactiveIntegrator implements Integrator {
 	@Override
 	public void integrate(Metadata metadata, BootstrapContext bootstrapContext, SessionFactoryImplementor sessionFactory) {
 		attachEventContextManagingListenersIfRequired( sessionFactory.getServiceRegistry() );
-	}
-
-	@Override
-	public void disintegrate(SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
 	}
 
 	private void attachEventContextManagingListenersIfRequired(ServiceRegistry serviceRegistry) {
