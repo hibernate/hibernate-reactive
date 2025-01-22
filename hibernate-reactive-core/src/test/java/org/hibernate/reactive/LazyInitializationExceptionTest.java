@@ -72,10 +72,14 @@ public class LazyInitializationExceptionTest extends BaseReactiveTest {
 
 	@Test
 	public void testLazyInitializationExceptionWithStage(VertxTestContext context) {
-		test( context, assertThrown( LazyInitializationException.class, openSession()
-				.thenCompose( ss -> ss.createSelectionQuery( "from Artist", Artist.class ).getSingleResult() )
-				.thenAccept( artist -> artist.getPaintings().size() ) )
-				.thenAccept( LazyInitializationExceptionTest::assertLazyInitialization )
+		test(
+				context, assertThrown(
+						LazyInitializationException.class, openSession()
+								.thenCompose( ss -> ss
+										.createSelectionQuery( "from Artist", Artist.class )
+										.getSingleResult() )
+								.thenAccept( artist -> artist.getPaintings().size() )
+				).thenAccept( LazyInitializationExceptionTest::assertLazyInitialization )
 		);
 	}
 

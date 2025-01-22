@@ -138,7 +138,7 @@ public class QueryTest extends BaseReactiveTest {
 		update.set( b.get( "title" ), "XXX" );
 
 		CriteriaDelete<Book> delete = builder.createCriteriaDelete( Book.class );
-		b = delete.from( Book.class );
+		delete.from( Book.class );
 
 		test(
 				context,

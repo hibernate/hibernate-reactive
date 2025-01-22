@@ -172,7 +172,7 @@ public class SoftDeleteTest extends BaseReactiveTest {
 						} )
 				)
 				// Delete an entity
-				.call( deleteEntity::get )
+				.call( deleteEntity )
 				// Test select all
 				.call( () -> getMutinySessionFactory().withTransaction( s -> s
 						.createSelectionQuery( "from " + entityClass.getSimpleName() + " order by id", Object.class )
