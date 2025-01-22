@@ -111,9 +111,7 @@ public class OneToManyArrayMergeTest extends BaseReactiveTest {
 			this.firstname = firstname;
 			this.lastname = lastname;
 			this.roles = new Role[roles.length];
-			for ( int i = 0; i < roles.length; i++ ) {
-				this.roles[i] = roles[i];
-			}
+			System.arraycopy( roles, 0, this.roles, 0, roles.length );
 		}
 
 		public Long getId() {

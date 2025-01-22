@@ -37,6 +37,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.fail;
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
 import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
@@ -233,11 +234,16 @@ public class MultithreadedInsertionTest {
 
 		public void waitForEveryone() {
 			try {
-				countDownLatch.await( TIMEOUT_MINUTES, TimeUnit.MINUTES );
-				prettyOut( "Everyone has now breached '" + label + "'" );
+				boolean reachedZero = countDownLatch.await( TIMEOUT_MINUTES, MINUTES );
+				if ( reachedZero ) {
+					prettyOut( "Everyone has now breached '" + label + "'" );
+				}
+				else {
+					fail( "Time out reached" );
+				}
 			}
 			catch ( InterruptedException e ) {
-				e.printStackTrace();
+				fail( e );
 			}
 		}
 	}

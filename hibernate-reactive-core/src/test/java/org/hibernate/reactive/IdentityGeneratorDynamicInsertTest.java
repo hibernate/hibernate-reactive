@@ -70,7 +70,7 @@ public class IdentityGeneratorDynamicInsertTest extends BaseReactiveTest {
 		return getSessionFactory()
 				.withTransaction( (session, tx) -> session.persist( identities.toArray() ) )
 				.thenAccept( ignore -> {
-					Long assignedId = 0L;
+					long assignedId = 0L;
 					for ( EntityWithIdentity identity : identities ) {
 						assertNotNull( identity.id );
 						assertTrue( identity.id > assignedId );

@@ -63,7 +63,7 @@ public class IdentityGenerationWithBatchingTest extends BaseReactiveTest {
 	}
 
 	private Book[] asBooks(String[] titles) {
-		return Arrays.asList( titles ).stream().map( Book::new ).toArray( Book[]::new );
+		return Arrays.stream( titles ).map( Book::new ).toArray( Book[]::new );
 	}
 
 	@Entity(name = "Book")
