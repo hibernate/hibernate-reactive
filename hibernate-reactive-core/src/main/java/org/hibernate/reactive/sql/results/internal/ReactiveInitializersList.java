@@ -87,7 +87,7 @@ public final class ReactiveInitializersList {
 		}
 
 		private Initializer<?>[] toArray(final ArrayList<Initializer<?>> initializers) {
-			return initializers.toArray( new Initializer<?>[initializers.size()] );
+			return initializers.toArray( new Initializer<?>[0] );
 		}
 	}
 }

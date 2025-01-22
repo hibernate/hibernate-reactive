@@ -5,18 +5,18 @@
  */
 package org.hibernate.reactive.id.impl;
 
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.impl.pool.CombinerExecutor;
 import io.vertx.core.net.impl.pool.Executor;
 import io.vertx.core.net.impl.pool.Task;
-
-import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -138,7 +138,6 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 				// value in the table, so just increment the lo
 				// value and return the next id in the block
 				completedFuture( local ).whenComplete( this::acceptAsReturnValue );
-				return null;
 			}
 			else {
 				nextHiValue( connectionSupplier )
@@ -155,8 +154,8 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 								} );
 							}
 						} );
-				return null;
 			}
+			return null;
 		}
 
 		private void acceptAsReturnValue(final Long aLong, final Throwable throwable) {

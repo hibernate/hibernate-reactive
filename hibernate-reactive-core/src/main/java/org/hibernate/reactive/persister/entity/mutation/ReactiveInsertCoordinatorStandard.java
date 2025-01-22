@@ -435,14 +435,12 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 		final String tableName = tableDetails.getTableName();
 		tableDetails.getKeyMapping().breakDownKeyJdbcValues(
 				id,
-				(jdbcValue, columnMapping) -> {
-					jdbcValueBindings.bindValue(
-							jdbcValue,
-							tableName,
-							columnMapping.getColumnName(),
-							ParameterUsage.SET
-					);
-				},
+				(jdbcValue, columnMapping) -> jdbcValueBindings.bindValue(
+						jdbcValue,
+						tableName,
+						columnMapping.getColumnName(),
+						ParameterUsage.SET
+				),
 				session
 		);
 	}

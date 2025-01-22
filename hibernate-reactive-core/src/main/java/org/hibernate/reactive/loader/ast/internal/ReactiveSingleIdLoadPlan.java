@@ -81,7 +81,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 				} );
 	}
 
-	private <T> void invokeAfterLoadActions(Callback callback, SharedSessionContractImplementor session, T entity) {
+	private <G> void invokeAfterLoadActions(Callback callback, SharedSessionContractImplementor session, G entity) {
 		if ( entity != null && getLoadable() != null) {
 			callback.invokeAfterLoadActions( entity, (EntityMappingType) getLoadable(), session );
 		}

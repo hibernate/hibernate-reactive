@@ -301,7 +301,7 @@ public class  CompletionStages {
 			if ( throwable == null ) {
 				return result;
 			}
-			throw (T) throwable;
+			throw throwable;
 		}
 
 		public CompletionStage<R> getResultAsCompletionStage() {
@@ -467,7 +467,7 @@ public class  CompletionStages {
 	}
 
 	public static CompletionStage<Void> whileLoop(Supplier<CompletionStage<Boolean>> loopSupplier) {
-		return asyncWhile( loopSupplier::get );
+		return asyncWhile( loopSupplier );
 	}
 
 	public static CompletionStage<Void> whileLoop(Supplier<Boolean> whileCondition, Supplier<CompletionStage<?>> loopSupplier) {

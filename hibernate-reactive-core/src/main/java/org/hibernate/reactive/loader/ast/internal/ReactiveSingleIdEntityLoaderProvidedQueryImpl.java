@@ -46,7 +46,7 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 	public CompletionStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		// noinspection unchecked
 		final QueryImplementor<T> query = namedQueryMemento
-				.toQuery( session, (Class<T>) entityDescriptor.getMappedJavaType().getJavaTypeClass() );
+				.toQuery( session, entityDescriptor.getMappedJavaType().getJavaTypeClass() );
 
 		//noinspection unchecked
 		query.setParameter( (Parameter<Object>) query.getParameters().iterator().next(), pkValue );

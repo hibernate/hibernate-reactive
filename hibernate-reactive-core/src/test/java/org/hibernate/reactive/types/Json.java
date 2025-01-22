@@ -61,7 +61,7 @@ public class Json implements UserType<JsonObject> {
 
 	@Override
 	public JsonObject deepCopy(JsonObject value) {
-		return value == null ? null : ( (JsonObject) value ).copy();
+		return value == null ? null : value.copy();
 	}
 
 	@Override
