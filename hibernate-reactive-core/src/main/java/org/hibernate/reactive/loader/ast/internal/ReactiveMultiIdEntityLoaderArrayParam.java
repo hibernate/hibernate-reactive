@@ -65,7 +65,6 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			EntityMappingType entityDescriptor,
 			SessionFactoryImplementor sessionFactory) {
 		super( entityDescriptor, sessionFactory );
-		final Class<?> arrayClass = createTypedArray( 0 ).getClass();
 		final Class<?> idClass = getIdentifierMapping().getJavaType().getJavaTypeClass();
 		arrayJdbcMapping = resolveArrayJdbcMapping(
 				getIdentifierMapping().getJdbcMapping(),

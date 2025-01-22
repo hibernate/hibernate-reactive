@@ -37,7 +37,6 @@ import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.spi.Driver;
 
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -128,7 +127,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	}
 
 	@Override
-	public void configure(Map configuration) {
+	public void configure(Map<String, Object> configuration) {
 		uri = jdbcUrl( configuration );
 	}
 
@@ -247,7 +246,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 		if ( selected.size() > 1 ) {
 			List<String> driverClasses = selected.stream()
 					.map( driver -> driver.getClass().getCanonicalName() )
-					.collect( toList() );
+					.toList();
 			throw new ConfigurationException( "Multiple drivers found matching for URI scheme \"" + scheme + "\". Please, pick one: " + driverClasses, originalError );
 		}
 		return selected.get( 0 );

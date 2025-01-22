@@ -232,15 +232,15 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			if ( s.indexOf( '/' ) != -1 ) {
 				// Example: 1234/
 				s = s.substring( 0, s.indexOf( '/' ) );
-				return Integer.valueOf( s );
+				return Integer.parseInt( s );
 			}
 			if ( s.indexOf( '?' ) != -1 ) {
 				// Example: 1234?param=value
 				s = s.substring( 0, s.indexOf( '?' ) );
-				return Integer.valueOf( s );
+				return Integer.parseInt( s );
 			}
 			// Example: 1234
-			return Integer.valueOf( s );
+			return Integer.parseInt( s );
 		}
 		return -1;
 	}
@@ -330,7 +330,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		if ( startOfPort == -1 ) {
 			return -1;
 		}
-		return Integer.valueOf( hostPortString.substring( startOfPort + 1 ) );
+		return Integer.parseInt( hostPortString.substring( startOfPort + 1 ) );
 	}
 
 	private String findHost(URI uri, String scheme) {
@@ -348,7 +348,7 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	}
 
 	private int findPort(URI uri, String scheme) {
-		int port = -1;
+		int port;
 		if ( "oracle".equals( scheme ) ) {
 			port = oraclePort( uri );
 		}

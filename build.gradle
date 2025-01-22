@@ -73,7 +73,7 @@ subprojects {
     
     ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
 
-    tasks.withType( JavaCompile ) {
+    tasks.withType( JavaCompile ).configureEach {
         options.encoding = 'UTF-8'
     }
 

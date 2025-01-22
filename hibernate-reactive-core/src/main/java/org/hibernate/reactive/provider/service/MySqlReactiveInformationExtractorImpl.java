@@ -46,11 +46,6 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 		}
 	}
 
-	@Override
-	protected String getResultSetTableTypesPhysicalTableConstant() {
-		return "BASE TABLE";
-	}
-
 	protected String getDatabaseCatalogColumnName(String catalogColumnName, String schemaColumnName ) {
 		return schemaColumnName;
 	}
@@ -64,7 +59,7 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 			String catalogFilter,
 			String schemaFilter,
 			Identifier tableName,
-			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+			ExtractionContext.ResultSetProcessor<T> processor) {
 		// This functionality is not used by ORM.
 		throw new UnsupportedOperationException();
 	}
