@@ -39,6 +39,7 @@ import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sqm.ReactiveSqmSelectionQuery;
+import org.hibernate.sql.exec.spi.Callback;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
@@ -216,6 +217,11 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public CompletionStage<Long> getReactiveResultCount() {
 		return selectionQueryDelegate
 				.getReactiveResultsCount( getSqmStatement().createCountQuery(), this );
+	}
+
+	@Override
+	public Callback getCallback() {
+		return selectionQueryDelegate.getCallback();
 	}
 
 	@Override

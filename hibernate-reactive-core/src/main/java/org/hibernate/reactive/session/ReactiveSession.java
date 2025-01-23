@@ -78,6 +78,8 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	CompletionStage<Void> reactiveLock(Object entity, LockOptions lockMode);
 
+	CompletionStage<Void> reactiveLock(String entityName, Object entity, LockOptions lockMode);
+
 	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
 	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockOptions lockOptions, EntityGraph<T> fetchGraph);
