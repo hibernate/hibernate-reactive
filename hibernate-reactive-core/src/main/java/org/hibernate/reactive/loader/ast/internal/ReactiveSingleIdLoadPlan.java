@@ -20,16 +20,19 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
+import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.CallbackImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+import org.hibernate.sql.results.spi.RowTransformer;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
@@ -61,7 +64,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		}
 		assert offset == getJdbcParameters().size();
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
-		final Callback callback = new CallbackImpl();
+		final ReactiveCallbackImpl callback = new ReactiveCallbackImpl();
 		EntityMappingType loadable = (EntityMappingType) getLoadable();
 		ExecutionContext executionContext = executionContext(
 				restrictedValue,
@@ -73,21 +76,27 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		);
 		// FIXME: Should we get this from jdbcServices.getSelectExecutor()?
 		return StandardReactiveSelectExecutor.INSTANCE
-				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
+				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, rowTransformer(), resultConsumer( singleResultExpected ) )
 				.thenApply( this::extractEntity )
-				.thenApply( entity -> {
-					invokeAfterLoadActions( callback, session, entity );
-					return (T) entity;
-				} );
+				.thenCompose( entity -> invokeAfterLoadActions( callback, session, entity ) );
 	}
 
-	private <G> void invokeAfterLoadActions(Callback callback, SharedSessionContractImplementor session, G entity) {
-		if ( entity != null && getLoadable() != null) {
-			callback.invokeAfterLoadActions( entity, (EntityMappingType) getLoadable(), session );
+	private RowTransformer<T> rowTransformer() {
+		// Because of the generics, the compiler expect this to return RowTransformer<CompletionStage<T>>
+		// but it actually returns RowTransformer<T>. I don't know at the moment how to fix this in a cleaner way
+		return (RowTransformer<T>) getRowTransformer();
+	}
+
+	private CompletionStage<T> invokeAfterLoadActions(ReactiveCallbackImpl callback, SharedSessionContractImplementor session, T entity) {
+		if ( entity != null && getLoadable() != null ) {
+			return callback
+					.invokeReactiveLoadActions( entity, (EntityMappingType) getLoadable(), session )
+					.thenApply( v -> entity );
 		}
+		return nullFuture();
 	}
 
-	private Object extractEntity(List<?> list) {
+	private T extractEntity(List<T> list) {
 		return list.isEmpty() ? null : list.get( 0 );
 	}
 

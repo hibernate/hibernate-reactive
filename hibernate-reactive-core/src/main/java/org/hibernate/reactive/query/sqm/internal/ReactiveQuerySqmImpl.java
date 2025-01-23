@@ -61,6 +61,7 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsert
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
+import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.transform.ResultTransformer;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -172,6 +173,11 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	@Override
 	public R getSingleResultOrNull() {
 		return selectionQueryDelegate.getSingleResultOrNull();
+	}
+
+	@Override
+	public Callback getCallback() {
+		return selectionQueryDelegate.getCallback();
 	}
 
 	@Override

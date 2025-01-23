@@ -1074,6 +1074,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return fireLock( new LockEvent( object, lockOptions, this ) );
 	}
 
+	@Override
+	public CompletionStage<Void> reactiveLock(String entityName, Object object, LockOptions lockOptions) {
+		checkOpen();
+		return fireLock( new LockEvent( entityName, object, lockOptions, this ) );
+	}
+
 	private CompletionStage<Void> fireLock(LockEvent event) {
 		pulseTransactionCoordinator();
 

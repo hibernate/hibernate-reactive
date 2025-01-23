@@ -13,14 +13,17 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockOptions;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
@@ -58,6 +61,22 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, resultCountEstimate );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
+	}
+
+	/**
+	 * Reactive version of {@link org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess#registerAfterLoadAction(ExecutionContext, LockOptions)}
+	 * calling {@link ReactiveSession#reactiveLock(String, Object, LockOptions)}
+	 */
+	@Override
+	protected void registerAfterLoadAction(ExecutionContext executionContext, LockOptions lockOptionsToUse) {
+		( (ReactiveCallbackImpl) executionContext.getCallback() ).registerReactiveAfterLoadAction(
+				(entity, persister, session) ->
+						( (ReactiveSession) session ).reactiveLock(
+								persister.getEntityName(),
+								entity,
+								lockOptionsToUse
+						)
+		);
 	}
 
 	@Override
