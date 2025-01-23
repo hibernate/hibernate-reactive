@@ -20,16 +20,18 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
+import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.CallbackImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 
@@ -61,7 +63,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		}
 		assert offset == getJdbcParameters().size();
 		final QueryOptions queryOptions = new SimpleQueryOptions( getLockOptions(), readOnly );
-		final Callback callback = new CallbackImpl();
+		final ReactiveCallbackImpl callback = new ReactiveCallbackImpl();
 		EntityMappingType loadable = (EntityMappingType) getLoadable();
 		ExecutionContext executionContext = executionContext(
 				restrictedValue,
@@ -74,17 +76,19 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 		// FIXME: Should we get this from jdbcServices.getSelectExecutor()?
 		return StandardReactiveSelectExecutor.INSTANCE
 				.list( getJdbcSelect(), jdbcParameterBindings, executionContext, getRowTransformer(), resultConsumer( singleResultExpected ) )
-				.thenApply( this::extractEntity )
-				.thenApply( entity -> {
-					invokeAfterLoadActions( callback, session, entity );
-					return (T) entity;
-				} );
+				.thenCompose( list -> {
+								  Object entity = extractEntity( list );
+								  return invokeAfterLoadActions( callback, session, entity )
+										  .thenApply( v -> (T) entity );
+							  }
+				);
 	}
 
-	private <G> void invokeAfterLoadActions(Callback callback, SharedSessionContractImplementor session, G entity) {
-		if ( entity != null && getLoadable() != null) {
-			callback.invokeAfterLoadActions( entity, (EntityMappingType) getLoadable(), session );
+	private <G> CompletionStage<Void> invokeAfterLoadActions(ReactiveCallbackImpl callback, SharedSessionContractImplementor session, G entity) {
+		if ( entity != null && getLoadable() != null ) {
+			return callback.invokeReactiveLoadActions( entity, (EntityMappingType) getLoadable(), session );
 		}
+		return voidFuture();
 	}
 
 	private Object extractEntity(List<?> list) {

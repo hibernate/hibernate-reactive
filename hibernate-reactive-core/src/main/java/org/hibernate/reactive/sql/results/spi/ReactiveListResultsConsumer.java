@@ -13,6 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ResultListTransformer;
@@ -103,7 +104,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 					}
 					return falseFuture();
 				} ) )
-				.thenApply( v -> finishUp( rowReader, rowProcessingState, jdbcValuesSourceProcessingState, results, readRows, queryOptions ) )
+				.thenCompose( v -> finishUp( rowReader, rowProcessingState, jdbcValuesSourceProcessingState, results, readRows, queryOptions ) )
 				.handle( CompletionStages::handle )
 				.thenCompose( handler -> {
 					end( jdbcValues, session, jdbcValuesSourceProcessingState, persistenceContext, handler.getThrowable() );
@@ -111,19 +112,39 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 				} );
 	}
 
-	private List<R> finishUp(
+	private CompletionStage<List<R>> finishUp(
 			ReactiveRowReader<R> rowReader,
 			ReactiveRowProcessingState rowProcessingState,
 			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState,
 			Results<R> results, int[] readRows, QueryOptions queryOptions) {
 		rowReader.finishUp( rowProcessingState );
-		jdbcValuesSourceProcessingState.finishUp( readRows[0] > 1 );
-
-		final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions.getResultListTransformer();
-		return resultListTransformer != null
-				? resultListTransformer.transformList( results.getResults() )
-				: results.getResults();
+		return finishUp( readRows[0] > 1, rowProcessingState.getSession(), jdbcValuesSourceProcessingState )
+				.thenApply( v -> {
+					final ResultListTransformer<R> resultListTransformer = (ResultListTransformer<R>) queryOptions.getResultListTransformer();
+					return resultListTransformer != null
+							? resultListTransformer.transformList( results.getResults() )
+							: results.getResults();
+				} );
 	}
+
+	/**
+	 * Reactive equivalent of {@link org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl#finishUp(boolean)}
+	 */
+	private static CompletionStage<Void> finishUp(
+			boolean registerSubselects,
+			SharedSessionContractImplementor session,
+			JdbcValuesSourceProcessingStateStandardImpl jdbcValuesSourceProcessingState) {
+		jdbcValuesSourceProcessingState.finishLoadingCollections();
+
+		return ( (ReactivePersistenceContextAdapter) session.getPersistenceContextInternal() )
+				.reactivePostLoad(
+						jdbcValuesSourceProcessingState,
+						registerSubselects ?
+								jdbcValuesSourceProcessingState.getExecutionContext()::registerLoadingEntityHolder :
+								null
+				);
+	}
+
 
 	/**
 	 * The boolean in the CompletionStage is true if the element has been added to the results
