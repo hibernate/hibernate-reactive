@@ -7,6 +7,7 @@ package org.hibernate.reactive.persister.collection.mutation;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
@@ -28,9 +29,9 @@ import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.zeroFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 import static org.hibernate.sql.model.MutationType.DELETE;
 import static org.hibernate.sql.model.MutationType.INSERT;
@@ -70,15 +71,18 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 	}
 
 	private CompletionStage<Integer> doReactiveUpdate(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
+		final Function<Void, CompletionStage<Integer>> insertRowsFun = v -> {
+			if ( rowMutationOperations.hasInsertRow() ) {
+				return insertRows( key, collection, session );
+			}
+
+			return zeroFuture();
+		};
 		if ( rowMutationOperations.hasDeleteRow() ) {
-			deleteRows( key, collection, session );
+			return deleteRows( key, collection, session )
+					.thenCompose( insertRowsFun );
 		}
-
-		if ( rowMutationOperations.hasInsertRow() ) {
-			return insertRows( key, collection, session );
-		}
-
-		return completedFuture( 0 );
+		return insertRowsFun.apply( null );
 	}
 
 	private CompletionStage<Integer> insertRows(Object key, PersistentCollection<?> collection, SharedSessionContractImplementor session) {
