@@ -28,7 +28,7 @@ import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.internal.StatefulPersistenceContext;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -90,7 +90,6 @@ import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
@@ -189,8 +188,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	protected StatefulPersistenceContext createPersistenceContext() {
-		return new ReactivePersistenceContextAdapter( this );
+	protected PersistenceContext createPersistenceContext() {
+		return new ReactivePersistenceContextAdapter( super.createPersistenceContext() );
 	}
 
 	@Override
@@ -805,13 +804,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			boolean isCascadeDeleteEnabled,
 			DeleteContext transientEntities) {
 		checkOpenOrWaitingForAutoClose();
-		final boolean removingOrphanBeforeUpates = persistenceContext().isRemovingOrphanBeforeUpates();
-		if ( LOG.isTraceEnabled() && removingOrphanBeforeUpates ) {
+		final boolean removingOrphanBeforeUpdates = persistenceContext().isRemovingOrphanBeforeUpdates();
+		if ( LOG.isTraceEnabled() && removingOrphanBeforeUpdates ) {
 			logRemoveOrphanBeforeUpdates( "before continuing", entityName, entityName );
 		}
 
 		return fireRemove(
-				new DeleteEvent( entityName, child, isCascadeDeleteEnabled, removingOrphanBeforeUpates, this ),
+				new DeleteEvent( entityName, child, isCascadeDeleteEnabled, removingOrphanBeforeUpdates, this ),
 				transientEntities
 		);
 	}
@@ -1707,7 +1706,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child) {
 		// TODO: The removeOrphan concept is a temporary "hack" for HHH-6484.  This should be removed once action/task
 		// ordering is improved.
-		final StatefulPersistenceContext persistenceContext = (StatefulPersistenceContext) getPersistenceContextInternal();
+		final PersistenceContext persistenceContext = getPersistenceContextInternal();
 		persistenceContext.beginRemoveOrphanBeforeUpdates();
 		return fireRemove( new DeleteEvent( entityName, child, false, true, this ) )
 				.thenAccept( v -> {
@@ -1728,7 +1727,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			String timing,
 			String entityName,
 			Object entity,
-			StatefulPersistenceContext persistenceContext) {
+			PersistenceContext persistenceContext) {
 		if ( LOG.isTraceEnabled() ) {
 			final EntityEntry entityEntry = persistenceContext.getEntry( entity );
 			LOG.tracef(

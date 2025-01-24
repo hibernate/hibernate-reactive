@@ -62,7 +62,7 @@ import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
@@ -133,7 +133,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
 		super( factory, options );
 		reactiveConnection = connection;
-		persistenceContext = new ReactivePersistenceContextAdapter( this );
+		persistenceContext = new ReactivePersistenceContextAdapter( super.getPersistenceContext() );
 		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, reactiveConnection, persistenceContext );
 		influencers = new LoadQueryInfluencers( factory );
 	}
