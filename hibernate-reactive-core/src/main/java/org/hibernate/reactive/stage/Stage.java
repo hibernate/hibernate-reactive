@@ -27,6 +27,7 @@ import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.Order;
 import org.hibernate.query.Page;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
@@ -2429,7 +2430,7 @@ public interface Stage {
 		 * @return an instance of {@link CriteriaBuilder} for creating
 		 * criteria queries.
 		 */
-		CriteriaBuilder getCriteriaBuilder();
+		HibernateCriteriaBuilder getCriteriaBuilder();
 
 		/**
 		 * Obtain the JPA {@link Metamodel} for the persistence unit.

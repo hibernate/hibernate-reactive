@@ -5,11 +5,11 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
@@ -274,7 +274,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
-	public CriteriaBuilder getCriteriaBuilder() {
+	public HibernateCriteriaBuilder getCriteriaBuilder() {
 		return delegate.getCriteriaBuilder();
 	}
 
