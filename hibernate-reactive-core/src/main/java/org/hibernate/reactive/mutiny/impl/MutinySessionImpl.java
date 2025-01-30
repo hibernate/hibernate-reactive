@@ -124,6 +124,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return new MutinyMutationQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
 	}
 
+	@Override
+	public MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( updateQuery ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( deleteQuery ), factory );
+	}
+
 	@Override @Deprecated
 	public <R> Query<R> createQuery(String queryString) {
 		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );

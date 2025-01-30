@@ -958,6 +958,28 @@ public interface Mutiny {
 		MutationQuery createMutationQuery(String queryString);
 
 		/**
+		 * Create an instance of {@link MutationQuery} for the given update tree.
+		 *
+		 * @param updateQuery the update criteria query
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaUpdate)
+		 */
+		MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given delete tree.
+		 *
+		 * @param deleteQuery the delete criteria query
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaDelete)
+		 */
+		MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
 		 * update or delete, the returned {@link Query} must be executed using

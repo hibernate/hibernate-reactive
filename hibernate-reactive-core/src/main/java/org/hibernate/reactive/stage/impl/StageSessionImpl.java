@@ -118,6 +118,16 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( updateQuery ) );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( deleteQuery ) );
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey, null, null );
 	}
