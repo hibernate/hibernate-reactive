@@ -22,6 +22,7 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.LockModeTypeHelper;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -125,6 +126,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( deleteQuery ) );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( insert ) );
 	}
 
 	@Override

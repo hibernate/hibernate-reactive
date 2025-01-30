@@ -11,6 +11,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
@@ -284,6 +285,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( deleteQuery )  );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveMutationQuery( insert ) );
 	}
 
 	@Override
