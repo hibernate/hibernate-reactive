@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import org.hibernate.Cache;
 import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.context.impl.BaseKey;
@@ -30,7 +31,6 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.stat.Statistics;
 
 import io.smallrye.mutiny.Uni;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
@@ -245,7 +245,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	@Override
-	public CriteriaBuilder getCriteriaBuilder() {
+	public HibernateCriteriaBuilder getCriteriaBuilder() {
 		return delegate.getCriteriaBuilder();
 	}
 
