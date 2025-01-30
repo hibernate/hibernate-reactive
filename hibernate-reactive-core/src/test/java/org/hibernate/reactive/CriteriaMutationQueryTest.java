@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Objects;
 
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
+import org.hibernate.query.criteria.JpaCriteriaInsertValues;
+import org.hibernate.query.criteria.JpaCriteriaQuery;
+import org.hibernate.query.criteria.JpaRoot;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
@@ -21,6 +25,7 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -31,7 +36,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class CriteriaMutationQueryTest extends BaseReactiveTest {
-	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
+	private static final Integer SPELT_ID = 1;
+	private static final String SPELT_NAME = "Spelt";
+	private static final String SPELT_TYPE = "Wheat flour";
+	Flour spelt = new Flour( SPELT_ID, SPELT_NAME, "An ancient grain, is a hexaploid species of wheat.", SPELT_TYPE );
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );
 	Flour almond = new Flour( 3, "Almond", "made from ground almonds.", "Gluten free" );
 
@@ -102,6 +110,92 @@ public class CriteriaMutationQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testStageInsertCriteriaQuery(VertxTestContext context) {
+		final int id = 4;
+		final String flourName = "Rye";
+		final String flourDescription = "Used to bake the traditional sourdough breads of Germany.";
+		final String flourType = "Wheat flour";
+		test( context, getSessionFactory()
+				.withTransaction( s -> s
+						.createMutationQuery( insertCriteria( getCriteriaBuilder( s ), id, flourName, flourDescription, flourType ) )
+						.executeUpdate()
+				)
+				.thenAccept( resultCount -> assertThat( resultCount ).isEqualTo( 1 ) )
+				.thenCompose( v -> getSessionFactory()
+						.withTransaction( s -> s.find( Flour.class, id ) ) )
+				.thenAccept( result -> {
+					assertThat( result ).isNotNull();
+					assertThat( result.name ).isEqualTo( flourName );
+					assertThat( result.description ).isEqualTo( flourDescription );
+					assertThat( result.type ).isEqualTo( flourType );
+				} )
+		);
+	}
+
+	@Test
+	public void testMutinyInsertCriteriaQuery(VertxTestContext context) {
+		final int id = 4;
+		final String flourName = "Almond";
+		final String flourDescription = "made from ground almonds.";
+		final String flourType = "Gluten free";
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s
+						.createMutationQuery( insertCriteria( getCriteriaBuilder( s ), id, flourName, flourDescription, flourType ) )
+						.executeUpdate()
+				)
+				.invoke( resultCount -> assertThat( resultCount ).isEqualTo( 1 ) )
+				.chain( v -> getMutinySessionFactory()
+						.withTransaction( s -> s.find( Flour.class, id ) ) )
+				.invoke( result -> {
+					assertThat( result ).isNotNull();
+					assertThat( result.name ).isEqualTo( flourName );
+					assertThat( result.description ).isEqualTo( flourDescription );
+					assertThat( result.type ).isEqualTo( flourType );
+				} )
+		);
+	}
+
+	@Test
+	public void testStageInsertSelectCriteriaQuery(VertxTestContext context) {
+		final int idOfTheNewFlour = 4;
+		test( context, getSessionFactory()
+				.withTransaction( s -> s
+						.createMutationQuery( insertSelectCriteria( getCriteriaBuilder( s ), idOfTheNewFlour ) )
+						.executeUpdate()
+				)
+				.thenAccept( resultCount -> assertThat( resultCount ).isEqualTo( 1 ) )
+				.thenCompose( v -> getSessionFactory()
+						.withTransaction( s -> s.find( Flour.class, idOfTheNewFlour ) ) )
+				.thenAccept( result -> {
+					assertThat( result ).isNotNull();
+					assertThat( result.name ).isEqualTo( SPELT_NAME );
+					assertThat( result.description ).isNull();
+					assertThat( result.type ).isEqualTo( SPELT_TYPE );
+				} )
+		);
+	}
+
+	@Test
+	public void testMutinyInsertSelectCriteriaQuery(VertxTestContext context) {
+		final int idOfTheNewFlour = 4;
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s
+						.createMutationQuery( insertSelectCriteria( getCriteriaBuilder( s ), idOfTheNewFlour ) )
+						.executeUpdate()
+				)
+				.invoke( resultCount -> assertThat( resultCount ).isEqualTo( 1 ) )
+				.chain( v -> getMutinySessionFactory()
+						.withTransaction( s -> s.find( Flour.class, idOfTheNewFlour ) ) )
+				.invoke( result -> {
+					assertThat( result ).isNotNull();
+					assertThat( result.name ).isEqualTo( SPELT_NAME );
+					assertThat( result.description ).isNull();
+					assertThat( result.type ).isEqualTo( SPELT_TYPE );
+				} )
+		);
+	}
+
 	private CriteriaUpdate<Flour> criteriaUpdate(CriteriaBuilder cb, String updatedDescription, Flour rye) {
 		CriteriaUpdate<Flour> criteriaUpdate = cb.createCriteriaUpdate( Flour.class );
 		Root<Flour> from = criteriaUpdate.from( Flour.class );
@@ -115,6 +209,35 @@ public class CriteriaMutationQueryTest extends BaseReactiveTest {
 		Root<Flour> from = criteriaDelete.from( Flour.class );
 		criteriaDelete.where( criteriaBuilder.equal( from.get( "id" ), spelt.getId() ) );
 		return criteriaDelete;
+	}
+
+	private static JpaCriteriaInsertValues<Flour> insertCriteria(HibernateCriteriaBuilder cb, int id, String name, String description, String type) {
+		JpaCriteriaInsertValues<Flour> insert = cb.createCriteriaInsertValues( Flour.class );
+		JpaRoot<Flour> flour = insert.getTarget();
+		insert.setInsertionTargetPaths(	flour.get( "id" ), flour.get( "name" ), flour.get( "description" ), flour.get( "type" ) );
+		insert.values( cb.values( cb.value( id ), cb.value( name ), cb.value( description ), cb.value( type ) ) );
+		return insert;
+	}
+
+	private static JpaCriteriaInsertSelect<Flour> insertSelectCriteria(
+			HibernateCriteriaBuilder cb,
+			int idOfTheNewFlour) {
+    	/*
+		 The query executes and insert of Flour with id equals to 2 a name and type
+		 selected from the existing spelt flour saved in the db
+	 	*/
+		JpaCriteriaInsertSelect<Flour> insertSelect = cb.createCriteriaInsertSelect( Flour.class );
+		// columns to insert
+		JpaRoot<Flour> flour = insertSelect.getTarget();
+		insertSelect.setInsertionTargetPaths( flour.get( "id" ), flour.get( "name" ), flour.get( "type" ) );
+		// select query
+		JpaCriteriaQuery<Tuple> select = cb.createQuery( Tuple.class );
+		JpaRoot<Flour> root = select.from( Flour.class );
+		select.multiselect( cb.literal( idOfTheNewFlour ), root.get( "name" ), root.get( "type" )  );
+		select.where( cb.equal( root.get( "id" ), SPELT_ID ) );
+
+		insertSelect.select( select );
+		return insertSelect;
 	}
 
 	private static HibernateCriteriaBuilder getCriteriaBuilder(Stage.Session session) {
