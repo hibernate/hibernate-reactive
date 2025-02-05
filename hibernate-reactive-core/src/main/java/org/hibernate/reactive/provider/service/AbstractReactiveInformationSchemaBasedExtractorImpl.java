@@ -165,10 +165,16 @@ public abstract class AbstractReactiveInformationSchemaBasedExtractorImpl extend
 			String foreignCatalog,
 			String foreignSchema,
 			String foreignTable,
-			ExtractionContext.ResultSetProcessor<T> processor) {
+			ExtractionContext.ResultSetProcessor<T> processor)
+			throws SQLException {
 		// This method has been added as fix for https://hibernate.atlassian.net/browse/HHH-18221
 		// The issue is only for Informix that we don't currently support.
-		throw LOG.notYetImplemented();
+		try ( ResultSet resultSet =
+					  getExtractionContext()
+							  .getJdbcDatabaseMetaData()
+							  .getCrossReference( parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable) ) {
+			return processor.process( resultSet );
+		}
 	}
 
 	@Override
