@@ -68,22 +68,23 @@ public interface ReactivePersistentTableStrategy {
 		if ( !createIdTables ) {
 			tableCreatedStage.complete( null );
 		}
+		else {
+			LOG.debugf( "Creating persistent ID table : %s", getTemporaryTable().getTableExpression() );
 
-		LOG.debugf( "Creating persistent ID table : %s", getTemporaryTable().getTableExpression() );
-
-		connectionStage()
-				.thenCompose( this::createTable )
-				.whenComplete( (connection, throwable) -> releaseConnection( connection )
-						.thenAccept( v -> {
-							if ( throwable == null ) {
-								setDropIdTables( configService );
-								tableCreatedStage.complete( null );
-							}
-							else {
-								tableCreatedStage.completeExceptionally( throwable );
-							}
-						} )
-				);
+			connectionStage()
+					.thenCompose( this::createTable )
+					.whenComplete( (connection, throwable) -> releaseConnection( connection )
+							.thenAccept( v -> {
+								if ( throwable == null ) {
+									setDropIdTables( configService );
+									tableCreatedStage.complete( null );
+								}
+								else {
+									tableCreatedStage.completeExceptionally( throwable );
+								}
+							} )
+					);
+		}
 	}
 
 	private CompletionStage<Void> releaseConnection(ReactiveConnection connection) {
@@ -150,24 +151,25 @@ public interface ReactivePersistentTableStrategy {
 		if ( !isDropIdTables() ) {
 			tableDroppedStage.complete( null );
 		}
+		else {
+			setDropIdTables( false );
 
-		setDropIdTables( false );
+			final TemporaryTable temporaryTable = getTemporaryTable();
+			LOG.debugf( "Dropping persistent ID table : %s", temporaryTable.getTableExpression() );
 
-		final TemporaryTable temporaryTable = getTemporaryTable();
-		LOG.debugf( "Dropping persistent ID table : %s", temporaryTable.getTableExpression() );
-
-		connectionStage()
-				.thenCompose( this::dropTable )
-				.whenComplete( (connection, throwable) -> releaseConnection( connection )
-						.thenAccept( v -> {
-							if ( throwable == null ) {
-								tableDroppedStage.complete( null );
-							}
-							else {
-								tableDroppedStage.completeExceptionally( throwable );
-							}
-						} )
-				);
+			connectionStage()
+					.thenCompose( this::dropTable )
+					.whenComplete( (connection, throwable) -> releaseConnection( connection )
+							.thenAccept( v -> {
+								if ( throwable == null ) {
+									tableDroppedStage.complete( null );
+								}
+								else {
+									tableDroppedStage.completeExceptionally( throwable );
+								}
+							} )
+					);
+		}
 	}
 
 	private CompletionStage<ReactiveConnection> dropTable(ReactiveConnection connection) {

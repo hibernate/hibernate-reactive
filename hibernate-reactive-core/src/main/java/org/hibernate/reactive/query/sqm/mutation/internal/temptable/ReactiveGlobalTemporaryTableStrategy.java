@@ -27,8 +27,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public interface ReactiveGlobalTemporaryTableStrategy {
 
-	Log LOG = make( Log.class, lookup() );
-
 	static String sessionIdentifier(SharedSessionContractImplementor session) {
 		return session.getSessionIdentifier().toString();
 	}
@@ -65,22 +63,23 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 		if ( !createIdTables ) {
 			tableCreatedStage.complete( null );
 		}
+		else {
+			make( Log.class, lookup() ).debugf( "Creating global-temp ID table : %s", getTemporaryTable().getTableExpression() );
 
-		LOG.debugf( "Creating global-temp ID table : %s", getTemporaryTable().getTableExpression() );
-
-		connectionStage()
-				.thenCompose( this::createTable )
-				.whenComplete( (connection, throwable) -> releaseConnection( connection )
-						.thenAccept( v -> {
-							if ( throwable == null ) {
-								setDropIdTables( configService );
-								tableCreatedStage.complete( null );
-							}
-							else {
-								tableCreatedStage.completeExceptionally( throwable );
-							}
-						} )
-				);
+			connectionStage()
+					.thenCompose( this::createTable )
+					.whenComplete( (connection, throwable) -> releaseConnection( connection )
+							.thenAccept( v -> {
+								if ( throwable == null ) {
+									setDropIdTables( configService );
+									tableCreatedStage.complete( null );
+								}
+								else {
+									tableCreatedStage.completeExceptionally( throwable );
+								}
+							} )
+					);
+		}
 	}
 
 	private CompletionStage<Void> releaseConnection(ReactiveConnection connection) {
@@ -103,7 +102,7 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 
 	private static void logConnectionClosedError(Throwable t) {
 		if ( t != null ) {
-			LOG.debugf( "Ignoring error closing the connection: %s", t.getMessage() );
+			make( Log.class, lookup() ).debugf( "Ignoring error closing the connection: %s", t.getMessage() );
 		}
 	}
 
@@ -147,24 +146,25 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 		if ( !isDropIdTables() ) {
 			tableDroppedStage.complete( null );
 		}
+		else {
+			setDropIdTables( false );
 
-		setDropIdTables( false );
+			final TemporaryTable temporaryTable = getTemporaryTable();
+			make( Log.class, lookup() ).debugf( "Dropping global-tempk ID table : %s", temporaryTable.getTableExpression() );
 
-		final TemporaryTable temporaryTable = getTemporaryTable();
-		LOG.debugf( "Dropping global-tempk ID table : %s", temporaryTable.getTableExpression() );
-
-		connectionStage()
-				.thenCompose( this::dropTable )
-				.whenComplete( (connection, throwable) -> releaseConnection( connection )
-						.thenAccept( v -> {
-							if ( throwable == null ) {
-								tableDroppedStage.complete( null );
-							}
-							else {
-								tableDroppedStage.completeExceptionally( throwable );
-							}
-						} )
-				);
+			connectionStage()
+					.thenCompose( this::dropTable )
+					.whenComplete( (connection, throwable) -> releaseConnection( connection )
+							.thenAccept( v -> {
+								if ( throwable == null ) {
+									tableDroppedStage.complete( null );
+								}
+								else {
+									tableDroppedStage.completeExceptionally( throwable );
+								}
+							} )
+					);
+		}
 	}
 
 	private CompletionStage<ReactiveConnection> dropTable(ReactiveConnection connection) {
