@@ -84,14 +84,4 @@ public class ReactiveGlobalTemporaryTableInsertStrategy extends GlobalTemporaryT
 	public void setDropIdTables(boolean dropIdTables) {
 		this.dropIdTables = dropIdTables;
 	}
-
-	@Override
-	public CompletionStage<Void> getDropTableActionStage() {
-		return tableDroppedStage;
-	}
-
-	@Override
-	public CompletionStage<Void> getCreateTableActionStage() {
-		return tableCreatedStage;
-	}
 }

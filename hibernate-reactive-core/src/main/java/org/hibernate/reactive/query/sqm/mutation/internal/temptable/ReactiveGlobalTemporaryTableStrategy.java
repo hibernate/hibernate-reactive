@@ -41,10 +41,6 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 
 	TemporaryTable getTemporaryTable();
 
-	CompletionStage<Void> getDropTableActionStage();
-
-	CompletionStage<Void> getCreateTableActionStage();
-
 	SessionFactoryImplementor getSessionFactory();
 
 	default void prepare(MappingModelCreationProcess mappingModelCreationProcess, JdbcConnectionAccess connectionAccess, CompletableFuture<Void> tableCreatedStage) {
