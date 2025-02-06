@@ -82,16 +82,6 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 	}
 
 	@Override
-	public CompletionStage<Void> getDropTableActionStage() {
-		return tableDroppedStage;
-	}
-
-	@Override
-	public CompletionStage<Void> getCreateTableActionStage() {
-		return tableCreatedStage;
-	}
-
-	@Override
 	public boolean isPrepared() {
 		return prepared;
 	}
