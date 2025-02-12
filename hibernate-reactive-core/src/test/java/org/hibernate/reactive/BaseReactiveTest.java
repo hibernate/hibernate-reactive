@@ -18,6 +18,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableStrategy;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.containers.DatabaseConfiguration.DBType;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -105,6 +108,8 @@ public abstract class BaseReactiveTest {
 		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
 		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
 		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
+		configuration.setProperty( PersistentTableStrategy.DROP_ID_TABLES, "true" );
+		configuration.setProperty( GlobalTemporaryTableStrategy.DROP_ID_TABLES, "true" );
 	}
 
 	public static final SessionFactoryManager factoryManager = new SessionFactoryManager();
@@ -186,6 +191,7 @@ public abstract class BaseReactiveTest {
 	}
 
 	@BeforeEach
+	@DisabledIf( "" )
 	@Timeout(value = 10, timeUnit = MINUTES)
 	public void before(VertxTestContext context) {
 		test( context, setupSessionFactory( this::constructConfiguration ) );
