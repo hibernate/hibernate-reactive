@@ -146,6 +146,75 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 	}
 
 	@Test
+	public void testBatchingWithStateless(VertxTestContext context) {
+		final GuineaPig[] pigs = {
+				new GuineaPig( 11, "One" ),
+				new GuineaPig( 22, "Two" ),
+				new GuineaPig( 33, "Three" ),
+				new GuineaPig( 44, "Four" ),
+				new GuineaPig( 55, "Five" ),
+				new GuineaPig( 66, "Six" ),
+		};
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.insertAll( 10, pigs ) )
+				.invoke( () -> {
+					// We expect only one insert query
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+					// Parameters are different for different dbs, so we cannot do an exact match
+					assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+							.matches("insert into pig \\(name,version,id\\) values (.*)" );
+					sqlTracker.clear();
+				} )
+		);
+	}
+
+	@Test
+	public void testMutinyInsertAllWithStateless(VertxTestContext context) {
+		final GuineaPig[] pigs = {
+				new GuineaPig( 11, "One" ),
+				new GuineaPig( 22, "Two" ),
+				new GuineaPig( 33, "Three" ),
+				new GuineaPig( 44, "Four" ),
+				new GuineaPig( 55, "Five" ),
+				new GuineaPig( 66, "Six" ),
+		};
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.insertAll( pigs ) )
+				.invoke( () -> {
+					// We expect only 1 insert query, despite hibernate.jdbc.batch_size is set to 5, insertAll by default use the pigs.length as batch size
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+					// Parameters are different for different dbs, so we cannot do an exact match
+					assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+							.matches("insert into pig \\(name,version,id\\) values (.*)" );
+					sqlTracker.clear();
+				} )
+		);
+	}
+
+	@Test
+	public void testStageInsertWithStateless(VertxTestContext context) {
+		final GuineaPig[] pigs = {
+				new GuineaPig( 11, "One" ),
+				new GuineaPig( 22, "Two" ),
+				new GuineaPig( 33, "Three" ),
+				new GuineaPig( 44, "Four" ),
+				new GuineaPig( 55, "Five" ),
+				new GuineaPig( 66, "Six" ),
+		};
+		test( context, getSessionFactory()
+				.withStatelessTransaction( s -> s.insert( pigs ) )
+				.thenAccept( v -> {
+					// We expect only 1 insert query, despite hibernate.jdbc.batch_size is set to 5, insertAll by default use the pigs.length as batch size
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+					// Parameters are different for different dbs, so we cannot do an exact match
+					assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+							.matches("insert into pig \\(name,version,id\\) values (.*)" );
+					sqlTracker.clear();
+				} )
+		);
+	}
+
+	@Test
 	public void testBatchingConnection(VertxTestContext context) {
 		test( context, openSession()
 				.thenAccept( session -> assertThat( ( (StageSessionImpl) session ).getReactiveConnection() )
