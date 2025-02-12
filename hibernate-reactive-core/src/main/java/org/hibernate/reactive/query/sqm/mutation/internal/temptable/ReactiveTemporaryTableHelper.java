@@ -68,11 +68,8 @@ public class ReactiveTemporaryTableHelper {
 
 		@Override
 		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
-			final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
-
 			try {
 				final String creationCommand = exporter.getSqlCreateCommand( temporaryTable );
-				logStatement( creationCommand, jdbcServices );
 
 				return connection.executeUnprepared( creationCommand )
 						.handle( (integer, throwable) -> {
@@ -116,11 +113,8 @@ public class ReactiveTemporaryTableHelper {
 
 		@Override
 		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
-			final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
-
 			try {
 				final String dropCommand = exporter.getSqlDropCommand( temporaryTable );
-				logStatement( dropCommand, jdbcServices );
 
 				return connection.update( dropCommand )
 						.handle( (integer, throwable) -> {
