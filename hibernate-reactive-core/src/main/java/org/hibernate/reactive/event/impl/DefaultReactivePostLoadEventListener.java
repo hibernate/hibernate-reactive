@@ -6,7 +6,6 @@
 package org.hibernate.reactive.event.impl;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.classic.Lifecycle;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
@@ -21,7 +20,6 @@ import org.hibernate.reactive.session.ReactiveSession;
 /**
  * We do two things here:
  * <ul>
- * <li>Call {@link Lifecycle} interface if necessary</li>
  * <li>Perform needed {@link EntityEntry#getLockMode()} related processing</li>
  * </ul>
  *

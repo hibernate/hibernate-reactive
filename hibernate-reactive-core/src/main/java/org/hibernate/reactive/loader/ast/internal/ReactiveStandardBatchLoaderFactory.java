@@ -33,7 +33,7 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 
 		// NOTE : don't use the EntityIdentifierMapping here because it will not be known until later
 		final Type identifierType = entityDescriptor.getEntityPersister().getIdentifierType();
-		final int idColumnCount = identifierType.getColumnSpan( factory );
+		final int idColumnCount = identifierType.getColumnSpan( factory.getRuntimeMetamodels() );
 
 		if ( idColumnCount == 1
 				&& MultiKeyLoadHelper.supportsSqlArrayType( dialect )

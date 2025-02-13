@@ -25,7 +25,6 @@ import org.hibernate.reactive.event.impl.DefaultReactivePersistEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactivePersistOnFlushEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactivePostLoadEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveRefreshEventListener;
-import org.hibernate.reactive.event.impl.DefaultReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.service.ServiceRegistry;
@@ -70,7 +69,6 @@ public class ReactiveIntegrator implements Integrator {
 			eventListenerRegistry.getEventListenerGroup( EventType.LOAD ).appendListener( new DefaultReactiveLoadEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.INIT_COLLECTION ).appendListener( new DefaultReactiveInitializeCollectionEventListener() );
 			eventListenerRegistry.getEventListenerGroup( EventType.POST_LOAD ).appendListener( new DefaultReactivePostLoadEventListener() );
-			eventListenerRegistry.getEventListenerGroup( EventType.RESOLVE_NATURAL_ID ).appendListener( new DefaultReactiveResolveNaturalIdEventListener() );
 		}
 	}
 }

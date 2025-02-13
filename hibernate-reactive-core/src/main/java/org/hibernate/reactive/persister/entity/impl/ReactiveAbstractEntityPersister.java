@@ -39,13 +39,12 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.NaturalIdLoader;
+import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.AttributeMappingsList;
@@ -222,7 +221,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				offset++;
 			}
 			getIdentifierType().nullSafeSet( statement, id, offset, session );
-			offset += getIdentifierType().getColumnSpan( getFactory() );
+			offset += getIdentifierType().getColumnSpan( getFactory().getRuntimeMetamodels() );
 			if ( isVersioned() ) {
 				getVersionType().nullSafeSet( statement, version, offset, session );
 			}
@@ -521,25 +520,18 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			EntityKey entityKey,
 			Object identifier) {
 
-		// note that stateless sessions don't interact with second-level cache
-		if ( session instanceof EventSource && canReadFromCache() ) {
-			Object cached = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-					new LoadEvent( identifier, entity, (EventSource) session, false ),
-					this,
-					entityKey
-			);
-			if ( cached != null ) {
-				return completedFuture( cached );
+		if ( canReadFromCache() && session.isEventSource() ) {
+			final EventSource eventSource = (EventSource) session;
+			Object loaded = eventSource.loadFromSecondLevelCache( this, entityKey, entity, LockMode.NONE );
+			if ( loaded != null ) {
+				return completedFuture( loaded );
 			}
 		}
-
-		return getReactiveSingleIdEntityLoader().load(
-				identifier,
-				entity,
-				LockOptions.NONE,
-				session
-		);
+		return ( (ReactiveSingleIdEntityLoader<?>) determineLoaderToUse( session ) )
+				.load( identifier, entity, LockOptions.NONE, session );
 	}
+
+	SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session);
 
 	boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue);
 

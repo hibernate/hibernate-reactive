@@ -103,7 +103,7 @@ public class ReactiveSimpleUpdateQueryPlan implements ReactiveNonSelectQueryPlan
 				domainParameterXref,
 				executionContext.getQueryParameterBindings(),
 				executionContext.getSession().getLoadQueryInfluencers(),
-				factory
+				factory.getSqlTranslationEngine()
 		);
 
 		final SqmTranslation<? extends MutationStatement> sqmInterpretation = translator.translate();

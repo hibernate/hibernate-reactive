@@ -87,6 +87,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	public SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session) {
+		return super.determineLoaderToUse( session );
+	}
+
+	@Override
 	protected GeneratedValuesMutationDelegate createUpdateDelegate() {
 		return ReactiveAbstractEntityPersister.super.createReactiveUpdateDelegate();
 	}

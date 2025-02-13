@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SelfDirtinessTracker;

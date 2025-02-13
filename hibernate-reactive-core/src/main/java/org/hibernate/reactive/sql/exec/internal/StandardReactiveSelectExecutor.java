@@ -19,7 +19,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.query.TupleTransformer;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;

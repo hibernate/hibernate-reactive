@@ -22,6 +22,7 @@ import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedSqmQueryMemento;
 
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQueryReference;
 
 public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository {
@@ -40,6 +41,11 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	@Override
 	public NamedSqmQueryMemento<?> getSqmQueryMemento(String queryName) {
 		return wrapSqmQueryMemento( delegate.getSqmQueryMemento( queryName ) );
+	}
+
+	@Override
+	public void registerNamedQuery(String name, Query query) {
+		delegate.registerNamedQuery( name, query );
 	}
 
 	@Override

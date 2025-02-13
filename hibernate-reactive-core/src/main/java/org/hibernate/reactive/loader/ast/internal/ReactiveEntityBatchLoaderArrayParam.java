@@ -63,12 +63,10 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 		}
 
 		identifierMapping = (BasicEntityIdentifierMapping) getLoadable().getIdentifierMapping();
-		final Class<?> arrayClass =
-				Array.newInstance( identifierMapping.getJavaType().getJavaTypeClass(), 0 ).getClass();
+		final Class<?> idClass = identifierMapping.getJavaType().getJavaTypeClass();
 		arrayJdbcMapping = MultiKeyLoadHelper.resolveArrayJdbcMapping(
-				sessionFactory.getTypeConfiguration().getBasicTypeRegistry().getRegisteredType( arrayClass ),
 				identifierMapping.getJdbcMapping(),
-				arrayClass,
+				idClass,
 				sessionFactory
 		);
 

@@ -117,7 +117,7 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				queryOptions,
 				loadQueryInfluencers,
 				queryParameterBindings,
-				sessionFactory
+				sessionFactory.getSqlTranslationEngine()
 		);
 	}
 
