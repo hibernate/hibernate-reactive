@@ -146,14 +146,13 @@ public class TemporaryIdTableStrategyTest extends BaseReactiveTest {
 			int expectedTempTablesDropped,
 			VertxTestContext context) {
 		test( context, setupSessionFactory( configure )
-				.thenCompose( v -> getSessionFactory().withSession( s -> {
+				.thenAccept( v -> {
 					dialect[0] = getDialect();
 					assertThat( commandsCount( dialect[0].getTemporaryTableCreateCommand() ) )
 							.as( "Unexpected number of temporary tables for ids CREATED" )
 							.isEqualTo( expectedTempTablesCreated );
 					sqlStatementTracker.clear();
-					return voidFuture();
-				} ) )
+				} )
 				// to ensure the factory is always closed even in case of exceptions
 				.handle( CompletionStages::handle )
 				.thenCompose( this::closeFactory )
