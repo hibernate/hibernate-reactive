@@ -140,6 +140,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
+	public SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session) {
+		return super.determineLoaderToUse( session );
+	}
+
+	@Override
 	protected InsertCoordinator buildInsertCoordinator() {
 		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
 	}

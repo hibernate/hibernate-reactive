@@ -21,17 +21,15 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.LoadEvent;
-import org.hibernate.event.spi.LoadEventListener;
-import org.hibernate.loader.ast.internal.CacheEntityLoaderHelper;
-import org.hibernate.loader.ast.internal.LoaderHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.MultiIdEntityLoaderArrayParam;
 import org.hibernate.loader.ast.internal.MultiKeyLoadLogging;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.internal.CacheLoadHelper.PersistenceContextEntry;
 import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.JdbcMapping;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
@@ -44,11 +42,12 @@ import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
-import org.hibernate.type.BasicType;
 
+import static org.hibernate.event.spi.LoadEventListener.GET;
 import static org.hibernate.internal.util.collections.CollectionHelper.arrayList;
 import static org.hibernate.internal.util.collections.CollectionHelper.isEmpty;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadHelper.resolveArrayJdbcMapping;
+import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSessionCache;
 import static org.hibernate.reactive.loader.ast.internal.ReactiveLoaderHelper.loadByArrayParameter;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -67,15 +66,12 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			SessionFactoryImplementor sessionFactory) {
 		super( entityDescriptor, sessionFactory );
 		final Class<?> arrayClass = createTypedArray( 0 ).getClass();
-		JdbcMapping jdbcMapping = getIdentifierMapping().getJdbcMapping();
-		BasicType<?> registeredType = getSessionFactory().getTypeConfiguration()
-				.getBasicTypeRegistry()
-				.getRegisteredType( arrayClass );
-		JdbcMapping arrayJdbcMapping1 = resolveArrayJdbcMapping( registeredType, jdbcMapping, arrayClass, getSessionFactory() );
-//		JavaType<Object> objectJavaType = getSessionFactory().getTypeConfiguration()
-//				.getJavaTypeRegistry()
-//				.resolveDescriptor( ReactiveArrayJdbcType.class );
-		arrayJdbcMapping = arrayJdbcMapping1;
+		final Class<?> idClass = getIdentifierMapping().getJavaType().getJavaTypeClass();
+		arrayJdbcMapping = resolveArrayJdbcMapping(
+				getIdentifierMapping().getJdbcMapping(),
+				idClass,
+				getSessionFactory()
+		);
 		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
 	}
 
@@ -113,24 +109,17 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
 
 			if ( loadOptions.isSessionCheckingEnabled() || loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-				LoadEvent loadEvent = new LoadEvent(
-						id,
-						getLoadable().getJavaType().getJavaTypeClass().getName(),
-						lockOptions,
-						session,
-						LoaderHelper.getReadOnlyFromLoadQueryInfluencers( session )
-				);
-
 				Object managedEntity = null;
 
 				if ( loadOptions.isSessionCheckingEnabled() ) {
 					// look for it in the Session first
-					final CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.loadFromSessionCacheStatic(
-							loadEvent,
+					final PersistenceContextEntry persistenceContextEntry = loadFromSessionCache(
 							entityKey,
-							LoadEventListener.GET
+							lockOptions,
+							GET,
+							session
 					);
-					managedEntity = persistenceContextEntry.getEntity();
+					managedEntity = persistenceContextEntry.entity();
 
 					if ( managedEntity != null
 							&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
@@ -142,12 +131,9 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 				}
 
 				if ( managedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
+					final EntityPersister persister = getLoadable().getEntityPersister();
 					// look for it in the SessionFactory
-					managedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-							loadEvent,
-							getLoadable().getEntityPersister(),
-							entityKey
-					);
+					managedEntity = session.loadFromSecondLevelCache( persister, entityKey, null, lockOptions.getLockMode() );
 				}
 
 				if ( managedEntity != null ) {
@@ -217,9 +203,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 				} )
 				.thenApply( ignore -> {
 					final PersistenceContext persistenceContext = session.getPersistenceContext();
-					for ( int i = 0; i < idsToLoadFromDatabaseResultIndexes.size(); i++ ) {
-						final Integer resultIndex = idsToLoadFromDatabaseResultIndexes.get( i );
-
+					for ( final Integer resultIndex : idsToLoadFromDatabaseResultIndexes ) {
 						// the element value at this position in the result List should be
 						// the EntityKey for that entity - reuse it
 						final EntityKey entityKey = (EntityKey) result.get( resultIndex );
@@ -337,32 +321,24 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Object id;
 			if ( coerce ) {
-				//noinspection unchecked
-				id = (K) getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i], session );
+				id = getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i], session );
 			}
 			else {
 				id = ids[i];
 			}
 
 			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
-			final LoadEvent loadEvent = new LoadEvent(
-					id,
-					getLoadable().getJavaType().getJavaTypeClass().getName(),
-					lockOptions,
-					session,
-					LoaderHelper.getReadOnlyFromLoadQueryInfluencers( session )
-			);
-
 			Object resolvedEntity = null;
 
 			// look for it in the Session first
-			final CacheEntityLoaderHelper.PersistenceContextEntry persistenceContextEntry = CacheEntityLoaderHelper.loadFromSessionCacheStatic(
-					loadEvent,
+			final PersistenceContextEntry persistenceContextEntry = loadFromSessionCache(
 					entityKey,
-					LoadEventListener.GET
+					lockOptions,
+					GET,
+					session
 			);
 			if ( loadOptions.isSessionCheckingEnabled() ) {
-				resolvedEntity = persistenceContextEntry.getEntity();
+				resolvedEntity = persistenceContextEntry.entity();
 
 				if ( resolvedEntity != null
 						&& !loadOptions.isReturnOfDeletedEntitiesEnabled()
@@ -374,11 +350,8 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			}
 
 			if ( resolvedEntity == null && loadOptions.isSecondLevelCacheCheckingEnabled() ) {
-				resolvedEntity = CacheEntityLoaderHelper.INSTANCE.loadFromSecondLevelCache(
-						loadEvent,
-						getLoadable().getEntityPersister(),
-						entityKey
-				);
+				final EntityPersister persister = getLoadable().getEntityPersister();
+				resolvedEntity = session.loadFromSecondLevelCache( persister, entityKey, null, lockOptions.getLockMode() );
 			}
 
 			if ( resolvedEntity != null ) {
@@ -391,7 +364,6 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 				if ( nonResolvedIds == null ) {
 					nonResolvedIds = new ArrayList<>();
 				}
-				//noinspection unchecked,CastCanBeRemovedNarrowingVariableType
 				nonResolvedIds.add( (K) id );
 			}
 		}

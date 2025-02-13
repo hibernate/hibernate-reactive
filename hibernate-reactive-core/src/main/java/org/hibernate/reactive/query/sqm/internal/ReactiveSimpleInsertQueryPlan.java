@@ -102,7 +102,7 @@ public class ReactiveSimpleInsertQueryPlan implements ReactiveNonSelectQueryPlan
 						domainParameterXref,
 						executionContext.getQueryParameterBindings(),
 						executionContext.getSession().getLoadQueryInfluencers(),
-						factory
+						factory.getSqlTranslationEngine()
 				)
 				.translate();
 

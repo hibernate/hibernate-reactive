@@ -76,8 +76,7 @@ public class EntityTypes {
 	 * @see OneToOneType#isNull(Object, SharedSessionContractImplementor)
 	 */
 	static boolean isNull(EntityType entityType, Object owner, SharedSessionContractImplementor session) {
-		if ( entityType instanceof OneToOneType ) {
-			OneToOneType type = (OneToOneType) entityType;
+		if ( entityType instanceof OneToOneType type ) {
 			String propertyName = type.getPropertyName();
 			if ( propertyName != null ) {
 				final EntityPersister ownerPersister = session.getFactory()
@@ -126,7 +125,7 @@ public class EntityTypes {
 				entityName,
 				uniqueKeyPropertyName,
 				key,
-				entityType.getIdentifierOrUniqueKeyType( factory ),
+				entityType.getIdentifierOrUniqueKeyType( factory.getRuntimeMetamodels() ),
 				factory
 		);
 
@@ -273,7 +272,7 @@ public class EntityTypes {
 							.reactiveFetch( id, true )
 							.thenCompose( fetched -> {
 								Object idOrUniqueKey = entityType
-										.getIdentifierOrUniqueKeyType( session.getFactory() )
+										.getIdentifierOrUniqueKeyType( session.getFactory().getRuntimeMetamodels() )
 										.replace( fetched, null, session, owner, copyCache );
 								if ( idOrUniqueKey instanceof CompletionStage ) {
 									return ( (CompletionStage<?>) idOrUniqueKey )

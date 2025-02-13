@@ -56,7 +56,7 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 	}
 
 	private void preRecreate() {
-		getFastSessionServices()
+		getEventListenerGroups()
 				.eventListenerGroup_PRE_COLLECTION_RECREATE
 				.fireLazyEventOnEachListener( this::newPreCollectionRecreateEvent, PreCollectionRecreateEventListener::onPreRecreateCollection );
 	}
@@ -66,7 +66,7 @@ public class ReactiveCollectionRecreateAction extends CollectionAction implement
 	}
 
 	private void postRecreate() {
-		getFastSessionServices()
+		getEventListenerGroups()
 				.eventListenerGroup_POST_COLLECTION_RECREATE
 				.fireLazyEventOnEachListener( this::newPostCollectionRecreateEvent, PostCollectionRecreateEventListener::onPostRecreateCollection );
 	}

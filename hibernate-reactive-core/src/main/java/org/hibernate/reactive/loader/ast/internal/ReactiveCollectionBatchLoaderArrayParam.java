@@ -18,9 +18,9 @@ import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.MultiKeyLoadHelper;
 import org.hibernate.loader.ast.spi.SqlArrayMultiKeyLoader;
+import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
-import org.hibernate.metamodel.mapping.internal.SimpleForeignKeyDescriptor;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
@@ -34,7 +34,6 @@ import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
-import org.hibernate.type.BasicType;
 
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
 
@@ -65,18 +64,14 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 			);
 		}
 
-		final SimpleForeignKeyDescriptor keyDescriptor = (SimpleForeignKeyDescriptor) getLoadable().getKeyDescriptor();
-
+		final ForeignKeyDescriptor keyDescriptor = getLoadable().getKeyDescriptor();
+		final JdbcMapping jdbcMapping = keyDescriptor.getSingleJdbcMapping();
+		final Class<?> jdbcJavaTypeClass = jdbcMapping.getJdbcJavaType().getJavaTypeClass();
 		arrayElementType = keyDescriptor.getJavaType().getJavaTypeClass();
-		Class<?> arrayClass = Array.newInstance( arrayElementType, 0 ).getClass();
 
-		final BasicType<?> arrayBasicType = getSessionFactory().getTypeConfiguration()
-				.getBasicTypeRegistry()
-				.getRegisteredType( arrayClass );
 		arrayJdbcMapping = MultiKeyLoadHelper.resolveArrayJdbcMapping(
-				arrayBasicType,
-				keyDescriptor.getJdbcMapping(),
-				arrayClass,
+				keyDescriptor.getSingleJdbcMapping(),
+				jdbcJavaTypeClass,
 				getSessionFactory()
 		);
 
