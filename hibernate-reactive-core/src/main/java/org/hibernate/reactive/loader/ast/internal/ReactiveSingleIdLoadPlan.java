@@ -165,7 +165,7 @@ public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStag
 
 			@Override
 			public QueryParameterBindings getQueryParameterBindings() {
-				return QueryParameterBindings.NO_PARAM_BINDINGS;
+				return QueryParameterBindings.empty();
 			}
 
 			@Override
