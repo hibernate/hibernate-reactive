@@ -273,8 +273,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return nullFuture();
 		}
 
-		if ( association instanceof HibernateProxy ) {
-			LazyInitializer initializer = ( (HibernateProxy) association ).getHibernateLazyInitializer();
+		if ( association instanceof HibernateProxy proxy ) {
+			LazyInitializer initializer = proxy.getHibernateLazyInitializer();
 			if ( !initializer.isUninitialized() ) {
 				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 			}
@@ -290,13 +290,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						} );
 			}
 		}
-		else if ( association instanceof PersistentCollection ) {
-			final PersistentCollection<?> persistentCollection = (PersistentCollection<?>) association;
-			if ( persistentCollection.wasInitialized() ) {
+		else if (association instanceof PersistentCollection<?> collection) {
+            if ( collection.wasInitialized() ) {
 				return completedFuture( association );
 			}
 			else {
-				return reactiveInitializeCollection( persistentCollection, false )
+				return reactiveInitializeCollection( collection, false )
 						// don't reassociate the collection instance, because
 						// its owner isn't associated with this session
 						.thenApply( v -> association );
@@ -305,9 +304,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-				EnhancementAsProxyLazinessInterceptor eapli = (EnhancementAsProxyLazinessInterceptor) interceptor;
-				return forceInitialize( association, null, eapli.getIdentifier(), eapli.getEntityName(), this )
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor lazinessInterceptor ) {
+                return forceInitialize( association, null, lazinessInterceptor.getIdentifier(), lazinessInterceptor.getEntityName(), this )
 						.thenApply( i -> association );
 
 			}
@@ -369,7 +367,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			final HqlInterpretation interpretation = interpretHql( queryString, expectedResultType );
+			final HqlInterpretation<?> interpretation = interpretHql( queryString, expectedResultType );
 			final ReactiveQuerySqmImpl<R> query =
 					new ReactiveQuerySqmImpl<>( queryString, interpretation, expectedResultType, this );
 			applyQuerySettingsAndHints( query );
@@ -482,7 +480,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			final HqlInterpretation interpretation = interpretHql( hql, resultType );
+			final HqlInterpretation<?> interpretation = interpretHql( hql, resultType );
 			checkSelectionQuery( hql, interpretation );
 			return createSelectionQuery( hql, resultType, interpretation );
 		}
@@ -492,7 +490,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
-	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation interpretation) {
+	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation<?> interpretation) {
 		final ReactiveSqmSelectionQueryImpl<R> query =
 				new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
 		if ( resultType != null ) {
@@ -1671,9 +1669,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> Class<T> getEntityClass(T entity) {
-		if ( entity instanceof HibernateProxy ) {
-			return (Class<T>) ( (HibernateProxy) entity )
-					.getHibernateLazyInitializer()
+		if ( entity instanceof HibernateProxy proxy ) {
+			return (Class<T>) proxy.getHibernateLazyInitializer()
 					.getPersistentClass();
 		}
 		else {
@@ -1684,8 +1681,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public Object getEntityId(Object entity) {
-		if ( entity instanceof HibernateProxy ) {
-			return ( (HibernateProxy) entity ).getHibernateLazyInitializer()
+		if ( entity instanceof HibernateProxy proxy ) {
+			return proxy.getHibernateLazyInitializer()
 					.getIdentifier();
 		}
 		else {

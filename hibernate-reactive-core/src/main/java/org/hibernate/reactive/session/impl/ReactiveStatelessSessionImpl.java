@@ -397,8 +397,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public CompletionStage<Void> reactiveUpdate(Object entity) {
 		checkOpen();
-		if ( entity instanceof HibernateProxy ) {
-			final LazyInitializer hibernateLazyInitializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
+		if ( entity instanceof HibernateProxy proxy ) {
+			final LazyInitializer hibernateLazyInitializer = proxy.getHibernateLazyInitializer();
 			return hibernateLazyInitializer.isUninitialized()
 					? failedFuture( LOG.uninitializedProxyUpdate( entity.getClass() ) )
 					: executeReactiveUpdate( hibernateLazyInitializer.getImplementation() );
@@ -730,22 +730,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 			}
 		}
-		else if ( association instanceof PersistentCollection ) {
-			final PersistentCollection<?> persistentCollection = (PersistentCollection<?>) association;
-			if ( persistentCollection.wasInitialized() ) {
+		else if ( association instanceof PersistentCollection<?> collection ) {
+            if ( collection.wasInitialized() ) {
 				return completedFuture( association );
 			}
 			else {
 				final ReactiveCollectionPersister collectionDescriptor =
 						(ReactiveCollectionPersister) getFactory().getMappingMetamodel()
-								.getCollectionDescriptor( persistentCollection.getRole() );
+								.getCollectionDescriptor( collection.getRole() );
 
-				final Object key = persistentCollection.getKey();
-				persistenceContext.addUninitializedCollection( collectionDescriptor, persistentCollection, key );
-				persistentCollection.setCurrentSession( this );
+				final Object key = collection.getKey();
+				persistenceContext.addUninitializedCollection( collectionDescriptor, collection, key );
+				collection.setCurrentSession( this );
 				return collectionDescriptor.reactiveInitialize( key, this )
 						.whenComplete( (v, e) -> {
-							persistentCollection.unsetSession( this );
+							collection.unsetSession( this );
 							if ( persistenceContext.isLoadFinished() ) {
 								persistenceContext.clear();
 							}
@@ -756,13 +755,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-				final EnhancementAsProxyLazinessInterceptor proxyInterceptor =
-						(EnhancementAsProxyLazinessInterceptor) interceptor;
-				proxyInterceptor.setSession( this );
-				return forceInitialize( association, null, proxyInterceptor.getIdentifier(), proxyInterceptor.getEntityName(), this )
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor lazinessInterceptor ) {
+                lazinessInterceptor.setSession( this );
+				return forceInitialize( association, null, lazinessInterceptor.getIdentifier(), lazinessInterceptor.getEntityName(), this )
 						.whenComplete( (i,e) -> {
-							proxyInterceptor.unsetSession();
+							lazinessInterceptor.unsetSession();
 							if ( persistenceContext.isLoadFinished() ) {
 								persistenceContext.clear();
 							}
@@ -860,7 +857,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			final HqlInterpretation interpretation = interpretHql( queryString, expectedResultType );
+			final HqlInterpretation<?> interpretation = interpretHql( queryString, expectedResultType );
 			final ReactiveQuerySqmImpl<R> query =
 					new ReactiveQuerySqmImpl<>( queryString, interpretation, expectedResultType, this );
 			applyQuerySettingsAndHints( query );
@@ -973,7 +970,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			final HqlInterpretation interpretation = interpretHql( hql, resultType );
+			final HqlInterpretation<?> interpretation = interpretHql( hql, resultType );
 			checkSelectionQuery( hql, interpretation );
 			return createSelectionQuery( hql, resultType, interpretation );
 		}
@@ -983,7 +980,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation interpretation) {
+	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation<?> interpretation) {
 		final ReactiveSqmSelectionQueryImpl<R> query =
 				new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
 		if ( resultType != null ) {
