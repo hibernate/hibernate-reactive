@@ -46,6 +46,7 @@ import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Implements the {@link Stage.Session} API. This delegating class is
@@ -434,7 +435,7 @@ public class StageSessionImpl implements Stage.Session {
 		 * roll back) and an error thrown by the work.
 		 */
 		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-			return work.apply( this )
+			return voidFuture().thenCompose( v -> work.apply( this ) )
 					// only flush() if the work completed with no exception
 					.thenCompose( result -> flush().thenApply( v -> result ) )
 					// have to capture the error here and pass it along,
