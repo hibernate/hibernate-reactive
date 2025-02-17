@@ -51,10 +51,8 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaQuery;
 import org.hibernate.query.criteria.JpaRoot;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
-import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
-import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -878,8 +876,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, this);
-
+			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, this );
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
 			}
@@ -893,17 +890,28 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass) {
-		ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString );
+		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString );
+		setTupleTransformerForResultType( resultClass, query );
+		return query;
+	}
+
+	// see AbstractSharedSessionContract.setTupleTransformerForResultType
+	private <R> void setTupleTransformerForResultType(Class<R> resultClass, ReactiveNativeQuery<R> query) {
 		if ( Tuple.class.equals( resultClass ) ) {
-			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+			query.setTupleTransformer( NativeQueryTupleTransformer.INSTANCE );
 		}
+//		else if ( Map.class.equals( resultClass ) ) {
+//			query.setTupleTransformer( NativeQueryMapTransformer.INSTANCE );
+//		}
+//		else if ( List.class.equals( resultClass ) ) {
+//			query.setTupleTransformer( NativeQueryListTransformer.INSTANCE );
+//		}
 		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
 			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
 		}
-		else {
-			( (NativeQueryImpl<?>) query ).addScalar( 1, resultClass );
+		else if ( resultClass != Object.class && resultClass != Object[].class ) {
+			query.addResultTypeClass( resultClass );
 		}
-		return query;
 	}
 
 	@Override
@@ -912,12 +920,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			Class<R> resultClass,
 			String tableAlias) {
 		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString );
-		if ( getFactory().getMappingMetamodel().isEntityClass(resultClass) ) {
+		if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
 			query.addEntity( tableAlias, resultClass.getName(), LockMode.READ );
 			return query;
 		}
-
-		throw new UnknownEntityTypeException( "unable to locate persister: " + resultClass.getName() );
+		else {
+			throw new UnknownEntityTypeException( "unable to locate persister: " + resultClass.getName() );
+		}
 	}
 
 	@Override
@@ -927,19 +936,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			if ( isNotEmpty( resultSetMappingName ) ) {
-				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
-						.getNamedObjectRepository()
-						.getResultSetMappingMemento( resultSetMappingName );
-
-				if ( resultSetMappingMemento == null ) {
-					throw new HibernateException( "Could not resolve specified result-set mapping name : " + resultSetMappingName );
-				}
-				return new ReactiveNativeQueryImpl<>( sqlString, resultSetMappingMemento, this );
-			}
-			else {
-				return new ReactiveNativeQueryImpl<>( sqlString, this );
-			}
+			return isNotEmpty( resultSetMappingName )
+					? new ReactiveNativeQueryImpl<>( sqlString, getResultSetMappingMemento( resultSetMappingName ), this )
+					: new ReactiveNativeQueryImpl<>( sqlString, this );
 			//TODO: why no applyQuerySettingsAndHints( query ); ???
 		}
 		catch (RuntimeException he) {
@@ -1097,20 +1096,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			Class<R> resultType,
 			AffectedEntities affectedEntities) {
 		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( queryString, affectedEntities );
-		return addResultType( resultType, query );
-	}
-
-	//TODO: copy/paste from ORM, change visibility
-	private <T> ReactiveNativeQuery<T> addResultType(Class<T> resultClass, ReactiveNativeQuery<T> query) {
-		if ( Tuple.class.equals( resultClass ) ) {
-			query.setTupleTransformer( new NativeQueryTupleTransformer() );
-		}
-		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
-			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
-		}
-		else if ( resultClass != Object.class && resultClass != Object[].class ) {
-			query.addScalar( 1, resultClass );
-		}
+		setTupleTransformerForResultType( resultType, query );
 		return query;
 	}
 

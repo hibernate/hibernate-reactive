@@ -415,20 +415,27 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> ReactiveNativeQuery<T> createReactiveNativeQuery(String sqlString, Class<T> resultClass) {
 		final ReactiveNativeQuery<T> query = createReactiveNativeQuery( sqlString );
-		return addResultType( resultClass, query );
+		setTupleTransformerForResultType( resultClass, query );
+		return query;
 	}
 
-	private <T> ReactiveNativeQuery<T> addResultType(Class<T> resultClass, ReactiveNativeQuery<T> query) {
+	// see AbstractSharedSessionContract.setTupleTransformerForResultType
+	private <T> void setTupleTransformerForResultType(Class<T> resultClass, ReactiveNativeQuery<T> query) {
 		if ( Tuple.class.equals( resultClass ) ) {
-			query.setTupleTransformer( new NativeQueryTupleTransformer() );
+			query.setTupleTransformer( NativeQueryTupleTransformer.INSTANCE );
 		}
+//		else if ( Map.class.equals( resultClass ) ) {
+//			query.setTupleTransformer( NativeQueryMapTransformer.INSTANCE );
+//		}
+//		else if ( List.class.equals( resultClass ) ) {
+//			query.setTupleTransformer( NativeQueryListTransformer.INSTANCE );
+//		}
 		else if ( getFactory().getMappingMetamodel().isEntityClass( resultClass ) ) {
 			query.addEntity( "alias1", resultClass.getName(), LockMode.READ );
 		}
 		else if ( resultClass != Object.class && resultClass != Object[].class ) {
 			query.addResultTypeClass( resultClass );
 		}
-		return query;
 	}
 
 	@Override
@@ -610,7 +617,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
 		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( queryString, affectedEntities );
-		return addResultType( resultType, query );
+		setTupleTransformerForResultType( resultType, query );
+		return query;
 	}
 
 	@Override
