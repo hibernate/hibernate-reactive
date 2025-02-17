@@ -346,11 +346,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( entity, id, fields, session, false );
 	}
 
-	@Override @Deprecated(forRemoval = true)
-	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object entity, SharedSessionContractImplementor session, boolean isIdentityInsert) {
-		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( entity, id, fields, session, isIdentityInsert );
-	}
-
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
 		return ( (ReactiveAbstractDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );

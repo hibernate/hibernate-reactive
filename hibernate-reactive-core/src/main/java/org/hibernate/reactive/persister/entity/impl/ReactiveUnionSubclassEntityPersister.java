@@ -313,11 +313,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( entity, id, fields, session, false );
 	}
 
-	@Override @Deprecated(forRemoval = true)
-	public CompletionStage<GeneratedValues> insertReactive(Object id, Object[] fields, Object entity, SharedSessionContractImplementor session, boolean isIdentityInsert) {
-		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( entity, id, fields, session, isIdentityInsert );
-	}
-
 	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object entity, SharedSessionContractImplementor session) {
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() )
