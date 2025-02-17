@@ -1605,6 +1605,18 @@ public interface Stage {
 		<T> CompletionStage<T> get(Class<T> entityClass, Object id);
 
 		/**
+		 * Retrieve multiple rows.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
+		 */
+		<T> CompletionStage<List<T>> get(Class<T> entityClass, Object... ids);
+
+		/**
 		 * Retrieve a row, obtaining the specified lock mode.
 		 *
 		 * @param entityClass The class of the entity to retrieve

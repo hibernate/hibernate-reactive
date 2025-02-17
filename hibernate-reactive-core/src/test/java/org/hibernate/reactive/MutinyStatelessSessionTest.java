@@ -5,35 +5,22 @@
  */
 package org.hibernate.reactive;
 
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.*;
+import jakarta.persistence.criteria.*;
+import org.junit.jupiter.api.Test;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.junit.jupiter.api.Test;
-
-import io.vertx.junit5.Timeout;
-import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.NamedQuery;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.criteria.Root;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
-public class ReactiveStatelessSessionTest extends BaseReactiveTest {
+public class MutinyStatelessSessionTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -43,95 +30,94 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSession(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
-		test( context, getSessionFactory().withStatelessSession( ss -> ss
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
 				.insert( pig )
-				.thenCompose( v -> ss.createSelectionQuery( "from GuineaPig where name=:n", GuineaPig.class )
+				.chain( v -> ss.createSelectionQuery( "from GuineaPig where name=:n", GuineaPig.class )
 						.setParameter( "n", pig.name )
 						.getResultList() )
-				.thenAccept( list -> {
+				.invoke( list -> {
 					assertFalse( list.isEmpty() );
 					assertEquals( 1, list.size() );
 					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
-				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
-				.thenCompose( p -> {
+				.chain( v -> ss.get( GuineaPig.class, pig.id ) )
+				.chain( p -> {
 					assertThatPigsAreEqual( pig, p );
 					p.name = "X";
 					return ss.update( p );
 				} )
-				.thenCompose( v -> ss.refresh( pig ) )
-				.thenAccept( v -> assertEquals( pig.name, "X" ) )
-				.thenCompose( v -> ss.createMutationQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
-				.thenCompose( v -> ss.refresh( pig ) )
-				.thenAccept( v -> assertEquals( pig.name, "Y" ) )
-				.thenCompose( v -> ss.delete( pig ) )
-				.thenCompose( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
-				.thenAccept( list -> assertTrue( list.isEmpty() ) ) )
+				.chain( v -> ss.refresh( pig ) )
+				.invoke( v -> assertEquals( pig.name, "X" ) )
+				.chain( v -> ss.createMutationQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
+				.chain( v -> ss.refresh( pig ) )
+				.invoke( v -> assertEquals( pig.name, "Y" ) )
+				.chain( v -> ss.delete( pig ) )
+				.chain( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
+				.invoke( list -> assertTrue( list.isEmpty() ) ) )
 		);
 	}
 
 	@Test
 	public void testStatelessSessionWithNamed(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
-		test( context, getSessionFactory().withStatelessSession( ss -> ss
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
 				.insert( pig )
-				.thenCompose( v -> ss.createNamedQuery( "findbyname", GuineaPig.class )
+				.chain( v -> ss.createNamedQuery( "findbyname", GuineaPig.class )
 						.setParameter( "n", pig.name )
 						.getResultList() )
-				.thenAccept( list -> {
+				.invoke( list -> {
 					assertFalse( list.isEmpty() );
 					assertEquals( 1, list.size() );
 					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
-				.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
-				.thenCompose( p -> {
+				.chain( v -> ss.get( GuineaPig.class, pig.id ) )
+				.chain( p -> {
 					assertThatPigsAreEqual( pig, p );
 					p.name = "X";
 					return ss.update( p );
 				} )
-				.thenCompose( v -> ss.refresh( pig ) )
-				.thenAccept( v -> assertEquals( pig.name, "X" ) )
-				.thenCompose( v -> ss.createNamedQuery( "updatebyname" ).executeUpdate() )
-				.thenCompose( v -> ss.refresh( pig ) )
-				.thenAccept( v -> assertEquals( pig.name, "Y" ) )
-				.thenCompose( v -> ss.delete( pig ) )
-				.thenCompose( v -> ss.createNamedQuery( "findall" ).getResultList() )
-				.thenAccept( list -> assertTrue( list.isEmpty() ) ) )
+				.chain( v -> ss.refresh( pig ) )
+				.invoke( v -> assertEquals( pig.name, "X" ) )
+				.chain( v -> ss.createNamedQuery( "updatebyname" ).executeUpdate() )
+				.chain( v -> ss.refresh( pig ) )
+				.invoke( v -> assertEquals( pig.name, "Y" ) )
+				.chain( v -> ss.delete( pig ) )
+				.chain( v -> ss.createNamedQuery( "findall" ).getResultList() )
+				.invoke( list -> assertTrue( list.isEmpty() ) ) )
 		);
 	}
 
 	@Test
 	public void testStatelessSessionWithNative(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
-		test( context, getSessionFactory().openStatelessSession()
-				.thenCompose( ss -> ss.insert( pig )
-						.thenCompose( v -> ss
+		test( context, getMutinySessionFactory().openStatelessSession()
+				.chain( ss -> ss.insert( pig )
+						.chain( v -> ss
 								.createNativeQuery( "select * from Piggy where name=:n", GuineaPig.class )
 								.setParameter( "n", pig.name )
 								.getResultList() )
-						.thenAccept( list -> {
+						.invoke( list -> {
 							assertFalse( list.isEmpty() );
 							assertEquals( 1, list.size() );
 							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
-						.thenCompose( v -> ss.get( GuineaPig.class, pig.id ) )
-						.thenCompose( p -> {
+						.chain( v -> ss.get( GuineaPig.class, pig.id ) )
+						.chain( p -> {
 							assertThatPigsAreEqual( pig, p );
 							p.name = "X";
 							return ss.update( p );
 						} )
-						.thenCompose( v -> ss.refresh( pig ) )
-						.thenAccept( v -> assertEquals( pig.name, "X" ) )
-						.thenCompose( v -> ss
-								.createNativeQuery( "update Piggy set name='Y'" )
+						.chain( v -> ss.refresh( pig ) )
+						.invoke( v -> assertEquals( pig.name, "X" ) )
+						.chain( v -> ss.createNativeQuery( "update Piggy set name='Y'" )
 								.executeUpdate() )
-						.thenAccept( rows -> assertEquals( 1, rows ) )
-						.thenCompose( v -> ss.refresh( pig ) )
-						.thenAccept( v -> assertEquals( pig.name, "Y" ) )
-						.thenCompose( v -> ss.delete( pig ) )
-						.thenCompose( v -> ss.createNativeQuery( "select id from Piggy" ).getResultList() )
-						.thenAccept( list -> assertTrue( list.isEmpty() ) )
-						.thenCompose( v -> ss.close() ) )
+						.invoke( rows -> assertEquals( 1, rows ) )
+						.chain( v -> ss.refresh( pig ) )
+						.invoke( v -> assertEquals( pig.name, "Y" ) )
+						.chain( v -> ss.delete( pig ) )
+						.chain( v -> ss.createNativeQuery( "select id from Piggy" ).getResultList() )
+						.invoke( list -> assertTrue( list.isEmpty() ) )
+						.chain( v -> ss.close() ) )
 		);
 	}
 
@@ -140,15 +126,15 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		GuineaPig a = new GuineaPig("A");
 		GuineaPig b = new GuineaPig("B");
 		GuineaPig c = new GuineaPig("C");
-		test( context, getSessionFactory().openStatelessSession()
-				.thenCompose( ss -> ss.insertMultiple( List.of(a, b, c) )
-						.thenCompose( v -> ss.get( GuineaPig.class, a.id, c.id ) )
-						.thenAccept( list -> {
+		test( context, getMutinySessionFactory().openStatelessSession()
+				.chain( ss -> ss.insertMultiple( List.of(a, b, c) )
+						.chain( v -> ss.get( GuineaPig.class, a.id, c.id ) )
+						.invoke( list -> {
 							assertEquals( 2, list.size() );
 							assertThatPigsAreEqual( a, list.get( 0 ) );
 							assertThatPigsAreEqual( c, list.get( 1 ) );
 						})
-						.thenCompose( v -> ss.close() ) )
+						.chain( v -> ss.close() ) )
 		);
 	}
 
@@ -169,30 +155,30 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete( GuineaPig.class );
 		delete.from( GuineaPig.class );
 
-		test( context, getSessionFactory().openStatelessSession()
-				.thenCompose( ss -> ss.insert( pig )
-						.thenCompose( v -> ss.createQuery( query )
+		test( context, getMutinySessionFactory().openStatelessSession()
+				.chain( ss -> ss.insert( pig )
+						.chain( v -> ss.createQuery( query )
 								.setParameter( "n", pig.name )
 								.getResultList() )
-						.thenAccept( list -> {
+						.invoke( list -> {
 							assertFalse( list.isEmpty() );
 							assertEquals( 1, list.size() );
 							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
-						.thenCompose( v -> ss.createQuery( update ).executeUpdate() )
-						.thenAccept( rows -> assertEquals( 1, rows ) )
-						.thenCompose( v -> ss.createQuery( delete ).executeUpdate() )
-						.thenAccept( rows -> assertEquals( 1, rows ) )
-						.thenCompose( v -> ss.close() ) )
+						.chain( v -> ss.createQuery( update ).executeUpdate() )
+						.invoke( rows -> assertEquals( 1, rows ) )
+						.chain( v -> ss.createQuery( delete ).executeUpdate() )
+						.invoke( rows -> assertEquals( 1, rows ) )
+						.chain( v -> ss.close() ) )
 		);
 	}
 
 	@Test
 	public void testTransactionPropagation(VertxTestContext context) {
-		test( context, getSessionFactory().withStatelessSession(
+		test( context, getMutinySessionFactory().withStatelessSession(
 				session -> session.withTransaction( transaction -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 						.getResultList()
-						.thenCompose( list -> {
+						.chain( list -> {
 							assertNotNull( session.currentTransaction() );
 							assertFalse( session.currentTransaction().isMarkedForRollback() );
 							session.currentTransaction().markForRollback();
@@ -208,9 +194,9 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 
 	@Test
 	public void testSessionPropagation(VertxTestContext context) {
-		test( context, getSessionFactory().withStatelessSession(
+		test( context, getMutinySessionFactory().withStatelessSession(
 				session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList()
-						.thenCompose( list -> getSessionFactory().withStatelessSession( s -> {
+						.chain( list -> getMutinySessionFactory().withStatelessSession( s -> {
 							assertEquals( session, s );
 							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )

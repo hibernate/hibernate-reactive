@@ -51,6 +51,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public <T> CompletionStage<List<T>> get(Class<T> entityClass, Object... ids) {
+		return delegate.reactiveGet( entityClass, ids );
+	}
+
+	@Override
 	public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
 		return delegate.reactiveGet( entityClass, id, lockMode, null );
 	}

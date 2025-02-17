@@ -7,7 +7,9 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.reactive.common.ResultSetMapping;
@@ -51,6 +53,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public <T> Uni<T> get(Class<T> entityClass, Object id) {
 		return uni( () -> delegate.reactiveGet( entityClass, id ) );
+	}
+
+	@Override
+	public <T> Uni<List<T>> get(Class<T> entityClass, Object... ids) {
+		return uni( () -> delegate.reactiveGet( entityClass, ids ) );
 	}
 
 	@Override
@@ -112,6 +119,16 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
 		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
+	}
+
+	@Override
+	public <R> Mutiny.MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaUpdate ), factory );
+	}
+
+	@Override
+	public <R> Mutiny.MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( criteriaDelete ), factory );
 	}
 
 	@Override

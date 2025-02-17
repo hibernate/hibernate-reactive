@@ -40,6 +40,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FindOption;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
@@ -617,6 +618,8 @@ public interface Mutiny {
 		 * @param ids the identifiers
 		 *
 		 * @return a list of persistent instances and nulls via a {@code Uni}
+		 *
+		 * @see org.hibernate.Session#findMultiple(Class, List, FindOption...)
 		 */
 		<T> Uni<List<T>> find(Class<T> entityClass, Object... ids);
 
@@ -1570,6 +1573,18 @@ public interface Mutiny {
 		<T> Uni<T> get(Class<T> entityClass, Object id);
 
 		/**
+		 * Retrieve multiple rows.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
+		 */
+		<T> Uni<List<T>> get(Class<T> entityClass, Object... ids);
+
+		/**
 		 * Retrieve a row, obtaining the specified lock mode.
 		 *
 		 * @param entityClass The class of the entity to retrieve
@@ -1736,6 +1751,24 @@ public interface Mutiny {
 		 * @see jakarta.persistence.EntityManager#createQuery(String)
 		 */
 		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 */
+		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 */
+		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Insert a row.
