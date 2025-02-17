@@ -17,6 +17,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
@@ -32,6 +33,7 @@ import jakarta.persistence.Table;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,6 +61,31 @@ public class LazyInitializationExceptionTest extends BaseReactiveTest {
 		liuto.setAuthor( artemisia );
 		liuto.setName( "Autoritratto come suonatrice di liuto" );
 		test( context, getSessionFactory().withTransaction( session -> session.persist( artemisia, liuto, sev ) ) );
+	}
+
+	@Test
+	public void testLazyInitializationExceptionWithTransactionWithMutiny(VertxTestContext context) {
+		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
+					  .withSession( ms -> ms
+							  .createSelectionQuery( "from Artist", Artist.class )
+							  .getSingleResult() )
+					  .call( artist -> getMutinySessionFactory().withTransaction( s -> Uni.createFrom()
+							  // .size should throw LazyInitializationException
+							  .item( artist.getPaintings().size() ) ) )
+			  )
+		);
+	}
+
+	@Test
+	public void testLazyInitializationExceptionWithTransactionWithStage(VertxTestContext context) {
+		test( context, assertThrown( LazyInitializationException.class, getSessionFactory()
+					  .withSession( ss -> ss
+							  .createSelectionQuery( "from Artist", Artist.class )
+							  .getSingleResult() )
+					  .thenCompose( artist -> getSessionFactory()
+							  .withTransaction( s -> completedFuture( artist.getPaintings().size() ) ) )
+			  )
+		);
 	}
 
 	@Test
