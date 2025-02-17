@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -46,6 +48,8 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
+import org.hibernate.query.criteria.JpaCriteriaQuery;
+import org.hibernate.query.criteria.JpaRoot;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
@@ -204,8 +208,37 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id) {
+	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
 		return reactiveGet( entityClass.getName(), id, LockMode.NONE, null );
+	}
+
+	@Override
+	public <T> CompletionStage<List<T>> reactiveGet(Class<T> entityClass, Object... ids) {
+		checkOpen();
+		for (Object id : ids) {
+			if ( id == null ) {
+				throw new IllegalArgumentException("Null id");
+			}
+		}
+
+		final EntityPersister persister = getEntityPersister( entityClass.getName() );
+
+		final JpaCriteriaQuery<T> query = getCriteriaBuilder().createQuery(entityClass);
+		final JpaRoot<T> from = query.from(entityClass);
+		query.where( from.get( persister.getIdentifierPropertyName() ).in(ids) );
+		return createReactiveQuery(query).getReactiveResultList()
+				.thenApply( resultList -> {
+					final List<Object> idList = new ArrayList<>( resultList.size() );
+					for (T entity : resultList) {
+						idList.add( persister.getIdentifier(entity, this) );
+					}
+					final List<T> list = new ArrayList<>( ids.length );
+					for (Object id : ids) {
+						final int pos = idList.indexOf(id);
+						list.add( pos < 0 ? null : resultList.get(pos) );
+					}
+					return list;
+				});
 	}
 
 	@Override
@@ -214,7 +247,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		return reactiveGet( entityClass.getName(), id, LockMode.NONE, fetchGraph );
 	}
 

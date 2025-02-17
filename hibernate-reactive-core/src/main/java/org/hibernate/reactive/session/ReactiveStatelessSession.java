@@ -10,6 +10,8 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
+
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -26,11 +28,13 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
-	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id);
+	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
+
+	<T> CompletionStage<List<T>> reactiveGet(Class<T> entityClass, Object... id);
 
 	<T> CompletionStage<T> reactiveGet(String entityName, Object id);
 
-	<T> CompletionStage<T> reactiveGet(Class<? extends T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
 	<T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
 
