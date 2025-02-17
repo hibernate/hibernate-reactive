@@ -30,6 +30,7 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,26 +84,47 @@ public class ReactiveStatelessProxyUpdateTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testLazyInitializationException(VertxTestContext context) {
+	public void testLazyInitializationExceptionWithMutiny(VertxTestContext context) {
 		Game lol = new Game( "League of Legends" );
 		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
 		ck.setGame( lol );
 
-		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
+		test( context, getMutinySessionFactory()
 				.withTransaction( s -> s.persistAll( lol, ck ) )
 				.chain( targetId -> getMutinySessionFactory()
 						.withStatelessSession( session -> session.get( GameCharacter.class, ck.getId() ) )
 				)
-				.call( charFound -> getMutinySessionFactory()
-						.withStatelessTransaction( s -> {
+				.call( charFound -> assertThrown(
+						LazyInitializationException.class, getMutinySessionFactory().withStatelessTransaction( s -> {
 							Game game = charFound.getGame();
 							// LazyInitializationException here because we haven't fetched the entity
 							game.setGameTitle( "League of Legends V2" );
-							context.failNow( "We were expecting a LazyInitializationException" );
-							return null;
+							return Uni.createFrom().voidItem();
 						} )
+				) )
+		);
+	}
+
+	@Test
+	public void testLazyInitializationExceptionWithStage(VertxTestContext context) {
+		Game lol = new Game( "League of Legends" );
+		GameCharacter ck = new GameCharacter( "Caitlyn Kiramman" );
+		ck.setGame( lol );
+
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( lol, ck ) )
+				.thenCompose( targetId -> getSessionFactory()
+						.withStatelessSession( session -> session.get( GameCharacter.class, ck.getId() ) )
 				)
-		) );
+				.thenCompose( charFound -> assertThrown(
+						LazyInitializationException.class, getSessionFactory().withStatelessTransaction( s -> {
+							Game game = charFound.getGame();
+							// LazyInitializationException here because we haven't fetched the entity
+							game.setGameTitle( "League of Legends V2" );
+							return voidFuture();
+						} )
+				) )
+		);
 	}
 
 	@Test
