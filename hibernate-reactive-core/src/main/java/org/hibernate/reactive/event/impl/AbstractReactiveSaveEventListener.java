@@ -180,23 +180,21 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			EventSource source,
 			ReactiveIdentifierGenerator<?> generator,
 			EntityPersister persister) {
-		return generator
-				.generate( (ReactiveConnectionSupplier) source, entity )
+		return generator.generate( (ReactiveConnectionSupplier) source, entity )
 				.thenApply( id -> {
-								final Object generatedId = castToIdentifierType( id, persister );
-								if ( generatedId == null ) {
-									throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
-								}
-								if ( LOG.isDebugEnabled() ) {
-									LOG.debugf(
-											"Generated identifier: %s, using strategy: %s",
-											persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
-											generator.getClass().getName()
-									);
-								}
-								return generatedId;
-							}
-				);
+					final Object generatedId = castToIdentifierType( id, persister );
+					if ( generatedId == null ) {
+						throw new IdentifierGenerationException( "null id generated for: " + entity.getClass() );
+					}
+					if ( LOG.isDebugEnabled() ) {
+						LOG.debugf(
+								"Generated identifier: %s, using strategy: %s",
+								persister.getIdentifierType().toLoggableString( generatedId, source.getFactory() ),
+								generator.getClass().getName()
+						);
+					}
+					return generatedId;
+				} );
 	}
 
 	/**

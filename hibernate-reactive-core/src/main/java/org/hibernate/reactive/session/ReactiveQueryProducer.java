@@ -63,10 +63,13 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass);
 
+	@Deprecated(forRemoval = true)
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, Class<R> resultClass, String tableAlias);
 
+	@Deprecated(forRemoval = true)
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName);
 
+	@Deprecated(forRemoval = true)
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass);
 
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType);
