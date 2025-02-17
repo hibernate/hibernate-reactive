@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Implements the {@link Stage.StatelessSession} API. This delegating
@@ -207,7 +208,8 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		 * and an error thrown by the work.
 		 */
 		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-			return work.apply( this )
+			return voidFuture()
+					.thenCompose( v -> work.apply( this ) )
 					// have to capture the error here and pass it along,
 					// since we can't just return a CompletionStage that
 					// rolls back the transaction from the handle() function

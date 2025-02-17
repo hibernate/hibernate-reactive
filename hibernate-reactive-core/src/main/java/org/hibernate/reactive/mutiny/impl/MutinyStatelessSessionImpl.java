@@ -267,7 +267,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		 * and an error thrown by the work.
 		 */
 		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-			return work.apply( this )
+			return Uni.createFrom().deferred( () -> work.apply( this ) )
 					// in the case of an exception or cancellation
 					// we need to rollback the transaction
 					.onFailure().call( this::rollback )
