@@ -248,7 +248,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
-		return reactiveGet( entityClass.getName(), id, LockMode.NONE, fetchGraph );
+		return reactiveGet( entityClass.getName(), id, lockMode, fetchGraph );
 	}
 
 	@Override
@@ -443,7 +443,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
-		return reactiveRefresh( bestGuessEntityName( entity ), entity, LockMode.NONE );
+		return reactiveRefresh( bestGuessEntityName( entity ), entity, lockMode );
 	}
 
 	@Override
