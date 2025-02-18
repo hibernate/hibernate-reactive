@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.query;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
@@ -22,12 +21,6 @@ import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
 
 public interface ReactiveQueryImplementor<R> extends ReactiveQuery<R> {
-
-	void setOptionalId(Serializable id);
-
-	void setOptionalEntityName(String entityName);
-
-	void setOptionalObject(Object optionalObject);
 
 	QueryParameterBindings getParameterBindings();
 

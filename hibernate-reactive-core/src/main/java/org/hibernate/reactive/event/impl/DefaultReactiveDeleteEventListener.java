@@ -436,11 +436,8 @@ public class DefaultReactiveDeleteEventListener
 						persister
 				).nullifyTransientReferences( entityEntry.getDeletedState() )
 						.thenAccept( vv -> {
-							new Nullability( session ).checkNullability(
-									entityEntry.getDeletedState(),
-									persister,
-									Nullability.NullabilityCheckType.DELETE
-							);
+							new Nullability( session, Nullability.NullabilityCheckType.DELETE )
+									.checkNullability( entityEntry.getDeletedState(), persister );
 							persistenceContext.registerNullifiableEntityKey( key );
 
 							final ReactiveActionQueue actionQueue = actionQueue( session );
