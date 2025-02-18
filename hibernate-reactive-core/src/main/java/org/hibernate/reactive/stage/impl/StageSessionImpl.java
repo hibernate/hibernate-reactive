@@ -5,16 +5,11 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -39,10 +34,16 @@ import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -556,7 +557,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ) );
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName ) );
 	}
 
 	@Override

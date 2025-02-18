@@ -13,7 +13,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -206,7 +205,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 						// the element value at this position in the result List should be
 						// the EntityKey for that entity - reuse it
 						final EntityKey entityKey = (EntityKey) result.get( resultIndex );
-						BatchFetchQueueHelper.removeBatchLoadableEntityKey( entityKey, session );
+						session.getPersistenceContextInternal().getBatchFetchQueue().removeBatchLoadableEntityKey( entityKey );
 						Object entity = persistenceContext.getEntity( entityKey );
 						if ( entity != null && !loadOptions.isReturnOfDeletedEntitiesEnabled() ) {
 							// make sure it is not DELETED
@@ -293,7 +292,8 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 					continue;
 				}
 				// found or not, remove the key from the batch-fetch queue
-				BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, getLoadable(), session );
+				session.getPersistenceContextInternal().getBatchFetchQueue()
+						.removeBatchLoadableEntityKey( session.generateEntityKey( id, getLoadable().getEntityPersister() ) );
 			}
 
 			return result;

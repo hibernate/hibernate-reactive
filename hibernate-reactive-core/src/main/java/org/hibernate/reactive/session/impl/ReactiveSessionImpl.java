@@ -72,13 +72,16 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
+import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
+import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
@@ -131,7 +134,6 @@ import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttrib
 import static org.hibernate.engine.spi.NaturalIdResolutions.INVALID_NATURAL_ID_REFERENCE;
 import static org.hibernate.event.spi.LoadEventListener.IMMEDIATE_LOAD;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
-import static org.hibernate.internal.util.StringHelper.isNotEmpty;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnEventLoop;
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
@@ -443,14 +445,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override @Deprecated(forRemoval = true)
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
+		if ( isEmpty( resultSetMappingName ) ) {
+			throw new IllegalArgumentException( "Result set mapping name was not specified" );
+		}
+
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
-			return isNotEmpty( resultSetMappingName )
-					? new ReactiveNativeQueryImpl<>( sqlString, getResultSetMappingMemento( resultSetMappingName ), this )
-					: new ReactiveNativeQueryImpl<>( sqlString, this );
+			return new ReactiveNativeQueryImpl<>( sqlString, getResultSetMappingMemento( resultSetMappingName ), null, this );
 			//TODO: why no applyQuerySettingsAndHints( query ); ???
 		}
 		catch (RuntimeException he) {
@@ -498,8 +502,77 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
+	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String name) {
+		checksBeforeQueryCreation();
+		try {
+			return (ReactiveQueryImplementor<R>) buildNamedQuery(
+					name,
+					this::createSqmQueryImplementor,
+					this::createNativeQueryImplementor
+			);
+		}
+		catch (RuntimeException e) {
+			throw convertNamedQueryException( e );
+		}
+	}
+
+	@Override
 	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String name, Class<R> resultType) {
-		return (ReactiveQueryImplementor<R>) buildNamedQuery( name, resultType );
+		checksBeforeQueryCreation();
+		if ( resultType == null ) {
+			throw new IllegalArgumentException( "Result class is null" );
+		}
+		try {
+			return buildNamedQuery(
+					name,
+					memento -> createReactiveSqmQueryImplementor( resultType, memento ),
+					memento -> createReactiveNativeQueryImplementor( resultType, memento )
+			);
+		}
+		catch (RuntimeException e) {
+			throw convertNamedQueryException( e );
+		}
+	}
+
+	private void checksBeforeQueryCreation() {
+		checkOpen();
+		checkTransactionSynchStatus();
+	}
+
+	protected <T> ReactiveNativeQueryImpl<T> createReactiveNativeQueryImplementor(Class<T> resultType, NamedNativeQueryMemento<?> memento) {
+		final NativeQueryImplementor<T> query = memento.toQuery(this, resultType );
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic native SQL query" );
+		}
+		applyQuerySettingsAndHints( query );
+		return (ReactiveNativeQueryImpl<T>) query;
+	}
+
+	protected <T> ReactiveQuerySqmImpl<T> createReactiveSqmQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
+		final SqmQueryImplementor<T> query = memento.toQuery( this, resultType );
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic query" );
+		}
+		applyQuerySettingsAndHints( query );
+		if ( memento.getLockOptions() != null ) {
+			query.setLockOptions( memento.getLockOptions() );
+		}
+		return (ReactiveQuerySqmImpl<T>) query;
+	}
+
+	private RuntimeException convertNamedQueryException(RuntimeException e) {
+		if ( e instanceof UnknownNamedQueryException ) {
+			// JPA expects this to mark the transaction for rollback only
+			getTransactionCoordinator().getTransactionDriverControl().markRollbackOnly();
+			// it also expects an IllegalArgumentException, so wrap UnknownNamedQueryException
+			return new IllegalArgumentException( e.getMessage(), e );
+		}
+		else if ( e instanceof IllegalArgumentException ) {
+			return e;
+		}
+		else {
+			return getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
@@ -584,7 +657,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( queryString, this );
+			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( queryString, null, this );
 			addAffectedEntities( affectedEntities, query );
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
@@ -622,12 +695,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
-
+		// Should we throw an exception?
+		NamedResultSetMappingMemento memento = resultSetMapping == null ? null : getResultSetMappingMemento( resultSetMapping.getName() );
 		try {
 			// Same approach as AbstractSharedSessionContract#createNativeQuery(String, String)
-			final ReactiveNativeQueryImpl<R> nativeQuery = resultSetMapping != null
-					? new ReactiveNativeQueryImpl<>( queryString, getResultSetMappingMemento( resultSetMapping.getName() ), this )
-					: new ReactiveNativeQueryImpl<>( queryString, this );
+			final ReactiveNativeQueryImpl<R> nativeQuery = new ReactiveNativeQueryImpl<>( queryString, memento, null, this );
 			applyQuerySettingsAndHints( nativeQuery );
 			return nativeQuery;
 		}
@@ -652,20 +724,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		if ( mapping == null ) {
 			throw new IllegalArgumentException( "result set mapping does not exist: " + mappingName );
 		}
-//
-//		ResultSetMappingImpl resultSetMapping = new ResultSetMappingImpl( "impl" );
-//		if ( resultType != null ) {
-//			Class<?> mappedResultType = resultSetMapping.;
-//			if ( !resultType.equals( mappedResultType ) ) {
-//				throw new IllegalArgumentException( "incorrect result type for result set mapping: " + mappingName + " has type " + mappedResultType.getName() );
-//			}
-//		}
 
 		return new ResultSetMapping<>() {
 			@Override
 			public String getName() {
 				return mappingName;
 			}
+
 			@Override
 			public Class<T> getResultType() {
 				return resultType;

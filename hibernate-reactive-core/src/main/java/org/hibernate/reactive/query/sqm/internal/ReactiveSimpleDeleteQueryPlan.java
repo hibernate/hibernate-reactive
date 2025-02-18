@@ -37,9 +37,7 @@ import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.SqlAstTranslator;
 import org.hibernate.sql.ast.tree.AbstractUpdateOrDeleteStatement;
 import org.hibernate.sql.ast.tree.MutationStatement;
-import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.expression.JdbcLiteral;
 import org.hibernate.sql.ast.tree.from.MutatingTableReferenceGroupWrapper;
 import org.hibernate.sql.ast.tree.from.NamedTableReference;
 import org.hibernate.sql.ast.tree.predicate.InSubQueryPredicate;
@@ -95,29 +93,28 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 		return factory.getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildMutationTranslator( factory, mutationStatement() );
+				.buildMutationTranslator( factory, createDeleteAst() );
 	}
 
-	private MutationStatement mutationStatement() {
+	// Copy and paste from superclass
+	private MutationStatement createDeleteAst() {
+		final MutationStatement ast;
 		if ( entityDescriptor.getSoftDeleteMapping() == null ) {
-			return sqmInterpretation.getSqlAst();
+			ast = sqmInterpretation.getSqlAst();
 		}
-		final AbstractUpdateOrDeleteStatement sqlDeleteAst = sqmInterpretation.getSqlAst();
-		final NamedTableReference targetTable = sqlDeleteAst.getTargetTable();
-		final SoftDeleteMapping columnMapping = getEntityDescriptor().getSoftDeleteMapping();
-		final ColumnReference columnReference = new ColumnReference( targetTable, columnMapping );
-		//noinspection rawtypes,unchecked
-		final JdbcLiteral jdbcLiteral = new JdbcLiteral(
-				columnMapping.getDeletedLiteralValue(),
-				columnMapping.getJdbcMapping()
-		);
-		final Assignment assignment = new Assignment( columnReference, jdbcLiteral );
+		else {
+			final AbstractUpdateOrDeleteStatement sqlDeleteAst = sqmInterpretation.getSqlAst();
+			final NamedTableReference targetTable = sqlDeleteAst.getTargetTable();
+			final SoftDeleteMapping columnMapping = getEntityDescriptor().getSoftDeleteMapping();
+			final Assignment assignment = columnMapping.createSoftDeleteAssignment( targetTable );
 
-		return new UpdateStatement(
-				targetTable,
-				Collections.singletonList( assignment ),
-				sqlDeleteAst.getRestriction()
-		);
+			ast = new UpdateStatement(
+					targetTable,
+					Collections.singletonList( assignment ),
+					sqlDeleteAst.getRestriction()
+			);
+		}
+		return ast;
 	}
 
 	@Override
