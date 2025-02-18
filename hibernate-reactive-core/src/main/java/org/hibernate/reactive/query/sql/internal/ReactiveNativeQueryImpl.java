@@ -26,7 +26,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.internal.AbstractSharedSessionContract;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.Order;
@@ -65,8 +64,18 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
-	public ReactiveNativeQueryImpl(String memento, SharedSessionContractImplementor session) {
-		super( memento, session );
+	public ReactiveNativeQueryImpl(String sql, SharedSessionContractImplementor session) {
+		super( sql, null, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+	}
+
+	public ReactiveNativeQueryImpl(String sql, Class<R> resultClass, SharedSessionContractImplementor session) {
+		super( sql, resultClass, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+	}
+
+	public ReactiveNativeQueryImpl(String sql, NamedResultSetMappingMemento resultSetMappingMemento, Class<R> resultClass, SharedSessionContractImplementor session) {
+		super( sql, resultSetMappingMemento, resultClass, session);
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
@@ -88,14 +97,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 			String resultSetMappingName,
 			SharedSessionContractImplementor session) {
 		super( memento, resultSetMappingName, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-	}
-
-	public ReactiveNativeQueryImpl(
-			String sqlString,
-			NamedResultSetMappingMemento resultSetMappingMemento,
-			AbstractSharedSessionContract session) {
-		super( sqlString, resultSetMappingMemento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
