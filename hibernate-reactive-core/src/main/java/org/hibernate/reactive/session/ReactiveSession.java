@@ -27,7 +27,6 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.metamodel.Attribute;
 
 /**
  * A contract with the Hibernate session backing the user-visible
@@ -45,8 +44,6 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 	ReactiveActionQueue getReactiveActionQueue();
 
 	SessionImplementor getSharedContract();
-
-	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	CompletionStage<Void> reactivePersist(Object entity);
 

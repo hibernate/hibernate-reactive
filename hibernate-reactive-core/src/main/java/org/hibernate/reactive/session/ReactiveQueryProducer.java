@@ -24,6 +24,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 
 
 /**
@@ -42,6 +43,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	Dialect getDialect();
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
+
+	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable);
 

@@ -90,6 +90,7 @@ import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.invoke.MethodHandles.lookup;
@@ -687,6 +688,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		persistenceContext.beforeLoad();
 		return this.reactiveGet( persister.getEntityName(), id )
 				.whenComplete( (r, e) -> persistenceContext.afterLoad() );
+	}
+
+	@Override
+	public <E, T> CompletionStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
+		return getEntityPersister( null, entity )
+				.reactiveInitializeLazyProperty( field, entity, this );
 	}
 
 	@Override
