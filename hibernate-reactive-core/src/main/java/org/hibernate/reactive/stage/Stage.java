@@ -361,13 +361,6 @@ public interface Stage {
 			return setLockMode( alias, convertToLockMode(lockModeType) );
 		}
 
-//		/**
-//		 * Set the {@link LockOptions} to use for the whole query.
-//		 *
-//		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
-//		 */
-//		Query<R> setLockOptions(LockOptions lockOptions);
-
 		/**
 		 * If the result type of this query is an entity class, add one or more
 		 * {@linkplain Order rules} for ordering the query results.
@@ -515,463 +508,7 @@ public interface Stage {
 		Query<R> setComment(String comment);
 	}
 
-	/**
-	 * A non-blocking counterpart to the Hibernate {@link org.hibernate.Session}
-	 * interface, allowing a reactive style of interaction with the database.
-	 * <p>
-	 * The semantics of operations on this interface are identical to the
-	 * semantics of the similarly-named operations of {@code Session}, except
-	 * that the operations are performed asynchronously, returning a
-	 * {@link CompletionStage} without blocking the calling thread.
-	 * <p>
-	 * Entities associated with an {@code Session} do not support transparent
-	 * lazy association fetching. Instead, {@link #fetch(Object)} should be used
-	 * to explicitly request asynchronous fetching of an association, or the
-	 * association should be fetched eagerly when the entity is first retrieved,
-	 * for example, by:
-	 *
-	 * <ul>
-	 * <li>{@link #enableFetchProfile(String) enabling a fetch profile},
-	 * <li>using an {@link EntityGraph}, or
-	 * <li>writing a {@code join fetch} clause in a HQL query.
-	 * </ul>
-	 *
-	 * @see org.hibernate.Session
-	 */
-	interface Session extends Closeable {
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, or {@code null} if there is no such
-		 * persistent instance. If the instance is already associated with
-		 * the session, return the associated instance. This method never
-		 * returns an uninitialized instance.
-		 *
-		 * <pre>
-		 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
-		 * </pre>
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see jakarta.persistence.EntityManager#find(Class, Object)
-		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, requesting the given {@link LockMode}.
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 * @param lockMode the requested {@link LockMode}
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see #find(Class,Object)
-		 * @see #lock(Object, LockMode) this discussion of lock modes
-		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, requesting the given {@link LockModeType}.
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 * @param lockModeType the requested {@link LockModeType}
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see #find(Class,Object)
-		 * @see #lock(Object, LockMode) this discussion of lock modes
-		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return find( entityClass, id, convertToLockMode(lockModeType) );
-		}
-
-//		/**
-//		 * Asynchronously return the persistent instance of the given entity
-//		 * class with the given identifier, requesting the given {@link LockOptions}.
-//		 *
-//		 * @param entityClass The entity type
-//		 * @param id an identifier
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @return a persistent instance or null via a {@code CompletionStage}
-//		 *
-//		 * @see #find(Class,Object)
-//		 * @see #lock(Object, LockMode) this discussion of lock modes
-//		 */
-//		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockOptions lockOptions);
-
-		 /**
-		 * Asynchronously return the persistent instance with the given
-		 * identifier of an entity class, using the given {@link EntityGraph}
-		 * as a fetch plan.
-		 *
-		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
-		 * @param id an identifier
-		 *
-		 * @see #find(Class,Object)
-		 */
-		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
-
-		/**
-		 * Asynchronously return the persistent instances of the given entity
-		 * class with the given identifiers, or null if there is no such
-		 * persistent instance.
-		 *
-		 * @param entityClass The entity type
-		 * @param ids the identifiers
-		 *
-		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
-		 */
-		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given natural identifiers, or null if there is no
-		 * such persistent instance.
-		 *
-		 * @param entityClass The entity type
-		 * @param naturalId the natural identifier
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 */
-		@Incubating
-		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
-
-		/**
-		 * Return the persistent instance of the given entity class with the
-		 * given identifier, assuming that the instance exists. This method
-		 * never results in access to the underlying data store, and thus
-		 * might return a proxy that must be initialized explicitly using
-		 * {@link #fetch(Object)}.
-		 * <p>
-		 * You should not use this method to determine if an instance exists
-		 * (use {@link #find} instead). Use this only to retrieve an instance
-		 * which you safely assume exists, where non-existence would be an
-		 * actual error.
-		 *
-		 * @param entityClass a persistent class
-		 * @param id a valid identifier of an existing persistent instance of the class
-		 *
-		 * @return the persistent instance or proxy
-		 *
-		 * @see jakarta.persistence.EntityManager#getReference(Class, Object)
-		 */
-		<T> T getReference(Class<T> entityClass, Object id);
-
-		/**
-		 * Return the persistent instance with the same identity as the given
-		 * instance, which might be detached, assuming that the instance is
-		 * still persistent in the database. This method never results in
-		 * access to the underlying data store, and thus might return a proxy
-		 * that must be initialized explicitly using {@link #fetch(Object)}.
-		 *
-		 * @param entity a detached persistent instance
-		 *
-		 * @return the persistent instance or proxy
-		 */
-		<T> T getReference(T entity);
-
-		/**
-		 * Asynchronously persist the given transient instance, first assigning
-		 * a generated identifier. (Or using the current value of the identifier
-		 * property if the entity has assigned identifiers.)
-		 * <p>
-		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
-		 *
-		 * <pre>
-		 * {@code session.persist(newBook).thenAccept(v -> session.flush());}
-		 * </pre>
-		 *
-		 * @param entity a transient instance of a persistent class
-		 *
-		 * @see jakarta.persistence.EntityManager#persist(Object)
-		 */
-		CompletionStage<Void> persist(Object entity);
-
-		/**
-		 * Make a transient instance persistent and mark it for later insertion in the
-		 * database. This operation cascades to associated instances if the association
-		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
-		 * <p>
-		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
-		 * {@code persist()} ultimately results in generation of an identifier for the
-		 * given instance. But this may happen asynchronously, when the session is
-		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
-		 *
-		 * @param entityName the entity name
-		 * @param object a transient instance to be made persistent
-		 * @see #persist(Object)
-		 */
-		CompletionStage<Void> persist(String entityName, Object object);
-
-		/**
-		 * Persist multiple transient entity instances at once.
-		 *
-		 * @see #persist(Object)
-		 */
-		CompletionStage<Void> persist(Object... entities);
-
-		/**
-		 * Asynchronously remove a persistent instance from the datastore. The
-		 * argument may be an instance associated with the receiving session or
-		 * a transient instance with an identifier associated with existing
-		 * persistent state.
-		 * <p>
-		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link jakarta.persistence.CascadeType#REMOVE}.
-		 *
-		 * <pre>
-		 * {@code session.delete(book).thenAccept(v -> session.flush());}
-		 * </pre>
-		 *
-		 * @param entity the managed persistent instance to be removed
-		 *
-		 * @throws IllegalArgumentException if the given instance is not managed
-		 *
-		 * @see jakarta.persistence.EntityManager#remove(Object)
-		 */
-		CompletionStage<Void> remove(Object entity);
-
-		/**
-		 * Remove multiple entity instances at once.
-		 *
-		 * @see #remove(Object)
-		 */
-		CompletionStage<Void> remove(Object... entities);
-
-		/**
-		 * Copy the state of the given object onto the persistent instance with
-		 * the same identifier. If there is no such persistent instance currently
-		 * associated with the session, it will be loaded. Return the persistent
-		 * instance. Or, if the given instance is transient, save a copy of it
-		 * and return the copy as a newly persistent instance. The given instance
-		 * does not become associated with the session.
-		 * <p>
-		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link jakarta.persistence.CascadeType#MERGE}.
-		 *
-		 * @param entity a detached instance with state to be copied
-		 *
-		 * @return an updated persistent instance
-		 *
-		 * @see jakarta.persistence.EntityManager#merge(Object)
-		 */
-		<T> CompletionStage<T> merge(T entity);
-
-		/**
-		 * Merge multiple entity instances at once.
-		 *
-		 * @see #merge(Object)
-		 */
-		CompletionStage<Void> merge(Object... entities);
-
-		/**
-		 * Re-read the state of the given instance from the underlying database.
-		 * It is inadvisable to use this to implement long-running sessions that
-		 * span many business tasks. This method is, however, useful in certain
-		 * special circumstances, for example:
-		 *
-		 * <ul>
-		 * <li>where a database trigger alters the object state after insert or
-		 * update, or
-		 * <li>after executing direct native SQL in the same session.
-		 * </ul>
-		 *
-		 * @param entity a managed persistent instance
-		 *
-		 * @throws IllegalArgumentException if the given instance is not managed
-		 *
-		 * @see jakarta.persistence.EntityManager#refresh(Object)
-		 */
-		CompletionStage<Void> refresh(Object entity);
-
-		/**
-		 * Re-read the state of the given instance from the underlying database,
-		 * requesting the given {@link LockMode}.
-		 *
-		 * @param entity a managed persistent entity instance
-		 * @param lockMode the requested lock mode
-		 *
-		 * @see #refresh(Object)
-		 */
-		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
-
-		/**
-		 * Re-read the state of the given instance from the underlying database,
-		 * requesting the given {@link LockModeType}.
-		 *
-		 * @param entity a managed persistent entity instance
-		 * @param lockModeType the requested lock mode
-		 *
-		 * @see #refresh(Object)
-		 */
-		default CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
-			return refresh( entity, convertToLockMode(lockModeType) );
-		}
-
-//		/**
-//		 * Re-read the state of the given instance from the underlying database,
-//		 * requesting the given {@link LockOptions}.
-//		 *
-//		 * @param entity a managed persistent entity instance
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @see #refresh(Object)
-//		 */
-//		CompletionStage<Void> refresh(Object entity, LockOptions lockOptions);
-
-		/**
-		 * Refresh multiple entity instances at once.
-		 *
-		 * @see #refresh(Object)
-		 */
-		CompletionStage<Void> refresh(Object... entities);
-
-		/**
-		 * Obtain the specified lock level upon the given object. For example,
-		 * this operation may be used to:
-		 *
-		 * <ul>
-		 * <li>perform a version check with {@link LockMode#PESSIMISTIC_READ},
-		 * <li>upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE},
-		 * <li>force a version increment with {@link LockMode#PESSIMISTIC_FORCE_INCREMENT},
-		 * <li>schedule a version check just before the end of the transaction with
-		 * {@link LockMode#OPTIMISTIC}, or
-		 * <li>schedule a version increment just before the end of the transaction
-		 * with {@link LockMode#OPTIMISTIC_FORCE_INCREMENT}.
-		 * </ul>
-		 *
-		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
-		 *
-		 * @param entity a managed persistent instance
-		 * @param lockMode the lock level
-		 *
-		 * @throws IllegalArgumentException if the given instance is not managed
-		 */
-		CompletionStage<Void> lock(Object entity, LockMode lockMode);
-
-		/**
-		 * Obtain the specified lock level upon the given object. For example,
-		 * this operation may be used to:
-		 *
-		 * <ul>
-		 * <li>perform a version check with {@link LockModeType#PESSIMISTIC_READ},
-		 * <li>upgrade to a pessimistic lock with {@link LockModeType#PESSIMISTIC_WRITE},
-		 * <li>force a version increment with {@link LockModeType#PESSIMISTIC_FORCE_INCREMENT},
-		 * <li>schedule a version check just before the end of the transaction with
-		 * {@link LockModeType#OPTIMISTIC}, or
-		 * <li>schedule a version increment just before the end of the transaction
-		 * with {@link LockModeType#OPTIMISTIC_FORCE_INCREMENT}.
-		 * </ul>
-		 *
-		 * This operation cascades to associated instances if the association is
-		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
-		 *
-		 * @param entity a managed persistent instance
-		 * @param lockModeType the lock level
-		 *
-		 * @throws IllegalArgumentException if the given instance is not managed
-		 */
-		default CompletionStage<Void> lock(Object entity, LockModeType lockModeType) {
-			return lock( entity, convertToLockMode(lockModeType) );
-		}
-
-//		/**
-//		 * Obtain the specified lock level upon the given object, with the given
-//		 * {@link LockOptions}.
-//		 *
-//		 * @param entity a managed persistent instance
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @throws IllegalArgumentException if the given instance is not managed
-//		 */
-//		CompletionStage<Void> lock(Object entity, LockOptions lockOptions);
-
-		/**
-		 * Force this session to flush asynchronously. Must be called at the
-		 * end of a unit of work, before committing the transaction and closing
-		 * the session. <i>Flushing</i> is the process of synchronizing the
-		 * underlying persistent store with state held in memory.
-		 *
-		 * <pre>
-		 * {@code session.flush().thenAccept(v -> print("done saving changes"));}
-		 * </pre>
-		 *
-		 * @see jakarta.persistence.EntityManager#flush()
-		 */
-		CompletionStage<Void> flush();
-
-		/**
-		 * Asynchronously fetch an association that's configured for lazy loading.
-		 * <p>
-		 * <pre>
-		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()))}
-		 * </pre>
-		 * </p>
-		 * <p>
-		 * It can also initialize proxys. For example:
-		 * <pre>
-		 * {@code session.fetch(session.getReference(Author.class, authorId))}
-		 * </pre>
-		 * </p>
-		 *
-		 * @param association a lazy-loaded association, or a proxy
-		 *
-		 * @return the fetched association, via a {@code CompletionStage}
-		 *
-		 * @see Stage#fetch(Object)
-		 * @see #getReference(Class, Object)
-		 * @see org.hibernate.Hibernate#initialize(Object)
-		 */
-		<T> CompletionStage<T> fetch(T association);
-
-		/**
-		 * Fetch a lazy property of the given entity, identified by a JPA
-		 * {@link Attribute attribute metamodel}. Note that this feature is
-		 * only supported in conjunction with the Hibernate bytecode enhancer.
-		 *
-		 * <pre>
-		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
-		 * </pre>
-		 */
-		<E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field);
-
-		/**
-		 * Asynchronously fetch an association that's configured for lazy loading,
-		 * and unwrap the underlying entity implementation from any proxy.
-		 *
-		 * <pre>
-		 * {@code session.unproxy(author.getBook()).thenAccept(book -> print(book.getTitle()));}
-		 * </pre>
-		 *
-		 * @param association a lazy-loaded association
-		 *
-		 * @return the fetched association, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.Hibernate#unproxy(Object)
-		 */
-		<T> CompletionStage<T> unproxy(T association);
-
-		/**
-		 * Determine the current lock mode of the given entity.
-		 */
-		LockMode getLockMode(Object entity);
-
-		/**
-		 * Determine if the given instance belongs to this persistence context.
-		 */
-		boolean contains(Object entity);
-
+	interface SharedSessionContract extends Stage.Closeable {
 		/**
 		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
 		 * query string.
@@ -1244,6 +781,506 @@ public interface Stage {
 		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
 
 		/**
+		 * Asynchronously fetch an association that's configured for lazy loading,
+		 * and unwrap the underlying entity implementation from any proxy.
+		 *
+		 * <pre>
+		 * {@code session.unproxy(author.getBook()).thenAccept(book -> print(book.getTitle()));}
+		 * </pre>
+		 *
+		 * @param association a lazy-loaded association
+		 *
+		 * @return the fetched association, via a {@code CompletionStage}
+		 *
+		 * @see org.hibernate.Hibernate#unproxy(Object)
+		 */
+		<T> CompletionStage<T> unproxy(T association);
+
+		/**
+		 * Return the identifier value of the given entity, which may be detached.
+		 *
+		 * @param entity a persistent instance associated with this session
+		 *
+		 * @return the identifier
+		 *
+		 * @since 3.0
+		 */
+		Object getIdentifier(Object entity);
+
+		/**
+		 * Obtain a native SQL result set mapping defined via the annotation
+		 * {@link jakarta.persistence.SqlResultSetMapping}.
+		 */
+		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
+
+		/**
+		 * Obtain a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
+
+		/**
+		 * Create a new mutable {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+
+		/**
+		 * Create a new mutable copy of a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
+
+		/**
+		 * Performs the given work within the scope of a database transaction,
+		 * automatically flushing the session. The transaction will be rolled
+		 * back if the work completes with an uncaught exception, or if
+		 * {@link Transaction#markForRollback()} is called.
+		 * <p>
+		 * The resulting {@link Transaction} object may also be obtained via
+		 * {@link #currentTransaction()}.
+		 * <p>
+		 * <il>
+		 * <li> If there is already a transaction associated with this session,
+		 * the work is executed in the context of the existing transaction, and
+		 * no new transaction is initiated.
+		 * <li> If there is no transaction associated with this session, a new
+		 * transaction is started, and the work is executed in the context of
+		 * the new transaction.
+		 * </il>
+		 *
+		 * @param work a function which accepts {@link Transaction} and returns
+		 *             the result of the work as a {@link CompletionStage}.
+		 *
+		 * @see SessionFactory#withTransaction(BiFunction)
+		 */
+		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
+
+		/**
+		 * Obtain the transaction currently associated with this session,
+		 * if any.
+		 *
+		 * @return the {@link Transaction}, or null if no transaction
+		 * was started using {@link #withTransaction(Function)}.
+		 *
+		 * @see #withTransaction(Function)
+		 * @see SessionFactory#withTransaction(BiFunction)
+		 */
+		Transaction currentTransaction();
+
+		/**
+		 * @return false if {@link #close()} has been called
+		 */
+		boolean isOpen();
+
+		/**
+		 * The {@link SessionFactory} which created this session.
+		 */
+		SessionFactory getFactory();
+	}
+
+	/**
+	 * A non-blocking counterpart to the Hibernate {@link org.hibernate.Session}
+	 * interface, allowing a reactive style of interaction with the database.
+	 * <p>
+	 * The semantics of operations on this interface are identical to the
+	 * semantics of the similarly-named operations of {@code Session}, except
+	 * that the operations are performed asynchronously, returning a
+	 * {@link CompletionStage} without blocking the calling thread.
+	 * <p>
+	 * Entities associated with an {@code Session} do not support transparent
+	 * lazy association fetching. Instead, {@link #fetch(Object)} should be used
+	 * to explicitly request asynchronous fetching of an association, or the
+	 * association should be fetched eagerly when the entity is first retrieved,
+	 * for example, by:
+	 *
+	 * <ul>
+	 * <li>{@link #enableFetchProfile(String) enabling a fetch profile},
+	 * <li>using an {@link EntityGraph}, or
+	 * <li>writing a {@code join fetch} clause in a HQL query.
+	 * </ul>
+	 *
+	 * @see org.hibernate.Session
+	 */
+	interface Session extends SharedSessionContract {
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, or {@code null} if there is no such
+		 * persistent instance. If the instance is already associated with
+		 * the session, return the associated instance. This method never
+		 * returns an uninitialized instance.
+		 *
+		 * <pre>
+		 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
+		 * </pre>
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see jakarta.persistence.EntityManager#find(Class, Object)
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockMode}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockMode the requested {@link LockMode}
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class,Object)
+		 * @see #lock(Object, LockMode) this discussion of lock modes
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockModeType}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockModeType the requested {@link LockModeType}
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class,Object)
+		 * @see #lock(Object, LockMode) this discussion of lock modes
+		 */
+		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return find( entityClass, id, convertToLockMode(lockModeType) );
+		}
+
+		 /**
+		 * Asynchronously return the persistent instance with the given
+		 * identifier of an entity class, using the given {@link EntityGraph}
+		 * as a fetch plan.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 *                    and associations to be fetched
+		 * @param id an identifier
+		 *
+		 * @see #find(Class,Object)
+		 */
+		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
+
+		/**
+		 * Asynchronously return the persistent instances of the given entity
+		 * class with the given identifiers, or null if there is no such
+		 * persistent instance.
+		 *
+		 * @param entityClass The entity type
+		 * @param ids the identifiers
+		 *
+		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
+		 */
+		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given natural identifiers, or null if there is no
+		 * such persistent instance.
+		 *
+		 * @param entityClass The entity type
+		 * @param naturalId the natural identifier
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 */
+		@Incubating
+		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
+
+		/**
+		 * Return the persistent instance of the given entity class with the
+		 * given identifier, assuming that the instance exists. This method
+		 * never results in access to the underlying data store, and thus
+		 * might return a proxy that must be initialized explicitly using
+		 * {@link #fetch(Object)}.
+		 * <p>
+		 * You should not use this method to determine if an instance exists
+		 * (use {@link #find} instead). Use this only to retrieve an instance
+		 * which you safely assume exists, where non-existence would be an
+		 * actual error.
+		 *
+		 * @param entityClass a persistent class
+		 * @param id a valid identifier of an existing persistent instance of the class
+		 *
+		 * @return the persistent instance or proxy
+		 *
+		 * @see jakarta.persistence.EntityManager#getReference(Class, Object)
+		 */
+		<T> T getReference(Class<T> entityClass, Object id);
+
+		/**
+		 * Return the persistent instance with the same identity as the given
+		 * instance, which might be detached, assuming that the instance is
+		 * still persistent in the database. This method never results in
+		 * access to the underlying data store, and thus might return a proxy
+		 * that must be initialized explicitly using {@link #fetch(Object)}.
+		 *
+		 * @param entity a detached persistent instance
+		 *
+		 * @return the persistent instance or proxy
+		 */
+		<T> T getReference(T entity);
+
+		/**
+		 * Asynchronously persist the given transient instance, first assigning
+		 * a generated identifier. (Or using the current value of the identifier
+		 * property if the entity has assigned identifiers.)
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 *
+		 * <pre>
+		 * {@code session.persist(newBook).thenAccept(v -> session.flush());}
+		 * </pre>
+		 *
+		 * @param entity a transient instance of a persistent class
+		 *
+		 * @see jakarta.persistence.EntityManager#persist(Object)
+		 */
+		CompletionStage<Void> persist(Object entity);
+
+		/**
+		 * Make a transient instance persistent and mark it for later insertion in the
+		 * database. This operation cascades to associated instances if the association
+		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 * <p>
+		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
+		 * {@code persist()} ultimately results in generation of an identifier for the
+		 * given instance. But this may happen asynchronously, when the session is
+		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
+		 *
+		 * @param entityName the entity name
+		 * @param object a transient instance to be made persistent
+		 * @see #persist(Object)
+		 */
+		CompletionStage<Void> persist(String entityName, Object object);
+
+		/**
+		 * Persist multiple transient entity instances at once.
+		 *
+		 * @see #persist(Object)
+		 */
+		CompletionStage<Void> persist(Object... entities);
+
+		/**
+		 * Asynchronously remove a persistent instance from the datastore. The
+		 * argument may be an instance associated with the receiving session or
+		 * a transient instance with an identifier associated with existing
+		 * persistent state.
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link jakarta.persistence.CascadeType#REMOVE}.
+		 *
+		 * <pre>
+		 * {@code session.delete(book).thenAccept(v -> session.flush());}
+		 * </pre>
+		 *
+		 * @param entity the managed persistent instance to be removed
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 *
+		 * @see jakarta.persistence.EntityManager#remove(Object)
+		 */
+		CompletionStage<Void> remove(Object entity);
+
+		/**
+		 * Remove multiple entity instances at once.
+		 *
+		 * @see #remove(Object)
+		 */
+		CompletionStage<Void> remove(Object... entities);
+
+		/**
+		 * Copy the state of the given object onto the persistent instance with
+		 * the same identifier. If there is no such persistent instance currently
+		 * associated with the session, it will be loaded. Return the persistent
+		 * instance. Or, if the given instance is transient, save a copy of it
+		 * and return the copy as a newly persistent instance. The given instance
+		 * does not become associated with the session.
+		 * <p>
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link jakarta.persistence.CascadeType#MERGE}.
+		 *
+		 * @param entity a detached instance with state to be copied
+		 *
+		 * @return an updated persistent instance
+		 *
+		 * @see jakarta.persistence.EntityManager#merge(Object)
+		 */
+		<T> CompletionStage<T> merge(T entity);
+
+		/**
+		 * Merge multiple entity instances at once.
+		 *
+		 * @see #merge(Object)
+		 */
+		CompletionStage<Void> merge(Object... entities);
+
+		/**
+		 * Re-read the state of the given instance from the underlying database.
+		 * It is inadvisable to use this to implement long-running sessions that
+		 * span many business tasks. This method is, however, useful in certain
+		 * special circumstances, for example:
+		 *
+		 * <ul>
+		 * <li>where a database trigger alters the object state after insert or
+		 * update, or
+		 * <li>after executing direct native SQL in the same session.
+		 * </ul>
+		 *
+		 * @param entity a managed persistent instance
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 *
+		 * @see jakarta.persistence.EntityManager#refresh(Object)
+		 */
+		CompletionStage<Void> refresh(Object entity);
+
+		/**
+		 * Re-read the state of the given instance from the underlying database,
+		 * requesting the given {@link LockMode}.
+		 *
+		 * @param entity a managed persistent entity instance
+		 * @param lockMode the requested lock mode
+		 *
+		 * @see #refresh(Object)
+		 */
+		CompletionStage<Void> refresh(Object entity, LockMode lockMode);
+
+		/**
+		 * Re-read the state of the given instance from the underlying database,
+		 * requesting the given {@link LockModeType}.
+		 *
+		 * @param entity a managed persistent entity instance
+		 * @param lockModeType the requested lock mode
+		 *
+		 * @see #refresh(Object)
+		 */
+		default CompletionStage<Void> refresh(Object entity, LockModeType lockModeType) {
+			return refresh( entity, convertToLockMode(lockModeType) );
+		}
+
+		/**
+		 * Refresh multiple entity instances at once.
+		 *
+		 * @see #refresh(Object)
+		 */
+		CompletionStage<Void> refresh(Object... entities);
+
+		/**
+		 * Obtain the specified lock level upon the given object. For example,
+		 * this operation may be used to:
+		 *
+		 * <ul>
+		 * <li>perform a version check with {@link LockMode#PESSIMISTIC_READ},
+		 * <li>upgrade to a pessimistic lock with {@link LockMode#PESSIMISTIC_WRITE},
+		 * <li>force a version increment with {@link LockMode#PESSIMISTIC_FORCE_INCREMENT},
+		 * <li>schedule a version check just before the end of the transaction with
+		 * {@link LockMode#OPTIMISTIC}, or
+		 * <li>schedule a version increment just before the end of the transaction
+		 * with {@link LockMode#OPTIMISTIC_FORCE_INCREMENT}.
+		 * </ul>
+		 *
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
+		 *
+		 * @param entity a managed persistent instance
+		 * @param lockMode the lock level
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 */
+		CompletionStage<Void> lock(Object entity, LockMode lockMode);
+
+		/**
+		 * Obtain the specified lock level upon the given object. For example,
+		 * this operation may be used to:
+		 *
+		 * <ul>
+		 * <li>perform a version check with {@link LockModeType#PESSIMISTIC_READ},
+		 * <li>upgrade to a pessimistic lock with {@link LockModeType#PESSIMISTIC_WRITE},
+		 * <li>force a version increment with {@link LockModeType#PESSIMISTIC_FORCE_INCREMENT},
+		 * <li>schedule a version check just before the end of the transaction with
+		 * {@link LockModeType#OPTIMISTIC}, or
+		 * <li>schedule a version increment just before the end of the transaction
+		 * with {@link LockModeType#OPTIMISTIC_FORCE_INCREMENT}.
+		 * </ul>
+		 *
+		 * This operation cascades to associated instances if the association is
+		 * mapped with {@link org.hibernate.annotations.CascadeType#LOCK}.
+		 *
+		 * @param entity a managed persistent instance
+		 * @param lockModeType the lock level
+		 *
+		 * @throws IllegalArgumentException if the given instance is not managed
+		 */
+		default CompletionStage<Void> lock(Object entity, LockModeType lockModeType) {
+			return lock( entity, convertToLockMode(lockModeType) );
+		}
+
+		/**
+		 * Force this session to flush asynchronously. Must be called at the
+		 * end of a unit of work, before committing the transaction and closing
+		 * the session. <i>Flushing</i> is the process of synchronizing the
+		 * underlying persistent store with state held in memory.
+		 *
+		 * <pre>
+		 * {@code session.flush().thenAccept(v -> print("done saving changes"));}
+		 * </pre>
+		 *
+		 * @see jakarta.persistence.EntityManager#flush()
+		 */
+		CompletionStage<Void> flush();
+
+		/**
+		 * Asynchronously fetch an association that's configured for lazy loading.
+		 * <p>
+		 * <pre>
+		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()))}
+		 * </pre>
+		 * </p>
+		 * <p>
+		 * It can also initialize proxys. For example:
+		 * <pre>
+		 * {@code session.fetch(session.getReference(Author.class, authorId))}
+		 * </pre>
+		 * </p>
+		 *
+		 * @param association a lazy-loaded association, or a proxy
+		 *
+		 * @return the fetched association, via a {@code CompletionStage}
+		 *
+		 * @see Stage#fetch(Object)
+		 * @see #getReference(Class, Object)
+		 * @see org.hibernate.Hibernate#initialize(Object)
+		 */
+		<T> CompletionStage<T> fetch(T association);
+
+		/**
+		 * Fetch a lazy property of the given entity, identified by a JPA
+		 * {@link Attribute attribute metamodel}. Note that this feature is
+		 * only supported in conjunction with the Hibernate bytecode enhancer.
+		 *
+		 * <pre>
+		 * {@code session.fetch(book, Book_.isbn).thenAccept(isbn -> print(isbn))}
+		 * </pre>
+		 */
+		<E,T> CompletionStage<T> fetch(E entity, Attribute<E,T> field);
+
+		/**
+		 * Determine the current lock mode of the given entity.
+		 */
+		LockMode getLockMode(Object entity);
+
+		/**
+		 * Determine if the given instance belongs to this persistence context.
+		 */
+		boolean contains(Object entity);
+
+		/**
 		 * Set the {@link FlushMode flush mode} for this session.
 		 * <p>
 		 * The flush mode determines the points at which the session is flushed.
@@ -1312,27 +1349,6 @@ public interface Stage {
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session enableFetchProfile(String name);
-
-		/**
-		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link jakarta.persistence.SqlResultSetMapping}.
-		 */
-		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
-
-		/**
-		 * Obtain a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
-
-		/**
-		 * Create a new mutable {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
-
-		/**
-		 * Create a new mutable copy of a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
 
 		/**
 		 * Disable a particular fetch profile on this session, or do nothing if
@@ -1511,53 +1527,6 @@ public interface Stage {
 		 * @return The Filter instance representing the enabled filter.
 		 */
 		Filter getEnabledFilter(String filterName);
-
-		/**
-		 * Performs the given work within the scope of a database transaction,
-		 * automatically flushing the session. The transaction will be rolled
-		 * back if the work completes with an uncaught exception, or if
-		 * {@link Transaction#markForRollback()} is called.
-		 * <p>
-		 * The resulting {@link Transaction} object may also be obtained via
-		 * {@link #currentTransaction()}.
-		 * <p>
-		 * <il>
-		 * <li> If there is already a transaction associated with this session,
-		 * the work is executed in the context of the existing transaction, and
-		 * no new transaction is initiated.
-		 * <li> If there is no transaction associated with this session, a new
-		 * transaction is started, and the work is executed in the context of
-		 * the new transaction.
-		 * </il>
-		 *
-		 * @param work a function which accepts {@link Transaction} and returns
-		 *             the result of the work as a {@link CompletionStage}.
-		 *
-		 * @see SessionFactory#withTransaction(BiFunction)
-		 */
-		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
-
-		/**
-		 * Obtain the transaction currently associated with this session,
-		 * if any.
-		 *
-		 * @return the {@link Transaction}, or null if no transaction
-		 * was started using {@link #withTransaction(Function)}.
-		 *
-		 * @see #withTransaction(Function)
-		 * @see SessionFactory#withTransaction(BiFunction)
-		 */
-		Transaction currentTransaction();
-
-		/**
-		 * @return false if {@link #close()} has been called
-		 */
-		boolean isOpen();
-
-		/**
-		 * The {@link SessionFactory} which created this session.
-		 */
-		SessionFactory getFactory();
 	}
 
 	/**
@@ -1590,7 +1559,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession extends Closeable {
+	interface StatelessSession extends SharedSessionContract {
 
 		/**
 		 * Retrieve a row.
@@ -1654,178 +1623,6 @@ public interface Stage {
 		 * @return a detached entity instance, via a {@code CompletionStage}
 		 */
 		<T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id);
-
-		/**
-		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string or HQL/JPQL update or delete statement. In the case of an
-		 * update or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @deprecated See explanation in
-		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
-		 *
-		 * @see org.hibernate.Session#createQuery(String)
-		 */
-		@Deprecated
-		<R> Query<R> createQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string and query result type.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.Session#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
-		 * update or delete statement.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		MutationQuery createMutationQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given update tree.
-		 *
-		 * @param updateQuery the update criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaUpdate)
-		 */
-		MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given delete tree.
-		 *
-		 * @param deleteQuery the delete criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaDelete)
-		 */
-		MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery);
-
-		/**
-		 * Create a {@link MutationQuery} from the given insert select criteria tree
-		 *
-		 * @param insert the insert select criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(JpaCriteriaInsert)
-		 */
-		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert, or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 *
-		 * @param queryString The SQL select, update, insert, or delete statement
-		 *
-		 * @see org.hibernate.Session#createNativeQuery(String)
-		 */
-		<R> Query<R> createNativeQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link Query} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> Query<R> createNamedQuery(String queryName);
-
-		/**
-		 * Create an instance of {@link Query} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * using the given {@code resultType} to interpret the results.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.Session#createNativeQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given criteria
-		 * query.
-		 *
-		 * @param criteriaQuery The {@link CriteriaQuery}
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria
-		 * update.
-		 *
-		 * @param criteriaUpdate The {@link CriteriaUpdate}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria
-		 * delete.
-		 *
-		 * @param criteriaDelete The {@link CriteriaDelete}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Insert a row.
@@ -2035,87 +1832,6 @@ public interface Stage {
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> CompletionStage<T> fetch(T association);
-
-		/**
-		 * Return the identifier value of the given entity, which may be detached.
-		 *
-		 * @param entity a persistent instance associated with this session
-		 *
-		 * @return the identifier
-		 *
-		 * @since 3.0
-		 */
-		Object getIdentifier(Object entity);
-
-		/**
-		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link jakarta.persistence.SqlResultSetMapping}.
-		 */
-		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
-
-		/**
-		 * Obtain a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
-
-		/**
-		 * Create a new mutable {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
-
-		/**
-		 * Create a new mutable copy of a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
-
-		/**
-		 * Performs the given work within the scope of a database transaction,
-		 * automatically flushing the session. The transaction will be rolled
-		 * back if the work completes with an uncaught exception, or if
-		 * {@link Transaction#markForRollback()} is called.
-		 * <il>
-		 * <li> If there is already a transaction associated with this session,
-		 * the work is executed in the context of the existing transaction, and
-		 * no new transaction is initiated.
-		 * <li> If there is no transaction associated with this session, a new
-		 * transaction is started, and the work is executed in the context of
-		 * the new transaction.
-		 * </il>
-		 *
-		 * @param work a function which accepts {@link Transaction} and returns
-		 *             the result of the work as a {@link CompletionStage}.
-		 *
-		 * @see SessionFactory#withTransaction(BiFunction)
-		 */
-		<T> CompletionStage<T> withTransaction(Function<Transaction, CompletionStage<T>> work);
-
-		/**
-		 * Obtain the transaction currently associated with this session,
-		 * if any.
-		 *
-		 * @return the {@link Transaction}, or null if no transaction
-		 * was started using {@link #withTransaction(Function)}.
-		 *
-		 * @see #withTransaction(Function)
-		 * @see SessionFactory#withTransaction(BiFunction)
-		 */
-		Transaction currentTransaction();
-
-		/**
-		 * @return false if {@link #close()} has been called
-		 */
-		boolean isOpen();
-
-		/**
-		 * Close the reactive session and release the underlying database
-		 * connection.
-		 */
-		CompletionStage<Void> close();
-
-		/**
-		 * The {@link SessionFactory} which created this session.
-		 */
-		SessionFactory getFactory();
 	}
 
 	/**
