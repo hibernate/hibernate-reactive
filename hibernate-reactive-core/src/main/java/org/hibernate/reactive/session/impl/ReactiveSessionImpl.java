@@ -389,7 +389,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( sqlString, this );
+			final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( sqlString, mthis );
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
 			}
