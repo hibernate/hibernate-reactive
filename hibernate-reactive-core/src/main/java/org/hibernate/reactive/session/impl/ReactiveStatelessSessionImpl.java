@@ -128,7 +128,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	private final ReactiveConnection reactiveConnection;
 
-	private final ReactiveStatelessSession batchingHelperSession;
+	private final ReactiveStatelessSessionImpl batchingHelperSession;
 
 	private final PersistenceContext persistenceContext;
 
@@ -150,10 +150,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			PersistenceContext persistenceContext) {
 		super( factory, options );
 		this.persistenceContext = persistenceContext;
-		Integer batchSize = getConfiguredJdbcBatchSize();
-		reactiveConnection = batchSize == null || batchSize < 2
-				? connection
-				: new BatchingConnection( connection, batchSize );
+		// Setting batch size to 0 because `StatelessSession` does not consider
+		// the value of `hibernate.jdbc.batch_size`
+		reactiveConnection = new BatchingConnection( connection, 0 );
 		batchingHelperSession = this;
 		influencers = new LoadQueryInfluencers( factory );
 	}
@@ -551,9 +550,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities) {
+		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+		batchingHelperSession.setJdbcBatchSize( batchSize );
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveInsert )
-				.thenCompose( v -> connection.executeBatch() );
+				.thenCompose( v -> connection.executeBatch() )
+				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
 	}
 
 	@Override
@@ -564,9 +566,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities) {
+		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+		batchingHelperSession.setJdbcBatchSize( batchSize );
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveUpdate )
-				.thenCompose( v -> connection.executeBatch() );
+				.thenCompose( v -> connection.executeBatch() )
+				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
 	}
 
 	@Override
@@ -577,9 +582,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities) {
+		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+		batchingHelperSession.setJdbcBatchSize( batchSize );
 		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveDelete )
-				.thenCompose( v -> connection.executeBatch() );
+		return loop( entities, batchingHelperSession::reactiveDelete ).thenCompose( v -> connection.executeBatch() )
+				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
 	}
 
 
@@ -591,9 +598,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities) {
+		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+		batchingHelperSession.setJdbcBatchSize( batchSize );
 		final ReactiveConnection connection = batchingConnection( batchSize );
 		return loop( entities, batchingHelperSession::reactiveRefresh )
-				.thenCompose( v -> connection.executeBatch() );
+				.thenCompose( v -> connection.executeBatch() )
+				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
 	}
 
 	private ReactiveConnection batchingConnection(int batchSize) {

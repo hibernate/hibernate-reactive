@@ -138,7 +138,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public Uni<Void> insertAll(Object... entities) {
-		return uni( () -> delegate.reactiveInsertAll( entities ) );
+		return uni( () -> delegate.reactiveInsertAll( entities.length, entities ) );
 	}
 
 	@Override
@@ -158,12 +158,12 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public Uni<Void> deleteAll(Object... entities) {
-		return uni( () -> delegate.reactiveDeleteAll( entities ) );
+		return uni( () -> delegate.reactiveDeleteAll( entities.length, entities ) );
 	}
 
 	@Override
 	public Uni<Void> deleteAll(int batchSize, Object... entities) {
-		return uni( () -> delegate.reactiveDeleteAll( entities ) );
+		return uni( () -> delegate.reactiveDeleteAll( batchSize, entities ) );
 	}
 
 	@Override
@@ -178,7 +178,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public Uni<Void> updateAll(Object... entities) {
-		return uni( () -> delegate.reactiveUpdateAll( entities ) );
+		return uni( () -> delegate.reactiveUpdateAll( entities.length, entities ) );
 	}
 
 	@Override
@@ -208,7 +208,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public Uni<Void> refreshAll(Object... entities) {
-		return uni( () -> delegate.reactiveRefreshAll( entities ) );
+		return uni( () -> delegate.reactiveRefreshAll( entities.length, entities ) );
 	}
 
 	@Override

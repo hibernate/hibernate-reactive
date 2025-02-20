@@ -1836,7 +1836,8 @@ public interface Stage {
 		CompletionStage<Void> insert(Object entity);
 
 		/**
-		 * Insert multiple rows.
+		 * Insert multiple rows, using the number of the
+		 * given entities as the batch size.
 		 *
 		 * @param entities new transient instances
 		 *
@@ -1874,7 +1875,8 @@ public interface Stage {
 		CompletionStage<Void> delete(Object entity);
 
 		/**
-		 * Delete multiple rows.
+		 * Delete multiple rows, using the number of the
+		 * given entities as the batch size.
 		 *
 		 * @param entities detached entity instances
 		 *
@@ -1912,7 +1914,8 @@ public interface Stage {
 		CompletionStage<Void> update(Object entity);
 
 		/**
-		 * Update multiple rows.
+		 * Update multiple rows, using the number of the
+		 * given entities as the batch size.
 		 *
 		 * @param entities a detached entity instance
 		 *
@@ -1950,7 +1953,8 @@ public interface Stage {
 		CompletionStage<Void> refresh(Object entity);
 
 		/**
-		 * Refresh the entity instance state from the database.
+		 * Refresh the entity instance state from the database, using the number of the
+		 * given entities as the batch size.
 		 *
 		 * @param entities The entities to be refreshed.
 		 *
