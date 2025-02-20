@@ -326,7 +326,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName) {
-		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ) );
+		return new StageQueryImpl<>( delegate.createReactiveNamedQuery( queryName ) );
 	}
 
 	@Override
