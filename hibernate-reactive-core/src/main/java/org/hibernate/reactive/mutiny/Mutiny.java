@@ -18,7 +18,6 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
-import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -2452,18 +2451,18 @@ public interface Mutiny {
 		}
 
 		final SharedSessionContractImplementor session;
-		if ( association instanceof HibernateProxy ) {
-			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
+		if ( association instanceof HibernateProxy proxy ) {
+			session = proxy.getHibernateLazyInitializer().getSession();
 		}
-		else if ( association instanceof PersistentCollection ) {
+		else if ( association instanceof AbstractPersistentCollection<?> collection ) {
 			//this unfortunately doesn't work for stateless session because the session ref gets set to null
-			session = ( (AbstractPersistentCollection<?>) association ).getSession();
+			session = collection.getSession();
 		}
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor lazinessInterceptor ) {
+				session = lazinessInterceptor.getLinkedSession();
 			}
 			else {
 				return Uni.createFrom().item( association );

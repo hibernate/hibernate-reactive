@@ -19,7 +19,6 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.AbstractPersistentCollection;
-import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -2499,17 +2498,17 @@ public interface Stage {
 		}
 
 		final SharedSessionContractImplementor session;
-		if ( association instanceof HibernateProxy) {
-			session = ( (HibernateProxy) association ).getHibernateLazyInitializer().getSession();
+		if ( association instanceof HibernateProxy proxy ) {
+			session = proxy.getHibernateLazyInitializer().getSession();
 		}
-		else if ( association instanceof PersistentCollection) {
-			session = ( (AbstractPersistentCollection<?>) association ).getSession();
+		else if ( association instanceof AbstractPersistentCollection<?> collection ) {
+			session = collection.getSession();
 		}
 		else if ( isPersistentAttributeInterceptable( association ) ) {
 			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
 			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor) {
-				session = ( (EnhancementAsProxyLazinessInterceptor) interceptor ).getLinkedSession();
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor lazinessInterceptor) {
+				session = lazinessInterceptor.getLinkedSession();
 			}
 			else {
 				return CompletionStages.completedFuture( association );
