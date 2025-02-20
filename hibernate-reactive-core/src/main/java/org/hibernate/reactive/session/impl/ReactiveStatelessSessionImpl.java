@@ -150,6 +150,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			PersistenceContext persistenceContext) {
 		super( factory, options );
 		this.persistenceContext = persistenceContext;
+		// StatelessSessionImpl constructor sets the Jdbc Batch Size to 0,
+		// setting it to null allows getConfiguredJdbcBatchSize() to return correct configured size
+		setJdbcBatchSize( null );
 		Integer batchSize = getConfiguredJdbcBatchSize();
 		reactiveConnection = batchSize == null || batchSize < 2
 				? connection
