@@ -28,8 +28,8 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,9 +56,8 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( v -> openSession() )
 								.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 								.thenAccept( auth -> {
-									assertNotNull( auth );
-									assertEquals( author, auth );
-									assertEquals( book.getTitle(), auth.getBook().getTitle()  );
+									assertThat( auth ).isEqualTo( author );
+									assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
 								} )
 				)
 		);
@@ -77,9 +76,8 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 								.thenCompose( v -> s.flush() )
 								.thenCompose( v -> s.find( Author.class, author.getId() ) )
 								.thenAccept( auth -> {
-									assertNotNull( auth );
-									assertEquals( author, auth );
-									assertEquals( book.getTitle(), auth.getBook().getTitle()  );
+									assertThat( auth ).isEqualTo( author );
+									assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
 								} )
 				)
 		);
@@ -87,7 +85,6 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 
 	@Test
 	public void testRootClassViaFind(VertxTestContext context) {
-
 		final Book novel = new Book( 6, "The Boy, The Mole, The Fox and The Horse", new Date());
 		final Author author = new Author( "Charlie Mackesy", novel );
 
@@ -99,9 +96,8 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession()
 								.thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept(book -> {
-							assertNotNull(book);
-							assertFalse(book instanceof SpellBook);
-							assertEquals(book.getTitle(), "The Boy, The Mole, The Fox and The Horse");
+							assertThat( book ).isNotInstanceOf( SpellBook.class );
+							assertThat( book.getTitle() ).isEqualTo( "The Boy, The Mole, The Fox and The Horse" );
 						}));
 	}
 
@@ -126,26 +122,33 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 	@Test
 	public void testQueryUpdate(VertxTestContext context) {
 		final SpellBook spells = new SpellBook( 6, "Necronomicon", true, new Date() );
-//		final Author author = new Author( "Abdul Alhazred", spells );
 
-		test( context,
+		test(
+				context,
 				openSession()
-						.thenCompose( s -> s.persist(spells).thenCompose( v -> s.flush() ) )
+						.thenCompose( s -> s.persist( spells ).thenCompose( v -> s.flush() ) )
 						.thenCompose( vv -> openSession()
-								.thenCompose( s -> s.withTransaction( t -> s.createMutationQuery("update SpellBook set title='x' where forbidden=false").executeUpdate() )
-										.thenCompose( v -> s.withTransaction( t -> s.createMutationQuery("update SpellBook set forbidden=false where title='Necronomicon'").executeUpdate() ) )
-										.thenCompose( v -> s.withTransaction( t -> s.createMutationQuery("update Book set title=title||' II' where title='Necronomicon'").executeUpdate() ) )
-										.thenCompose( v -> s.find(Book.class, 6) )
+								.thenCompose( s -> s.withTransaction( t -> s
+												.createMutationQuery( "update SpellBook set title='x' where forbidden=false" )
+												.executeUpdate() )
+										.thenCompose( v -> s.withTransaction( t -> s
+												.createMutationQuery( "update SpellBook set forbidden=false where title='Necronomicon'" )
+												.executeUpdate() ) )
+										.thenCompose( v -> s.withTransaction( t -> s
+												.createMutationQuery( "update Book set title=title||' II' where title='Necronomicon'" )
+												.executeUpdate() ) )
+										.thenCompose( v -> s.find( Book.class, 6 ) )
 										.thenAccept( book -> {
-											assertNotNull(book);
-											assertTrue(book instanceof SpellBook);
-											assertEquals(book.getTitle(), "Necronomicon II");
+											assertThat( book ).isInstanceOf( SpellBook.class );
+											assertThat( book.getTitle() ).isEqualTo( "Necronomicon II" );
 										} )
-						) )
+								) )
 						.thenCompose( vv -> openSession()
-								.thenCompose( s -> s.withTransaction( t -> s.createMutationQuery("delete Book where title='Necronomicon II'").executeUpdate() ) )
+								.thenCompose( s -> s.withTransaction( t -> s
+										.createMutationQuery( "delete Book where title='Necronomicon II'" )
+										.executeUpdate() ) )
 								.thenCompose( v -> openSession() )
-								.thenCompose( s -> s.find(Book.class, 6) )
+								.thenCompose( s -> s.find( Book.class, 6 ) )
 								.thenAccept( Assertions::assertNull )
 						)
 		);
@@ -207,6 +210,11 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		public boolean getForbidden() {
 			return forbidden;
 		}
+
+		@Override
+		public String toString() {
+			return "SpellBook{" + super.toString() + ",forbidden=" + forbidden + '}';
+		}
 	}
 
 	@Entity(name="Book")
@@ -267,6 +275,11 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash( title );
+		}
+
+		@Override
+		public String toString() {
+			return id + ", " + title + ", " + published;
 		}
 	}
 
