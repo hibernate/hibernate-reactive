@@ -173,7 +173,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName ), factory );
 	}
 
 	@Override
