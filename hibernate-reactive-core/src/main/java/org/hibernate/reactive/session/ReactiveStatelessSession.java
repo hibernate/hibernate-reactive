@@ -10,6 +10,7 @@ import org.hibernate.LockMode;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.metamodel.Attribute;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +28,8 @@ import java.util.concurrent.CompletionStage;
  */
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
+
+	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);
 
 	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
