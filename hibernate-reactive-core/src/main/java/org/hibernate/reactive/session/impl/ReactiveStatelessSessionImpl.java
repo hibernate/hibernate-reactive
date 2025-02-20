@@ -22,6 +22,7 @@ import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -47,10 +48,12 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
+import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaQuery;
 import org.hibernate.query.criteria.JpaRoot;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
+import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
@@ -64,7 +67,6 @@ import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
-import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
@@ -905,7 +907,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, this );
+			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, null, this);
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
 			}
@@ -956,9 +958,19 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		delayedAfterCompletion();
 
 		try {
-			return isNotEmpty( resultSetMappingName )
-					? new ReactiveNativeQueryImpl<>( sqlString, getResultSetMappingMemento( resultSetMappingName ), this )
-					: new ReactiveNativeQueryImpl<>( sqlString, this );
+			if ( isNotEmpty( resultSetMappingName ) ) {
+				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
+						.getNamedObjectRepository()
+						.getResultSetMappingMemento( resultSetMappingName );
+
+				if ( resultSetMappingMemento == null ) {
+					throw new HibernateException( "Could not resolve specified result-set mapping name : " + resultSetMappingName );
+				}
+				return new ReactiveNativeQueryImpl<>( sqlString, resultSetMappingMemento, null, this );
+			}
+			else {
+				return new ReactiveNativeQueryImpl<>( sqlString, this );
+			}
 			//TODO: why no applyQuerySettingsAndHints( query ); ???
 		}
 		catch (RuntimeException he) {
@@ -1070,8 +1082,61 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	public  <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName) {
+		checksBeforeQueryCreation();
+		try {
+			return (ReactiveQueryImplementor<R>) buildNamedQuery(
+					queryName,
+					this::createSqmQueryImplementor,
+					this::createNativeQueryImplementor
+			);
+		}
+		catch (RuntimeException e) {
+			throw convertNamedQueryException( e );
+		}
+	}
+
+	@Override
+	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName, Class<R> resultType) {
+		checksBeforeQueryCreation();
+		if ( resultType == null ) {
+			throw new IllegalArgumentException( "Result class is null" );
+		}
+		try {
+			return (ReactiveQueryImplementor<R>) buildNamedQuery(
+					queryName,
+					memento -> createSqmQueryImplementor( resultType, memento ),
+					memento -> createNativeQueryImplementor( resultType, memento )
+			);
+		}
+		catch (RuntimeException e) {
+			throw convertNamedQueryException( e );
+		}
+	}
+
+	private RuntimeException convertNamedQueryException(RuntimeException e) {
+		if ( e instanceof UnknownNamedQueryException ) {
+			// JPA expects this to mark the transaction for rollback only
+			getTransactionCoordinator().getTransactionDriverControl().markRollbackOnly();
+			// it also expects an IllegalArgumentException, so wrap UnknownNamedQueryException
+			return new IllegalArgumentException( e.getMessage(), e );
+		}
+		else if ( e instanceof IllegalArgumentException ) {
+			return e;
+		}
+		else {
+			return getExceptionConverter().convert( e );
+		}
+	}
+
+	@Override
 	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName, Class<R> expectedResultType) {
 		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName , expectedResultType );
+	}
+
+	private void checksBeforeQueryCreation() {
+		checkOpen();
+		checkTransactionSynchStatus();
 	}
 
 	@Override
@@ -1081,11 +1146,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw new IllegalMutationQueryException( "Expecting a native mutation query, but found `" + sqlString + "`" );
 		}
 		return query;
-	}
-
-	@Override
-	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName, Class<R> resultType) {
-		return (ReactiveQueryImplementor<R>) buildNamedQuery( queryName, resultType );
 	}
 
 	@Override
@@ -1131,11 +1191,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
+		if ( resultSetMapping == null ) {
+			throw new IllegalArgumentException( "Result set mapping was not specified" );
+		}
+
 		try {
-			// Same approach as AbstractSharedSessionContract#createNativeQuery(String, String)
-			final ReactiveNativeQueryImpl<R> nativeQuery = resultSetMapping != null
-					? new ReactiveNativeQueryImpl<>( queryString, getResultSetMappingMemento( resultSetMapping.getName() ), this )
-					: new ReactiveNativeQueryImpl<>( queryString, this );
+			final NamedResultSetMappingMemento memento = getResultSetMappingMemento( resultSetMapping.getName() );
+			final ReactiveNativeQueryImpl<R> nativeQuery = new ReactiveNativeQueryImpl<>( queryString, memento, null, this );
 			applyQuerySettingsAndHints( nativeQuery );
 			return nativeQuery;
 		}
