@@ -67,7 +67,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public CompletionStage<Void> insert(Object... entities) {
-		return delegate.reactiveInsertAll( entities );
+		return delegate.reactiveInsertAll( entities.length, entities );
 	}
 
 	@Override
@@ -87,7 +87,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public CompletionStage<Void> delete(Object... entities) {
-		return delegate.reactiveDeleteAll( entities );
+		return delegate.reactiveDeleteAll( entities.length, entities );
 	}
 
 	@Override
@@ -107,7 +107,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public CompletionStage<Void> update(Object... entities) {
-		return delegate.reactiveUpdateAll( entities );
+		return delegate.reactiveUpdateAll( entities.length, entities );
 	}
 
 	@Override
@@ -127,7 +127,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public CompletionStage<Void> refresh(Object... entities) {
-		return delegate.reactiveRefreshAll( entities );
+		return delegate.reactiveRefreshAll( entities.length, entities );
 	}
 
 	@Override
