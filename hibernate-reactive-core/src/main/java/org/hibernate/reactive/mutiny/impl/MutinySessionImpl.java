@@ -85,6 +85,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public Object getIdentifier(Object entity) {
+		return delegate.getIdentifier( entity );
+	}
+
+	@Override
 	public <T> Uni<T> unproxy(T association) {
 		return uni( () -> delegate.reactiveFetch( association, true ) );
 	}
