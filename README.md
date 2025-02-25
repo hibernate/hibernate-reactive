@@ -5,6 +5,7 @@
 [![Latest version on Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central&logo=apache-maven&style=for-the-badge)](https://search.maven.org/search?q=g:org.hibernate.reactive)
 [![Developers stream on Zulip](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?logo=zulip&style=for-the-badge)](https://hibernate.zulipchat.com/#narrow/stream/205413-hibernate-reactive-dev)
 [![Hibernate Reactive documentation](https://img.shields.io/badge/Hibernate-Documentation-orange.svg?logo=Hibernate&style=for-the-badge)](https://hibernate.org/reactive/documentation/)
+[![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/org/hibernate/reactive/hibernate-reactive/badge.json&style=for-the-badge)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/org/hibernate/reactive/hibernate-reactive/README.md)
 
 # Hibernate Reactive
 
