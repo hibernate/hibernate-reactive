@@ -1,10 +1,10 @@
 [![Hibernate team logo](http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png)](https://hibernate.org/reactive)
 
-[![Main branch build status](https://github.com/hibernate/hibernate-reactive/workflows/Hibernate%20Reactive%20CI/badge.svg?style=flat)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
-[![Apache 2.0 license](https://img.shields.io/badge/License-APACHE%202.0-green.svg?logo=APACHE&style=flat)](https://opensource.org/licenses/Apache-2.0)
-[![Latest version on Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central&logo=apache-maven&style=flat)](https://search.maven.org/search?q=g:org.hibernate.reactive)
-[![Developers stream on Zulip](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?logo=zulip&style=flat)](https://hibernate.zulipchat.com/#narrow/stream/205413-hibernate-reactive-dev)
-[![Hibernate Reactive documentation](https://img.shields.io/badge/Hibernate-Documentation-orange.svg?logo=Hibernate&style=flat)](https://hibernate.org/reactive/documentation/)
+[![Main branch build status](https://img.shields.io/github/actions/workflow/status/hibernate/hibernate-reactive/build.yml?label=Hibernate%20Reactive%20CI&style=for-the-badge)](https://github.com/hibernate/hibernate-reactive/actions?query=workflow%3A%22Hibernate+Reactive+CI%22)
+[![Apache 2.0 license](https://img.shields.io/badge/License-APACHE%202.0-green.svg?logo=APACHE&style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
+[![Latest version on Maven Central](https://img.shields.io/maven-central/v/org.hibernate.reactive/hibernate-reactive-core.svg?label=Maven%20Central&logo=apache-maven&style=for-the-badge)](https://search.maven.org/search?q=g:org.hibernate.reactive)
+[![Developers stream on Zulip](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?logo=zulip&style=for-the-badge)](https://hibernate.zulipchat.com/#narrow/stream/205413-hibernate-reactive-dev)
+[![Hibernate Reactive documentation](https://img.shields.io/badge/Hibernate-Documentation-orange.svg?logo=Hibernate&style=for-the-badge)](https://hibernate.org/reactive/documentation/)
 
 # Hibernate Reactive
 
