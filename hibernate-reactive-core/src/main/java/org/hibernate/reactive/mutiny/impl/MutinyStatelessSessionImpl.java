@@ -93,7 +93,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <R> Query<R> createNamedQuery(String queryName) {
-		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName, null ), factory );
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName ), factory );
 	}
 
 	@Override
