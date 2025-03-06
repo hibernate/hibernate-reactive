@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
-import java.lang.invoke.MethodHandles;
-import java.sql.SQLException;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.engine.jdbc.batch.spi.Batch;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
@@ -25,6 +21,7 @@ import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
 import org.hibernate.reactive.logging.impl.Log;
@@ -37,9 +34,16 @@ import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.checkResults;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
@@ -73,10 +77,64 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	@Override
 	public CompletionStage<Void> performReactiveBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
-			TableInclusionChecker inclusionChecker, OperationResultChecker resultChecker,
+			TableInclusionChecker inclusionChecker,
+			OperationResultChecker resultChecker,
 			SharedSessionContractImplementor session) {
-		return ReactiveMutationExecutor.super
-				.performReactiveBatchedOperations( valuesAnalysis, inclusionChecker, resultChecker, session);
+		final PreparedStatementGroup batchedMutationOperationGroup = getBatchedPreparedStatementGroup();
+		if ( batchedMutationOperationGroup != null ) {
+			final List<PreparedStatementDetails> preparedStatementDetailsList = new ArrayList<>(
+					batchedMutationOperationGroup.getNumberOfStatements() );
+			batchedMutationOperationGroup.forEachStatement( (tableName, statementDetails) -> preparedStatementDetailsList
+					.add( statementDetails ) );
+			return loop( preparedStatementDetailsList, statementDetails -> {
+					  if ( statementDetails == null ) {
+						  return voidFuture();
+					  }
+					  final JdbcValueBindings valueBindings = getJdbcValueBindings();
+					  final TableMapping tableDetails = statementDetails.getMutatingTableDetails();
+					  if ( inclusionChecker != null && !inclusionChecker.include( tableDetails ) ) {
+						  if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
+							  MODEL_MUTATION_LOGGER.tracef(
+									  "Skipping execution of secondary insert : %s",
+									  tableDetails.getTableName()
+							  );
+						  }
+						  return voidFuture();
+					  }
+
+					  // If we get here the statement is needed - make sure it is resolved
+					  final Object[] paramValues = PreparedStatementAdaptor.bind( statement -> {
+						  PreparedStatementDetails details = new PrepareStatementDetailsAdaptor(
+								  statementDetails,
+								  statement,
+								  session.getJdbcServices()
+						  );
+						  valueBindings.beforeStatement( details );
+					  } );
+
+					  final ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+					  final String sql = statementDetails.getSqlString();
+					  return reactiveConnection.update(
+							  sql,
+							  paramValues,
+							  true,
+							  (rowCount, batchPosition, query) -> ResultsCheckerUtil.checkResults(
+									  session,
+									  statementDetails,
+									  resultChecker,
+									  rowCount,
+									  batchPosition
+							  )
+					  ).whenComplete( (o, throwable) -> { //TODO: is this part really needed?
+						  if ( statementDetails.getStatement() != null ) {
+							  statementDetails.releaseStatement( session );
+						  }
+						  valueBindings.afterStatement( tableDetails );
+					  } );
+				  }
+			);
+		}
+		return voidFuture();
 	}
 
 	@Override
@@ -159,6 +217,22 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 		}
 	}
 
+	public CompletionStage<Void> performReactiveSelfExecutingOperations(
+			ValuesAnalysis valuesAnalysis,
+			TableInclusionChecker inclusionChecker,
+			SharedSessionContractImplementor session) {
+		if ( getSelfExecutingMutations() == null || getSelfExecutingMutations().isEmpty() ) {
+			return voidFuture();
+		}
+
+		return loop( getSelfExecutingMutations(), operation -> {
+			if ( inclusionChecker.include( operation.getTableDetails() ) ) {
+				operation.performMutation( getJdbcValueBindings(), valuesAnalysis, session );
+			}
+			return voidFuture();
+		});
+	}
+
 	private class OperationsForEach {
 
 		private final Object id;
@@ -210,6 +284,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 			return loop;
 		}
 	}
+
 	@Override
 	public CompletionStage<Void> performReactiveNonBatchedMutation(
 			PreparedStatementDetails statementDetails,
