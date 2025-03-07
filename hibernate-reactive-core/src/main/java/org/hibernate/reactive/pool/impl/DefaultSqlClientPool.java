@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
@@ -31,12 +32,12 @@ import org.hibernate.service.spi.Stoppable;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
+import io.vertx.sqlclient.impl.Utils;
 import io.vertx.sqlclient.spi.Driver;
-
-import static java.util.Collections.singletonList;
 
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
@@ -189,7 +190,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 *
 	 * @return the new {@link Pool}
 	 */
-	protected Pool createPool(URI uri, SqlConnectOptions connectOptions, PoolOptions poolOptions, Vertx vertx) {
+	protected <T extends SqlConnectOptions> Pool createPool(URI uri, T connectOptions, PoolOptions poolOptions, Vertx vertx) {
 		try {
 			// First try to load the Pool using the standard ServiceLoader pattern
 			// This only works if exactly 1 Driver is on the classpath.
@@ -198,8 +199,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 		catch (ServiceConfigurationError e) {
 			// Backup option if multiple drivers are on the classpath.
 			// We will be able to remove this once Vertx 3.9.2 is available
-			final Driver driver = findDriver( uri, e );
-			return driver.createPool( vertx, singletonList( connectOptions ), poolOptions );
+			final Driver<SqlConnectOptions> driver = findDriver( uri, e );
+			Supplier<Future<SqlConnectOptions>> database = Utils.singletonSupplier( driver.downcast( connectOptions ) );
+			return driver.createPool( vertx, database, poolOptions, new NetClientOptions(), null );
 		}
 	}
 
@@ -222,15 +224,14 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * so we need to disambiguate according to the scheme specified
 	 * in the given {@link URI}.
 	 *
-	 * @param uri the JDBC URL or database URI
+	 * @param uri           the JDBC URL or database URI
 	 * @param originalError the error that was thrown
-	 *
 	 * @return the disambiguated {@link Driver}
 	 */
-	private Driver findDriver(URI uri, ServiceConfigurationError originalError) {
+	private Driver<SqlConnectOptions> findDriver(URI uri, ServiceConfigurationError originalError) {
 		String scheme = scheme( uri );
-		List<Driver> selected = new ArrayList<>();
-		for ( Driver d : ServiceLoader.load( Driver.class ) ) {
+		List<Driver<SqlConnectOptions>> selected = new ArrayList<>();
+		for ( Driver<SqlConnectOptions> d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			if ( matchesScheme( driverName, scheme ) ) {
 				LOG.selectedDriver( driverName );
