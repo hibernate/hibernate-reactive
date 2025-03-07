@@ -1909,6 +1909,42 @@ public interface Mutiny {
 		Uni<Void> upsert(String entityName, Object entity);
 
 		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the size of the given array
+		 * as batch size.
+		 *
+		 * @param entities the entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		Uni<Void> upsertAll(Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the specified batch size.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities the list of entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		Uni<Void> upsertAll(int batchSize, Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the size of the given list
+		 * as batch size.
+		 *
+		 * @param entities the entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		Uni<Void> upsertMultiple(List<?> entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.

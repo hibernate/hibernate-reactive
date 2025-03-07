@@ -543,6 +543,16 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	public CompletionStage<Void> reactiveUpsertAll(int batchSize, Object... entities) {
+		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+		batchingHelperSession.setJdbcBatchSize( batchSize );
+		final ReactiveConnection connection = batchingConnection( batchSize );
+		return loop( entities, batchingHelperSession::reactiveUpsert )
+				.thenCompose( v -> connection.executeBatch() )
+				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+	}
+
+	@Override
 	public CompletionStage<Void> reactiveInsertAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveInsert )
 				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );

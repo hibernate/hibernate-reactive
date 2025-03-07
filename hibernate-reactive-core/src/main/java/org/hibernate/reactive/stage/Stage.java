@@ -2022,6 +2022,42 @@ public interface Stage {
 		CompletionStage<Void> upsert(String entityName, Object entity);
 
 		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the size of the given array
+		 * as batch size.
+		 *
+		 * @param entities the entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		CompletionStage<Void> upsertAll(Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the specified batch size.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities the list of entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		CompletionStage<Void> upsertAll(int batchSize, Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the size of the given list
+		 * as batch size.
+		 *
+		 * @param entities the entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 */
+		@Incubating
+		CompletionStage<Void> upsertMultiple(List<?> entities);
+
+		/**
 		 * Asynchronously fetch an association that's configured for lazy loading.
 		 *
 		 * <pre>
