@@ -8,6 +8,7 @@ package org.hibernate;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.annotations.EnabledFor;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 /**
  * Test the stateless session actually execute the operations in batch.
@@ -85,13 +87,73 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	}
 
 	private static boolean filter(String s) {
-		String[] accepted = { "insert ", "update ", "delete " };
+		String[] accepted = { "merge ", "insert ", "update ", "delete " };
 		for ( String valid : accepted ) {
 			if ( s.toLowerCase().startsWith( valid ) ) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testMutinyMergeUpsertAll(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.upsertAll( PIGS ) )
+				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testMutinyMergeUpsertAllWithBatchSize(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.upsertAll( 10, PIGS ) )
+				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testMutinyMergeUpsertMultiple(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.upsertMultiple( List.of( PIGS ) ) )
+				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testStageMergeUpsertAll(VertxTestContext context) {
+		test( context, getSessionFactory()
+				.withStatelessTransaction( s -> s.upsertAll( PIGS ) )
+				.thenRun( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenCompose( v -> assertExpectedResult( PIGS ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testStageMergeUpsertAllWithBatchSize(VertxTestContext context) {
+		test( context, getSessionFactory()
+				.withStatelessTransaction( s -> s.upsertAll( 10, PIGS ) )
+				.thenRun(() -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenCompose( v -> assertExpectedResult( PIGS ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void testStageMergeUpsertMultiple(VertxTestContext context) {
+		test( context, getSessionFactory()
+				.withStatelessTransaction( s -> s.upsertMultiple( List.of( PIGS ) ) )
+				.thenRun( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenCompose( v -> assertExpectedResult( PIGS ) )
+		);
 	}
 
 	@Test
