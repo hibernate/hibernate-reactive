@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
@@ -20,6 +16,10 @@ import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -153,6 +153,21 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public CompletionStage<Void> upsert(String entityName, Object entity) {
 		return delegate.reactiveUpsert( entityName, entity );
+	}
+
+	@Override
+	public CompletionStage<Void> upsertAll(Object... entities) {
+		return delegate.reactiveUpsertAll( entities.length, entities );
+	}
+
+	@Override
+	public CompletionStage<Void> upsertAll(int batchSize, Object... entities) {
+		return delegate.reactiveUpsertAll( batchSize, entities );
+	}
+
+	@Override
+	public CompletionStage<Void> upsertMultiple(List<?> entities) {
+		return delegate.reactiveUpsertAll( entities.size(), entities.toArray() );
 	}
 
 	@Override
