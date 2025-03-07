@@ -150,8 +150,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			PersistenceContext persistenceContext) {
 		super( factory, options );
 		this.persistenceContext = persistenceContext;
-		// Setting batch size to 0 because `StatelessSession` does not consider
-		// the value of `hibernate.jdbc.batch_size`
+		// StatelessSession should not allow JDBC batching, because that would change
+		// its "immediate synchronous execution" model into something more like transactional
+		// write-behind and be confusing. For this reason, the default batch size is always set to 0.
+		// When a user calls the CRUD operations for batching, we set the batch size to the same number of
+		// objects to process, therefore, there is no write-behind behavior.
 		reactiveConnection = new BatchingConnection( connection, 0 );
 		batchingHelperSession = this;
 		influencers = new LoadQueryInfluencers( factory );
