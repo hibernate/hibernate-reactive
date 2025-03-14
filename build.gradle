@@ -25,7 +25,7 @@ ext {
         vertxSqlClientVersion = '4.5.13'
     }
 
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.20.6'
 
     logger.lifecycle "Vert.x SQL Client Version: " + project.vertxSqlClientVersion
 }
