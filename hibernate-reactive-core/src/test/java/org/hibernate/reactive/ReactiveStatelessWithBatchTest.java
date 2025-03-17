@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate;
+package org.hibernate.reactive;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.EnabledFor;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
