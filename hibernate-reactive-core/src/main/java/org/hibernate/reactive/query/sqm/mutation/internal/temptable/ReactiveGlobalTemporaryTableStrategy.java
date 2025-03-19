@@ -27,6 +27,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public interface ReactiveGlobalTemporaryTableStrategy {
 
+	Log LOG = make( Log.class, lookup() );
+
 	static String sessionIdentifier(SharedSessionContractImplementor session) {
 		return session.getSessionIdentifier().toString();
 	}
@@ -60,7 +62,7 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 			tableCreatedStage.complete( null );
 		}
 		else {
-			make( Log.class, lookup() ).debugf( "Creating global-temp ID table : %s", getTemporaryTable().getTableExpression() );
+			LOG.debugf( "Creating global-temp ID table : %s", getTemporaryTable().getTableExpression() );
 
 			connectionStage()
 					.thenCompose( this::createTable )
@@ -98,7 +100,7 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 
 	private static void logConnectionClosedError(Throwable t) {
 		if ( t != null ) {
-			make( Log.class, lookup() ).debugf( "Ignoring error closing the connection: %s", t.getMessage() );
+			LOG.debugf( "Ignoring error closing the connection: %s", t.getMessage() );
 		}
 	}
 
@@ -146,7 +148,7 @@ public interface ReactiveGlobalTemporaryTableStrategy {
 			setDropIdTables( false );
 
 			final TemporaryTable temporaryTable = getTemporaryTable();
-			make( Log.class, lookup() ).debugf( "Dropping global-tempk ID table : %s", temporaryTable.getTableExpression() );
+			LOG.debugf( "Dropping global-temp ID table : %s", temporaryTable.getTableExpression() );
 
 			connectionStage()
 					.thenCompose( this::dropTable )
