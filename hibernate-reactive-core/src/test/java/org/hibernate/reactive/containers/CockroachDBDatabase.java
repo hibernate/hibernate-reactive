@@ -51,7 +51,6 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 			// Calling start() will start the container (if not already started)
 			// It is required to call start() before obtaining the JDBC URL because it will contain a randomized port
 			cockroachDb.start();
-			enableTemporaryTables();
 			return disableSslMode( cockroachDb.getJdbcUrl() );
 		}
 
@@ -60,13 +59,6 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 
 	private static String disableSslMode(String url) {
 		return url + "?sslmode=disable";
-	}
-
-	/**
-	 * We need temporary tables when updating entities in a hierarchy
-	 */
-	private static void enableTemporaryTables() {
-		runSql( "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';" );
 	}
 
 	private static void runSql(String command) {
