@@ -11,24 +11,22 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolver;
 
-import static org.hibernate.dialect.CockroachDialect.parseVersion;
 
 public class ReactiveStandardDialectResolver implements DialectResolver {
 
 	@Override
 	public Dialect resolveDialect(DialectResolutionInfo info) {
-		// Hibernate ORM runs an extra query to recognize CockroachDB from PostgreSQL
-		// We've already done it, so we are trying to skip that step
+		// Hibernate ORM runs an extra query to recognize CockroachDB from PostgresSQL
+		// We already did it when we created the DialectResolutionInfo in NoJdbcEnvironmentInitiator,
+		// so we can skip that step here.
 		if ( info.getDatabaseName().startsWith( "Cockroach" ) ) {
-			return new CockroachDialect( parseVersion( info.getDatabaseVersion() ) );
+			return new CockroachDialect( info );
 		}
-
 		for ( Database database : Database.values() ) {
 			if ( database.matchesResolutionInfo( info ) ) {
 				return database.createDialect( info );
 			}
 		}
-
 		return null;
 	}
 }
