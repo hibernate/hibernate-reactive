@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.containers;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -12,6 +13,7 @@ import java.util.stream.Stream;
 
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.DB2Dialect;
+import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -28,15 +30,16 @@ public class DatabaseConfiguration {
 	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
 
 	public enum DBType {
-		DB2( DB2Database.INSTANCE, 50000, "com.ibm.db2.jcc.DB2Driver", DB2Dialect.class ),
-		MYSQL( MySQLDatabase.INSTANCE, 3306, "com.mysql.cj.jdbc.Driver", MySQLDialect.class ),
-		MARIA( MariaDatabase.INSTANCE, 3306, "org.mariadb.jdbc.Driver", MariaDBDialect.class, "mariadb" ),
-		POSTGRESQL( PostgreSQLDatabase.INSTANCE, 5432, "org.postgresql.Driver", PostgreSQLDialect.class, "POSTGRES", "PG" ),
-		COCKROACHDB( CockroachDBDatabase.INSTANCE, 26257, "org.postgresql.Driver", CockroachDialect.class, "COCKROACH" ),
-		SQLSERVER( MSSQLServerDatabase.INSTANCE, 1433, "com.microsoft.sqlserver.jdbc.SQLServerDriver", SQLServerDialect.class, "MSSQL", "MSSQLSERVER" ),
-		ORACLE( OracleDatabase.INSTANCE, 1521, "oracle.jdbc.OracleDriver", OracleDialect.class );
+		DB2( DB2Database.INSTANCE, "DB2", 50000, "com.ibm.db2.jcc.DB2Driver", DB2Dialect.class ),
+		MYSQL( MySQLDatabase.INSTANCE, "MySQL",3306, "com.mysql.cj.jdbc.Driver", MySQLDialect.class ),
+		MARIA( MariaDatabase.INSTANCE, "MariaDB",3306, "org.mariadb.jdbc.Driver", MariaDBDialect.class, "mariadb" ),
+		POSTGRESQL( PostgreSQLDatabase.INSTANCE, "PostgreSQL", 5432, "org.postgresql.Driver", PostgreSQLDialect.class, "POSTGRES", "PG" ),
+		COCKROACHDB( CockroachDBDatabase.INSTANCE, "CockroachDb", 26257, "org.postgresql.Driver", CockroachDialect.class, "COCKROACH" ),
+		SQLSERVER( MSSQLServerDatabase.INSTANCE, "Microsoft SQL Server", 1433, "com.microsoft.sqlserver.jdbc.SQLServerDriver", SQLServerDialect.class, "MSSQL", "MSSQLSERVER" ),
+		ORACLE( OracleDatabase.INSTANCE, "Oracle", 1521, "oracle.jdbc.OracleDriver", OracleDialect.class );
 
 		private final TestableDatabase configuration;
+		private final String productName;
 		private final int defaultPort;
 
 		// A list of alternative names that can be used to select the db
@@ -47,8 +50,9 @@ public class DatabaseConfiguration {
 
 		private final Class<? extends Dialect> dialect;
 
-		DBType(TestableDatabase configuration, int defaultPort, String jdbcDriver, Class<? extends Dialect> dialect, String... aliases) {
+		DBType(TestableDatabase configuration, String productName, int defaultPort, String jdbcDriver, Class<? extends Dialect> dialect, String... aliases) {
 			this.configuration = configuration;
+			this.productName = productName;
 			this.defaultPort = defaultPort;
 			this.aliases = aliases;
 			this.dialect = dialect;
@@ -81,6 +85,10 @@ public class DatabaseConfiguration {
 					.toString( DBType.values() ) );
 		}
 
+		public String getProductName() {
+			return productName;
+		}
+
 		public int getDefaultPort() {
 			return defaultPort;
 		}
@@ -92,6 +100,24 @@ public class DatabaseConfiguration {
 		public Class<? extends Dialect> getDialectClass() {
 			return dialect;
 		}
+
+		/**
+		 * The minimum version of the database supported by the dialect.
+		 * <p>
+		 * We use reflection because it's not accessible from the tests.
+		 * Copied from MetadataAccessTests in Hibernate ORM.
+		 * </p>
+		 */
+		public DatabaseVersion getMinimumVersion() {
+			try {
+				Field field = dialect.getDeclaredField( "MINIMUM_VERSION" );
+				field.setAccessible( true );
+				return (DatabaseVersion) field.get( null );
+			}
+			catch (IllegalAccessException | NoSuchFieldException e) {
+				throw new RuntimeException( "Error extracting 'MINIMUM_VERSION' from '" + dialect + "'", e );
+			}
+		}
 	}
 
 	public static final String USERNAME = "hreact";
@@ -101,7 +127,7 @@ public class DatabaseConfiguration {
 	private static DBType dbType;
 
 	public static DBType dbType() {
-		if (dbType == null) {
+		if ( dbType == null ) {
 			String dbTypeString = System.getProperty( "db", DBType.POSTGRESQL.name() );
 			dbType = DBType.fromString( dbTypeString );
 			System.out.println( "Using database type: " + dbType.name() );
@@ -131,5 +157,4 @@ public class DatabaseConfiguration {
 
 	private DatabaseConfiguration() {
 	}
-
 }
