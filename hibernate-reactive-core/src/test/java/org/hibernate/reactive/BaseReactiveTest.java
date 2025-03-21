@@ -93,6 +93,18 @@ public abstract class BaseReactiveTest {
 	}
 
 	/**
+	 * Set the properties related to the SQL logs.
+	 * Some tests won't extend this class, but we still want to apply the same rules for these kinds of properties.
+	 */
+	public static void setSqlLoggingProperties(Configuration configuration) {
+		// Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
+		// Keep the default to false, otherwise the log on CI becomes too big
+		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
+		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
+		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
+	}
+
+	/**
 	 * Configure default properties common to most tests.
 	 */
 	public static void setDefaultProperties(Configuration configuration) {
@@ -102,13 +114,9 @@ public abstract class BaseReactiveTest {
 			configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/db2.sql" );
 			doneTablespace = true;
 		}
-		// Use JAVA_TOOL_OPTIONS='-Dhibernate.show_sql=true'
-		// Keep the default to false, otherwise the log on CI becomes too big
-		configuration.setProperty( Settings.SHOW_SQL, System.getProperty( Settings.SHOW_SQL, "false" ) );
-		configuration.setProperty( Settings.FORMAT_SQL, System.getProperty( Settings.FORMAT_SQL, "false" ) );
-		configuration.setProperty( Settings.HIGHLIGHT_SQL, System.getProperty( Settings.HIGHLIGHT_SQL, "true" ) );
 		configuration.setProperty( PersistentTableStrategy.DROP_ID_TABLES, "true" );
 		configuration.setProperty( GlobalTemporaryTableStrategy.DROP_ID_TABLES, "true" );
+		setSqlLoggingProperties( configuration );
 	}
 
 	public static final SessionFactoryManager factoryManager = new SessionFactoryManager();
