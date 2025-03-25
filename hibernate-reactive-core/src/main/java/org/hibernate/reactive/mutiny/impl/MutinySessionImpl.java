@@ -24,6 +24,7 @@ import org.hibernate.LockOptions;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
@@ -606,4 +607,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 		throw new PersistenceException( "Cannot unwrap type " + clazz );
 	}
 
+	@Override
+	public <C, T> Uni<T> withConnection(ConnectionConsumer<C, T> consumer) {
+		return uni( () -> delegate.getReactiveConnection().withConnection( consumer ) );
+	}
 }

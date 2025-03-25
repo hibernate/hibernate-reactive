@@ -8,6 +8,7 @@ package org.hibernate.reactive.stage.impl;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
@@ -372,5 +373,10 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
 		return delegate.createEntityGraph( rootType, graphName );
+	}
+
+	@Override
+	public <C, T> CompletionStage<T> withConnection(ConnectionConsumer<C, T> consumer) {
+		return delegate.getReactiveConnection().withConnection( consumer );
 	}
 }

@@ -14,6 +14,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
+import org.hibernate.reactive.common.ConnectionConsumer;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -213,5 +214,10 @@ public class BatchingConnection implements ReactiveConnection {
 
 	public CompletionStage<Void> close() {
 		return delegate.close();
+	}
+
+	@Override
+	public <C, R> CompletionStage<R> withConnection(ConnectionConsumer<C, R> consumer) {
+		return delegate.withConnection( consumer );
 	}
 }

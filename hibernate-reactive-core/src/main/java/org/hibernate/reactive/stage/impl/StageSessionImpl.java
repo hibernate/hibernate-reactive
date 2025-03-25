@@ -24,6 +24,7 @@ import org.hibernate.graph.RootGraph;
 import org.hibernate.jpa.internal.util.LockModeTypeHelper;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -608,5 +609,10 @@ public class StageSessionImpl implements Stage.Session {
 			return clazz.cast( this.delegate );
 		}
 		throw new PersistenceException( "Cannot unwrap type " + clazz );
+	}
+
+	@Override
+	public <C, T> CompletionStage<T> withConnection(ConnectionConsumer<C, T> consumer) {
+		return delegate.getReactiveConnection().withConnection( consumer );
 	}
 }

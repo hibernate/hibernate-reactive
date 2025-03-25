@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
+import io.vertx.sqlclient.SqlConnection;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.stage.Stage;
@@ -966,6 +967,20 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResultOrNull()
 								.thenAccept( Assertions::assertNull ) )
+		);
+	}
+
+	@Test
+	public void reactiveWithConnection(VertxTestContext context) {
+		test(
+				context,
+				getMutinySessionFactory()
+						.withTransaction( (s,t) -> s.withConnection((SqlConnection c)
+								-> c.query("select name from Pig").execute().toCompletionStage() ) )
+						.invoke( res -> res.forEach( row -> {
+							assertEquals(1, row.size() );
+							assertEquals("Aloi", row.getString("name") );
+						}) )
 		);
 	}
 
