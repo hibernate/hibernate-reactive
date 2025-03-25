@@ -1070,6 +1070,20 @@ sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
 
 This is probably the most convenient thing to use most of the time.
 
+=== Calling the Vert.x SQL client directly
+
+The `withConnection()` method makes it possible to call the Vert.x `SqlConnection` directly, for example:
+
+[source,java]
+----
+session.withConnection((SqlConnection connection)
+        -> connection.query("select title from book").execute()
+                .toCompletionStage() )
+        .invoke( results -> results.forEach( row -> ... ) )
+----
+
+Most of the time, it's easier to just use a <<_queries,native query>>.
+
 == Integrating with Vert.x
 
 :vertx-context-introduction: https://vertx.io/blog/an-introduction-to-the-vert-x-context-object/
