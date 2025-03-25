@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
-import org.hibernate.engine.internal.BatchFetchQueueHelper;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -160,7 +159,8 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 							continue;
 						}
 						// found or not, remove the key from the batch-fetch queue
-						BatchFetchQueueHelper.removeBatchLoadableEntityKey( id, getLoadable(), session );
+						session.getPersistenceContextInternal().getBatchFetchQueue()
+								.removeBatchLoadableEntityKey( session.generateEntityKey( id, getLoadable().getEntityPersister() ) );
 					}
 				} );
 	}
