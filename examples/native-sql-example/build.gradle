@@ -40,7 +40,7 @@ dependencies {
     runtimeOnly "org.apache.logging.log4j:log4j-core:2.20.0"
 
     // Allow authentication to PostgreSQL using SCRAM:
-    runtimeOnly 'com.ongres.scram:client:2.1'
+    runtimeOnly 'com.ongres.scram:scram-client:3.1'
 }
 
 // Optional: enable the bytecode enhancements
