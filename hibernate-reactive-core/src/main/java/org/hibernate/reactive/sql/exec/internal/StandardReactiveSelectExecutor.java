@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import org.hibernate.CacheMode;
+import org.hibernate.SharedSessionContract;
 import org.hibernate.cache.spi.QueryKey;
 import org.hibernate.cache.spi.QueryResultsCache;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -20,6 +21,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
+import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
@@ -31,7 +33,6 @@ import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
-import org.hibernate.sql.exec.internal.JdbcExecHelper;
 import org.hibernate.sql.exec.internal.StandardStatementCreator;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
@@ -49,6 +50,8 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.spi.TypeConfiguration;
+
+import static org.hibernate.internal.util.NullnessHelper.coalesceSuppliedValues;
 
 /**
  * @see org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl
@@ -286,13 +289,13 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		final SessionFactoryImplementor factory = session.getFactory();
 		final boolean queryCacheEnabled = factory.getSessionFactoryOptions().isQueryCacheEnabled();
 
-		final List<?> cachedResults;
-		final CacheMode cacheMode = JdbcExecHelper.resolveCacheMode( executionContext );
+		final CacheMode cacheMode = resolveCacheMode( executionContext );
 		final boolean cacheable = queryCacheEnabled
 				&& canBeCached
 				&& executionContext.getQueryOptions().isResultCachingEnabled() == Boolean.TRUE;
-		final QueryKey queryResultsCacheKey;
 
+		final QueryKey queryResultsCacheKey;
+		final List<?> cachedResults;
 		if ( cacheable && cacheMode.isGetEnabled() ) {
 			SqlExecLogger.SQL_EXEC_LOGGER.debugf( "Reading Query result cache data per CacheMode#isGetEnabled [%s]", cacheMode.name() );
 			final Set<String> querySpaces = jdbcSelect.getAffectedTableNames();
@@ -417,6 +420,16 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 						) );
 			}
 		}
+	}
+
+	private static CacheMode resolveCacheMode(ExecutionContext executionContext) {
+		final QueryOptions queryOptions = executionContext.getQueryOptions();
+		final SharedSessionContract session = executionContext.getSession();
+        return coalesceSuppliedValues(
+                () -> queryOptions == null ? null : queryOptions.getCacheMode(),
+                session::getCacheMode,
+                () -> CacheMode.NORMAL
+        );
 	}
 
 	/**
