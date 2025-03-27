@@ -33,6 +33,16 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 			super( initializer, rowProcessingState );
 		}
 
+		@Override
+		public void setState(State state) {
+			super.setState( state );
+			if ( State.UNINITIALIZED == state ) {
+				// reset instance to null as otherwise EmbeddableInitializerImpl#prepareCompositeInstance
+				//  will never create a new instance after the "first row with a non-null instance" gets processed
+				setInstance( null );
+			}
+		}
+
 		public EmbeddableMappingType.ConcreteEmbeddableType getConcreteEmbeddableType() {
 			return super.concreteEmbeddableType;
 		}
