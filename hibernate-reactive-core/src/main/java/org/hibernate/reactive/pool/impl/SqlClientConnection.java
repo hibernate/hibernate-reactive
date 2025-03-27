@@ -18,6 +18,7 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
@@ -323,6 +324,11 @@ public class SqlClientConnection implements ReactiveConnection {
 				.onSuccess( event -> LOG.tracef( "Connection closed: %s", connection ) )
 				.onFailure( v -> LOG.errorf( "Failed to close a connection: %s", connection ) )
 				.toCompletionStage();
+	}
+
+	@Override @SuppressWarnings("unchecked")
+	public <C,R> CompletionStage<R> withConnection(ConnectionConsumer<C,R> consumer) {
+		return consumer.accept( (C) client() );
 	}
 
 	@SuppressWarnings("unchecked")

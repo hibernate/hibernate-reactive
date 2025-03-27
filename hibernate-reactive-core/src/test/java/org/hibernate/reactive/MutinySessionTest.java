@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.vertx.sqlclient.SqlConnection;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -667,6 +668,22 @@ public class MutinySessionTest extends BaseReactiveTest {
 				.invoke( result -> assertThatPigsAreEqual( pig2, result ) )
 		);
 	}
+
+	@Test
+	public void reactiveWithConnection(VertxTestContext context) {
+		test(
+				context,
+				getMutinySessionFactory()
+						.withTransaction( (s,t) -> s.withConnection((SqlConnection c)
+								-> c.query("select name from Pig").execute().toCompletionStage() ) )
+						.invoke( res -> res.forEach( row -> {
+                            assertEquals(1, row.size() );
+							assertEquals("Aloi", row.getString("name") );
+                        }) )
+		);
+	}
+
+
 
 	private void assertThatPigsAreEqual(GuineaPig expected, GuineaPig actual) {
 		assertNotNull( actual );

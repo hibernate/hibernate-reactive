@@ -29,6 +29,7 @@ import org.hibernate.query.Page;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.logging.impl.Log;
@@ -1557,6 +1558,18 @@ public interface Stage {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
+
+		/**
+		 * Execute the given operation using the connection underlying the reactive session.
+		 *
+		 * @param consumer the operation to be executed
+		 * @return the result of the operation via a {@link CompletionStage}
+		 *
+		 * @param <C> the connection type, usually
+		 *            {@link io.vertx.sqlclient.SqlConnection}
+		 * @param <R> the result type of the operation, or {@link Void}
+		 */
+		<C,R> CompletionStage<R> withConnection(ConnectionConsumer<C,R> consumer);
 	}
 
 	/**
@@ -2155,6 +2168,18 @@ public interface Stage {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
+
+		/**
+		 * Execute the given operation using the connection underlying the reactive session.
+		 *
+		 * @param consumer the operation to be executed
+		 * @return the result of the operation via a {@link CompletionStage}
+		 *
+		 * @param <C> the connection type, usually
+		 *            {@link io.vertx.sqlclient.SqlConnection}
+		 * @param <R> the result type of the operation, or {@link Void}
+		 */
+		<C,R> CompletionStage<R> withConnection(ConnectionConsumer<C,R> consumer);
 	}
 
 	/**

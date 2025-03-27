@@ -12,6 +12,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import org.hibernate.LockMode;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.reactive.common.ConnectionConsumer;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
@@ -369,5 +370,10 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
 		return delegate.createEntityGraph( rootType, graphName );
+	}
+
+	@Override
+	public <C, T> Uni<T> withConnection(ConnectionConsumer<C, T> consumer) {
+		return uni( () -> delegate.getReactiveConnection().withConnection( consumer ) );
 	}
 }

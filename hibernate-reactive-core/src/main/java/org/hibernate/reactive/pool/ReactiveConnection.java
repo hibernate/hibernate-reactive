@@ -13,6 +13,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.Incubating;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
+import org.hibernate.reactive.common.ConnectionConsumer;
 
 /**
  * Abstracts over reactive database connections, defining
@@ -80,4 +81,6 @@ public interface ReactiveConnection {
 	CompletionStage<Void> executeBatch();
 
 	CompletionStage<Void> close();
+
+	<C,R> CompletionStage<R> withConnection(ConnectionConsumer<C,R> consumer);
 }
