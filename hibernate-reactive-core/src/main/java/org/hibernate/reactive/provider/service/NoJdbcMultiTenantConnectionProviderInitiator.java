@@ -13,8 +13,8 @@ import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} for
- * {@link NoJdbcMultiTenantConnectionProvider}.
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator}
+ * for {@link NoJdbcMultiTenantConnectionProvider}.
  *
  * @author Gavin King
  */

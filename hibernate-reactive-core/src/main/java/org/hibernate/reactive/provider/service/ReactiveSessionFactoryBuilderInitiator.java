@@ -12,9 +12,9 @@ import org.hibernate.boot.spi.SessionFactoryBuilderService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that
- * wraps the Hibernate {@link org.hibernate.engine.jdbc.connections.spi.ConnectionProvider} in an instance of
- * {@link NoJdbcConnectionProvider}.
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator} that wraps
+ * the Hibernate {@link org.hibernate.engine.jdbc.connections.spi.ConnectionProvider}
+ * in an instance of {@link NoJdbcConnectionProvider}.
  */
 public class ReactiveSessionFactoryBuilderInitiator implements StandardServiceInitiator<SessionFactoryBuilderService> {
 

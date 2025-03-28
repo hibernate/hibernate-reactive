@@ -16,7 +16,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator} that
  * allows the user to define their own {@link SqlClientPoolConfiguration}
  * strategy.
  */
