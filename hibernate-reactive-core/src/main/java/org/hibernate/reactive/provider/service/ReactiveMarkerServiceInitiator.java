@@ -11,7 +11,8 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} for {@link ReactiveMarkerService}.
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator} for
+ * {@link ReactiveMarkerService}.
  */
 public final class ReactiveMarkerServiceInitiator implements StandardServiceInitiator<ReactiveMarkerService> {
 

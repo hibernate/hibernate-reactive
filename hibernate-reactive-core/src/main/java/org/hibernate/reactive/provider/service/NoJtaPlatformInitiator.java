@@ -13,7 +13,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import java.util.Map;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} for the non-configured form of JTA platform.
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator}
+ * for the non-configured form of JTA platform.
  *
  * @see NoJtaPlatform
  */

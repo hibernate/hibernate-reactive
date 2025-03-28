@@ -28,8 +28,8 @@ import static java.util.function.Function.identity;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that
- * provides an implementation of {@link JdbcEnvironment} that infers
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator}
+ * that provides an implementation of {@link JdbcEnvironment} that infers
  * the Hibernate {@link org.hibernate.dialect.Dialect} from the JDBC URL.
  */
 public class NoJdbcEnvironmentInitiator implements StandardServiceInitiator<JdbcEnvironment> {

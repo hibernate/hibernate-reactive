@@ -12,8 +12,9 @@ import org.hibernate.persister.spi.PersisterClassResolver;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that creates a {@link ReactivePersisterClassResolver} to register
- * the persisters Hibernate Reactive needs.
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator}
+ * that creates a {@link ReactivePersisterClassResolver} to register the
+ * persisters needed by Hibernate Reactive.
  */
 public class ReactivePersisterClassResolverInitiator implements StandardServiceInitiator<PersisterClassResolver> {
 	public static final ReactivePersisterClassResolverInitiator INSTANCE = new ReactivePersisterClassResolverInitiator();

@@ -19,10 +19,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator} that
  * integrates our {@link ReactiveConnectionPool}. By default, the pool
- * implementation is {@link DefaultSqlClientPool}. A custom implementation may
- * be specified via {@link Settings#SQL_CLIENT_POOL}.
+ * implementation is {@link DefaultSqlClientPool}. A custom implementation
+ * may be specified via {@link Settings#SQL_CLIENT_POOL}.
  *
  * @see ReactiveConnectionPool
  * @see DefaultSqlClientPool

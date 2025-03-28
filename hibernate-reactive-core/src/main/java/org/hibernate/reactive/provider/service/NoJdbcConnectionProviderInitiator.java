@@ -14,8 +14,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import java.util.Map;
 
 /**
- * A Hibernate {@link StandardServiceInitiator service initiator} that
- * wraps the Hibernate {@link ConnectionProvider} in an instance of
+ * A Hibernate {@linkplain StandardServiceInitiator service initiator}
+ * that wraps the Hibernate {@link ConnectionProvider} in an instance of
  * {@link NoJdbcConnectionProvider}.
  *
  * @author Gavin King
