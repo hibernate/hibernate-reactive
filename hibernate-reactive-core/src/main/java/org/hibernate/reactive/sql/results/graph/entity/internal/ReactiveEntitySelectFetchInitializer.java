@@ -56,6 +56,16 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 		public void setEntityIdentifier(Object entityIdentifier) {
 			super.entityIdentifier = entityIdentifier;
 		}
+
+		@Override
+		public void setState(State state) {
+			super.setState( state );
+			if ( State.UNINITIALIZED == state ) {
+				// reset instance to null as otherwise EmbeddableInitializerImpl#prepareCompositeInstance
+				//  will never create a new instance after the "first row with a non-null instance" gets processed
+				setInstance( null );
+			}
+		}
 	}
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
