@@ -40,19 +40,14 @@ public class ProductVerticle extends AbstractVerticle {
 		this.emfSupplier = emfSupplier;
 	}
 
-	private void startHibernate(Promise<Object> p) {
-		try {
-			this.emf = emfSupplier.get();
-			p.complete();
-		}
-		catch (Throwable t) {
-			p.fail( t );
-		}
+	private Object startHibernate() {
+		this.emf = emfSupplier.get();
+		return null;
 	}
 
 	@Override
 	public void start(Promise<Void> startPromise) {
-		final Future<Object> startHibernate = vertx.executeBlocking( this::startHibernate )
+		final Future<Object> startHibernate = vertx.executeBlocking( this::startHibernate, true )
 				.onSuccess( s -> LOG.infof( "✅ Hibernate Reactive is ready" ) );
 
 		Router router = Router.router( vertx );
