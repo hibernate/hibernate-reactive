@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
@@ -18,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -28,12 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class TimestampTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Record.class );
+		return List.of( Record.class, Event.class );
 	}
 
 	@Test
@@ -56,6 +59,30 @@ public class TimestampTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testEmbedded(VertxTestContext context) {
+		Event event = new Event();
+		History history = new History();
+		event.name = "Concert";
+		test( context, getMutinySessionFactory()
+				.withSession( session -> session.persist( event )
+						.chain( session::flush )
+						.invoke( () -> {
+							history.created = event.history.created;
+							history.updated = event.history.updated;
+							assertEquals(
+									event.history.created.truncatedTo( ChronoUnit.HOURS ),
+									event.history.updated.truncatedTo( ChronoUnit.HOURS )
+							); })
+						.invoke( () -> event.name = "Conference" )
+						.chain( session::flush )
+						.invoke( () -> assertInstants( event, history ) ) )
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
+						.find( Record.class, event.id ) ) )
+				.invoke( r -> assertInstants( event, history ) )
+		);
+	}
+
 	private static void assertInstants(Record r) {
 		assertNotNull( r.created );
 		assertNotNull( r.updated );
@@ -64,6 +91,18 @@ public class TimestampTest extends BaseReactiveTest {
 				r.updated.compareTo( r.created ) >= 0,
 				"Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]"
 		);
+	}
+
+	private static void assertInstants(Event e, History h) {
+		assertNotNull( e.history.created );
+		assertNotNull( e.history.updated );
+		// Sometimes, when the test suite is fast enough, they might be the same:
+		assertTrue(
+				!e.history.updated.isBefore( e.history.created ),
+				"Updated instant is before created. Updated[" + e.history.updated + "], Created[" + e.history.created + "]"
+		);
+		assertEquals( h.created, e.history.created );
+
 	}
 
 	@Entity(name = "Record")
@@ -77,5 +116,31 @@ public class TimestampTest extends BaseReactiveTest {
 		Instant created;
 		@UpdateTimestamp
 		Instant updated;
+	}
+
+	@Entity(name = "Event")
+	static class Event {
+
+		@Id
+		@GeneratedValue
+		public Long id;
+
+		public String name;
+
+		@Embedded
+		public History history;
+
+	}
+
+	@Embeddable
+	static class History {
+		@Column
+		@CreationTimestamp
+		public LocalDateTime created;
+
+		@Column
+		@UpdateTimestamp
+		public LocalDateTime updated;
+
 	}
 }
