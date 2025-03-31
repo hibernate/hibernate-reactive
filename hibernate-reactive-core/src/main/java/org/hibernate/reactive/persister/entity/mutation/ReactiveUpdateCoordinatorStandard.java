@@ -30,7 +30,7 @@ import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
-import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
@@ -193,7 +193,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						&& generator.generatesOnUpdate() ) {
 					final Object currentValue = currentValues[i];
 					final BeforeExecutionGenerator beforeGenerator = (BeforeExecutionGenerator) generator;
-					result = result.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, INSERT )
+					result = result.thenCompose( v -> generateValue( session, entity, currentValue, beforeGenerator, UPDATE )
 							.thenAccept( generatedValue -> {
 								currentValues[index] = generatedValue;
 								entityPersister().setValue( entity, index, generatedValue );
