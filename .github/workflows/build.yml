@@ -90,7 +90,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         id: cache-gradle
         with:
           path: |
@@ -116,7 +116,7 @@ jobs:
       - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
         run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}
@@ -139,7 +139,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         id: cache-gradle
         with:
           path: |
@@ -166,7 +166,7 @@ jobs:
       - name: Build and Test with ${{ matrix.db }}
         run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}
@@ -216,7 +216,7 @@ jobs:
           echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
       - name: Cache Maven/Gradle Dependency/Dist Caches
         id: cache-maven
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         # if it's not a pull request, we restore and save the cache
         if: github.event_name != 'pull_request'
         with:
@@ -233,7 +233,7 @@ jobs:
             ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
             ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
       - name: Restore Maven/Gradle Dependency/Dist Caches
-        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         # if it's a pull request, we restore the cache, but we don't save it
         if: github.event_name == 'pull_request'
         with:
@@ -291,7 +291,7 @@ jobs:
               -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
               ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}
