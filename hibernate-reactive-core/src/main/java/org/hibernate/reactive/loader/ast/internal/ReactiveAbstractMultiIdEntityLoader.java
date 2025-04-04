@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.event.spi.EventSource;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -50,7 +50,7 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 	}
 
 	@Override
-	public final <K> CompletionStage<List<T>> reactiveLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session) {
+	public final <K> CompletionStage<List<T>> reactiveLoad(K[] ids, MultiIdLoadOptions loadOptions, SharedSessionContractImplementor session) {
 		Objects.requireNonNull( ids );
 
 		return loadOptions.isOrderReturnEnabled()
@@ -58,8 +58,8 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 				: performUnorderedMultiLoad( ids, loadOptions, session );
 	}
 
-	protected abstract <K> CompletionStage<List<T>> performOrderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
+	protected abstract <K> CompletionStage<List<T>> performOrderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, SharedSessionContractImplementor session);
 
-	protected abstract <K> CompletionStage<List<T>> performUnorderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, EventSource session);
+	protected abstract <K> CompletionStage<List<T>> performUnorderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, SharedSessionContractImplementor session);
 
 }
