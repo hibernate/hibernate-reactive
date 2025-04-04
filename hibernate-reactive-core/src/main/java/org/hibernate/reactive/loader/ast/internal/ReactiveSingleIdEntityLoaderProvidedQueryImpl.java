@@ -7,17 +7,18 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.FlushMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.query.Query;
+import org.hibernate.query.QueryFlushMode;
 import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.Parameter;
+import org.hibernate.type.descriptor.java.JavaType;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
@@ -30,9 +31,9 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 	private static final CompletionStage<Object[]> EMPTY_ARRAY_STAGE = completedFuture( ArrayHelper.EMPTY_OBJECT_ARRAY );
 
 	private final EntityMappingType entityDescriptor;
-	private final NamedQueryMemento namedQueryMemento;
+	private final NamedQueryMemento<T> namedQueryMemento;
 
-	public ReactiveSingleIdEntityLoaderProvidedQueryImpl(EntityMappingType entityDescriptor, NamedQueryMemento namedQueryMemento) {
+	public ReactiveSingleIdEntityLoaderProvidedQueryImpl(EntityMappingType entityDescriptor, NamedQueryMemento<T> namedQueryMemento) {
 		this.entityDescriptor = entityDescriptor;
 		this.namedQueryMemento = namedQueryMemento;
 	}
@@ -42,17 +43,13 @@ public class ReactiveSingleIdEntityLoaderProvidedQueryImpl<T> implements Reactiv
 		return entityDescriptor;
 	}
 
-	@Override
+	@Override @SuppressWarnings("unchecked")
 	public CompletionStage<T> load(Object pkValue, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
-		// noinspection unchecked
-		final QueryImplementor<T> query = namedQueryMemento
-				.toQuery( session, entityDescriptor.getMappedJavaType().getJavaTypeClass() );
-
-		//noinspection unchecked
+		final JavaType<T> mappedJavaType = (JavaType<T>) entityDescriptor.getMappedJavaType();
+		final Query<T> query = namedQueryMemento.toQuery( session, mappedJavaType.getJavaTypeClass() );
 		query.setParameter( (Parameter<Object>) query.getParameters().iterator().next(), pkValue );
-		query.setHibernateFlushMode( FlushMode.MANUAL );
-
-		return ( (ReactiveSelectionQuery) query ).reactiveUnique();
+		query.setQueryFlushMode( QueryFlushMode.NO_FLUSH );
+		return ( (ReactiveSelectionQuery<T>) query ).reactiveUnique();
 	}
 
 	@Override
