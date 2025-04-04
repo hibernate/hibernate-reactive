@@ -24,7 +24,6 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -75,7 +74,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 	protected CompletionStage<List<T>> performOrderedMultiLoad(
 			Object[] ids,
 			MultiIdLoadOptions loadOptions,
-			EventSource session) {
+			SharedSessionContractImplementor session) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef( "#performOrderedMultiLoad(`%s`, ..)", getEntityDescriptor().getEntityName() );
 		}
@@ -289,7 +288,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 	protected CompletionStage<List<T>> performUnorderedMultiLoad(
 			Object[] ids,
 			MultiIdLoadOptions loadOptions,
-			EventSource session) {
+			SharedSessionContractImplementor session) {
 		assert !loadOptions.isOrderReturnEnabled();
 		assert ids != null;
 

@@ -18,8 +18,8 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.MultiIdEntityLoaderArrayParam;
 import org.hibernate.loader.ast.internal.MultiKeyLoadLogging;
@@ -82,7 +82,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 	protected <K> CompletionStage<List<E>> performOrderedMultiLoad(
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
-			EventSource session) {
+			SharedSessionContractImplementor session) {
 		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performOrderedMultiLoad - %s",
@@ -227,7 +227,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 	protected <K> CompletionStage<List<E>> performUnorderedMultiLoad(
 			K[] ids,
 			MultiIdLoadOptions loadOptions,
-			EventSource session) {
+			SharedSessionContractImplementor session) {
 		if ( MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.isTraceEnabled() ) {
 			MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER.tracef(
 					"ReactiveMultiIdEntityLoaderArrayParam#performUnorderedMultiLoad - %s",
@@ -305,7 +305,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			MultiIdEntityLoaderArrayParam.ResolutionConsumer<R> resolutionConsumer,
 			MultiIdLoadOptions loadOptions,
 			LockOptions lockOptions,
-			EventSource session) {
+			SharedSessionContractImplementor session) {
 		if ( !loadOptions.isSessionCheckingEnabled()
 				&& !loadOptions.isSecondLevelCacheCheckingEnabled() ) {
 			// we'll load all of them from the database
