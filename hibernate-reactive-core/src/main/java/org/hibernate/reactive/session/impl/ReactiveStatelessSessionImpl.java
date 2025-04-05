@@ -223,14 +223,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		Object[] sids = new Object[ids.length];
 		System.arraycopy( ids, 0, sids, 0, ids.length );
 
-		return getEntityPersister( entityClass.getName() )
-				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
-				.whenComplete( (v, e) -> {
-					if ( getPersistenceContext().isLoadFinished() ) {
-						getPersistenceContext().clear();
-					}
-				} )
-				.thenApply( list -> (List<T>) list );
+		final CompletionStage<? extends List<?>> stage =
+				getEntityPersister( entityClass.getName() )
+						.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
+						.whenComplete( (v, e) -> {
+							if ( getPersistenceContext().isLoadFinished() ) {
+								getPersistenceContext().clear();
+							}
+						} );
+		return (CompletionStage<List<T>>) stage;
 	}
 
 	@Override
