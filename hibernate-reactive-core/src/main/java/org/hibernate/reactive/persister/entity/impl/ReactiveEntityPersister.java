@@ -12,7 +12,6 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.bytecode.BytecodeLogging;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
@@ -92,7 +91,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 
 	<K> CompletionStage<? extends List<?>> reactiveMultiLoad(
 			K[] ids,
-			EventSource session,
+			SharedSessionContractImplementor session,
 			MultiIdLoadOptions loadOptions);
 
 	CompletionStage<Object> reactiveLoad(

@@ -19,7 +19,6 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
@@ -365,7 +364,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 
