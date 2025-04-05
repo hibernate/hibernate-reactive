@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -50,8 +49,6 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
 import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.criteria.JpaCriteriaQuery;
-import org.hibernate.query.criteria.JpaRoot;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.spi.HqlInterpretation;
@@ -223,24 +220,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			}
 		}
 
-		final EntityPersister persister = getEntityPersister( entityClass.getName() );
+		Object[] sids = new Object[ids.length];
+		System.arraycopy( ids, 0, sids, 0, ids.length );
 
-		final JpaCriteriaQuery<T> query = getCriteriaBuilder().createQuery(entityClass);
-		final JpaRoot<T> from = query.from(entityClass);
-		query.where( from.get( persister.getIdentifierPropertyName() ).in(ids) );
-		return createReactiveQuery(query).getReactiveResultList()
-				.thenApply( resultList -> {
-					final List<Object> idList = new ArrayList<>( resultList.size() );
-					for (T entity : resultList) {
-						idList.add( persister.getIdentifier(entity, this) );
+		return getEntityPersister( entityClass.getName() )
+				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
+				.whenComplete( (v, e) -> {
+					if ( getPersistenceContext().isLoadFinished() ) {
+						getPersistenceContext().clear();
 					}
-					final List<T> list = new ArrayList<>( ids.length );
-					for (Object id : ids) {
-						final int pos = idList.indexOf(id);
-						list.add( pos < 0 ? null : resultList.get(pos) );
-					}
-					return list;
-				});
+				} )
+				.thenApply( list -> (List<T>) list );
 	}
 
 	@Override
