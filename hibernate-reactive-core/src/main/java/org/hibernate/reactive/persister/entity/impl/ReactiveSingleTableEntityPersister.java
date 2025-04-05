@@ -69,7 +69,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	private static final Log LOG = make( Log.class, lookup() );
 
-	private ReactiveAbstractPersisterDelegate reactiveDelegate;
+	private final ReactiveAbstractPersisterDelegate reactiveDelegate;
 
 	public ReactiveSingleTableEntityPersister(
 			final PersistentClass persistentClass,
@@ -101,7 +101,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	protected MultiIdEntityLoader<Object> buildMultiIdLoader() {
+	protected MultiIdEntityLoader<?> buildMultiIdLoader() {
 		return reactiveDelegate.buildMultiIdEntityLoader();
 	}
 
@@ -301,13 +301,13 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	 * @see AbstractEntityPersister#loadEntityIdByNaturalId(Object[], LockOptions, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		verifyHasNaturalId();
 		return reactiveDelegate.loadEntityIdByNaturalId( orderedNaturalIdValues, lockOptions, session );
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, new LockOptions().setLockMode( lockMode ), session );
 	}
 
@@ -317,7 +317,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return doReactiveLoad( id, optionalObject, lockOptions, null, session );
 	}
 
@@ -327,11 +327,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		return doReactiveLoad( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	private CompletionStage<Object> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	private CompletionStage<?> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		return reactiveDelegate.load( this, id, optionalObject, lockOptions, readOnly, session );
 	}
 
