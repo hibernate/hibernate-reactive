@@ -475,9 +475,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				} );
 	}
 
-	private CompletionStage<Object> fromInternalFetchProfile(
+	private CompletionStage<?> fromInternalFetchProfile(
 			CascadingFetchProfile cascadingFetchProfile,
-			Supplier<CompletionStage<Object>> supplier) {
+			Supplier<CompletionStage<?>> supplier) {
 		CascadingFetchProfile previous = getLoadQueryInfluencers().getEnabledCascadingFetchProfile();
 		return voidFuture()
 				.thenCompose( v -> {

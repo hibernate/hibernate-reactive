@@ -24,6 +24,7 @@ import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
+import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
@@ -80,11 +81,11 @@ public class ReactiveAbstractPersisterDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final Supplier<ReactiveSingleIdEntityLoader<Object>> singleIdEntityLoaderSupplier;
-	private final Supplier<ReactiveMultiIdEntityLoader<Object>> multiIdEntityLoaderSupplier;
+	private final Supplier<ReactiveSingleIdEntityLoader<?>> singleIdEntityLoaderSupplier;
+	private final Supplier<ReactiveMultiIdEntityLoader<?>> multiIdEntityLoaderSupplier;
 
-	private ReactiveSingleIdEntityLoader<Object> singleIdEntityLoader;
-	private ReactiveMultiIdEntityLoader<Object> multiIdEntityLoader;
+	private ReactiveSingleIdEntityLoader<?> singleIdEntityLoader;
+	private ReactiveMultiIdEntityLoader<?> multiIdEntityLoader;
 
 	private final EntityPersister entityDescriptor;
 
@@ -100,12 +101,12 @@ public class ReactiveAbstractPersisterDelegate {
 		entityDescriptor = entityPersister;
 	}
 
-	public ReactiveSingleIdEntityLoader<Object> buildSingleIdEntityLoader() {
+	public ReactiveSingleIdEntityLoader<?> buildSingleIdEntityLoader() {
 		singleIdEntityLoader = singleIdEntityLoaderSupplier.get();
 		return singleIdEntityLoader;
 	}
 
-	public ReactiveMultiIdEntityLoader<Object> buildMultiIdEntityLoader() {
+	public ReactiveMultiIdEntityLoader<?> buildMultiIdEntityLoader() {
 		multiIdEntityLoader = multiIdEntityLoaderSupplier.get();
 		return multiIdEntityLoader;
 	}
@@ -134,12 +135,12 @@ public class ReactiveAbstractPersisterDelegate {
 			PersistentClass persistentClass,
 			SessionFactoryImplementor factory) {
 		return entityDescriptor.getIdentifierType() instanceof BasicType
-				&& supportsSqlArrayType( factory.getJdbcServices().getDialect() )
+			&& supportsSqlArrayType( factory.getJdbcServices().getDialect() )
 				? new ReactiveMultiIdEntityLoaderArrayParam<>( entityDescriptor, factory )
 				: new ReactiveMultiIdEntityLoaderStandard<>( entityDescriptor, persistentClass, factory );
 	}
 
-	private static ReactiveSingleIdEntityLoader<Object> buildSingleIdEntityLoader(
+	private static ReactiveSingleIdEntityLoader<?> buildSingleIdEntityLoader(
 			EntityPersister entityDescriptor,
 			PersistentClass bootDescriptor,
 			RuntimeModelCreationContext creationContext,
@@ -147,32 +148,45 @@ public class ReactiveAbstractPersisterDelegate {
 			String entityName) {
 		if ( bootDescriptor.getLoaderName() != null ) {
 			// We must resolve the named query on-demand through the boot model because it isn't initialized yet
-			final NamedQueryMemento namedQueryMemento = factory.getQueryEngine().getNamedObjectRepository()
-					.resolve( factory, creationContext.getBootModel(), bootDescriptor.getLoaderName() );
-			if ( namedQueryMemento == null ) {
-				throw new IllegalArgumentException( "Could not resolve named load-query [" + entityName + "] : " + bootDescriptor.getLoaderName() );
-			}
+			final NamedQueryMemento<?> namedQueryMemento =
+					getNamedQueryMemento( bootDescriptor, creationContext, factory, entityName );
 			return new ReactiveSingleIdEntityLoaderProvidedQueryImpl<>( entityDescriptor, namedQueryMemento );
 		}
-
-		LoadQueryInfluencers loadQueryInfluencers = new LoadQueryInfluencers( factory );
-		if ( loadQueryInfluencers.effectivelyBatchLoadable( entityDescriptor ) ) {
-			final int batchSize = loadQueryInfluencers.effectiveBatchSize( entityDescriptor );
-			if ( batchSize > 1 ) {
+		else {
+			final LoadQueryInfluencers loadQueryInfluencers = new LoadQueryInfluencers( factory );
+			if ( loadQueryInfluencers.effectivelyBatchLoadable( entityDescriptor ) ) {
+				final int batchSize = loadQueryInfluencers.effectiveBatchSize( entityDescriptor );
 				return createBatchingIdEntityLoader( entityDescriptor, batchSize, factory );
 			}
+			else {
+				return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, loadQueryInfluencers );
+			}
 		}
-
-		return new ReactiveSingleIdEntityLoaderStandardImpl<>( entityDescriptor, new LoadQueryInfluencers( factory ) );
 	}
 
-	private static ReactiveSingleIdEntityLoader<Object> createBatchingIdEntityLoader(
+	private static NamedQueryMemento<?> getNamedQueryMemento(
+			PersistentClass bootDescriptor,
+			RuntimeModelCreationContext creationContext,
+			SessionFactoryImplementor factory,
+			String entityName) {
+		final NamedQueryMemento<?> namedQueryMemento =
+				factory.getQueryEngine().getNamedObjectRepository()
+						.resolve(factory, creationContext.getBootModel(), bootDescriptor.getLoaderName() );
+		if ( namedQueryMemento == null ) {
+			throw new IllegalArgumentException( "Could not resolve named query '" + bootDescriptor.getLoaderName()
+					+ "' for loading entity '" + entityName + "'" );
+		}
+		return namedQueryMemento;
+	}
+
+	private static <T> ReactiveSingleIdEntityLoader<?> createBatchingIdEntityLoader(
 			EntityMappingType entityDescriptor,
 			int domainBatchSize,
 			SessionFactoryImplementor factory) {
-		return (ReactiveSingleIdEntityLoader) factory.getServiceRegistry()
-				.getService( BatchLoaderFactory.class )
-				.createEntityBatchLoader( domainBatchSize, entityDescriptor, factory );
+		final EntityBatchLoader<?> batchLoader =
+				factory.getServiceRegistry().requireService( BatchLoaderFactory.class )
+						.createEntityBatchLoader( domainBatchSize, entityDescriptor, factory );
+		return (ReactiveSingleIdEntityLoader<?>) batchLoader;
 	}
 
 	public CompletionStage<Void> processInsertGeneratedProperties(
@@ -235,7 +249,7 @@ public class ReactiveAbstractPersisterDelegate {
 		);
 	}
 
-	public CompletionStage<Object> load(
+	public CompletionStage<?> load(
 			EntityPersister persister,
 			Object id,
 			Object optionalObject,
@@ -254,7 +268,7 @@ public class ReactiveAbstractPersisterDelegate {
 		return generator instanceof IdentityGenerator ? new ReactiveIdentityGenerator() : generator;
 	}
 
-	public CompletionStage<Object> loadEntityIdByNaturalId(
+	public CompletionStage<?> loadEntityIdByNaturalId(
 			Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		if ( LOG.isTraceEnabled() ) {
 			LOG.tracef( "Resolving natural-id [%s] to id : %s ",
@@ -263,7 +277,7 @@ public class ReactiveAbstractPersisterDelegate {
 			);
 		}
 
-		return ( (ReactiveNaturalIdLoader) entityDescriptor.getNaturalIdLoader() )
+		return ( (ReactiveNaturalIdLoader<?>) entityDescriptor.getNaturalIdLoader() )
 				.resolveNaturalIdToId( orderedNaturalIdValues, session );
 	}
 
@@ -322,13 +336,15 @@ public class ReactiveAbstractPersisterDelegate {
 	}
 
 	public EntityIdentifierMapping convertEntityIdentifierMapping(EntityIdentifierMapping entityIdentifierMapping) {
-		if ( entityIdentifierMapping instanceof NonAggregatedIdentifierMappingImpl ) {
-			return new ReactiveNonAggregatedIdentifierMappingImpl( (NonAggregatedIdentifierMappingImpl) entityIdentifierMapping );
+		if ( entityIdentifierMapping instanceof NonAggregatedIdentifierMappingImpl nonAggregatedIdentifierMapping ) {
+			return new ReactiveNonAggregatedIdentifierMappingImpl(nonAggregatedIdentifierMapping);
 		}
-		if ( entityIdentifierMapping instanceof EmbeddedIdentifierMappingImpl ) {
-			return new ReactiveEmbeddedIdentifierMappingImpl( (EmbeddedIdentifierMappingImpl) entityIdentifierMapping );
+		else if ( entityIdentifierMapping instanceof EmbeddedIdentifierMappingImpl embeddedIdentifierMapping ) {
+			return new ReactiveEmbeddedIdentifierMappingImpl(embeddedIdentifierMapping);
 		}
-		return entityIdentifierMapping;
+		else {
+			return entityIdentifierMapping;
+		}
 	}
 
 	private static class ReactiveNonAggregatedIdentifierMappingImpl extends NonAggregatedIdentifierMappingImpl {
