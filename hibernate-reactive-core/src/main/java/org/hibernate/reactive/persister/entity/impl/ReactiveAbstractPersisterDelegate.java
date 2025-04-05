@@ -20,7 +20,6 @@ import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
@@ -126,7 +125,7 @@ public class ReactiveAbstractPersisterDelegate {
 	/**
 	 * @see org.hibernate.persister.entity.AbstractEntityPersister#multiLoad(Object[], EventSource, MultiIdLoadOptions)`
 	 */
-	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> multiLoad(K[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
 		return multiIdEntityLoader.reactiveLoad( ids, loadOptions, session );
 	}
 
