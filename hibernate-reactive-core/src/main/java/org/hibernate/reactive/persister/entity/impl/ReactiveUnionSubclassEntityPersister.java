@@ -82,7 +82,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	protected MultiIdEntityLoader<Object> buildMultiIdLoader() {
+	protected MultiIdEntityLoader<?> buildMultiIdLoader() {
 		return reactiveDelegate.buildMultiIdEntityLoader();
 	}
 
@@ -148,14 +148,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
 	}
 
-
-	@Override
-	protected void validateGenerator() {
-		if ( super.getGenerator() instanceof IdentityGenerator ) {
-			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
-		}
-	}
-
 	@Override
 	protected InsertCoordinator buildInsertCoordinator() {
 		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
@@ -178,6 +170,13 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			String resultVariable,
 			DomainResultCreationState creationState) {
 		return reactiveDelegate.createDomainResult( this, navigablePath, tableGroup, resultVariable, creationState );
+	}
+
+	@Override
+	protected void validateGenerator() {
+		if ( super.getGenerator() instanceof IdentityGenerator) {
+			throw new MappingException( "Cannot use identity column key generation with <union-subclass> mapping for: " + getEntityName() );
+		}
 	}
 
 	@Override
@@ -279,7 +278,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, new LockOptions().setLockMode( lockMode ), session );
 	}
 
@@ -289,7 +288,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return doReactiveLoad( id, optionalObject, lockOptions, null, session );
 	}
 
@@ -299,11 +298,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		return doReactiveLoad( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	private CompletionStage<Object> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	private CompletionStage<?> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		return reactiveDelegate.load( this, id, optionalObject, lockOptions, readOnly, session );
 	}
 
@@ -372,7 +371,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	 * @see AbstractEntityPersister#loadEntityIdByNaturalId(Object[], LockOptions, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		verifyHasNaturalId();
 		return reactiveDelegate.loadEntityIdByNaturalId( orderedNaturalIdValues, lockOptions, session );
 	}

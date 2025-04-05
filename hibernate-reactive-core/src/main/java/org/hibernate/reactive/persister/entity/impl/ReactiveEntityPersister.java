@@ -94,37 +94,37 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			SharedSessionContractImplementor session,
 			MultiIdLoadOptions loadOptions);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockMode lockMode,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session,
 			Boolean readOnly);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(
+	CompletionStage<?> reactiveLoadByUniqueKey(
 			String propertyName,
 			Object uniqueKey,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(
+	CompletionStage<?> reactiveLoadByUniqueKey(
 			String propertyName,
 			Object uniqueKey,
 			Boolean readOnly,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(
+	CompletionStage<?> reactiveLoadEntityIdByNaturalId(
 			Object[] naturalIdValues,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session);
