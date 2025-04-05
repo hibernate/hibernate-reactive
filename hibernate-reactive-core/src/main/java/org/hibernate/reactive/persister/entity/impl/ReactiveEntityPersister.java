@@ -12,7 +12,6 @@ import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.bytecode.BytecodeLogging;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.persister.entity.EntityPersister;
@@ -92,40 +91,40 @@ public interface ReactiveEntityPersister extends EntityPersister {
 
 	<K> CompletionStage<? extends List<?>> reactiveMultiLoad(
 			K[] ids,
-			EventSource session,
+			SharedSessionContractImplementor session,
 			MultiIdLoadOptions loadOptions);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockMode lockMode,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoad(
+	CompletionStage<?> reactiveLoad(
 			Object id,
 			Object optionalObject,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session,
 			Boolean readOnly);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(
+	CompletionStage<?> reactiveLoadByUniqueKey(
 			String propertyName,
 			Object uniqueKey,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadByUniqueKey(
+	CompletionStage<?> reactiveLoadByUniqueKey(
 			String propertyName,
 			Object uniqueKey,
 			Boolean readOnly,
 			SharedSessionContractImplementor session);
 
-	CompletionStage<Object> reactiveLoadEntityIdByNaturalId(
+	CompletionStage<?> reactiveLoadEntityIdByNaturalId(
 			Object[] naturalIdValues,
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session);
