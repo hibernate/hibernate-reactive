@@ -412,14 +412,17 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
         }
 	}
 
+	/**
+	 * Copied from Hibernate ORM
+	 */
 	private static CacheMode resolveCacheMode(ExecutionContext executionContext) {
 		final QueryOptions queryOptions = executionContext.getQueryOptions();
 		final SharedSessionContract session = executionContext.getSession();
-        return coalesceSuppliedValues(
-                () -> queryOptions == null ? null : queryOptions.getCacheMode(),
-                session::getCacheMode,
-                () -> CacheMode.NORMAL
-        );
+		return coalesceSuppliedValues(
+				() -> queryOptions == null ? null : queryOptions.getCacheMode(),
+				session::getCacheMode,
+				() -> CacheMode.NORMAL
+		);
 	}
 
 	/**

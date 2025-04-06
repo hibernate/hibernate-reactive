@@ -1250,10 +1250,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return (ReactiveEntityPersister) getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
 	}
 
-	private EntityPersister requireEntityPersister(Class<?> entityClass) {
-		return getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
-	}
-
 	private CompletionStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
 		checkOpenOrWaitingForAutoClose();
 
@@ -1281,10 +1277,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public void checkTransactionNeededForUpdateOperation(String exceptionMessage) {
 		//no-op because we don't support transactions
-	}
-
-	private Boolean getReadOnlyFromLoadQueryInfluencers() {
-		return getLoadQueryInfluencers().getReadOnly();
 	}
 
 	private class ReactiveIdentifierLoadAccessImpl<T> {

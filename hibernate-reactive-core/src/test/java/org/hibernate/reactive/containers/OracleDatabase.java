@@ -57,10 +57,10 @@ class OracleDatabase implements TestableDatabase {
 			expectedDBTypeForClass.put( Integer.class, "NUMBER" );
 			expectedDBTypeForClass.put( long.class, "NUMBER" );
 			expectedDBTypeForClass.put( Long.class, "NUMBER" );
-			expectedDBTypeForClass.put( float.class, "FLOAT" );
-			expectedDBTypeForClass.put( Float.class, "FLOAT" );
-			expectedDBTypeForClass.put( double.class, "FLOAT" );
-			expectedDBTypeForClass.put( Double.class, "FLOAT" );
+			expectedDBTypeForClass.put( float.class, "BINARY_FLOAT" );
+			expectedDBTypeForClass.put( Float.class, "BINARY_FLOAT" );
+			expectedDBTypeForClass.put( double.class, "BINARY_DOUBLE" );
+			expectedDBTypeForClass.put( Double.class, "BINARY_DOUBLE" );
 			expectedDBTypeForClass.put( byte.class, "NUMBER" );
 			expectedDBTypeForClass.put( Byte.class, "NUMBER" );
 			expectedDBTypeForClass.put( URL.class, "VARCHAR2" );
