@@ -5,19 +5,19 @@
  */
 package org.hibernate.reactive.type.descriptor.jdbc;
 
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-
-import org.hibernate.dialect.XmlHelper;
 import org.hibernate.metamodel.mapping.EmbeddableMappingType;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.jdbc.BasicBinder;
+import org.hibernate.type.descriptor.jdbc.XmlHelper;
 import org.hibernate.type.descriptor.jdbc.XmlJdbcType;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.SQLXML;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
