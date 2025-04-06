@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.query.internal;
 
+import jakarta.persistence.TypedQuery;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -46,6 +47,11 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	@Override
 	public void registerNamedQuery(String name, Query query) {
 		delegate.registerNamedQuery( name, query );
+	}
+
+	@Override
+	public <R> TypedQueryReference<R> registerNamedQuery(String name, TypedQuery<R> query) {
+		return delegate.registerNamedQuery( name, query );
 	}
 
 	@Override
