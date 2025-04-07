@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.AvailableSettings.TIMEZONE_DEFAULT_STORAGE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
-import static org.hibernate.type.descriptor.DateTimeUtils.roundToDefaultPrecision;
+import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
@@ -60,10 +60,10 @@ public class UTCNormalizedZonedTest extends BaseReactiveTest {
 				.thenCompose( zid -> openSession()
 						.thenCompose( s -> s.find( Zoned.class, zid )
 								.thenAccept( z -> {
-									assertWithTruncationThat( roundToDefaultPrecision( z.zonedDateTime.toInstant(), getDialect() ) )
-											.isEqualTo( roundToDefaultPrecision( nowZoned.toInstant(), getDialect() ) );
-									assertWithTruncationThat( roundToDefaultPrecision( z.offsetDateTime.toInstant(), getDialect() ) )
-											.isEqualTo( roundToDefaultPrecision( nowOffset.toInstant(), getDialect() ) );
+									assertWithTruncationThat( adjustToDefaultPrecision( z.zonedDateTime.toInstant(), getDialect() ) )
+											.isEqualTo( adjustToDefaultPrecision( nowZoned.toInstant(), getDialect() ) );
+									assertWithTruncationThat( adjustToDefaultPrecision( z.offsetDateTime.toInstant(), getDialect() ) )
+											.isEqualTo( adjustToDefaultPrecision( nowOffset.toInstant(), getDialect() ) );
 									assertThat( z.offsetDateTime.getOffset() ).isEqualTo( ZoneId.of( "Z" ) );
 									assertThat( z.zonedDateTime.getZone() ).isEqualTo( ZoneOffset.ofHours( 0 ) );
 								} )
