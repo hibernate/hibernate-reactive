@@ -34,7 +34,7 @@ Hibernate Reactive has been tested with:
 - PostgreSQL 16
 - MySQL 9
 - MariaDB 11
-- Db2 11
+- Db2 12
 - CockroachDB v24
 - MS SQL Server 2022
 - Oracle 23
