@@ -14,13 +14,13 @@ If you replace `podman` with `sudo docker`, they will also work with [Docker][do
 Example:
 
 ```
-podman run --rm --name HibernateTestingPGSQL postgres:14.0
+podman run --rm --name HibernateTestingPGSQL postgres:17.4
 ```
 
 becomes for Docker:
 
 ```
-sudo docker run --rm --name HibernateTestingPGSQL postgres:14.0
+sudo docker run --rm --name HibernateTestingPGSQL postgres:17.4
 ```
 ---
 
