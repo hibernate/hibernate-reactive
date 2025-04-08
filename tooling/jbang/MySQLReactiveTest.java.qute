@@ -72,7 +72,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "8.4.0" ) );
+    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "9.2.0" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
