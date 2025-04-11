@@ -48,7 +48,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.WrapperOptions;
 
-import static org.hibernate.generator.internal.NaturalIdHelper.getNaturalIdPropertyNames;
+import static org.hibernate.internal.NaturalIdHelper.getNaturalIdPropertyNames;
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCustomSql;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.NONE;
 

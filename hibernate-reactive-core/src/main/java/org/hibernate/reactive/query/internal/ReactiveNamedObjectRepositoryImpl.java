@@ -8,6 +8,7 @@ package org.hibernate.reactive.query.internal;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import jakarta.persistence.TypedQuery;
 import org.hibernate.HibernateException;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.MetadataImplementor;
@@ -106,6 +107,11 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	@Override
 	public Map<String, HibernateException> checkNamedQueries(QueryEngine queryPlanCache) {
 		return delegate.checkNamedQueries( queryPlanCache );
+	}
+
+	@Override
+	public <R> TypedQueryReference<R> registerNamedQuery(String name, TypedQuery<R> query) {
+		return delegate.registerNamedQuery( name, query );
 	}
 
 	@Override
