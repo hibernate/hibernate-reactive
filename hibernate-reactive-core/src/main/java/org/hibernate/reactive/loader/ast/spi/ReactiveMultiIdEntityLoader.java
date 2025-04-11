@@ -8,7 +8,7 @@ package org.hibernate.reactive.loader.ast.spi;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.event.spi.EventSource;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.reactive.logging.impl.Log;
@@ -22,9 +22,9 @@ import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 public interface ReactiveMultiIdEntityLoader<T> extends MultiIdEntityLoader<T> {
 
 	@Override
-	default <K> List<T> load(K[] ids, MultiIdLoadOptions options, EventSource session) {
+	default <K> List<T> load(K[] ids, MultiIdLoadOptions options, SharedSessionContractImplementor session) {
 		throw make( Log.class, lookup() ).nonReactiveMethodCall( "reactiveLoad" );
 	}
 
-	<K> CompletionStage<List<T>> reactiveLoad(K[] ids, MultiIdLoadOptions options, EventSource session);
+	<K> CompletionStage<List<T>> reactiveLoad(K[] ids, MultiIdLoadOptions options, SharedSessionContractImplementor session);
 }

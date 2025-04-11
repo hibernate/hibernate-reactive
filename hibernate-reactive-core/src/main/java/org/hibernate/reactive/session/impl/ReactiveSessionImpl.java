@@ -1435,7 +1435,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private class ReactiveMultiIdentifierLoadAccessImpl<T> implements MultiIdLoadOptions {
-		private final EntityPersister entityPersister;
+		private final ReactiveEntityPersister entityPersister;
 
 		private LockOptions lockOptions;
 		private CacheMode cacheMode;
@@ -1450,7 +1450,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		private boolean readOnly;
 
 		public ReactiveMultiIdentifierLoadAccessImpl(EntityPersister entityPersister) {
-			this.entityPersister = entityPersister;
+			this.entityPersister = (ReactiveEntityPersister) entityPersister;
 		}
 
 		@Override
@@ -1489,12 +1489,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		public ReactiveMultiIdentifierLoadAccessImpl<T> withBatchSize(int batchSize) {
-			if ( batchSize < 1 ) {
-				this.batchSize = null;
-			}
-			else {
-				this.batchSize = batchSize;
-			}
+            this.batchSize = batchSize < 1 ? null : batchSize;
 			return this;
 		}
 
@@ -1537,8 +1532,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			Object[] sids = new Object[ids.length];
 			System.arraycopy( ids, 0, sids, 0, ids.length );
 
-			return perform( () -> (CompletionStage) ( (ReactiveEntityPersister) entityPersister )
-							.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this ) );
+			return perform( () -> {
+				final CompletionStage<? extends List<?>> stage =
+						entityPersister.reactiveMultiLoad( sids, ReactiveSessionImpl.this, this );
+				return (CompletionStage<List<T>>) stage;
+            });
 		}
 
 		public CompletionStage<List<T>> perform(Supplier<CompletionStage<List<T>>> executor) {
@@ -1571,12 +1569,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 							setCacheMode( sessionCacheMode );
 						}
 					} );
-		}
-
-		@SuppressWarnings("unchecked")
-		public <K extends Object> CompletionStage<List<T>> multiLoad(List<K> ids) {
-			return perform( () -> (CompletionStage<List<T>>)
-					entityPersister.multiLoad( ids.toArray( new Object[0] ), ReactiveSessionImpl.this, this ) );
 		}
 	}
 

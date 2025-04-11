@@ -53,11 +53,9 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 			LockOptions lockOptions,
 			Boolean readOnly,
 			SharedSessionContractImplementor session) {
-		final ReactiveSingleIdLoadPlan<T> loadPlan = (ReactiveSingleIdLoadPlan<T>) resolveLoadPlan(
-				lockOptions,
-				session.getLoadQueryInfluencers(),
-				session.getFactory()
-		);
+		final ReactiveSingleIdLoadPlan<T> loadPlan =
+				(ReactiveSingleIdLoadPlan<T>)
+						resolveLoadPlan( lockOptions, session.getLoadQueryInfluencers() );
 		return loadPlan.load( key, readOnly, true, session );
 	}
 
@@ -68,7 +66,9 @@ public class ReactiveSingleIdEntityLoaderStandardImpl<T> extends SingleIdEntityL
 			LockOptions lockOptions,
 			Boolean readOnly,
 			SharedSessionContractImplementor session) {
-		final ReactiveSingleIdLoadPlan<T> loadPlan = (ReactiveSingleIdLoadPlan<T>) resolveLoadPlan( lockOptions, session.getLoadQueryInfluencers(), session.getFactory() );
+		final ReactiveSingleIdLoadPlan<T> loadPlan =
+				(ReactiveSingleIdLoadPlan<T>)
+						resolveLoadPlan( lockOptions, session.getLoadQueryInfluencers() );
 		return loadPlan.load( key, entityInstance, readOnly, false, session );
 	}
 
