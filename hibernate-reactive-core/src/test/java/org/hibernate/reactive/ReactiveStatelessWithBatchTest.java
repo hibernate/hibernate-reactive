@@ -364,7 +364,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withStatelessTransaction( s -> s
 						.createQuery( "from GuineaPig p order by p.id", GuineaPig.class )
 						.getResultList()
-						.thenApply( pigs -> {
+						.thenCompose( pigs -> {
 							pigs.get( 0 ).setName( "One updated" );
 							pigs.get( 1 ).setName( "Two updated" );
 							return s.update( 10, pigs.toArray() );
@@ -383,7 +383,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withStatelessTransaction( s -> s
 						.createQuery( "from GuineaPig p order by p.id", GuineaPig.class )
 						.getResultList()
-						.thenApply( pigs -> {
+						.thenCompose( pigs -> {
 							pigs.get( 0 ).setName( "One updated" );
 							pigs.get( 1 ).setName( "Two updated" );
 							return s.updateMultiple( pigs );
@@ -402,7 +402,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withStatelessTransaction( s -> s
 						.createQuery( "from GuineaPig p order by p.id", GuineaPig.class )
 						.getResultList()
-						.thenApply( pigs -> {
+						.thenCompose( pigs -> {
 							pigs.get( 0 ).setName( "One updated" );
 							pigs.get( 1 ).setName( "Two updated" );
 							return s.update( pigs.get( 0 ), pigs.get( 1 ) );
