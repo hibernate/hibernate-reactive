@@ -17,7 +17,6 @@ import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
@@ -83,7 +82,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	protected MultiIdEntityLoader<Object> buildMultiIdLoader() {
+	protected MultiIdEntityLoader<?> buildMultiIdLoader() {
 		return reactiveDelegate.buildMultiIdEntityLoader();
 	}
 
@@ -239,7 +238,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, EventSource session, MultiIdLoadOptions loadOptions) {
+	public <K> CompletionStage<? extends List<?>> reactiveMultiLoad(K[] ids, SharedSessionContractImplementor session, MultiIdLoadOptions loadOptions) {
 		return reactiveDelegate.multiLoad( ids, session, loadOptions );
 	}
 
@@ -313,7 +312,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockMode lockMode, SharedSessionContractImplementor session) {
 		return reactiveLoad( id, optionalObject, new LockOptions().setLockMode( lockMode ), session );
 	}
 
@@ -323,7 +322,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		return doReactiveLoad( id, optionalObject, lockOptions, null, session );
 	}
 
@@ -333,11 +332,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
+	public CompletionStage<?> reactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, SharedSessionContractImplementor session, Boolean readOnly) {
 		return doReactiveLoad( id, optionalObject, lockOptions, readOnly, session );
 	}
 
-	private CompletionStage<Object> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
+	private CompletionStage<?> doReactiveLoad(Object id, Object optionalObject, LockOptions lockOptions, Boolean readOnly, SharedSessionContractImplementor session) {
 		return reactiveDelegate.load( this, id, optionalObject, lockOptions, readOnly, session );
 	}
 
@@ -371,7 +370,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	 * @see AbstractEntityPersister#loadEntityIdByNaturalId(Object[], LockOptions, SharedSessionContractImplementor)
 	 */
 	@Override
-	public CompletionStage<Object> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
+	public CompletionStage<?> reactiveLoadEntityIdByNaturalId(Object[] orderedNaturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
 		verifyHasNaturalId();
 		return reactiveDelegate.loadEntityIdByNaturalId( orderedNaturalIdValues, lockOptions, session );
 	}
