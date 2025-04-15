@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -28,10 +23,6 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.event.spi.PostInsertEvent;
-import org.hibernate.event.spi.PostInsertEventListener;
-import org.hibernate.event.spi.PreInsertEvent;
-import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.graph.GraphSemantic;
@@ -89,6 +80,10 @@ import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.invoke.MethodHandles.lookup;
@@ -337,29 +332,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 						persister.setIdentifier( entity, id, this );
 						firePostInsert( entity, id, state, persister );
 					} );
-		}
-	}
-
-	private boolean firePreInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
-		if ( getFactory().getEventListenerGroups().eventListenerGroup_PRE_INSERT.isEmpty() ) {
-			return false;
-		}
-		else {
-			boolean veto = false;
-			final PreInsertEvent event = new PreInsertEvent( entity, id, state, persister, null );
-			for ( PreInsertEventListener listener : getFactory().getEventListenerGroups().eventListenerGroup_PRE_INSERT.listeners() ) {
-				veto |= listener.onPreInsert( event );
-			}
-			return veto;
-		}
-	}
-
-	private void firePostInsert(Object entity, Object id, Object[] state, EntityPersister persister) {
-		if ( !getFactory().getEventListenerGroups().eventListenerGroup_POST_INSERT.isEmpty() ) {
-			final PostInsertEvent event = new PostInsertEvent( entity, id, state, persister, null );
-			for ( PostInsertEventListener listener : getFactory().getEventListenerGroups().eventListenerGroup_POST_INSERT.listeners() ) {
-				listener.onPostInsert( event );
-			}
 		}
 	}
 
