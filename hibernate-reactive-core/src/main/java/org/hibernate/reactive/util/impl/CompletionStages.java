@@ -90,6 +90,26 @@ public class  CompletionStages {
 		return CompletableFuture.completedFuture( value );
 	}
 
+	/**
+	 * Useful for implementing try-finally blocks.
+	 * For example:
+	 * <pre>{@code
+	 * return supplyStage( () -> {
+	 *     // Any error here will get caught
+	 *     ...
+	 *     })
+	 *     .whenComplete( (r,t) -> {
+	 *         // finally block
+	 *         ...
+	 *     })
+	 * }</pre>
+	 */
+	public static <T> CompletionStage<T> supplyStage(Supplier<CompletionStage<T>> supplier) {
+		// Using the voidFuture() is the simplest way I found to make sure that everything run in the correct executor
+		return voidFuture()
+				.thenCompose( v -> supplier.get() );
+	}
+
 	public static <T> CompletionStage<T> failedFuture(Throwable t) {
 		CompletableFuture<T> ret = new CompletableFuture<>();
 		ret.completeExceptionally( t );
