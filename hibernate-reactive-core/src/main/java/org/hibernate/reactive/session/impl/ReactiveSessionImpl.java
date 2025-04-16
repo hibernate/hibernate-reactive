@@ -5,16 +5,6 @@
  */
 package org.hibernate.reactive.session.impl;
 
-import jakarta.persistence.TypedQueryReference;
-import jakarta.persistence.criteria.CommonAbstractCriteria;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
-
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -66,6 +56,7 @@ import org.hibernate.internal.SessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.LoaderLogging;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
+import org.hibernate.loader.internal.IdentifierLoadAccessImpl;
 import org.hibernate.loader.internal.LoadAccessContext;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
@@ -127,10 +118,19 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.Tuple;
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CommonAbstractCriteria;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import static java.lang.Boolean.TRUE;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -143,10 +143,12 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -217,8 +219,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id)
 			throws HibernateException {
 		if ( LOG.isDebugEnabled() ) {
-			final EntityPersister persister = getFactory().getMappingMetamodel()
-					.getEntityDescriptor( entityName );
+			final EntityPersister persister = requireEntityPersister( entityName );
 			LOG.debugf( "Initializing proxy: %s", MessageHelper.infoString( persister, id, getFactory() ) );
 		}
 		threadCheck();
@@ -251,10 +252,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		threadCheck();
-		final LoadEvent event = new LoadEvent(
-				id, entityName, true, this,
-				getReadOnlyFromLoadQueryInfluencers()
-		);
+		final LoadEvent event = makeLoadEvent( entityName, id, getReadOnlyFromLoadQueryInfluencers(), true );
 		return fireLoadNoChecks( event, type )
 				.thenApply( v -> {
 					final Object result = event.getResult();
@@ -268,6 +266,43 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 						effectiveEntityGraph.applyGraph( graph, semantic );
 					}
 				} );
+	}
+
+	@Override
+	public Object load(LoadEventListener.LoadType loadType, Object id, String entityName, LockOptions lockOptions, Boolean readOnly) {
+		// When the user needs a reference to the entity, we are not supposed to touche the database, and we don't return
+		// a CompletionStage. So it's fine to delegate to ORM.
+		// Everywhere else, reactiveLoad should be used.
+		return super.load( loadType, id, entityName, lockOptions, readOnly );
+	}
+
+	/**
+	 * @see SessionImpl#load(LoadEventListener.LoadType, Object, String, LockOptions, Boolean)
+	 */
+	public CompletionStage<Object> reactiveLoad(LoadEventListener.LoadType loadType, Object id, String entityName, LockOptions lockOptions, Boolean readOnly) {
+		if ( lockOptions != null ) {
+			// (from ORM) TODO: I doubt that this branch is necessary, and it's probably even wrong
+			final LoadEvent event = makeLoadEvent( entityName, id, readOnly, lockOptions );
+			return fireLoad( event, loadType )
+					.thenApply( v -> {
+						final Object result = event.getResult();
+						releaseLoadEvent( event );
+						return result;
+					} );
+		}
+		else {
+			final LoadEvent event = makeLoadEvent( entityName, id, readOnly, false );
+			return supplyStage( () -> fireLoad( event, loadType )
+					.thenApply( v -> {
+						final Object result = event.getResult();
+						releaseLoadEvent( event );
+						if ( !loadType.isAllowNulls() && result == null ) {
+							getSession().getFactory().getEntityNotFoundDelegate().handleEntityNotFound( entityName, id );
+						}
+						return result;
+					} )
+			).whenComplete( (o, throwable) -> afterOperation( throwable != null ) );
+		}
 	}
 
 	@Override
@@ -1066,7 +1101,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		if ( getPersistenceContextInternal().getCascadeLevel() > 0 ) {
-			return CompletionStages.failedFuture( new ObjectDeletedException(
+			return failedFuture( new ObjectDeletedException(
 					"deleted object would be re-saved by cascade (remove deleted object from associations)",
 					entry.getId(),
 					entry.getPersister().getEntityName()
@@ -1194,10 +1229,16 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <T> CompletionStage<T> reactiveGet(
-			Class<T> entityClass,
-			Object id) {
-		return new ReactiveIdentifierLoadAccessImpl<>( entityClass ).load( id );
+	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
+		return reactiveById( entityClass ).load( id );
+	}
+
+	private <T> ReactiveIdentifierLoadAccessImpl<T> reactiveById(Class<T> entityClass) {
+		return new ReactiveIdentifierLoadAccessImpl<>( this, requireEntityPersister( entityClass ) );
+	}
+
+	private <T> ReactiveIdentifierLoadAccessImpl<T> reactiveById(String entityName) {
+		return new ReactiveIdentifierLoadAccessImpl<>( this, requireEntityPersister( entityName ) );
 	}
 
 	@Override
@@ -1207,60 +1248,77 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			LockOptions lockOptions,
 			EntityGraph<T> fetchGraph) {
 		checkOpen();
+		return supplyStage( () -> {
+			if ( fetchGraph != null ) {
+				getLoadQueryInfluencers()
+						.getEffectiveEntityGraph()
+						.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
+			}
+			getLoadQueryInfluencers().setReadOnly( readOnlyHint( null ) );
 
-		if ( fetchGraph != null ) {
-			getLoadQueryInfluencers()
-					.getEffectiveEntityGraph()
-					.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
+			return reactiveById( entityClass )
+					.with( determineAppropriateLocalCacheMode( null ) )
+					.with( lockOptions )
+					.load( id );
+		} ).handle( CompletionStages::handle )
+				.thenCompose( handler -> handleReactiveFindException( entityClass, id, lockOptions, handler ) )
+				.whenComplete( (v, e) -> {
+					getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
+					getLoadQueryInfluencers().setReadOnly( null );
+				} );
+	}
+
+	private <T> CompletionStage<T> handleReactiveFindException(
+			Class<T> entityClass,
+			Object primaryKey,
+			LockOptions lockOptions,
+			CompletionStages.CompletionStageHandler<T, Throwable> handler) {
+		if ( !handler.hasFailed() ) {
+			return handler.getResultAsCompletionStage();
+		}
+		final Throwable e = handler.getThrowable();
+		if ( e instanceof EntityNotFoundException ) {
+			// We swallow other sorts of EntityNotFoundException and return null
+			// For example, DefaultLoadEventListener.proxyImplementation() throws
+			// EntityNotFoundException if there's an existing proxy in the session,
+			// but the underlying database row has been deleted (see HHH-7861)
+			logIgnoringEntityNotFound( entityClass, primaryKey );
+			return nullFuture();
+		}
+		if ( e instanceof ObjectDeletedException ) {
+			// the spec is silent about people doing remove() find() on the same PC
+			return null;
+		}
+		if ( e instanceof ObjectNotFoundException ) {
+			// should not happen on the entity itself with get
+			// TODO: in fact this will occur instead of EntityNotFoundException
+			//       when using StandardEntityNotFoundDelegate, so probably we
+			//       should return null here, as we do above
+			return failedFuture( new IllegalArgumentException( e.getMessage(), e ) );
+		}
+		if ( e instanceof MappingException || e instanceof TypeMismatchException || e instanceof ClassCastException ) {
+			return failedFuture( getExceptionConverter().convert( new IllegalArgumentException(
+					e.getMessage(),
+					e
+			) ) );
+		}
+		if ( e instanceof JDBCException ) {
+			// I don't think this is ever going to happen in Hibernate Reactive
+			if ( accessTransaction().isActive() && accessTransaction().getRollbackOnly() ) {
+				// Assume situation HHH-12472 running on WildFly
+				// Just log the exception and return null
+				LOG.jdbcExceptionThrownWithTransactionRolledBack( (JDBCException) e );
+				return nullFuture();
+			}
+			else {
+				return failedFuture( getExceptionConverter().convert( (JDBCException) e, lockOptions ) );
+			}
+		}
+		if ( e instanceof RuntimeException ) {
+			return failedFuture( getExceptionConverter().convert( (RuntimeException) e, lockOptions ) );
 		}
 
-//		Boolean readOnly = properties == null ? null : (Boolean) properties.get( QueryHints.HINT_READONLY );
-//		getLoadQueryInfluencers().setReadOnly( readOnly );
-
-		final ReactiveIdentifierLoadAccessImpl<T> loadAccess =
-				new ReactiveIdentifierLoadAccessImpl<>( entityClass )
-						.with( determineAppropriateLocalCacheMode( null ) )
-						.with( lockOptions );
-
-		return loadAccess.load( id )
-				.handle( (result, e) -> {
-					if ( e instanceof EntityNotFoundException ) {
-						// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
-						// which find() should not throw. Find() should return null if the entity was not found.
-						//			if ( log.isDebugEnabled() ) {
-						//				String entityName = entityClass != null ? entityClass.getName(): null;
-						//				String identifierValue = id != null ? id.toString() : null ;
-						//				log.ignoringEntityNotFound( entityName, identifierValue );
-						//			}
-						throw new UnsupportedOperationException();
-					}
-					if ( e instanceof ObjectDeletedException ) {
-						//the spec is silent about people doing remove() find() on the same PC
-						throw new UnsupportedOperationException();
-					}
-					if ( e instanceof ObjectNotFoundException ) {
-						//should not happen on the entity itself with get
-						throw new IllegalArgumentException( e.getMessage(), e );
-					}
-					if ( e instanceof MappingException
-							|| e instanceof TypeMismatchException
-							|| e instanceof ClassCastException ) {
-						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage(), e ) );
-					}
-					if ( e instanceof JDBCException ) {
-//						if ( accessTransaction().getRollbackOnly() ) {
-//							// assume this is the similar to the WildFly / IronJacamar "feature" described under HHH-12472
-//							throw new UnsupportedOperationException();
-//						}
-						throw getExceptionConverter().convert( (JDBCException) e, lockOptions );
-					}
-					if ( e instanceof RuntimeException ) {
-						throw getExceptionConverter().convert( (RuntimeException) e, lockOptions );
-					}
-
-					return result;
-				} )
-				.whenComplete( (v, e) -> getLoadQueryInfluencers().getEffectiveEntityGraph().clear() );
+		return handler.getResultAsCompletionStage();
 	}
 
 	@Override
@@ -1281,13 +1339,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return (ReactiveEntityPersister) getFactory().getMappingMetamodel().getEntityDescriptor( entityClass );
 	}
 
-	private CompletionStage<Void> fireReactiveLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
+	private CompletionStage<Void> fireLoad(LoadEvent event, LoadEventListener.LoadType loadType) {
 		checkOpenOrWaitingForAutoClose();
-
 		return fireLoadNoChecks( event, loadType )
-				.whenComplete( (v, e) -> delayedAfterCompletion() );
+				.thenAccept( v -> delayedAfterCompletion() );
 	}
 
+	/**
+	 * This version of {@link #load} is for use by internal methods only.
+	 * It skips the session open check, transaction sync checks, and so on,
+	 * which have been shown to be expensive (apparently they prevent these
+	 * hot methods from being inlined).
+	 */
 	private CompletionStage<Void> fireLoadNoChecks(LoadEvent event, LoadEventListener.LoadType loadType) {
 		pulseTransactionCoordinator();
 
@@ -1310,76 +1373,38 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		//no-op because we don't support transactions
 	}
 
-	private class ReactiveIdentifierLoadAccessImpl<T> {
+	private class ReactiveIdentifierLoadAccessImpl<T> extends IdentifierLoadAccessImpl<CompletionStage<T>> {
 
-		private final EntityPersister entityPersister;
-
-		private LockOptions lockOptions;
-		private CacheMode cacheMode;
-
-		//Note that entity graphs aren't supported at all
-		//because we're not using the EntityLoader from
-		//the plan package, so this stuff is useless
-		private RootGraphImplementor<T> rootGraph;
-		private GraphSemantic graphSemantic;
-
-		public ReactiveIdentifierLoadAccessImpl(EntityPersister entityPersister) {
-			this.entityPersister = entityPersister;
+		public ReactiveIdentifierLoadAccessImpl(LoadAccessContext context, EntityPersister entityPersister) {
+			super(context, entityPersister);
 		}
 
-		public ReactiveIdentifierLoadAccessImpl(String entityName) {
-			this( getFactory().getMappingMetamodel().getEntityDescriptor( entityName ) );
-		}
-
-		public ReactiveIdentifierLoadAccessImpl(Class<T> entityClass) {
-			this( getFactory().getMappingMetamodel().getEntityDescriptor( entityClass ) );
-		}
-
-		public final ReactiveIdentifierLoadAccessImpl<T> with(LockOptions lockOptions) {
-			this.lockOptions = lockOptions;
-			return this;
-		}
-
-		public ReactiveIdentifierLoadAccessImpl<T> with(CacheMode cacheMode) {
-			this.cacheMode = cacheMode;
-			return this;
-		}
-
-		public ReactiveIdentifierLoadAccessImpl<T> with(RootGraph<T> graph, GraphSemantic semantic) {
-			rootGraph = (RootGraphImplementor<T>) graph;
-			graphSemantic = semantic;
-			return this;
-		}
-
-		public final CompletionStage<T> getReference(Object id) {
-			return perform( () -> doGetReference( id ) );
-		}
-
+		@Override
 		protected CompletionStage<T> perform(Supplier<CompletionStage<T>> executor) {
-			if ( graphSemantic != null ) {
-				if ( rootGraph == null ) {
+			if ( getGraphSemantic() != null ) {
+				if ( getRootGraph() == null ) {
 					throw new IllegalArgumentException( "Graph semantic specified, but no RootGraph was supplied" );
 				}
 			}
 			CacheMode sessionCacheMode = getCacheMode();
 			boolean cacheModeChanged = false;
-			if ( cacheMode != null ) {
+			if ( getCacheMode() != null ) {
 				// naive check for now...
 				// todo : account for "conceptually equal"
-				if ( cacheMode != sessionCacheMode ) {
-					setCacheMode( cacheMode );
+				if ( getCacheMode() != sessionCacheMode ) {
+					setCacheMode( getCacheMode() );
 					cacheModeChanged = true;
 				}
 			}
 
-			if ( graphSemantic != null ) {
-				getLoadQueryInfluencers().getEffectiveEntityGraph().applyGraph( rootGraph, graphSemantic );
+			if ( getGraphSemantic() != null ) {
+				getLoadQueryInfluencers().getEffectiveEntityGraph().applyGraph( getRootGraph(), getGraphSemantic() );
 			}
 
 			boolean finalCacheModeChanged = cacheModeChanged;
 			return executor.get()
 					.whenComplete( (v, x) -> {
-						if ( graphSemantic != null ) {
+						if ( getGraphSemantic() != null ) {
 							getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 						}
 						if ( finalCacheModeChanged ) {
@@ -1389,71 +1414,39 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					} );
 		}
 
-		@SuppressWarnings("unchecked")
+		@Override
 		protected CompletionStage<T> doGetReference(Object id) {
-			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(
-						id,
-						entityPersister.getEntityName(),
-						lockOptions,
-						ReactiveSessionImpl.this,
-						getReadOnlyFromLoadQueryInfluencers()
-				);
-				return fireReactiveLoad( event, LoadEventListener.LOAD ).thenApply( v -> (T) event.getResult() );
-			}
-
-			LoadEvent event = new LoadEvent(
-					id,
-					entityPersister.getEntityName(),
-					false,
-					ReactiveSessionImpl.this,
-					getReadOnlyFromLoadQueryInfluencers()
-			);
-			return fireReactiveLoad( event, LoadEventListener.LOAD )
-					.thenApply( v -> {
-						if ( event.getResult() == null ) {
-							getFactory().getEntityNotFoundDelegate().handleEntityNotFound(
-									entityPersister.getEntityName(),
-									id
-							);
-						}
-						return (T) event.getResult();
-					} ).whenComplete( (v, x) -> afterOperation( x != null ) );
+			// getReference si supposed to return T, not CompletionStage<T>
+			// I can't think of a way to change the super class so that it is mapped correctly.
+			// So, for now, I will throw an exception and make sure that it doesn't really get called
+			// (the one in SessionImpl should be used)
+			throw new UnsupportedOperationException();
 		}
 
-		public final CompletionStage<T> load(Object id) {
-			return perform( () -> doLoad( id, LoadEventListener.GET ) );
-		}
-
-		//		public final CompletionStage<T> fetch(Object id) {
-//			return perform( () -> doLoad( id, LoadEventListener.IMMEDIATE_LOAD) );
-//		}
-//
+		@Override
 		@SuppressWarnings("unchecked")
-		protected final CompletionStage<T> doLoad(Object id, LoadEventListener.LoadType loadType) {
+		protected CompletionStage<T> doLoad(Object id) {
 			if ( id == null ) {
+				// This is needed to make the tests with NaturalIds pass.
+				// It's was already part of Hibernate Reactive.
+				// I'm not sure why though, it doesn't seem like Hibernate ORM does it.
 				return nullFuture();
 			}
-			if ( lockOptions != null ) {
-				LoadEvent event = new LoadEvent(
-						id,
-						entityPersister.getEntityName(),
-						lockOptions,
-						ReactiveSessionImpl.this,
-						getReadOnlyFromLoadQueryInfluencers()
-				);
-				return fireReactiveLoad( event, loadType ).thenApply( v -> (T) event.getResult() );
-			}
-			LoadEvent event = new LoadEvent(
-					id,
-					entityPersister.getEntityName(),
-					false,
-					ReactiveSessionImpl.this,
-					getReadOnlyFromLoadQueryInfluencers()
-			);
-			return fireReactiveLoad( event, loadType )
-					.whenComplete( (v, t) -> afterOperation( t != null ) )
-					.thenApply( v -> (T) event.getResult() );
+			final ReactiveSession session = (ReactiveSession) getContext().getSession();
+			return supplyStage( () -> session
+					.reactiveLoad( LoadEventListener.GET, coerceId( id, session.getFactory() ), getEntityPersister().getEntityName(), getLockOptions(), isReadOnly( getContext().getSession() ) )
+			)
+					.handle( CompletionStages::handle )
+					.thenCompose( handler -> handler.getThrowable() instanceof ObjectNotFoundException
+							? nullFuture()
+							: handler.getResultAsCompletionStage()
+					)
+					.thenApply( result -> {
+						// ORM calls
+						// initializeIfNecessary( result );
+						// But, Hibernate Reactive doesn't support lazy initializations
+						return (T) result;
+					} );
 		}
 	}
 
@@ -1617,10 +1610,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return this;
 		}
 
-		protected void synchronizationEnabled(boolean synchronizationEnabled) {
-			this.synchronizationEnabled = synchronizationEnabled;
-		}
-
 		/**
 		 * @see org.hibernate.loader.internal.BaseNaturalIdLoadAccessImpl#doGetReference(Object)
 		 */
@@ -1698,14 +1687,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 				persistenceContext.getNaturalIdResolutions().handleSynchronization( pk, entity, entityPersister() );
 			}
-		}
-
-		protected final ReactiveIdentifierLoadAccessImpl<T> getIdentifierLoadAccess() {
-			final ReactiveIdentifierLoadAccessImpl<T> identifierLoadAccess = new ReactiveIdentifierLoadAccessImpl<>( entityPersister );
-			if ( this.lockOptions != null ) {
-				identifierLoadAccess.with( lockOptions );
-			}
-			return identifierLoadAccess;
 		}
 
 		protected ReactiveEntityPersister entityPersister() {
