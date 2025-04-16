@@ -20,6 +20,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.spi.DeleteContext;
+import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.MergeContext;
 import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.RefreshContext;
@@ -65,6 +66,8 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 	<T> CompletionStage<T> reactiveMerge(T object);
 
 	CompletionStage<Void> reactiveMerge(Object object, MergeContext copiedAlready);
+
+	CompletionStage<Object> reactiveLoad(LoadEventListener.LoadType loadType, Object id, String entityName, LockOptions lockOptions, Boolean readOnly);
 
 	CompletionStage<Void> reactiveFlush();
 
