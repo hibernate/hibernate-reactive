@@ -7,22 +7,18 @@ package org.hibernate.reactive.session.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.TransientObjectException;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
-import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
-import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.PersistentAttributeInterceptable;
-import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.event.monitor.spi.DiagnosticEvent;
+import org.hibernate.event.monitor.spi.EventMonitor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.graph.GraphSemantic;
@@ -74,7 +70,7 @@ import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.impl.CompletionStages.Completable;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import jakarta.persistence.EntityGraph;
@@ -87,19 +83,24 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.invoke.MethodHandles.lookup;
+import static java.util.function.Function.identity;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.Versioning.incrementVersion;
 import static org.hibernate.engine.internal.Versioning.seedVersion;
 import static org.hibernate.engine.internal.Versioning.setVersion;
+import static org.hibernate.event.internal.DefaultInitializeCollectionEventListener.handlePotentiallyEmptyCollection;
 import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.internal.util.NullnessUtil.castNonNull;
 import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.internal.util.StringHelper.isNotEmpty;
 import static org.hibernate.loader.ast.spi.CascadingFetchProfile.REFRESH;
+import static org.hibernate.loader.internal.CacheLoadHelper.initializeCollectionFromCache;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
@@ -110,6 +111,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -123,11 +125,8 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private static final Log LOG = make( Log.class, lookup() );
 
 	private final LoadQueryInfluencers influencers;
-
 	private final ReactiveConnection reactiveConnection;
-
 	private final ReactiveStatelessSessionImpl batchingHelperSession;
-
 	private final PersistenceContext persistenceContext;
 
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
@@ -215,7 +214,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		checkOpen();
 		for (Object id : ids) {
 			if ( id == null ) {
-				throw new IllegalArgumentException("Null id");
+				return failedFuture( new IllegalArgumentException( "Null id" ) );
 			}
 		}
 
@@ -224,12 +223,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 		return getEntityPersister( entityClass.getName() )
 				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
-				.whenComplete( (v, e) -> {
+				.whenComplete( (list, e) -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
 					}
 				} )
-				.thenApply( objects -> (List<T>) objects );
+				.thenApply( list -> (List<T>) list );
 	}
 
 	@Override
@@ -258,7 +257,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
 		}
 
-		return getEntityPersister( entityName )
+		ReactiveEntityPersister persister = getEntityPersister( entityName );
+		if ( persister.canReadFromCache() ) {
+			final Object cachedEntity = loadFromSecondLevelCache( persister, generateEntityKey( id, persister ), null, lockMode );
+			if ( cachedEntity != null ) {
+				getPersistenceContext().clear();
+				return completedFuture( (T) cachedEntity );
+			}
+		}
+		return persister
 				.reactiveLoad( id, null, getNullSafeLockMode( lockMode ), this )
 				.whenComplete( (v, e) -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
@@ -283,8 +290,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public CompletionStage<Void> reactiveInsert(Object entity) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		return reactiveInsert( entity, persister )
-				.thenAccept( v -> {
+		final Object[] state = persister.getValues( entity );
+		return reactiveInsert( entity, state, persister )
+				.thenCompose( id -> recreateCollections( entity, id, persister ) )
+				.thenAccept( id -> {
+					firePostInsert( entity, id, state, persister );
 					final StatisticsImplementor statistics = getFactory().getStatistics();
 					if ( statistics.isStatisticsEnabled() ) {
 						statistics.insertEntity( persister.getEntityName() );
@@ -292,71 +302,145 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				} );
 	}
 
-	private CompletionStage<Void> reactiveInsert(Object entity, ReactiveEntityPersister persister) {
-		final Object[] state = persister.getValues( entity );
-		final Generator generator = persister.getGenerator();
-		if ( !generator.generatedOnExecution() ) {
-			return generateId( persister, entity, generator )
-					.thenCompose( generatedId -> {
-						final Object id = castToIdentifierType( generatedId, persister );
-						if ( persister.isVersioned() ) {
-							if ( seedVersion( entity, state, persister, this ) ) {
-								persister.setValues( entity, state );
-							}
-						}
-						if ( firePreInsert( entity, id, state, persister ) ) {
-							return voidFuture();
-						}
-						getInterceptor()
-								.onInsert(
-										entity,
-										id,
-										state,
-										persister.getPropertyNames(),
-										persister.getPropertyTypes()
-								);
-						return persister
-								.insertReactive( id, state, entity, this )
-								.thenAccept( ignore -> {
-									persister.setIdentifier( entity, id, this );
-									firePostInsert( entity, id, state, persister );
-								} );
-					} );
+	private static class Loop {
+		private CompletionStage<Void> loop = voidFuture();
+
+		public void then(Supplier<CompletionStage<Void>> step) {
+			loop = loop.thenCompose( v -> step.get() );
 		}
-		else {
-			if ( firePreInsert( entity, null, state, persister ) ) {
-				return voidFuture();
-			}
-			getInterceptor()
-					.onInsert( entity, null, state, persister.getPropertyNames(), persister.getPropertyTypes() );
-			return persister
-					.insertReactive( state, entity, this )
-					.thenAccept( id -> {
-						persister.setIdentifier( entity, id, this );
-						firePostInsert( entity, id, state, persister );
-					} );
+
+		public void whenComplete(BiConsumer<Void, Throwable> consumer) {
+			loop = loop.whenComplete( consumer );
 		}
 	}
 
-	private CompletionStage<?> generateId(EntityPersister persister, Object entity, Generator generator) {
-		if ( generator.generatesOnInsert() ) {
-            if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
-				return reactiveGenerator.generate(this, this);
+	private CompletionStage<Void> recreateCollections(Object entity, Object id, EntityPersister persister) {
+		final Completable<Void> stage = new Completable<>();
+		final Loop loop = new Loop();
+		forEachOwnedCollection(
+				entity, id, persister, (descriptor, collection) -> {
+					firePreRecreate( collection, descriptor );
+					final EventMonitor eventMonitor = getEventMonitor();
+					final DiagnosticEvent event = eventMonitor.beginCollectionRecreateEvent();
+					loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
+							.reactiveRecreate( collection, id, this ) )
+							.whenComplete( (t, throwable) -> eventMonitor
+									.completeCollectionRecreateEvent( event, id, descriptor.getRole(), throwable != null, this )
+							)
+							.thenAccept( unused -> {
+								final StatisticsImplementor statistics = getFactory().getStatistics();
+								if ( statistics.isStatisticsEnabled() ) {
+									statistics.recreateCollection( descriptor.getRole() );
+								}
+								firePostRecreate( collection, descriptor );
+							} )
+					);
+				}
+		);
+		loop.whenComplete( stage::complete );
+		return stage.getStage();
+	}
+
+	private CompletionStage<?> reactiveInsert(Object entity, Object[] state, ReactiveEntityPersister persister) {
+		if ( persister.isVersioned() ) {
+			if ( seedVersion( entity, state, persister, this ) ) {
+				persister.setValues( entity, state );
 			}
-			else if ( generator instanceof BeforeExecutionGenerator beforeExecutionGenerator ) {
-				return completedFuture( beforeExecutionGenerator.generate(this, entity, null, INSERT) );
-			}
-			else {
-				throw new IllegalArgumentException( "Unsupported generator type: " + generator.getClass().getName() );
-			}
-        }
-		else {
-			final Object id = persister.getIdentifier( entity, this );
-			if ( id == null ) {
-				throw new IdentifierGenerationException( "Identifier of entity '" + persister.getEntityName() + "' must be manually assigned before calling 'insert()'" );
-			}
+		}
+		final Generator generator = persister.getGenerator();
+		if ( generator.generatedBeforeExecution( entity, this ) ) {
+			return generatedIdBeforeInsert( entity, persister, generator, state );
+		}
+		if ( generator.generatedOnExecution( entity, this ) ) {
+			return generateIdOnInsert( entity, persister, generator, state );
+		}
+		return applyAssignedIdentifierInsert( entity, persister, state );
+	}
+
+	private CompletionStage<?> applyAssignedIdentifierInsert(Object entity, ReactiveEntityPersister persister, Object[] state) {
+		Object id = persister.getIdentifier( entity, this );
+		if ( id == null ) {
+			return failedFuture( new IdentifierGenerationException( "Identifier of entity '" + persister.getEntityName() + "' must be manually assigned before calling 'insert()'" ) );
+		}
+		if ( firePreInsert( entity, id, state, persister ) ) {
 			return completedFuture( id );
 		}
+		getInterceptor().onInsert( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+		final EventMonitor eventMonitor = getEventMonitor();
+		final DiagnosticEvent event = eventMonitor.beginEntityInsertEvent();
+		// try-block
+		return supplyStage( () -> persister.insertReactive( id, state, entity, this ) )
+				// finally: catches error in case insertReactive fails before returning a CompletionStage
+				.whenComplete( (generatedValues, throwable) -> eventMonitor
+						.completeEntityInsertEvent( event, id, persister.getEntityName(), throwable != null, this )
+				);
+	}
+
+	private CompletionStage<?> generateIdOnInsert(
+			Object entity,
+			ReactiveEntityPersister persister,
+			Generator generator,
+			Object[] state) {
+		if ( !generator.generatesOnInsert() ) {
+			throw new IdentifierGenerationException( "Identifier generator must generate on insert" );
+		}
+		if ( firePreInsert( entity, null, state, persister ) ) {
+			return nullFuture();
+		}
+		getInterceptor().onInsert( entity, null, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+		final EventMonitor eventMonitor = getEventMonitor();
+		final DiagnosticEvent event = eventMonitor.beginEntityInsertEvent();
+		// try-block
+		return supplyStage( () -> persister
+				.insertReactive( state, entity, this )
+				.thenApply( generatedValues -> castNonNull( generatedValues )
+						.getGeneratedValue( persister.getIdentifierMapping() )
+				) )
+				// finally-block: catch the exceptions from insertReactive and getGeneratedValues
+				.whenComplete( (id, throwable) -> eventMonitor
+						.completeEntityInsertEvent( event, id, persister.getEntityName(), throwable != null, this )
+				)
+				.thenApply( id -> {
+					persister.setIdentifier( entity, id, this );
+					return id;
+				} );
+	}
+
+	private CompletionStage<?> generatedIdBeforeInsert(
+			Object entity,
+			ReactiveEntityPersister persister,
+			Generator generator,
+			Object[] state) {
+		if ( !generator.generatesOnInsert() ) {
+			return failedFuture( new IdentifierGenerationException( "Identifier generator must generate on insert" ) );
+		}
+		return generateIdForInsert( entity, generator, persister )
+				.thenCompose( id -> {
+					persister.setIdentifier( entity, id, this );
+					if ( firePreInsert( entity, id, state, persister ) ) {
+						return completedFuture( id );
+					}
+					getInterceptor().onInsert( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+					final EventMonitor eventMonitor = getEventMonitor();
+					final DiagnosticEvent event = eventMonitor.beginEntityInsertEvent();
+					// try-block
+					return supplyStage( () -> persister.insertReactive( id, state, entity, this ) )
+							// finally: catches error in case insertReactive fails before returning a CompletionStage
+							.whenComplete( (generatedValues, throwable) -> eventMonitor
+									.completeEntityInsertEvent( event, id, persister.getEntityName(), throwable != null, this )
+							)
+							.thenApply( identity() );
+				} );
+	}
+
+	private CompletionStage<?> generateIdForInsert(Object entity, Generator generator, ReactiveEntityPersister persister) {
+		if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
+			return reactiveGenerator.generate( this, this )
+					.thenApply( id -> castToIdentifierType( id, persister ) );
+		}
+
+		final Object currentValue = generator.allowAssignedIdentifiers() ? persister.getIdentifier( entity ) : null;
+		return completedFuture( ( (BeforeExecutionGenerator) generator ).generate( this, entity, currentValue, INSERT ) );
 	}
 
 	@Override
@@ -365,7 +449,57 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = persister.getIdentifier( entity, this );
 		final Object version = persister.getVersion( entity );
-		return persister.deleteReactive( id, version, entity, this );
+		if ( firePreDelete( entity, id, persister ) ) {
+			return voidFuture();
+		}
+
+		getInterceptor().onDelete( entity, id, persister.getPropertyNames(), persister.getPropertyTypes() );
+		return removeCollections( entity, id, persister )
+				.thenCompose( v -> {
+					final Object ck = lockCacheItem( id, version, persister );
+					final EventMonitor eventMonitor = getEventMonitor();
+					final DiagnosticEvent event = eventMonitor.beginEntityDeleteEvent();
+					// try-block
+					return supplyStage( () -> persister.deleteReactive( id, version, entity, this ) )
+							// finally-block
+							.whenComplete( (unused, throwable) -> eventMonitor
+									.completeEntityDeleteEvent( event, id, persister.getEntityName(), throwable != null, this )
+							)
+							.thenAccept( unused -> removeCacheItem( ck, persister ) );
+				} )
+				.thenAccept( v -> {
+					firePostDelete( entity, id, persister );
+					final StatisticsImplementor statistics = getFactory().getStatistics();
+					if ( statistics.isStatisticsEnabled() ) {
+						statistics.deleteEntity( persister.getEntityName() );
+					}
+				} );
+	}
+
+	private CompletionStage<Void> removeCollections(Object entity, Object id, EntityPersister persister) {
+		final Completable<Void> stage = new Completable<>();
+		final Loop loop = new Loop();
+		forEachOwnedCollection( entity, id, persister,
+								(descriptor, collection) -> {
+									firePreRemove( collection, entity, descriptor );
+									final EventMonitor eventMonitor = getEventMonitor();
+									final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
+									loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
+											.reactiveRemove( id, this ) )
+											.whenComplete( (unused, throwable) -> eventMonitor
+													.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
+											)
+											.thenAccept( v -> {
+												firePostRemove( collection, entity, descriptor );
+												final StatisticsImplementor statistics = getFactory().getStatistics();
+												if ( statistics.isStatisticsEnabled() ) {
+													statistics.removeCollection( descriptor.getRole() );
+												}
+											} )
+									);
+								} );
+		loop.whenComplete( stage::complete );
+		return stage.getStage();
 	}
 
 	@Override
@@ -390,19 +524,65 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = persister.getIdentifier( entity, this );
 		final Object[] state = persister.getValues( entity );
-		final Object oldVersion;
+		final Object oldVersion = persister.isVersioned() ? persister.getVersion( entity ) : null;
 		if ( persister.isVersioned() ) {
-			oldVersion = persister.getVersion( entity );
 			final Object newVersion = incrementVersion( entity, oldVersion, persister, this );
 			setVersion( state, newVersion, persister );
 			persister.setValues( entity, state );
 		}
-		else {
-			oldVersion = null;
+
+		if ( firePreUpdate(entity, id, state, persister) ) {
+			return voidFuture();
 		}
-		return persister
-				.updateReactive( id, state, null, false, null, oldVersion, entity, null, this )
-				.thenCompose( CompletionStages::voidFuture );
+
+		getInterceptor().onUpdate( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+		final Object ck = lockCacheItem( id, oldVersion, persister );
+		final EventMonitor eventMonitor = getEventMonitor();
+		final DiagnosticEvent event = eventMonitor.beginEntityUpdateEvent();
+		// try-block
+		return supplyStage( () -> persister
+				.updateReactive( id, state, null, false, null, oldVersion, entity, null, this ) )
+				// finally-block
+				.whenComplete( (generatedValues, throwable) -> eventMonitor
+						.completeEntityUpdateEvent( event, id, persister.getEntityName(), throwable != null, this )
+				)
+				.thenAccept( generatedValues -> removeCacheItem( ck, persister ) )
+				.thenCompose( v -> removeAndRecreateCollections( entity, id, persister ) )
+				.thenAccept( v -> {
+					firePostUpdate( entity, id, state, persister );
+					final StatisticsImplementor statistics = getFactory().getStatistics();
+					if ( statistics.isStatisticsEnabled() ) {
+						statistics.updateEntity( persister.getEntityName() );
+					}
+				} );
+	}
+
+	private CompletionStage<Void> removeAndRecreateCollections(Object entity, Object id, EntityPersister persister) {
+		final Completable<Void> stage = new Completable<>();
+		final Loop loop = new Loop();
+		forEachOwnedCollection( entity, id, persister,
+								(descriptor, collection) -> {
+									firePreUpdate( collection, descriptor );
+									final EventMonitor eventMonitor = getEventMonitor();
+									final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
+									ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) persister;
+									loop.then( () -> supplyStage( () -> reactivePersister
+											.reactiveRemove( id, this )
+											.thenCompose( v -> reactivePersister.reactiveRecreate( collection, id, this ) ) )
+											.whenComplete( (unused, throwable) -> eventMonitor
+													.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
+											)
+											.thenAccept( v -> {
+												firePostUpdate( collection, descriptor );
+												final StatisticsImplementor statistics = getFactory().getStatistics();
+												if ( statistics.isStatisticsEnabled() ) {
+													statistics.updateCollection( descriptor.getRole() );
+												}
+											} )
+									);
+								} );
+		loop.whenComplete( stage::complete );
+		return stage.getStage();
 	}
 
 	@Override
@@ -422,6 +602,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(String entityName, Object entity, LockMode lockMode) {
+		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
 		final Object id = persister.getIdentifier( entity, this );
 
@@ -432,31 +613,23 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		if ( persister.canWriteToCache() ) {
 			final EntityDataAccess cacheAccess = persister.getCacheAccessStrategy();
 			if ( cacheAccess != null ) {
-				final Object ck = cacheAccess.generateCacheKey(
-						id,
-						persister,
-						getFactory(),
-						getTenantIdentifier()
-				);
+				final Object ck = cacheAccess.generateCacheKey( id, persister, getFactory(), getTenantIdentifier() );
 				cacheAccess.evict( ck );
 			}
 		}
 
 		return fromInternalFetchProfile( REFRESH, () -> persister.reactiveLoad( id, entity, getNullSafeLockMode( lockMode ), this ) )
 				.thenAccept( result -> {
+					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
 					}
-					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
 				} );
 	}
 
-	private CompletionStage<?> fromInternalFetchProfile(
-			CascadingFetchProfile cascadingFetchProfile,
-			Supplier<CompletionStage<?>> supplier) {
+	private CompletionStage<?> fromInternalFetchProfile(CascadingFetchProfile cascadingFetchProfile, Supplier<CompletionStage<?>> supplier) {
 		CascadingFetchProfile previous = getLoadQueryInfluencers().getEnabledCascadingFetchProfile();
-		return voidFuture()
-				.thenCompose( v -> {
+		return supplyStage( () -> {
 					getLoadQueryInfluencers().setEnabledCascadingFetchProfile( cascadingFetchProfile );
 					return supplier.get();
 				} )
@@ -479,38 +652,30 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public CompletionStage<Void> reactiveUpsert(String entityName, Object entity) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
-		Object id = persister.getIdentifier( entity, this );
-		Boolean knownTransient = persister.isTransient( entity, this );
-		if ( knownTransient != null && knownTransient ) {
-			throw new TransientObjectException(
-					"Object passed to upsert() has a null identifier: "
-							+ persister.getEntityName() );
-//			final Generator generator = persister.getGenerator();
-//			if ( !generator.generatedOnExecution() ) {
-//				id = ( (BeforeExecutionGenerator) generator).generate( this, entity, null, INSERT );
-//			}
-		}
+		final Object id = idToUpsert( entity, persister );
 		final Object[] state = persister.getValues( entity );
-		final Object oldVersion;
-		if ( persister.isVersioned() ) {
-			oldVersion = persister.getVersion( entity );
-			if ( oldVersion == null ) {
-				if ( seedVersion( entity, state, persister, this ) ) {
-					persister.setValues( entity, state );
-				}
-			}
-			else {
-				final Object newVersion = incrementVersion( entity, oldVersion, persister, this );
-				setVersion( state, newVersion, persister );
-				persister.setValues( entity, state );
-			}
+		if ( firePreUpsert( entity, id, state, persister ) ) {
+			return voidFuture();
 		}
-		else {
-			oldVersion = null;
-		}
-
-		return persister
-				.mergeReactive( id, state, null, false, null, oldVersion, entity, null, this );
+		getInterceptor().onUpsert( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+		final Object oldVersion = versionToUpsert( entity, persister, state );
+		final Object ck = lockCacheItem( id, oldVersion, persister );
+		final EventMonitor eventMonitor = getEventMonitor();
+		final DiagnosticEvent event = eventMonitor.beginEntityUpsertEvent();
+		return supplyStage( () -> persister
+				.mergeReactive( id, state, null, false, null, oldVersion, entity, null, this ) )
+				.whenComplete( (v, throwable) -> eventMonitor
+						.completeEntityUpsertEvent( event, id, persister.getEntityName(), throwable != null, this )
+				)
+				.thenAccept( v -> {
+					removeCacheItem( ck, persister );
+					final StatisticsImplementor statistics = getFactory().getStatistics();
+					if ( statistics.isStatisticsEnabled() ) {
+						statistics.upsertEntity( persister.getEntityName() );
+					}
+				} )
+				.thenCompose( v -> removeAndRecreateCollections( entity, id, persister ) )
+				.thenAccept( v -> firePostUpsert( entity, id, state, persister ) );
 	}
 
 	@Override
@@ -570,7 +735,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
 	}
 
-
 	@Override
 	public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
 		return loop( entities, batchingHelperSession::reactiveRefresh )
@@ -592,96 +756,26 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				.withBatchSize( batchSize );
 	}
 
-	private Object createProxy(EntityKey entityKey) {
-		final Object proxy = entityKey.getPersister().createProxy( entityKey.getIdentifier(), this );
-		getPersistenceContext().addProxy( entityKey, proxy );
-		return proxy;
+	@Override
+	public CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable) {
+		Object object = super.internalLoad( entityName, id, eager, nullable );
+		return object instanceof CompletionStage<?>
+				? (CompletionStage<Object>) object
+				: completedFuture( object );
 	}
 
 	@Override
-	public CompletionStage<Object> reactiveInternalLoad(
-			String entityName,
-			Object id,
-			boolean eager,
-			boolean nullable) {
-		checkOpen();
-
-		final EntityPersister persister = getEntityPersister( entityName );
-		final EntityKey entityKey = generateEntityKey( id, persister );
-
-		// first, try to load it from the temp PC associated to this SS
-		final PersistenceContext persistenceContext = getPersistenceContext();
-		final Object loaded = persistenceContext.getEntity( entityKey );
-		if ( loaded != null ) {
-			// we found it in the temp PC.  Should indicate we are in the midst of processing a result set
-			// containing eager fetches via join fetch
-			return completedFuture( loaded );
-		}
-
-		if ( !eager ) {
-			// caller did not request forceful eager loading, see if we can create
-			// some form of proxy
-
-			// first, check to see if we can use "bytecode proxies"
-
-			final BytecodeEnhancementMetadata enhancementMetadata = persister.getBytecodeEnhancementMetadata();
-			if ( enhancementMetadata.isEnhancedForLazyLoading() ) {
-
-				// if the entity defines a HibernateProxy factory, see if there is an
-				// existing proxy associated with the PC - and if so, use it
-				if ( persister.getRepresentationStrategy().getProxyFactory() != null ) {
-					final Object proxy = persistenceContext.getProxy( entityKey );
-
-					if ( proxy != null ) {
-                        if ( LOG.isTraceEnabled() ) {
-                            LOG.trace( "Entity proxy found in session cache" );
-                        }
-                        if ( LOG.isDebugEnabled() && ( (HibernateProxy) proxy ).getHibernateLazyInitializer().isUnwrap() ) {
-                            LOG.debug( "Ignoring NO_PROXY to honor laziness" );
-                        }
-
-						return completedFuture( persistenceContext.narrowProxy( proxy, persister, entityKey, null ) );
-					}
-
-					// specialized handling for entities with subclasses with a HibernateProxy factory
-					if ( persister.hasSubclasses() ) {
-						// entities with subclasses that define a ProxyFactory can create
-						// a HibernateProxy.
-//                        LOG.debugf( "Creating a HibernateProxy for to-one association with subclasses to honor laziness" );
-						return completedFuture( createProxy( entityKey ) );
-					}
-					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
-				}
-				else if ( !persister.hasSubclasses() ) {
-					return completedFuture( enhancementMetadata.createEnhancedProxy( entityKey, false, this ) );
-				}
-				// If we get here, then the entity class has subclasses and there is no HibernateProxy factory.
-				// The entity will get loaded below.
-			}
-			else {
-				if ( persister.hasProxy() ) {
-					final Object existingProxy = persistenceContext.getProxy( entityKey );
-					if ( existingProxy != null ) {
-						return completedFuture( persistenceContext.narrowProxy( existingProxy, persister, entityKey, null ) );
-					}
-					else {
-						return completedFuture( createProxy( entityKey ) );
-					}
-				}
-			}
-		}
-
+	protected Object internalLoadGet(String entityName, Object id, PersistenceContext persistenceContext) {
 		// otherwise immediately materialize it
 
 		// IMPLEMENTATION NOTE: increment/decrement the load count before/after getting the value
 		//                      to ensure that #get does not clear the PersistenceContext.
 		persistenceContext.beforeLoad();
-		return this.reactiveGet( persister.getEntityName(), id )
+		return this.reactiveGet( entityName, id )
 				.whenComplete( (r, e) -> persistenceContext.afterLoad() );
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association == null ) {
@@ -691,84 +785,92 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final PersistenceContext persistenceContext = getPersistenceContext();
 		final LazyInitializer initializer = extractLazyInitializer( association );
 		if ( initializer != null ) {
-			if ( initializer.isUninitialized() ) {
-				final String entityName = initializer.getEntityName();
-				final Object id = initializer.getIdentifier();
-				initializer.setSession( this );
-				persistenceContext.beforeLoad();
-
-				final ReactiveEntityPersister persister = getEntityPersister( entityName );
-
-				// This is hard to test because it happens on slower machines like the ones we use on CI.
-				// See AbstractLazyInitializer#initialize, it happens when the object is not initialized and we need to
-				// call session.immediateLoad
-				final CompletionStage<?> stage = initializer.getImplementation() instanceof CompletionStage
-						? (CompletionStage<?>) initializer.getImplementation()
-						: completedFuture( initializer.getImplementation() );
-
-				return stage.thenCompose( implementation -> persister.reactiveLoad( id, implementation, LockOptions.NONE, this ) )
-						.thenApply( entity -> {
-							checkEntityFound( this, entityName, id, entity );
-							initializer.setImplementation( entity );
-							return unproxy ? (T) entity : association;
-						} )
-						.whenComplete( (v, e) -> {
-							initializer.unsetSession();
-							persistenceContext.afterLoad();
-							if ( persistenceContext.isLoadFinished() ) {
-								persistenceContext.clear();
-							}
-						} );
-			}
-			else {
-				// Initialized
-				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
-			}
-		}
-		else if ( association instanceof PersistentCollection<?> collection ) {
-            if ( collection.wasInitialized() ) {
-				return completedFuture( association );
-			}
-			else {
-				final ReactiveCollectionPersister collectionDescriptor =
-						(ReactiveCollectionPersister) getFactory().getMappingMetamodel()
-								.getCollectionDescriptor( collection.getRole() );
-
-				final Object key = collection.getKey();
-				persistenceContext.addUninitializedCollection( collectionDescriptor, collection, key );
-				collection.setCurrentSession( this );
-				return collectionDescriptor.reactiveInitialize( key, this )
-						.whenComplete( (v, e) -> {
-							collection.unsetSession( this );
-							if ( persistenceContext.isLoadFinished() ) {
-								persistenceContext.clear();
-							}
-						} )
-						.thenApply( v -> association );
-			}
+			return initializer.isUninitialized()
+					? fetchUninitialized( association, unproxy, initializer, persistenceContext )
+					: completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 		}
 		else if ( isPersistentAttributeInterceptable( association ) ) {
-			final PersistentAttributeInterceptable interceptable = asPersistentAttributeInterceptable( association );
-			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
-			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor lazinessInterceptor ) {
-                lazinessInterceptor.setSession( this );
-				return forceInitialize( association, null, lazinessInterceptor.getIdentifier(), lazinessInterceptor.getEntityName(), this )
+			if ( asPersistentAttributeInterceptable( association ).$$_hibernate_getInterceptor()
+					instanceof EnhancementAsProxyLazinessInterceptor proxyInterceptor ) {
+				proxyInterceptor.setSession( this );
+				return forceInitialize( association, null, proxyInterceptor.getIdentifier(), proxyInterceptor.getEntityName(), this )
 						.whenComplete( (i,e) -> {
-							lazinessInterceptor.unsetSession();
+							proxyInterceptor.unsetSession();
 							if ( persistenceContext.isLoadFinished() ) {
 								persistenceContext.clear();
 							}
 						} )
 						.thenApply( i -> association );
+			}
+		}
+		else if ( association instanceof PersistentCollection<?> collection && !collection.wasInitialized() ) {
+			final ReactiveCollectionPersister collectionDescriptor = (ReactiveCollectionPersister) getFactory()
+					.getMappingMetamodel().getCollectionDescriptor( collection.getRole() );
 
-			}
-			else {
-				return completedFuture( association );
-			}
+			final Object key = collection.getKey();
+			persistenceContext.addUninitializedCollection( collectionDescriptor, collection, key );
+			collection.setCurrentSession( this );
+			return supplyStage( () -> {
+				if ( initializeCollectionFromCache( key, collectionDescriptor, collection, this ) ) {
+					LOG.trace( "Collection fetched from cache" );
+					return completedFuture( association );
+				}
+				else {
+					return collectionDescriptor
+							.reactiveInitialize( key, this )
+							.thenApply( v -> {
+								handlePotentiallyEmptyCollection( collection, getPersistenceContextInternal(), key, collectionDescriptor );
+								LOG.trace( "Collection fetched" );
+								final StatisticsImplementor statistics = getFactory().getStatistics();
+								if ( statistics.isStatisticsEnabled() ) {
+									statistics.fetchCollection( collectionDescriptor.getRole() );
+								}
+								return association;
+							} );
+				}
+			} ).whenComplete( (t, throwable) -> {
+				collection.$$_hibernate_setInstanceId( 0 );
+				collection.unsetSession( this );
+				if ( persistenceContext.isLoadFinished() ) {
+					persistenceContext.clear();
+				}
+			} );
 		}
-		else {
-			return completedFuture( association );
-		}
+
+		return completedFuture( association );
+	}
+
+	private <T> CompletionStage<T> fetchUninitialized(
+			T association,
+			boolean unproxy,
+			LazyInitializer initializer,
+			PersistenceContext persistenceContext) {
+		final String entityName = initializer.getEntityName();
+		final Object id = initializer.getIdentifier();
+		initializer.setSession( this );
+		persistenceContext.beforeLoad();
+		return reactiveImplementation( initializer )
+				.thenApply( entity -> {
+					checkEntityFound( this, entityName, id, entity );
+					initializer.setImplementation( entity );
+					return unproxy ? (T) entity : association;
+				} )
+				.whenComplete( (v, e) -> {
+					initializer.unsetSession();
+					persistenceContext.afterLoad();
+					if ( persistenceContext.isLoadFinished() ) {
+						persistenceContext.clear();
+					}
+				} );
+	}
+
+	private static CompletionStage<?> reactiveImplementation(LazyInitializer initializer) {
+		// This is hard to test because it happens on slower machines like the ones we use on CI.
+		// See AbstractLazyInitializer#initialize, it happens when the object is not initialized, and we need to
+		// call session.immediateLoad
+		return initializer.getImplementation() instanceof CompletionStage
+				? (CompletionStage<?>) initializer.getImplementation()
+				: completedFuture( initializer.getImplementation() );
 	}
 
 	@Override
