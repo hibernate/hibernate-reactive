@@ -12,6 +12,7 @@ import java.sql.SQLWarning;
 import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.cache.CacheException;
 import org.hibernate.dialect.Dialect;
@@ -24,6 +25,7 @@ import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 
+import static org.jboss.logging.Logger.Level.DEBUG;
 import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
@@ -315,4 +317,12 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message( id= 494, value = "Attempt to merge an uninitialized collection with queued operations; queued operations will be ignored: %s")
 	void ignoreQueuedOperationsOnMerge(String collectionInfoString);
+
+	// Same method in ORM
+	@LogMessage(level = DEBUG)
+	@Message(value = "JDBCException was thrown for a transaction marked for rollback. " +
+			" This is probably due to an operation failing fast due to the transaction being marked for rollback.",
+			id = 520)
+	void jdbcExceptionThrownWithTransactionRolledBack(@Cause JDBCException e);
+
 }
