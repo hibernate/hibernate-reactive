@@ -13,7 +13,8 @@ import java.util.Locale;
 
 import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.OracleArrayJdbcType;
+
+import org.hibernate.dialect.type.OracleArrayJdbcType;
 import org.hibernate.reactive.adaptor.impl.ArrayAdaptor;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.ValueBinder;
@@ -30,7 +31,7 @@ import org.hibernate.type.descriptor.jdbc.StructJdbcType;
 import static java.sql.Types.ARRAY;
 
 /**
- * @see org.hibernate.dialect.OracleArrayJdbcType
+ * @see org.hibernate.dialect.type.OracleArrayJdbcType
  */
 public class ReactiveOracleArrayJdbcType extends OracleArrayJdbcType {
 
