@@ -152,12 +152,13 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 		query.orderBy( cb.asc( gp.get( "name" ) ) );
 
 		CriteriaUpdate<GuineaPig> update = cb.createCriteriaUpdate( GuineaPig.class );
-		Root<GuineaPig> root = update.from(GuineaPig.class);
+		Root<GuineaPig> updatedPig = update.from(GuineaPig.class);
 		update.set( "name", "Bob" );
-		update.where( root.get( "mate" ).isNotNull() );
+		update.where( updatedPig.get( "mate" ).isNotNull() );
 
 		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete( GuineaPig.class );
-		delete.from( GuineaPig.class );
+		Root<GuineaPig> deletedPig = delete.from( GuineaPig.class );
+		delete.where( deletedPig.get( "mate" ).isNotNull() );
 
 		test( context, getMutinySessionFactory().openStatelessSession()
 				.chain( ss -> ss.insertMultiple( List.of(mate, pig) )
@@ -172,7 +173,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 						.chain( v -> ss.createQuery( update ).executeUpdate() )
 						.invoke( rows -> assertEquals( 1, rows ) )
 						.chain( v -> ss.createQuery( delete ).executeUpdate() )
-						.invoke( rows -> assertEquals( 2, rows ) )
+						.invoke( rows -> assertEquals( 1, rows ) )
 						.chain( v -> ss.close() ) )
 		);
 	}
