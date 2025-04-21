@@ -41,10 +41,10 @@ import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertValuesStatement;
 import org.hibernate.query.sqm.tree.insert.SqmValues;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
@@ -554,7 +554,7 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 				executionContext.getSession()
 		);
 		final JdbcOperationQuerySelect select = translator.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
-		return ( (ReactiveSession) executionContext.getSession() )
+		return ( (ReactiveSharedSessionContractImplementor) executionContext.getSession() )
 				.reactiveAutoFlushIfRequired( select.getAffectedTableNames() )
 				.thenCompose( v -> StandardReactiveSelectExecutor.INSTANCE.list(
 								select,
