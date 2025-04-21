@@ -23,7 +23,7 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
@@ -154,7 +154,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 		data.setState( State.INITIALIZED );
 		final String entityName = concreteDescriptor.getEntityName();
 
-		return ( (ReactiveSession) session ).reactiveInternalLoad(
+		return ( (ReactiveQueryProducer) session ).reactiveInternalLoad(
 						entityName,
 						data.getEntityIdentifier(),
 						true,

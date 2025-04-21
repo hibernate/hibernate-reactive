@@ -141,22 +141,26 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionCriteria(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
+		GuineaPig mate = new GuineaPig("Aloina");
+		pig.mate = mate;
 
 		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
 
 		CriteriaQuery<GuineaPig> query = cb.createQuery( GuineaPig.class );
 		Root<GuineaPig> gp = query.from( GuineaPig.class );
 		query.where( cb.equal( gp.get( "name" ), cb.parameter( String.class, "n" ) ) );
+		query.orderBy( cb.asc( gp.get( "name" ) ) );
 
 		CriteriaUpdate<GuineaPig> update = cb.createCriteriaUpdate( GuineaPig.class );
-		update.from( GuineaPig.class );
+		Root<GuineaPig> root = update.from(GuineaPig.class);
 		update.set( "name", "Bob" );
+		update.where( root.get( "mate" ).isNotNull() );
 
 		CriteriaDelete<GuineaPig> delete = cb.createCriteriaDelete( GuineaPig.class );
 		delete.from( GuineaPig.class );
 
 		test( context, getMutinySessionFactory().openStatelessSession()
-				.chain( ss -> ss.insert( pig )
+				.chain( ss -> ss.insertMultiple( List.of(mate, pig) )
 						.chain( v -> ss.createQuery( query )
 								.setParameter( "n", pig.name )
 								.getResultList() )
@@ -168,7 +172,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 						.chain( v -> ss.createQuery( update ).executeUpdate() )
 						.invoke( rows -> assertEquals( 1, rows ) )
 						.chain( v -> ss.createQuery( delete ).executeUpdate() )
-						.invoke( rows -> assertEquals( 1, rows ) )
+						.invoke( rows -> assertEquals( 2, rows ) )
 						.chain( v -> ss.close() ) )
 		);
 	}
@@ -222,6 +226,9 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 		private String name;
 		@Version
 		private int version;
+
+		@ManyToOne
+		private GuineaPig mate;
 
 		public GuineaPig() {
 		}
