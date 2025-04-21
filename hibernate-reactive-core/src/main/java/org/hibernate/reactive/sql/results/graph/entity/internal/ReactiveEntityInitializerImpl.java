@@ -25,7 +25,7 @@ import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.proxy.map.MapProxy;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
@@ -532,7 +532,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				// If this initializer owns the entity, we have to remove the entity holder,
 				// because the subsequent loading process will claim the entity
 				session.getPersistenceContextInternal().removeEntityHolder( data.getEntityKey() );
-				return ( (ReactiveSession) session ).reactiveInternalLoad(
+				return ( (ReactiveQueryProducer) session ).reactiveInternalLoad(
 						data.getConcreteDescriptor().getEntityName(),
 						data.getEntityKey().getIdentifier(),
 						true,

@@ -37,7 +37,7 @@ import org.hibernate.reactive.event.ReactiveRefreshEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister;
-import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
@@ -84,7 +84,7 @@ public class DefaultReactiveRefreshEventListener
 			// Hibernate Reactive doesn't support detached instances in refresh()
 			throw new IllegalArgumentException( "Unmanaged instance passed to refresh()" );
 		}
-		return ( (ReactiveSession) source )
+		return ( (ReactiveQueryProducer) source )
 				.reactiveFetch( event.getObject(), true )
 				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}

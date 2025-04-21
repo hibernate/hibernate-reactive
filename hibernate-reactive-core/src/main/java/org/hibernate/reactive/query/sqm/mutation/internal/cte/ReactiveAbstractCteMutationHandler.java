@@ -30,8 +30,8 @@ import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
 import org.hibernate.query.sqm.spi.SqmParameterMappingModelResolutionAccess;
 import org.hibernate.query.sqm.tree.SqmDeleteOrUpdateStatement;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslator;
@@ -179,7 +179,7 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 		);
 		lockOptions.setAliasSpecificLockMode( explicitDmlTargetAlias, lockMode );
 
-		return ( (ReactiveSession) executionContext.getSession() )
+		return ( (ReactiveSharedSessionContractImplementor) executionContext.getSession() )
 				.reactiveAutoFlushIfRequired( select.getAffectedTableNames() )
 				.thenCompose( v -> StandardReactiveSelectExecutor.INSTANCE.list(
 											  select,

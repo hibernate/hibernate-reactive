@@ -35,6 +35,7 @@ import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import static org.hibernate.pretty.MessageHelper.infoString;
@@ -76,7 +77,7 @@ public class DefaultReactiveLockEventListener extends AbstractReassociateEventLi
 		//TODO: if object was an uninitialized proxy, this is inefficient,
 		//      resulting in two SQL selects
 
-		return ( (ReactiveSession) source ).reactiveFetch( event.getObject(), true )
+		return ( (ReactiveQueryProducer) source ).reactiveFetch( event.getObject(), true )
 				.thenCompose( entity -> reactiveOnLock( event, entity ) );
 	}
 
