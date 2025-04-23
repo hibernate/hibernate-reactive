@@ -1525,6 +1525,15 @@ public interface Mutiny {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
+
+		/**
+		 * Convenience method to obtain the {@link CriteriaBuilder}.
+		 *
+		 * @since 3
+		 */
+		default CriteriaBuilder getCriteriaBuilder() {
+			return getFactory().getCriteriaBuilder();
+		}
 	}
 
 	/**
@@ -2104,6 +2113,15 @@ public interface Mutiny {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
+
+		/**
+		 * Convenience method to obtain the {@link CriteriaBuilder}.
+		 *
+		 * @since 3
+		 */
+		default CriteriaBuilder getCriteriaBuilder() {
+			return getFactory().getCriteriaBuilder();
+		}
 	}
 
 	/**
