@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.mutiny;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -43,12 +38,17 @@ import jakarta.persistence.FindOption;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -993,6 +993,22 @@ public interface Mutiny {
 		 * @see org.hibernate.query.QueryProducer#createMutationQuery(JpaCriteriaInsert)
 		 */
 		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
+
+		/**
+		 * Create a typed {@link org.hibernate.query.Query} instance for the given typed query reference.
+		 *
+		 * @param typedQueryReference the type query reference
+		 *
+		 * @return The {@link org.hibernate.query.Query} instance for execution
+		 *
+		 * @throws IllegalArgumentException if a query has not been
+		 * defined with the name of the typed query reference or if
+		 * the query result is found to not be assignable to
+		 * result class of the typed query reference
+		 *
+		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
+		 */
+		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

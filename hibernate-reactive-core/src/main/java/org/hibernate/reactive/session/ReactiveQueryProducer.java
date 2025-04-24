@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.session;
 
+import jakarta.persistence.TypedQueryReference;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Incubating;
@@ -52,6 +53,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	<T> EntityGraph<T> getEntityGraph(Class<T> entity, String name);
 
 	<R> ReactiveQuery<R> createReactiveQuery(String queryString);
+
+	<R> ReactiveQuery<R> createReactiveQuery(TypedQueryReference<R> typedQueryReference);
 
 	<R> ReactiveQuery<R> createReactiveQuery(CriteriaQuery<R> criteriaQuery);
 

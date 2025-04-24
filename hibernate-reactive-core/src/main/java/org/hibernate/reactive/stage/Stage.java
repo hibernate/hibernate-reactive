@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage;
 
+import jakarta.persistence.TypedQueryReference;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -26,6 +27,7 @@ import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.Order;
 import org.hibernate.query.Page;
+import org.hibernate.query.Query;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
@@ -885,17 +887,6 @@ public interface Stage {
 			return lock( entity, convertToLockMode(lockModeType) );
 		}
 
-//		/**
-//		 * Obtain the specified lock level upon the given object, with the given
-//		 * {@link LockOptions}.
-//		 *
-//		 * @param entity a managed persistent instance
-//		 * @param lockOptions the requested {@link LockOptions}
-//		 *
-//		 * @throws IllegalArgumentException if the given instance is not managed
-//		 */
-//		CompletionStage<Void> lock(Object entity, LockOptions lockOptions);
-
 		/**
 		 * Force this session to flush asynchronously. Must be called at the
 		 * end of a unit of work, before committing the transaction and closing
@@ -1027,6 +1018,22 @@ public interface Stage {
 		 * @see org.hibernate.query.QueryProducer#createMutationQuery(JpaCriteriaInsert)
 		 */
 		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
+
+		/**
+		 * Create a typed {@link org.hibernate.query.Query} instance for the given typed query reference.
+		 *
+		 * @param typedQueryReference the type query reference
+		 *
+		 * @return The {@link org.hibernate.query.Query} instance for execution
+		 *
+		 * @throws IllegalArgumentException if a query has not been
+		 * defined with the name of the typed query reference or if
+		 * the query result is found to not be assignable to
+		 * result class of the typed query reference
+		 *
+		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
+		 */
+		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

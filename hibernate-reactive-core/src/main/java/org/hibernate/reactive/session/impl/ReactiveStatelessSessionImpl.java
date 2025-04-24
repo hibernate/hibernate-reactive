@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import jakarta.persistence.TypedQueryReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -828,6 +829,21 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw LOG.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(TypedQueryReference<R> typedQueryReference) {
+		checksBeforeQueryCreation();
+		@SuppressWarnings("unchecked")
+		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
+		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
+		ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
+				typedQueryReference.getName(),
+				memento -> createSqmQueryImplementor( resultType, memento ),
+				memento -> createNativeQueryImplementor( resultType, memento )
+		);
+		typedQueryReference.getHints().forEach( query::setHint );
+		return query;
 	}
 
 	@Override
