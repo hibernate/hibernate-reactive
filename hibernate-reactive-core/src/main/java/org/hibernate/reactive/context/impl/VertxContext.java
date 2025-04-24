@@ -6,12 +6,9 @@
 package org.hibernate.reactive.context.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.spi.context.storage.AccessMode;
 
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.logging.impl.Log;
@@ -19,6 +16,8 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+
+import static org.hibernate.reactive.context.impl.ContextualDataStorage.contextualDataMap;
 
 /**
  * An adaptor for the Vert.x {@link io.vertx.core.Context}.
@@ -42,7 +41,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 		final ContextInternal context = ContextInternal.current();
 		if ( context != null ) {
 			if ( trace ) LOG.tracef( "Putting key,value in context: [%1$s, %2$s]", key, instance );
-			VertxContext.<T>contextualDataMap( context ).put( key, instance );
+			ContextualDataStorage.<T>contextualDataMap( context ).put( key, instance );
 		}
 		else {
 			if ( trace ) LOG.tracef( "Context is null for key,value: [%1$s, %2$s]", key, instance  );
@@ -54,7 +53,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public <T> T get(Key<T> key) {
 		final ContextInternal context = ContextInternal.current();
 		if ( context != null ) {
-			T local = VertxContext.<T>contextualDataMap( context ).get( key );
+			T local = ContextualDataStorage.<T>contextualDataMap( context ).get( key );
 			if ( trace ) LOG.tracef( "Getting value %2$s from context for key %1$s", key, local  );
 			return local;
 		}
@@ -93,14 +92,5 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 			if ( trace ) LOG.tracef( "Running in the current Vert.x context %s", currentContext );
 			runnable.run();
 		}
-	}
-
-	@SuppressWarnings({ "unchecked" })
-	private static <T> ConcurrentMap<Key<T>, T> contextualDataMap(ContextInternal vertxContext) {
-		return vertxContext.getLocal(
-				ContextualDataStorage.CONTEXTUAL_DATA_KEY,
-				AccessMode.CONCURRENT,
-				ConcurrentHashMap::new
-		);
 	}
 }
