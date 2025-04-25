@@ -42,6 +42,8 @@ import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.specification.internal.MutationSpecificationImpl;
+import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
@@ -77,6 +79,8 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.Tuple;
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CommonAbstractCriteria;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -218,15 +222,14 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		Object[] sids = new Object[ids.length];
 		System.arraycopy( ids, 0, sids, 0, ids.length );
 
-		final CompletionStage<? extends List<?>> stage =
-				getEntityPersister( entityClass.getName() )
-						.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
-						.whenComplete( (v, e) -> {
-							if ( getPersistenceContext().isLoadFinished() ) {
-								getPersistenceContext().clear();
-							}
-						} );
-		return (CompletionStage<List<T>>) stage;
+		return getEntityPersister( entityClass.getName() )
+				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
+				.whenComplete( (v, e) -> {
+					if ( getPersistenceContext().isLoadFinished() ) {
+						getPersistenceContext().clear();
+					}
+				} )
+				.thenApply( objects -> (List<T>) objects );
 	}
 
 	@Override
@@ -791,6 +794,33 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw LOG.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(TypedQueryReference<R> typedQueryReference) {
+		checksBeforeQueryCreation();
+		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
+			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
+		}
+		if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
+			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
+			// Workaround for ORM, can be remove when this issue is solved: https://hibernate.atlassian.net/browse/HHH-19386
+			Class<R> type = (Class<R>) specification.getResultType() == Void.class
+					? null
+					: (Class<R>) specification.getResultType();
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, type, this );
+		}
+		@SuppressWarnings("unchecked")
+		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
+		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
+		ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
+				typedQueryReference.getName(),
+				memento -> createSqmQueryImplementor( resultType, memento ),
+				memento -> createNativeQueryImplementor( resultType, memento )
+		);
+		typedQueryReference.getHints().forEach( query::setHint );
+		return query;
 	}
 
 	@Override

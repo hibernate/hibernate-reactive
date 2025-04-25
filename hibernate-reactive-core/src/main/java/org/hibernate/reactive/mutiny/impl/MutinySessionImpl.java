@@ -12,6 +12,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -34,6 +35,7 @@ import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -138,6 +140,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert) {
 		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( insert ), factory  );
+	}
+
+	@Override
+	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
+		return new MutinyQueryImpl<>( reactiveQuery, factory );
 	}
 
 	@Override @Deprecated

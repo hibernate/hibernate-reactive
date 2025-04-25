@@ -7,6 +7,7 @@ package org.hibernate.reactive.mutiny.impl;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -17,6 +18,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
 import java.util.List;
@@ -69,6 +71,12 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	public <T> Uni<T> get(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
 		return uni( () -> delegate.reactiveGet( entityClass, id, null, entityGraph ) );
+	}
+
+	@Override
+	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
+		return new MutinyQueryImpl<>( reactiveQuery, factory );
 	}
 
 	@Override

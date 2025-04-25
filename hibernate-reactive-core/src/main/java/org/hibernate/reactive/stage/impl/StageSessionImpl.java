@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage.impl;
 
+import jakarta.persistence.TypedQueryReference;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -26,6 +27,7 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -528,6 +530,12 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
 		return delegate.createEntityGraph( rootType, graphName );
+	}
+
+	@Override
+	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
+		return new StageQueryImpl<>( reactiveQuery );
 	}
 
 	@Override @Deprecated

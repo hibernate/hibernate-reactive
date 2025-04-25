@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive.stage;
 
+import jakarta.persistence.TypedQueryReference;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -25,6 +26,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.query.Page;
+import org.hibernate.query.Query;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
@@ -986,6 +988,22 @@ public interface Stage {
 		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
 
 		/**
+		 * Create a typed {@link Query} instance for the given typed query reference.
+		 *
+		 * @param typedQueryReference the type query reference
+		 *
+		 * @return The {@link Query} instance for execution
+		 *
+		 * @throws IllegalArgumentException if a query has not been
+		 * defined with the name of the typed query reference or if
+		 * the query result is found to not be assignable to
+		 * result class of the typed query reference
+		 *
+		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
+		 */
+		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
 		 * update or delete, the returned {@link Query} must be executed using
@@ -1636,6 +1654,22 @@ public interface Stage {
 		 */
 		@Deprecated
 		<R> Query<R> createQuery(String queryString);
+
+		/**
+		 * Create a typed {@link Query} instance for the given typed query reference.
+		 *
+		 * @param typedQueryReference the type query reference
+		 *
+		 * @return The {@link Query} instance for execution
+		 *
+		 * @throws IllegalArgumentException if a query has not been
+		 * defined with the name of the typed query reference or if
+		 * the query result is found to not be assignable to
+		 * result class of the typed query reference
+		 *
+		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
+		 */
+		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL

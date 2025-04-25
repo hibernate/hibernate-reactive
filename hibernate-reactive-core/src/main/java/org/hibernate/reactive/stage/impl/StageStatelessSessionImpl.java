@@ -10,6 +10,7 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.MutationQuery;
@@ -17,6 +18,7 @@ import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -287,6 +289,12 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override @Deprecated
 	public <R> Query<R> createQuery(String queryString) {
 		return new StageQueryImpl<>( delegate.createReactiveQuery( queryString ) );
+	}
+
+	@Override
+	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
+		return new StageQueryImpl<>( reactiveQuery );
 	}
 
 	@Override
