@@ -28,6 +28,7 @@ import org.hibernate.reactive.event.impl.DefaultReactiveRefreshEventListener;
 import org.hibernate.reactive.event.impl.DefaultReactiveResolveNaturalIdEventListener;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.impl.Version;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 
@@ -54,7 +55,7 @@ public class ReactiveIntegrator implements Integrator {
 
 	private void attachEventContextManagingListenersIfRequired(ServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
-			LOG.startHibernateReactive();
+			LOG.startHibernateReactive( Version.getVersionString() );
 
 			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
 			eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );
