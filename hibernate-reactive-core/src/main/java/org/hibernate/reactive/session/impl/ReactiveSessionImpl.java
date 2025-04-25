@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CommonAbstractCriteria;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +78,8 @@ import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.specification.internal.MutationSpecificationImpl;
+import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
@@ -354,6 +358,33 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	protected <T> ReactiveQueryImplementor<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
 		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
 		applyQuerySettingsAndHints( query );
+		return query;
+	}
+
+	@Override
+	public <R> ReactiveQuery<R> createReactiveQuery(TypedQueryReference<R> typedQueryReference) {
+		checksBeforeQueryCreation();
+		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
+			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
+		}
+		if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
+			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
+			// Workaround for ORM, can be remove when this issue is solved: https://hibernate.atlassian.net/browse/HHH-19386
+			Class<R> type = specification.getResultType() == Void.class
+					? null
+					: (Class<R>) specification.getResultType();
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, type, this );
+		}
+		@SuppressWarnings("unchecked")
+		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
+		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
+		ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
+				typedQueryReference.getName(),
+				memento -> createSqmQueryImplementor( resultType, memento ),
+				memento -> createNativeQueryImplementor( resultType, memento )
+		);
+		typedQueryReference.getHints().forEach( query::setHint );
 		return query;
 	}
 
