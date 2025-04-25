@@ -30,13 +30,6 @@ ext {
     logger.lifecycle "Vert.x SQL Client Version: " + project.vertxSqlClientVersion
 }
 
-// Publishing to Sonatype (Maven Central):
-nexusPublishing {
-    repositories {
-        sonatype()
-    }
-}
-
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.diffplug.spotless'
