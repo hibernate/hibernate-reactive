@@ -5,15 +5,6 @@
  */
 package org.hibernate.reactive.query;
 
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
@@ -22,7 +13,6 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
-import org.hibernate.query.Order;
 import org.hibernate.query.QueryParameter;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -31,6 +21,14 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
+import java.time.Instant;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @see org.hibernate.query.SelectionQuery
@@ -122,10 +120,6 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable);
 
 	void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic);
-
-	ReactiveSelectionQuery<R> setOrder(List<? extends Order<? super R>> orderList);
-
-	ReactiveSelectionQuery<R> setOrder(Order<? super R> order);
 
 	ReactiveSelectionQuery<R> enableFetchProfile(String profileName);
 

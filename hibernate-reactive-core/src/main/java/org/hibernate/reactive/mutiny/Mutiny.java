@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.mutiny;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -23,7 +18,6 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.query.Order;
 import org.hibernate.query.Page;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
@@ -49,6 +43,10 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -359,37 +357,6 @@ public interface Mutiny {
 		default SelectionQuery<R> setLockMode(String alias, LockModeType lockModeType) {
 			return setLockMode( alias, convertToLockMode(lockModeType) );
 		}
-
-//		/**
-//		 * Set the {@link LockOptions} to use for the whole query.
-//		 *
-//		 * @see org.hibernate.query.Query#setLockOptions(LockOptions)
-//		 */
-//		Query<R> setLockOptions(LockOptions lockOptions);
-
-		/**
-		 * If the result type of this query is an entity class, add one or more
-		 * {@linkplain Order rules} for ordering the query results.
-		 *
-		 * @param orderList one or more instances of {@link Order}
-		 *
-		 * @see Order
-		 *
-		 * @see org.hibernate.query.Query#setOrder(List)
-		 */
-		SelectionQuery<R> setOrder(List<Order<? super R>> orderList);
-
-		/**
-		 * If the result type of this query is an entity class, add a
-		 * {@linkplain Order rule} for ordering the query results.
-		 *
-		 * @param order an instance of {@link Order}
-		 *
-		 * @see Order
-		 *
-		 * @see org.hibernate.query.Query#setOrder(Order)
-		 */
-		SelectionQuery<R> setOrder(Order<? super R> order);
 
 		/**
 		 * Set the {@link EntityGraph} that will be used as a fetch plan for
