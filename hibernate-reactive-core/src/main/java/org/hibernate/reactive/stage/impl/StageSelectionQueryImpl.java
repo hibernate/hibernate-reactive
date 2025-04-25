@@ -13,7 +13,6 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.query.Order;
 import org.hibernate.query.Page;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
@@ -191,18 +190,6 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	@Override
 	public SelectionQuery<T> setLockMode(String alias, LockMode lockMode) {
 		delegate.setLockMode( alias, lockMode );
-		return this;
-	}
-
-	@Override
-	public SelectionQuery<T> setOrder(List<Order<? super T>> orders) {
-		delegate.setOrder( orders );
-		return this;
-	}
-
-	@Override
-	public SelectionQuery<T> setOrder(Order<? super T> order) {
-		delegate.setOrder( order );
 		return this;
 	}
 

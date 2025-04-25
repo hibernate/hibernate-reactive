@@ -34,7 +34,6 @@ import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.IllegalQueryOperationException;
-import org.hibernate.query.Order;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -475,18 +474,6 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	@Override
 	public ReactiveQuerySqmImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode( alias, lockMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveQuerySqmImpl<R> setOrder(List<? extends Order<? super R>> orders) {
-		super.setOrder( orders );
-		return this;
-	}
-
-	@Override
-	public ReactiveQuerySqmImpl<R> setOrder(Order<? super R> order) {
-		super.setOrder( order );
 		return this;
 	}
 

@@ -28,7 +28,6 @@ import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.BindableType;
-import org.hibernate.query.Order;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -525,18 +524,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		super.setLockMode( alias, lockMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveNativeQueryImpl<R> setOrder(List<? extends Order<? super R>> orders) {
-		super.setOrder( orders );
-		return this;
-	}
-
-	@Override
-	public ReactiveNativeQueryImpl<R> setOrder(Order<? super R> order) {
-		super.setOrder( order );
 		return this;
 	}
 
