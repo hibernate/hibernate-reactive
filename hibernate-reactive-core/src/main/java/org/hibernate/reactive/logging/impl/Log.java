@@ -34,8 +34,8 @@ import static org.jboss.logging.Logger.Level.WARN;
 public interface Log extends BasicLogger {
 
 	@LogMessage(level = INFO)
-	@Message(id = 1, value = "Hibernate Reactive")
-	void startHibernateReactive();
+	@Message(id = 1, value = "Hibernate Reactive version %s")
+	void startHibernateReactive(String version);
 
 	@LogMessage(level = INFO)
 	@Message(id = 2, value = "Vert.x not detected, creating a new instance")
