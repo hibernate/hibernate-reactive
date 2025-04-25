@@ -119,8 +119,10 @@ pipeline {
 						echo "Release was triggered automatically"
 
 						// Avoid doing an automatic release for commits from a release
-						def lastCommitter = sh(script: 'git show -s --format=\'%an\'', returnStdout: true)
-						def secondLastCommitter = sh(script: 'git show -s --format=\'%an\' HEAD~1', returnStdout: true)
+						def lastCommitter = sh(script: 'git show -s --format=\'%an\'', returnStdout: true).trim()
+						def secondLastCommitter = sh(script: 'git show -s --format=\'%an\' HEAD~1', returnStdout: true).trim()
+						echo "Last two commits were performed by '${lastCommitter}'/'${secondLastCommitter}'."
+
 						if (lastCommitter == 'Hibernate-CI' && secondLastCommitter == 'Hibernate-CI') {
 							print "INFO: Automatic release skipped because last commits were for the previous release"
 							currentBuild.result = 'ABORTED'
@@ -149,6 +151,7 @@ pipeline {
 					env.DEVELOPMENT_VERSION = developmentVersion.toString()
 					// Dry run is not supported at the moment
  					env.SCRIPT_OPTIONS = params.RELEASE_DRY_RUN ? "-d" : ""
+					env.JRELEASER_DRY_RUN = true
 
 					// Determine version id to check if Jira version exists
 					// This step doesn't work for Hibernate Reactive (the project has been created with a different type on JIRA)
@@ -172,11 +175,10 @@ pipeline {
 							// tags the version
 							// changes the version to the provided development version
 							withEnv([
-									"BRANCH=${env.GIT_BRANCH}",
 									// Increase the amount of memory for this part since asciidoctor doc rendering consumes a lot of metaspace
 									"GRADLE_OPTS=-Dorg.gradle.jvmargs='-Dlog4j2.disableJmx -Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8'"
 							]) {
-								sh ".release/scripts/prepare-release.sh ${env.PROJECT} ${env.RELEASE_VERSION} ${env.DEVELOPMENT_VERSION}"
+								sh ".release/scripts/prepare-release.sh -b ${env.GIT_BRANCH} -d ${env.DEVELOPMENT_VERSION} ${env.PROJECT} ${env.RELEASE_VERSION}"
 							}
 						}
 					}
@@ -193,11 +195,17 @@ pipeline {
 							configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: "${env.HOME}/.ssh/known_hosts")
 					]) {
 						withCredentials([
-							// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
-							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'ORG_GRADLE_PROJECT_sonatypePassword', usernameVariable: 'ORG_GRADLE_PROJECT_sonatypeUsername'),
-							file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_GPG_PRIVATE_KEY_PATH'),
-							string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_GPG_PASSPHRASE'),
-							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default')
+							// TODO: Once we switch to maven-central publishing (from nexus2) we need to add a new credentials
+							//  to use the following env variable names to set the user/password:
+							//  - JRELEASER_MAVENCENTRAL_USERNAME
+							//  - JRELEASER_MAVENCENTRAL_TOKEN
+							//  Also use the new `credentialsId` for Maven Central, e.g.:
+							//  usernamePassword(credentialsId: '???????', passwordVariable: 'JRELEASER_MAVENCENTRAL_TOKEN', usernameVariable: 'JRELEASER_MAVENCENTRAL_USERNAME'),
+							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'JRELEASER_NEXUS2_PASSWORD', usernameVariable: 'JRELEASER_NEXUS2_USERNAME'),
+							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default'),
+							file(credentialsId: 'release.gpg.private-key', variable: 'RELEASE_GPG_PRIVATE_KEY_PATH'),
+							string(credentialsId: 'release.gpg.passphrase', variable: 'JRELEASER_GPG_PASSPHRASE'),
+							string(credentialsId: 'Hibernate-CI.github.com', variable: 'JRELEASER_GITHUB_TOKEN')
 						]) {
 							sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
 								// performs documentation upload and Sonatype release

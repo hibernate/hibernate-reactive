@@ -236,7 +236,6 @@ void updateVersionFile(var version) {
 
 def publishReleaseArtifactsTask = tasks.register( 'publishReleaseArtifacts' ) {
     dependsOn uploadDocumentationTask
-    dependsOn ":hibernate-reactive-core:publishToSonatype"
 
     mustRunAfter gitPreparationForReleaseTask
 }
