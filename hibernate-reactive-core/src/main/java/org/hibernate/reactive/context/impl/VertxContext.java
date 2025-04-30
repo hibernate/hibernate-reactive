@@ -36,10 +36,10 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public <T> void put(Key<T> key, T instance) {
-		final ContextInternal context = ContextInternal.current();
+		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
 			if ( trace ) LOG.tracef( "Putting key,value in context: [%1$s, %2$s]", key, instance );
-			context.localContextData().put( key, instance );
+			context.putLocal( key, instance );
 		}
 		else {
 			if ( trace ) LOG.tracef( "Context is null for key,value: [%1$s, %2$s]", key, instance  );
@@ -49,10 +49,9 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public <T> T get(Key<T> key) {
-		final ContextInternal context = ContextInternal.current();
+		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
-			@SuppressWarnings("unchecked")
-			T local = (T) context.localContextData().get( key );
+			T local = context.getLocal( key );
 			if ( trace ) LOG.tracef( "Getting value %2$s from context for key %1$s", key, local  );
 			return local;
 		}
@@ -64,9 +63,9 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 
 	@Override
 	public void remove(Key<?> key) {
-		final ContextInternal context = ContextInternal.current();
+		final io.vertx.core.Context context = Vertx.currentContext();
 		if ( context != null ) {
-			boolean removed = context.localContextData().remove( key ) != null;
+			boolean removed = context.removeLocal( key );
 			if ( trace ) LOG.tracef( "Key %s removed from context: %s", key, removed );
 		}
 		else {
