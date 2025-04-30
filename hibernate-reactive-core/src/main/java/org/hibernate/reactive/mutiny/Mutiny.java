@@ -846,14 +846,16 @@ public interface Mutiny {
 		Uni<Void> flush();
 
 		/**
-		 * Asynchronously fetch an association that's configured for lazy loading.
+		 * Asynchronously fetch an association configured for lazy loading.
 		 * <p>
 		 * <pre>
 		 * {@code session.fetch(author.getBook()).thenAccept(book -> print(book.getTitle()));}
 		 * </pre>
 		 * </p>
 		 * <p>
-		 * It can also initialize proxys. For example:
+		 * This operation may be even be used to initialize a reference returned by
+		 * {@link #getReference(Class, Object)}.
+		 * <p>
 		 * <pre>
 		 * {@code session.fetch(session.getReference(Author.class, authorId))}
 		 * </pre>
