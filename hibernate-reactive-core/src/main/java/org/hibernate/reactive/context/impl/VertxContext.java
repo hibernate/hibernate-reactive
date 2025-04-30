@@ -6,12 +6,9 @@
 package org.hibernate.reactive.context.impl;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.spi.context.storage.AccessMode;
 
 import org.hibernate.reactive.context.Context;
 import org.hibernate.reactive.logging.impl.Log;
@@ -42,7 +39,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 		final ContextInternal context = ContextInternal.current();
 		if ( context != null ) {
 			if ( trace ) LOG.tracef( "Putting key,value in context: [%1$s, %2$s]", key, instance );
-			VertxContext.<T>contextualDataMap( context ).put( key, instance );
+			context.localContextData().put( key, instance );
 		}
 		else {
 			if ( trace ) LOG.tracef( "Context is null for key,value: [%1$s, %2$s]", key, instance  );
@@ -54,7 +51,8 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public <T> T get(Key<T> key) {
 		final ContextInternal context = ContextInternal.current();
 		if ( context != null ) {
-			T local = VertxContext.<T>contextualDataMap( context ).get( key );
+			@SuppressWarnings("unchecked")
+			T local = (T) context.localContextData().get( key );
 			if ( trace ) LOG.tracef( "Getting value %2$s from context for key %1$s", key, local  );
 			return local;
 		}
@@ -68,7 +66,7 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 	public void remove(Key<?> key) {
 		final ContextInternal context = ContextInternal.current();
 		if ( context != null ) {
-			boolean removed = contextualDataMap( context ).remove( key ) != null;
+			boolean removed = context.localContextData().remove( key ) != null;
 			if ( trace ) LOG.tracef( "Key %s removed from context: %s", key, removed );
 		}
 		else {
@@ -95,12 +93,4 @@ public class VertxContext implements Context, ServiceRegistryAwareService {
 		}
 	}
 
-	@SuppressWarnings({ "unchecked" })
-	private static <T> ConcurrentMap<Key<T>, T> contextualDataMap(ContextInternal vertxContext) {
-		return vertxContext.getLocal(
-				ContextualDataStorage.CONTEXTUAL_DATA_KEY,
-				AccessMode.CONCURRENT,
-				ConcurrentHashMap::new
-		);
-	}
 }
