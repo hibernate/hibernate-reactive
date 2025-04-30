@@ -5,16 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-
-
-import org.hibernate.reactive.annotations.DisabledFor;
-
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -25,16 +15,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.CascadeType.REMOVE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 @Timeout( value = 10, timeUnit = MINUTES)
-@DisabledFor( value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0" )
 public class OrphanRemovalTest extends BaseReactiveTest {
 
 	@Override

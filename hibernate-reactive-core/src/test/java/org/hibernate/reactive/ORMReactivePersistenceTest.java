@@ -5,10 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -25,22 +21,22 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.provider.Settings.DIALECT;
 import static org.hibernate.reactive.provider.Settings.DRIVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Timeout(value = 10, timeUnit = MINUTES)
-
 /**
  * This test class verifies that data can be persisted and queried on the same database
  * using both JPA/hibernate and reactive session factories.
  */
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = COCKROACHDB, reason = "We need to change the URL schema we normally use for testing")
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 

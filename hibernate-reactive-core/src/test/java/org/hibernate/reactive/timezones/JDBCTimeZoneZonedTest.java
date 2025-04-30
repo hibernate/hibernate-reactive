@@ -5,6 +5,16 @@
  */
 package org.hibernate.reactive.timezones;
 
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
+
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -14,23 +24,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.annotations.DisabledFor;
-
-import org.junit.jupiter.api.Test;
-
-import io.vertx.junit5.Timeout;
-import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.AvailableSettings.JDBC_TIME_ZONE;
 import static org.hibernate.cfg.AvailableSettings.TIMEZONE_DEFAULT_STORAGE;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
@@ -38,7 +35,6 @@ import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecisi
  * Test adapted from {@link org.hibernate.orm.test.timezones.JDBCTimeZoneZonedTest}
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
 
 	@Override

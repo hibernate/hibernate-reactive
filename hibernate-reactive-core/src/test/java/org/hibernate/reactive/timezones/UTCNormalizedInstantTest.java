@@ -5,14 +5,8 @@
  */
 package org.hibernate.reactive.timezones;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.TimeZone;
-
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,14 +15,16 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.TimeZone;
 
 import static java.sql.Types.TIMESTAMP;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class UTCNormalizedInstantTest extends BaseReactiveTest {
 
 	@Override

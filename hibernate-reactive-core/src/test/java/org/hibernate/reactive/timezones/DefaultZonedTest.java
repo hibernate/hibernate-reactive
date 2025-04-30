@@ -5,17 +5,8 @@
  */
 package org.hibernate.reactive.timezones;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.List;
-
 import org.hibernate.dialect.TimeZoneSupport;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,10 +15,16 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
@@ -35,7 +32,6 @@ import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecisi
  * Test adapted from {@link org.hibernate.orm.test.timezones.DefaultZonedTest}
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class DefaultZonedTest extends BaseReactiveTest {
 
 	@Override

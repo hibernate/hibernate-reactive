@@ -5,14 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-
-
-import org.hibernate.reactive.annotations.DisabledFor;
-
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -26,17 +18,18 @@ import jakarta.persistence.SecondaryTable;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
-@DisabledFor( value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0" )
 public class SecondaryTableTest extends BaseReactiveTest {
 
 	@Override

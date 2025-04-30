@@ -29,7 +29,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class MutinyExceptionsTest extends BaseReactiveTest {
 
 	@Override

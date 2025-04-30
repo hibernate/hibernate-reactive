@@ -5,16 +5,10 @@
  */
 package org.hibernate.reactive;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,10 +19,13 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 /**
  * Test {@code hibernate.order_updates} and {@code hibernate.order_inserts} configurations.
@@ -36,8 +33,6 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
  * @see  Settings#ORDER_INSERTS
  * @see  Settings#ORDER_UPDATES
  */
-
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public abstract class OrderQueriesTestBase extends BaseReactiveTest {
 
 	public static class OrderUpdatesTest extends OrderQueriesTestBase {

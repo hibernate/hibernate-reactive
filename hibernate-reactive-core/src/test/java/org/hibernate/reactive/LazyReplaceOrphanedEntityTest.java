@@ -5,14 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import java.io.Serializable;
-import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,13 +25,17 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import java.io.Serializable;
+import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
 	private Campaign theCampaign;
