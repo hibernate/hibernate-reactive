@@ -5,11 +5,6 @@
  */
 package org.hibernate.reactive.stage.impl;
 
-import jakarta.persistence.TypedQueryReference;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -42,10 +37,16 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnOrRethrow;
@@ -374,17 +375,17 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public Filter enableFilter(String filterName) {
-		return delegate.enableFilter(filterName);
+		return delegate.enableFilter( filterName );
 	}
 
 	@Override
 	public void disableFilter(String filterName) {
-		delegate.disableFilter(filterName);
+		delegate.disableFilter( filterName );
 	}
 
 	@Override
 	public Filter getEnabledFilter(String filterName) {
-		return delegate.getEnabledFilter(filterName);
+		return delegate.getEnabledFilter( filterName );
 	}
 
 	@Override
@@ -510,6 +511,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public Stage.SessionFactory getFactory() {
 		return delegate.getFactory().unwrap( Stage.SessionFactory.class );
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return getFactory().getCriteriaBuilder();
 	}
 
 	@Override

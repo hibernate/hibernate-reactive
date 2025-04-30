@@ -5,18 +5,6 @@
  */
 package org.hibernate.reactive.mutiny.impl;
 
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQueryReference;
-import jakarta.persistence.criteria.CriteriaDelete;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
-import jakarta.persistence.metamodel.Attribute;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -40,6 +28,19 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
 
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -47,7 +48,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
-
 
 /**
  * Implements the {@link Mutiny.Session} API. This delegating class is
@@ -576,6 +576,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public Mutiny.SessionFactory getFactory() {
 		return factory;
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return getFactory().getCriteriaBuilder();
 	}
 
 	@Override
