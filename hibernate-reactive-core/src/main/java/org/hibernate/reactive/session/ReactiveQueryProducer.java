@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive.session;
 
-import jakarta.persistence.TypedQueryReference;
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.Incubating;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -22,9 +19,11 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
+import java.util.concurrent.CompletionStage;
 
 
 /**

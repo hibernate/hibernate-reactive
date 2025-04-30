@@ -485,6 +485,318 @@ public interface Mutiny {
 		Query<R> enableFetchProfile(String profileName);
 	}
 
+	interface QueryProducer {
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string.
+		 *
+		 * @param queryString The HQL/JPQL query
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create a typed {@link org.hibernate.query.Query} instance for the given typed query reference.
+		 *
+		 * @param typedQueryReference the type query reference
+		 *
+		 * @return The {@link org.hibernate.query.Query} instance for execution
+		 *
+		 * @throws IllegalArgumentException if a query has not been
+		 * defined with the name of the typed query reference or if
+		 * the query result is found to not be assignable to
+		 * result class of the typed query reference
+		 *
+		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
+		 */
+		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
+		 * update or delete statement.
+		 *
+		 * @param queryString The HQL/JPQL query, update or delete statement
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		MutationQuery createMutationQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given update tree.
+		 *
+		 * @param updateQuery the update criteria query
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaUpdate)
+		 */
+		MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given delete tree.
+		 *
+		 * @param deleteQuery the delete criteria query
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaDelete)
+		 */
+		MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery);
+
+		/**
+		 * Create a {@link MutationQuery} from the given insert select criteria tree
+		 *
+		 * @param insert the insert select criteria query
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createMutationQuery(JpaCriteriaInsert)
+		 */
+		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
+
+		/**
+		 * Create an instance of {@link Query} for the given HQL/JPQL query
+		 * string or HQL/JPQL update or delete statement. In the case of an
+		 * update or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 *
+		 * @param queryString The HQL/JPQL query, update or delete statement
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @deprecated See explanation in
+		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		@Deprecated
+		<R> Query<R> createQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
+		 * query string and query result type.
+		 *
+		 * @param queryString The HQL/JPQL query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given criteria
+		 * query.
+		 *
+		 * @param criteriaQuery The {@link CriteriaQuery}
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given criteria update.
+		 *
+		 * @param criteriaUpdate The {@link CriteriaUpdate}
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 */
+		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
+
+		/**
+		 * Create an instance of {@link MutationQuery} for the given criteria delete.
+		 *
+		 * @param criteriaDelete The {@link CriteriaDelete}
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 */
+		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
+
+		/**
+		 * Create an instance of {@link Query} for the named query.
+		 *
+		 * @param queryName The name of the query
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String)
+		 */
+		<R> Query<R> createNamedQuery(String queryName);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the named query.
+		 *
+		 * @param queryName The name of the query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert, or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
+		 *
+		 * <ul>
+		 * <li>If the result set has a single column, the results will be returned
+		 * as scalars.</li>
+		 * <li>Otherwise, if the result set has multiple columns, the results will
+		 * be returned as elements of arrays of type {@code Object[]}.</li>
+		 * </ul>
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
+		 */
+		<R> Query<R> createNativeQuery(String queryString);
+
+		/**
+		 * Create an instance of {@link Query} for the given SQL query string,
+		 * or SQL update, insert, or delete statement. In the case of an update,
+		 * insert, or delete, the returned {@link Query} must be executed using
+		 * {@link Query#executeUpdate()} which returns an affected row count.
+		 * In the case of a query:
+		 *
+		 * <ul>
+		 * <li>If the result set has a single column, the results will be returned
+		 * as scalars.</li>
+		 * <li>Otherwise, if the result set has multiple columns, the results will
+		 * be returned as elements of arrays of type {@code Object[]}.</li>
+		 * </ul>
+		 * <p>
+		 * Any {@link AffectedEntities affected entities} are synchronized with
+		 * the database before execution of the statement.
+		 *
+		 * @param queryString The SQL select, update, insert, or delete statement
+		 * @param affectedEntities The entities which are affected by the statement
+		 */
+		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@code resultType} to interpret the results.
+		 *
+		 * <ul>
+		 * <li>If the given result type is {@link Object}, or a built-in type
+		 * such as {@link String} or {@link Integer}, the result set must
+		 * have a single column, which will be returned as a scalar.
+		 * <li>If the given result type is {@code Object[]}, then the result set
+		 * must have multiple columns, which will be returned in arrays.
+		 * <li>Otherwise, the given result type must be an entity class, in which
+		 * case the result set column aliases must map to the fields of the
+		 * entity, and the query will return instances of the entity.
+		 * </ul>
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@code resultType} to interpret the results.
+		 *
+		 * <ul>
+		 * <li>If the given result type is {@link Object}, or a built-in type
+		 * such as {@link String} or {@link Integer}, the result set must
+		 * have a single column, which will be returned as a scalar.
+		 * <li>If the given result type is {@code Object[]}, then the result set
+		 * must have multiple columns, which will be returned in arrays.
+		 * <li>Otherwise, the given result type must be an entity class, in which
+		 * case the result set column aliases must map to the fields of the
+		 * entity, and the query will return instances of the entity.
+		 * </ul>
+		 * <p>
+		 * Any {@link AffectedEntities affected entities} are synchronized with
+		 * the database before execution of the query.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultType the Java type returned in each row of query results
+		 * @param affectedEntities The entities which are affected by the query
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
+		 */
+		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@link ResultSetMapping} to interpret the
+		 * result set.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultSetMapping the result set mapping
+		 *
+		 * @return The {@link Query} instance for manipulation and execution
+		 *
+		 * @see #getResultSetMapping(Class, String)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
+		 */
+		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
+
+		/**
+		 * Create an instance of {@link SelectionQuery} for the given SQL query
+		 * string, using the given {@link ResultSetMapping} to interpret the
+		 * result set.
+		 * <p>
+		 * Any {@link AffectedEntities affected entities} are synchronized with the
+		 * database before execution of the query.
+		 *
+		 * @param queryString The SQL query
+		 * @param resultSetMapping the result set mapping
+		 * @param affectedEntities The entities which are affected by the query
+		 *
+		 * @return The {@link SelectionQuery} instance for manipulation and execution
+		 *
+		 * @see #getResultSetMapping(Class, String)
+		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
+		 */
+		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities);
+
+		/**
+		 * Obtain a native SQL result set mapping defined via the annotation
+		 * {@link jakarta.persistence.SqlResultSetMapping}.
+		 */
+		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
+
+		/**
+		 * Obtain a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
+
+		/**
+		 * Create a new mutable {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+
+		/**
+		 * Create a new mutable copy of a named {@link EntityGraph}
+		 */
+		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
+
+		/**
+		 * Convenience method to obtain the {@link CriteriaBuilder}.
+		 *
+		 * @since 3
+		 */
+		CriteriaBuilder getCriteriaBuilder();
+	}
 
 	/**
 	 * A non-blocking counterpart to the Hibernate {@link org.hibernate.Session}
@@ -509,7 +821,7 @@ public interface Mutiny {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session extends Closeable {
+	interface Session extends QueryProducer, Closeable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -908,294 +1220,6 @@ public interface Mutiny {
 		boolean contains(Object entity);
 
 		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
-		 * update or delete statement.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		MutationQuery createMutationQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given update tree.
-		 *
-		 * @param updateQuery the update criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaUpdate)
-		 */
-		MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given delete tree.
-		 *
-		 * @param deleteQuery the delete criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(CriteriaDelete)
-		 */
-		MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery);
-
-		/**
-		 * Create a {@link MutationQuery} from the given insert select criteria tree
-		 *
-		 * @param insert the insert select criteria query
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see org.hibernate.query.QueryProducer#createMutationQuery(JpaCriteriaInsert)
-		 */
-		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
-
-		/**
-		 * Create a typed {@link org.hibernate.query.Query} instance for the given typed query reference.
-		 *
-		 * @param typedQueryReference the type query reference
-		 *
-		 * @return The {@link org.hibernate.query.Query} instance for execution
-		 *
-		 * @throws IllegalArgumentException if a query has not been
-		 * defined with the name of the typed query reference or if
-		 * the query result is found to not be assignable to
-		 * result class of the typed query reference
-		 *
-		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
-		 */
-		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
-
-		/**
-		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string or HQL/JPQL update or delete statement. In the case of an
-		 * update or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @deprecated See explanation in
-		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		@Deprecated
-		<R> Query<R> createQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string and query result type.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given criteria
-		 * query.
-		 *
-		 * @param criteriaQuery The {@link CriteriaQuery}
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria update.
-		 *
-		 * @param criteriaUpdate The {@link CriteriaUpdate}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 */
-		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria delete.
-		 *
-		 * @param criteriaDelete The {@link CriteriaDelete}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 */
-		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
-
-		/**
-		 * Create an instance of {@link Query} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> Query<R> createNamedQuery(String queryName);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert, or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 * In the case of a query:
-		 *
-		 * <ul>
-		 * <li>If the result set has a single column, the results will be returned
-		 * as scalars.</li>
-		 * <li>Otherwise, if the result set has multiple columns, the results will
-		 * be returned as elements of arrays of type {@code Object[]}.</li>
-		 * </ul>
-		 *
-		 * @param queryString The SQL select, update, insert, or delete statement
-		 */
-		<R> Query<R> createNativeQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert, or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 * In the case of a query:
-		 *
-		 * <ul>
-		 * <li>If the result set has a single column, the results will be returned
-		 * as scalars.</li>
-		 * <li>Otherwise, if the result set has multiple columns, the results will
-		 * be returned as elements of arrays of type {@code Object[]}.</li>
-		 * </ul>
-		 * <p>
-		 * Any {@link AffectedEntities affected entities} are synchronized with
-		 * the database before execution of the statement.
-		 *
-		 * @param queryString The SQL select, update, insert, or delete statement
-		 * @param affectedEntities The entities which are affected by the statement
-		 */
-		<R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@code resultType} to interpret the results.
-		 *
-		 * <ul>
-		 * <li>If the given result type is {@link Object}, or a built-in type
-		 * such as {@link String} or {@link Integer}, the result set must
-		 * have a single column, which will be returned as a scalar.
-		 * <li>If the given result type is {@code Object[]}, then the result set
-		 * must have multiple columns, which will be returned in arrays.
-		 * <li>Otherwise, the given result type must be an entity class, in which
-		 * case the result set column aliases must map to the fields of the
-		 * entity, and the query will return instances of the entity.
-		 * </ul>
-		 *
-		 * @param queryString The SQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@code resultType} to interpret the results.
-		 *
-		 * <ul>
-		 * <li>If the given result type is {@link Object}, or a built-in type
-		 * such as {@link String} or {@link Integer}, the result set must
-		 * have a single column, which will be returned as a scalar.
-		 * <li>If the given result type is {@code Object[]}, then the result set
-		 * must have multiple columns, which will be returned in arrays.
-		 * <li>Otherwise, the given result type must be an entity class, in which
-		 * case the result set column aliases must map to the fields of the
-		 * entity, and the query will return instances of the entity.
-		 * </ul>
-		 * <p>
-		 * Any {@link AffectedEntities affected entities} are synchronized with
-		 * the database before execution of the query.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultType the Java type returned in each row of query results
-		 * @param affectedEntities The entities which are affected by the query
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(
-				String queryString, Class<R> resultType,
-				AffectedEntities affectedEntities);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@link ResultSetMapping} to interpret the
-		 * result set.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultSetMapping the result set mapping
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see #getResultSetMapping(Class, String)
-		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@link ResultSetMapping} to interpret the
-		 * result set.
-		 * <p>
-		 * Any {@link AffectedEntities affected entities} are synchronized with the
-		 * database before execution of the query.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultSetMapping the result set mapping
-		 * @param affectedEntities The entities which are affected by the query
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see #getResultSetMapping(Class, String)
-		 * @see jakarta.persistence.EntityManager#createNativeQuery(String, String)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(
-				String queryString,
-				ResultSetMapping<R> resultSetMapping,
-				AffectedEntities affectedEntities);
-
-		/**
 		 * Set the {@link FlushMode flush mode} for this session.
 		 * <p>
 		 * The flush mode determines the points at which the session is flushed.
@@ -1264,27 +1288,6 @@ public interface Mutiny {
 		 * @see org.hibernate.engine.profile.FetchProfile for discussion of this feature
 		 */
 		Session enableFetchProfile(String name);
-
-		/**
-		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link jakarta.persistence.SqlResultSetMapping}.
-		 */
-		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
-
-		/**
-		 * Obtain a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
-
-		/**
-		 * Create a new mutable {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
-
-		/**
-		 * Create a new mutable copy of a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
 
 		/**
 		 * Disable a particular fetch profile on this session, or do nothing if
@@ -1511,15 +1514,6 @@ public interface Mutiny {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
-
-		/**
-		 * Convenience method to obtain the {@link CriteriaBuilder}.
-		 *
-		 * @since 3
-		 */
-		default CriteriaBuilder getCriteriaBuilder() {
-			return getFactory().getCriteriaBuilder();
-		}
 	}
 
 	/**
@@ -1552,7 +1546,7 @@ public interface Mutiny {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession extends Closeable {
+	interface StatelessSession extends QueryProducer, Closeable {
 
 		/**
 		 * Retrieve a row.
@@ -1616,169 +1610,6 @@ public interface Mutiny {
 		 * @return a detached entity instance, via a {@code Uni}
 		 */
 		<T> Uni<T> get(EntityGraph<T> entityGraph, Object id);
-
-		/**
-		 * Create an instance of {@link Query} for the given HQL/JPQL query
-		 * string or HQL/JPQL update or delete statement. In the case of an
-		 * update or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @deprecated See explanation in
-		 * {@link org.hibernate.query.QueryProducer#createSelectionQuery(String)}
-		 *
-		 * @see Session#createQuery(String)
-		 */
-		@Deprecated
-		<R> Query<R> createQuery(String queryString);
-
-		/**
-		 * Create a typed {@link Query} instance for the given typed query reference.
-		 *
-		 * @param typedQueryReference the type query reference
-		 *
-		 * @return The {@link Query} instance for execution
-		 *
-		 * @throws IllegalArgumentException if a query has not been
-		 * defined with the name of the typed query reference or if
-		 * the query result is found to not be assignable to
-		 * result class of the typed query reference
-		 *
-		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
-		 */
-		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string and query result type.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see Session#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
-		 * query string.
-		 *
-		 * @param queryString The HQL/JPQL query
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL
-		 * update or delete statement.
-		 *
-		 * @param queryString The HQL/JPQL query, update or delete statement
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		MutationQuery createMutationQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link Query} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> Query<R> createNamedQuery(String queryName);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the named query.
-		 *
-		 * @param queryName The name of the query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link Query} for the given SQL query string,
-		 * or SQL update, insert, or delete statement. In the case of an update,
-		 * insert, or delete, the returned {@link Query} must be executed using
-		 * {@link Query#executeUpdate()} which returns an affected row count.
-		 *
-		 * @param queryString The SQL select, update, insert, or delete statement
-		 *
-		 * @see Session#createNativeQuery(String)
-		 */
-		<R> Query<R> createNativeQuery(String queryString);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@code resultType} to interpret the results.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultType the Java type returned in each row of query results
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see Session#createNativeQuery(String, Class)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given SQL query
-		 * string, using the given {@link ResultSetMapping} to interpret the
-		 * result set.
-		 *
-		 * @param queryString The SQL query
-		 * @param resultSetMapping the result set mapping
-		 *
-		 * @return The {@link Query} instance for manipulation and execution
-		 *
-		 * @see Session#createNativeQuery(String, ResultSetMapping)
-		 */
-		<R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping);
-
-		/**
-		 * Create an instance of {@link SelectionQuery} for the given criteria
-		 * query.
-		 *
-		 * @param criteriaQuery The {@link CriteriaQuery}
-		 *
-		 * @return The {@link SelectionQuery} instance for manipulation and execution
-		 *
-		 * @see jakarta.persistence.EntityManager#createQuery(String)
-		 */
-		<R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria update.
-		 *
-		 * @param criteriaUpdate The {@link CriteriaUpdate}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 */
-		<R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate);
-
-		/**
-		 * Create an instance of {@link MutationQuery} for the given criteria delete.
-		 *
-		 * @param criteriaDelete The {@link CriteriaDelete}
-		 *
-		 * @return The {@link MutationQuery} instance for manipulation and execution
-		 */
-		<R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete);
 
 		/**
 		 * Insert a row.
@@ -2047,27 +1878,6 @@ public interface Mutiny {
 		Object getIdentifier(Object entity);
 
 		/**
-		 * Obtain a native SQL result set mapping defined via the annotation
-		 * {@link jakarta.persistence.SqlResultSetMapping}.
-		 */
-		<T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName);
-
-		/**
-		 * Obtain a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName);
-
-		/**
-		 * Create a new mutable {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType);
-
-		/**
-		 * Create a new mutable copy of a named {@link EntityGraph}
-		 */
-		<T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName);
-
-		/**
 		 * Performs the given work within the scope of a database transaction,
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
@@ -2115,15 +1925,6 @@ public interface Mutiny {
 		 * The {@link SessionFactory} which created this session.
 		 */
 		SessionFactory getFactory();
-
-		/**
-		 * Convenience method to obtain the {@link CriteriaBuilder}.
-		 *
-		 * @since 3
-		 */
-		default CriteriaBuilder getCriteriaBuilder() {
-			return getFactory().getCriteriaBuilder();
-		}
 	}
 
 	/**
