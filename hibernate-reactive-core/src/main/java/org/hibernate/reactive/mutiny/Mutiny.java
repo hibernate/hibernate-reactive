@@ -485,6 +485,13 @@ public interface Mutiny {
 		Query<R> enableFetchProfile(String profileName);
 	}
 
+	/**
+	 * Operations common to objects which act as factories for instances of
+	 * {@link Query}. This is a common supertype of {@link Session} and
+	 * {@link StatelessSession}.
+	 *
+	 * @since 3.0
+	 */
 	interface QueryProducer {
 		/**
 		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
