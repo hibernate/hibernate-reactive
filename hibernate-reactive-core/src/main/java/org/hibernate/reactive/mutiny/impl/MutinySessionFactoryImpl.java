@@ -149,6 +149,16 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	@Override
+	public Mutiny.Session getCurrentSession() {
+		return context.get( contextKeyForSession );
+	}
+
+	@Override
+	public Mutiny.StatelessSession getCurrentStatelessSession() {
+		return context.get( contextKeyForStatelessSession );
+	}
+
+	@Override
 	public <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Mutiny.Session current = context.get( contextKeyForSession );

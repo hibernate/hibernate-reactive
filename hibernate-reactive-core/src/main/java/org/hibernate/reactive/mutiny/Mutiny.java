@@ -2280,6 +2280,31 @@ public interface Mutiny {
 		Statistics getStatistics();
 
 		/**
+		 * Return the current instance of {@link Session}, if any.
+		 * A current session exists only when this method is called
+		 * from within an invocation of {@link #withSession(Function)}
+		 * or {@link #withTransaction(Function)}.
+		 *
+		 * @return the current instance, if any, or {@code null}
+		 *
+		 * @since 2.4.7
+		 */
+		Session getCurrentSession();
+
+		/**
+		 * Return the current instance of {@link Session}, if any.
+		 * A current session exists only when this method is called
+		 * from within an invocation of
+		 * {@link #withStatelessSession(Function)} or
+		 * {@link #withStatelessTransaction(Function)}.
+		 *
+		 * @return the current instance, if any, or {@code null}
+		 *
+		 * @since 2.4.7
+		 */
+		StatelessSession getCurrentStatelessSession();
+
+		/**
 		 * Destroy the session factory and clean up its connection pool.
 		 */
 		@Override
