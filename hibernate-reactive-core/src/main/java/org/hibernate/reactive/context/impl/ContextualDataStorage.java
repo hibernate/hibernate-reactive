@@ -17,7 +17,7 @@ import io.vertx.core.spi.context.storage.ContextLocal;
 public class ContextualDataStorage implements VertxServiceProvider {
 
 	@SuppressWarnings("rawtypes")
-	final static ContextLocal<ConcurrentMap> CONTEXTUAL_DATA_KEY = ContextLocal.registerLocal( ConcurrentMap.class );
+	static ContextLocal<ConcurrentMap> CONTEXTUAL_DATA_KEY = ContextLocal.registerLocal( ConcurrentMap.class );
 
 	@Override
 	public void init(VertxBuilder vertxBuilder) {
