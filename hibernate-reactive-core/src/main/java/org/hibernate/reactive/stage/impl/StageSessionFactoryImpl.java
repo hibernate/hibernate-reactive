@@ -139,6 +139,16 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	@Override
+	public Stage.Session getCurrentSession() {
+		return context.get( contextKeyForSession );
+	}
+
+	@Override
+	public Stage.StatelessSession getCurrentStatelessSession() {
+		return context.get( contextKeyForStatelessSession );
+	}
+
+	@Override
 	public <T> CompletionStage<T> withSession(Function<Stage.Session, CompletionStage<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Stage.Session current = context.get( contextKeyForSession );
