@@ -37,9 +37,9 @@ import org.hibernate.event.spi.PostLoadEventListener;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.results.graph.entity.EntityInitializer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
@@ -79,8 +79,9 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		@Override
 		public void accept(PersistentCollection<?> nonLazyCollection) {
 			if ( !nonLazyCollection.wasInitialized() ) {
-				stage = stage.thenCompose( v -> ( (ReactiveSession) getSession() )
-						.reactiveInitializeCollection( nonLazyCollection, false ) );
+				stage = stage.thenCompose( v ->
+						( (ReactiveSharedSessionContractImplementor) getSession() )
+								.reactiveInitializeCollection( nonLazyCollection, false ) );
 			}
 		}
 	}

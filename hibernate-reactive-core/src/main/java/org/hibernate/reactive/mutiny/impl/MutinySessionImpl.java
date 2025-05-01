@@ -332,36 +332,22 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public FlushMode getFlushMode() {
-		switch ( delegate.getHibernateFlushMode() ) {
-			case MANUAL:
-				return FlushMode.MANUAL;
-			case COMMIT:
-				return FlushMode.COMMIT;
-			case AUTO:
-				return FlushMode.AUTO;
-			case ALWAYS:
-				return FlushMode.ALWAYS;
-			default:
-				throw LOG.impossibleFlushModeIllegalState();
-		}
+        return switch (delegate.getHibernateFlushMode()) {
+            case MANUAL -> FlushMode.MANUAL;
+            case COMMIT -> FlushMode.COMMIT;
+            case AUTO -> FlushMode.AUTO;
+            case ALWAYS -> FlushMode.ALWAYS;
+        };
 	}
 
 	@Override
 	public Mutiny.Session setFlushMode(FlushMode flushMode) {
-		switch ( flushMode ) {
-			case COMMIT:
-				delegate.setHibernateFlushMode( FlushMode.COMMIT );
-				break;
-			case AUTO:
-				delegate.setHibernateFlushMode( FlushMode.AUTO );
-				break;
-			case MANUAL:
-				delegate.setHibernateFlushMode( FlushMode.MANUAL );
-				break;
-			case ALWAYS:
-				delegate.setHibernateFlushMode( FlushMode.ALWAYS );
-				break;
-		}
+		delegate.setHibernateFlushMode( switch ( flushMode ) {
+			case COMMIT -> org.hibernate.FlushMode.COMMIT;
+			case AUTO -> org.hibernate.FlushMode.AUTO;
+			case MANUAL -> org.hibernate.FlushMode.MANUAL;
+			case ALWAYS -> org.hibernate.FlushMode.ALWAYS;
+		} );
 		return this;
 	}
 

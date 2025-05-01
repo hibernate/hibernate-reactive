@@ -241,11 +241,6 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
-	public Uni<Void> upsert(String entityName, Object entity) {
-		return uni( () -> delegate.reactiveUpsert( entityName, entity ) );
-	}
-
-	@Override
 	public Uni<Void> upsertAll(Object... entities) {
 		return uni( () -> delegate.reactiveUpsertAll( entities.length, entities ) );
 	}

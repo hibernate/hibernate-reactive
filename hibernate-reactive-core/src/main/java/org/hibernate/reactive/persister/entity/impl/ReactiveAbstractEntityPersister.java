@@ -55,6 +55,7 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
@@ -62,7 +63,6 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNaturalIdMapping;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
@@ -359,7 +359,8 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			final PersistentCollection<?> collection = (PersistentCollection<?>) result;
 			return collection.wasInitialized()
 					? completedFuture( (T) collection )
-					: ( (ReactiveSession) session ).reactiveInitializeCollection( collection, false )
+					: ( (ReactiveSharedSessionContractImplementor) session )
+							.reactiveInitializeCollection( collection, false )
 							.thenApply( v -> (T) result );
 		}
 		else {

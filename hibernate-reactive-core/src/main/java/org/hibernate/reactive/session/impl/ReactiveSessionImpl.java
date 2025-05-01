@@ -30,14 +30,12 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
-import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.spi.AutoFlushEvent;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEvent;
 import org.hibernate.event.spi.InitializeCollectionEvent;
-import org.hibernate.event.spi.InitializeCollectionEventListener;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.LockEvent;
@@ -826,8 +824,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		pulseTransactionCoordinator();
 		InitializeCollectionEvent event = new InitializeCollectionEvent( collection, this );
 
-		EventListenerGroup<InitializeCollectionEventListener> eventListenerGroupInitCollection = getFactory().getEventListenerGroups().eventListenerGroup_INIT_COLLECTION;
-		return eventListenerGroupInitCollection
+        return getFactory().getEventListenerGroups().eventListenerGroup_INIT_COLLECTION
 				.fireEventOnEachListener(
 						event,
 						(DefaultReactiveInitializeCollectionEventListener l) -> l::onReactiveInitializeCollection
@@ -918,16 +915,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public CompletionStage<Void> reactiveRemove(Object entity) {
 		checkOpen();
 		return fireRemove( new DeleteEvent( entity, this ) );
-	}
-
-	@Override
-	public CompletionStage<Void> reactiveRemove(
-			String entityName,
-			boolean isCascadeDeleteEnabled,
-			DeleteContext transientEntities)
-			throws HibernateException {
-		// I'm not quite sure if we need this method
-		return reactiveRemove( entityName, null, isCascadeDeleteEnabled, transientEntities );
 	}
 
 	@Override

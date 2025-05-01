@@ -22,9 +22,10 @@ import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
-import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
@@ -158,8 +159,8 @@ public class EntityTypes {
 			final Object owner,
 			final Map<Object, Object> copyCache) {
 		Object[] copied = new Object[original.length];
-		return loop(
-				0, types.length, i -> replace( original, target, types, session, owner, copyCache, i, copied )
+		return loop( 0, types.length,
+				i -> replace( original, target, types, session, owner, copyCache, i, copied )
 		).thenApply( v -> copied );
 	}
 
@@ -175,8 +176,7 @@ public class EntityTypes {
 			final Map<Object, Object> copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
 		Object[] copied = new Object[original.length];
-		return loop(
-				0, types.length,
+		return loop( 0, types.length,
 				i -> replace( original, target, types, session, owner, copyCache, foreignKeyDirection, i, copied )
 		).thenApply( v -> copied );
 	}
@@ -268,7 +268,7 @@ public class EntityTypes {
 					// as a ComponentType. In the case that the entity is unfetched, we need to
 					// explicitly fetch it here before calling replace(). (Note that in Hibernate
 					// ORM this is unnecessary due to transparent lazy fetching.)
-					return ( (ReactiveSessionImpl) session )
+					return ( (ReactiveQueryProducer) session )
 							.reactiveFetch( id, true )
 							.thenCompose( fetched -> {
 								Object idOrUniqueKey = entityType
@@ -340,10 +340,11 @@ public class EntityTypes {
 			EntityType entityType,
 			HibernateProxy proxy,
 			SharedSessionContractImplementor session) {
-		LazyInitializer initializer = proxy.getHibernateLazyInitializer();
+		final LazyInitializer initializer = proxy.getHibernateLazyInitializer();
 		final String entityName = initializer.getEntityName();
 		final Object identifier = initializer.getIdentifier();
-		return ( (ReactiveSessionImpl) session ).reactiveImmediateLoad( entityName, identifier )
+		return ( (ReactiveSharedSessionContractImplementor) session )
+				.reactiveImmediateLoad( entityName, identifier )
 				.thenApply( entity -> {
 					checkEntityFound( session, entityName, identifier, entity );
 					initializer.setSession( session );
@@ -372,7 +373,8 @@ public class EntityTypes {
 			LazyInitializer initializer = ( (HibernateProxy) entity ).getHibernateLazyInitializer();
 			final String entityName = initializer.getEntityName();
 			final Object identifier = initializer.getIdentifier();
-			return ( (ReactiveSessionImpl) session ).reactiveImmediateLoad( entityName, identifier )
+			return ( (ReactiveSharedSessionContractImplementor) session )
+					.reactiveImmediateLoad( entityName, identifier )
 					.thenApply( result -> {
 						checkEntityFound( session, entityName, identifier, result );
 						return result;

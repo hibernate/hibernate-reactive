@@ -1746,18 +1746,6 @@ public interface Mutiny {
 		Uni<Void> upsert(Object entity);
 
 		/**
-		 * Use a SQL {@code merge into} statement to perform an upsert.
-		 *
-		 * @param entityName The entityName for the entity to be merged
-		 * @param entity a detached entity instance
-		 * @throws org.hibernate.TransientObjectException is the entity is transient
-		 *
-		 * @see org.hibernate.StatelessSession#upsert(String, Object)
-		 */
-		@Incubating
-		Uni<Void> upsert(String entityName, Object entity);
-
-		/**
 		 * Use a SQL {@code merge into} statement to perform
 		 * an upsert on multiple rows using the size of the given array
 		 * as batch size.

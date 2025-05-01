@@ -23,9 +23,9 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.collection.impl.ReactiveCollectionPersister;
-import org.hibernate.sql.results.internal.ResultsHelper;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.event.internal.DefaultInitializeCollectionEventListener.handlePotentiallyEmptyCollection;
 import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -59,7 +59,8 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 		final CollectionPersister loadedPersister = ce.getLoadedPersister();
 		final Object loadedKey = ce.getLoadedKey();
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracev( "Initializing collection {0}", collectionInfoString( loadedPersister, collection, loadedKey, source ) );
+			LOG.tracev( "Initializing collection {0}",
+					collectionInfoString( loadedPersister, collection, loadedKey, source ) );
 			LOG.trace( "Checking second-level cache" );
 		}
 
@@ -76,11 +77,8 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 			}
 			return ( (ReactiveCollectionPersister) loadedPersister )
 					.reactiveInitialize( loadedKey, source )
-					.thenApply( list -> {
-						handlePotentiallyEmptyCollection( collection, source, ce, loadedPersister );
-						return list;
-					} )
-					.thenAccept( list -> {
+					.thenAccept( v -> {
+						handlePotentiallyEmptyCollection( collection, source.getPersistenceContext(), ce, loadedPersister );
 						if ( LOG.isTraceEnabled() ) {
 							LOG.trace( "Collection initialized" );
 						}
@@ -90,23 +88,6 @@ public class DefaultReactiveInitializeCollectionEventListener implements Initial
 							statistics.fetchCollection( loadedPersister.getRole() );
 						}
 					} );
-		}
-	}
-
-	private void handlePotentiallyEmptyCollection(
-			PersistentCollection<?> collection,
-			SessionImplementor source,
-			CollectionEntry ce,
-			CollectionPersister loadedPersister) {
-		if ( !collection.wasInitialized() ) {
-			collection.initializeEmptyCollection( loadedPersister );
-			ResultsHelper.finalizeCollectionLoading(
-					source.getPersistenceContext(),
-					loadedPersister,
-					collection,
-					ce.getLoadedKey(),
-					true
-			);
 		}
 	}
 
