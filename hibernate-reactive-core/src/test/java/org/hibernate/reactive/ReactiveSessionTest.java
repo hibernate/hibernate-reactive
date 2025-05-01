@@ -32,12 +32,7 @@ import jakarta.persistence.metamodel.EntityType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -966,6 +961,42 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 								.getSingleResultOrNull()
 								.thenAccept( Assertions::assertNull ) )
+		);
+	}
+
+	@Test
+	public void testCurrentSession(VertxTestContext context) {
+		test( context,
+				getSessionFactory().withSession(session ->
+						getSessionFactory().withSession(s -> {
+							assertEquals(session, s);
+							Stage.Session currentSession = getSessionFactory().getCurrentSession();
+							assertNotNull(currentSession);
+							assertTrue(currentSession.isOpen());
+							assertEquals(session, currentSession);
+							return CompletionStages.voidFuture();
+						})
+						.thenAccept(v -> assertNotNull(getSessionFactory().getCurrentSession()))
+				)
+				.thenAccept(v -> assertNull(getSessionFactory().getCurrentSession()))
+		);
+	}
+
+	@Test
+	public void testCurrentStatelessSession(VertxTestContext context) {
+		test( context,
+				getSessionFactory().withStatelessSession(session ->
+						getSessionFactory().withStatelessSession(s -> {
+							assertEquals(session, s);
+							Stage.StatelessSession currentSession = getSessionFactory().getCurrentStatelessSession();
+							assertNotNull(currentSession);
+							assertTrue(currentSession.isOpen());
+							assertEquals(session, currentSession);
+							return CompletionStages.voidFuture();
+						})
+						.thenAccept(v -> assertNotNull(getSessionFactory().getCurrentStatelessSession()))
+				)
+				.thenAccept(v -> assertNull(getSessionFactory().getCurrentStatelessSession()))
 		);
 	}
 
