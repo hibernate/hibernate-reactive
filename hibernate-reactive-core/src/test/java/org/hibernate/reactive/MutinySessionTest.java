@@ -27,12 +27,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.EntityType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -665,6 +660,38 @@ public class MutinySessionTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory()
 						.withSession( s -> s.find( GuineaPig.class, pig2.getId() ) ) )
 				.invoke( result -> assertThatPigsAreEqual( pig2, result ) )
+		);
+	}
+
+	@Test
+	public void testCurrentSession(VertxTestContext context) {
+		test( context,
+				getMutinySessionFactory().withSession(session ->
+						getMutinySessionFactory().withSession(s -> {
+							assertEquals(session, s);
+							Mutiny.Session currentSession = getMutinySessionFactory().getCurrentSession();
+							assertNotNull(currentSession);
+							assertTrue(currentSession.isOpen());
+							assertEquals(session, currentSession);
+							return Uni.createFrom().voidItem();
+						}).invoke(() -> assertNotNull(getMutinySessionFactory().getCurrentSession()))
+				).invoke(() -> assertNull(getMutinySessionFactory().getCurrentSession()))
+		);
+	}
+
+	@Test
+	public void testCurrentStatelessSession(VertxTestContext context) {
+		test( context,
+				getMutinySessionFactory().withStatelessSession(session ->
+						getMutinySessionFactory().withStatelessSession(s -> {
+							assertEquals(session, s);
+							Mutiny.StatelessSession currentSession = getMutinySessionFactory().getCurrentStatelessSession();
+							assertNotNull(currentSession);
+							assertTrue(currentSession.isOpen());
+							assertEquals(session, currentSession);
+							return Uni.createFrom().voidItem();
+						}).invoke(() -> assertNotNull(getMutinySessionFactory().getCurrentStatelessSession()))
+				).invoke(() -> assertNull(getMutinySessionFactory().getCurrentStatelessSession()))
 		);
 	}
 
