@@ -15,7 +15,6 @@ import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.persister.entity.EntityPersister;
@@ -48,7 +47,7 @@ public final class ForeignKeys {
 	public static class Nullifier {
 		private final boolean isDelete;
 		private final boolean isEarlyInsert;
-		private final SessionImplementor session;
+		private final SharedSessionContractImplementor session;
 		private final Object self;
 		private final EntityPersister persister;
 
@@ -65,7 +64,7 @@ public final class ForeignKeys {
 				final Object self,
 				final boolean isDelete,
 				final boolean isEarlyInsert,
-				final SessionImplementor session,
+				final SharedSessionContractImplementor session,
 				final EntityPersister persister) {
 			this.isDelete = isDelete;
 			this.isEarlyInsert = isEarlyInsert;
@@ -270,7 +269,7 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is not transient (meaning it is either detached/persistent)
 	 */
-	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
+	public static CompletionStage<Boolean> isNotTransient(String entityName, Object entity, Boolean assumed, SharedSessionContractImplementor session) {
 		if ( isHibernateProxy( entity ) ) {
 			return trueFuture();
 		}
@@ -297,7 +296,7 @@ public final class ForeignKeys {
 	 *
 	 * @return {@code true} if the given entity is transient (unsaved)
 	 */
-	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SessionImplementor session) {
+	public static CompletionStage<Boolean> isTransient(String entityName, Object entity, Boolean assumed, SharedSessionContractImplementor session) {
 		if ( entity == LazyPropertyInitializer.UNFETCHED_PROPERTY ) {
 			// an unfetched association can only point to
 			// an entity that already exists in the db
@@ -350,7 +349,7 @@ public final class ForeignKeys {
 	public static CompletionStage<Object> getEntityIdentifierIfNotUnsaved(
 			final String entityName,
 			final Object object,
-			final SessionImplementor session) throws TransientObjectException {
+			final SharedSessionContractImplementor session) throws TransientObjectException {
 		if ( object == null ) {
 			return nullFuture();
 		}
@@ -387,7 +386,7 @@ public final class ForeignKeys {
 
 		final EntityPersister persister = session.getEntityPersister( entityName, entity );
 		final Type[] types = persister.getPropertyTypes();
-		final Nullifier nullifier = new Nullifier( entity, false, isEarlyInsert, (SessionImplementor) session, persister );
+		final Nullifier nullifier = new Nullifier( entity, false, isEarlyInsert, session, persister );
 		final String[] propertyNames = persister.getPropertyNames();
 		final boolean[] nullability = persister.getPropertyNullability();
 		final NonNullableTransientDependencies nonNullableTransientEntities = new NonNullableTransientDependencies();

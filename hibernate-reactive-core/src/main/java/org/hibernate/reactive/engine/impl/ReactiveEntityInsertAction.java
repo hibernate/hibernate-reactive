@@ -16,7 +16,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.persister.entity.EntityPersister;
@@ -64,7 +63,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	// @see org.hibernate.action.internal.AbstractEntityInsertAction#nullifyTransientReferencesIfNotAlready()
 	default CompletionStage<Void> reactiveNullifyTransientReferencesIfNotAlready() {
 		if ( !areTransientReferencesNullified() ) {
-			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), (SessionImplementor) getSession(), getPersister() )
+			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), getSession(), getPersister() )
 					.nullifyTransientReferences( getState() )
 					.thenAccept( v -> {
 						new Nullability( getSession() ).checkNullability( getState(), getPersister(), false );

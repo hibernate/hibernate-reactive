@@ -44,6 +44,7 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	ReactiveActionQueue getReactiveActionQueue();
 
+	@Override
 	SessionImplementor getSharedContract();
 
 	<E,T> CompletionStage<T> reactiveFetch(E entity, Attribute<E,T> field);

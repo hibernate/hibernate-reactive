@@ -16,7 +16,6 @@ import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
@@ -155,7 +154,7 @@ public class EntityTypes {
 			final Object[] original,
 			final Object[] target,
 			final Type[] types,
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final Object owner,
 			final Map<Object, Object> copyCache) {
 		Object[] copied = new Object[original.length];
@@ -171,7 +170,7 @@ public class EntityTypes {
 			final Object[] original,
 			final Object[] target,
 			final Type[] types,
-			final SessionImplementor session,
+			final SharedSessionContractImplementor session,
 			final Object owner,
 			final Map<Object, Object> copyCache,
 			final ForeignKeyDirection foreignKeyDirection) {
@@ -188,7 +187,7 @@ public class EntityTypes {
 			EntityType entityType,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache,
 			ForeignKeyDirection foreignKeyDirection)
@@ -208,7 +207,7 @@ public class EntityTypes {
 			EntityType entityType,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache) {
 		if ( original == null ) {
@@ -254,7 +253,7 @@ public class EntityTypes {
 	private static CompletionStage<Object> resolveIdOrUniqueKey(
 			EntityType entityType,
 			Object original,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache) {
 		return getIdentifier( entityType, original, session )
@@ -289,7 +288,7 @@ public class EntityTypes {
 	private static CompletionStage<Object> getIdentifier(
 			EntityType entityType,
 			Object value,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		if ( entityType.isReferenceToIdentifierProperty() ) {
 			// tolerates nulls
 			return getEntityIdentifierIfNotUnsaved( entityType.getAssociatedEntityName(), value, session );
@@ -358,7 +357,7 @@ public class EntityTypes {
 						// an entity type, in which case we need to resolve its identifier
 						final AttributeMapping type = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
 						if ( type.isEntityIdentifierMapping() ) {
-							propertyValue = getIdentifier( (EntityType) type, propertyValue, (SessionImplementor) session );
+							propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
 						}
 						return propertyValue;
 					}
@@ -389,7 +388,7 @@ public class EntityTypes {
 			Object[] original,
 			Object[] target,
 			Type[] types,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache,
 			int i,
@@ -435,7 +434,7 @@ public class EntityTypes {
 			Object[] original,
 			Object[] target,
 			Type[] types,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache,
 			ForeignKeyDirection foreignKeyDirection,
