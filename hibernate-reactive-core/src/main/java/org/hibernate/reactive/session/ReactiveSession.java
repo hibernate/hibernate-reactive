@@ -16,7 +16,6 @@ import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.UnknownProfileException;
-import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.event.spi.DeleteContext;
@@ -59,8 +58,6 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	CompletionStage<Void> reactiveRemove(Object entity);
 
-	CompletionStage<Void> reactiveRemove(String entityName, boolean isCascadeDeleteEnabled, DeleteContext transientObjects);
-
 	CompletionStage<Void> reactiveRemove(String entityName, Object child, boolean isCascadeDeleteEnabled, DeleteContext transientEntities);
 
 	<T> CompletionStage<T> reactiveMerge(T object);
@@ -90,10 +87,6 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
 
 	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String,Object> naturalIds);
-
-	CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id);
-
-	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing);
 
 	CompletionStage<Void> reactiveRemoveOrphanBeforeUpdates(String entityName, Object child);
 

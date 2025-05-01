@@ -19,8 +19,6 @@ import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -43,7 +41,6 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -58,8 +55,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * {@code Session} and {@link org.hibernate.Session}.
  */
 public class StageSessionImpl implements Stage.Session {
-
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private final ReactiveSession delegate;
 
@@ -252,38 +247,22 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public FlushMode getFlushMode() {
-		switch ( delegate.getHibernateFlushMode() ) {
-			case MANUAL:
-				return FlushMode.MANUAL;
-			case COMMIT:
-				return FlushMode.COMMIT;
-			case AUTO:
-				return FlushMode.AUTO;
-			case ALWAYS:
-				return FlushMode.ALWAYS;
-			default:
-				throw LOG.impossibleFlushModeIllegalState();
-		}
+        return switch ( delegate.getHibernateFlushMode() ) {
+            case MANUAL -> FlushMode.MANUAL;
+            case COMMIT -> FlushMode.COMMIT;
+            case AUTO -> FlushMode.AUTO;
+            case ALWAYS -> FlushMode.ALWAYS;
+        };
 	}
 
 	@Override
 	public Stage.Session setFlushMode(FlushMode flushMode) {
-		switch ( flushMode ) {
-			case COMMIT:
-				delegate.setHibernateFlushMode( org.hibernate.FlushMode.COMMIT );
-				break;
-			case AUTO:
-				delegate.setHibernateFlushMode( org.hibernate.FlushMode.AUTO );
-				break;
-			case MANUAL:
-				delegate.setHibernateFlushMode( org.hibernate.FlushMode.MANUAL );
-				break;
-			case ALWAYS:
-				delegate.setHibernateFlushMode( org.hibernate.FlushMode.ALWAYS );
-				break;
-			default:
-				throw new IllegalArgumentException( "Unsupported flushMode: " + flushMode );
-		}
+		delegate.setHibernateFlushMode( switch ( flushMode ) {
+			case COMMIT -> org.hibernate.FlushMode.COMMIT;
+			case AUTO -> org.hibernate.FlushMode.AUTO;
+			case MANUAL -> org.hibernate.FlushMode.MANUAL;
+			case ALWAYS -> org.hibernate.FlushMode.ALWAYS;
+		} );
 		return this;
 	}
 

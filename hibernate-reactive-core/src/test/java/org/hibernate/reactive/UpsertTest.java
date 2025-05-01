@@ -105,34 +105,6 @@ public class UpsertTest extends BaseReactiveTest {
 	}
 
 	@Test
-	public void testMutinyUpsertWithEntityName(VertxTestContext context) {
-		test( context, getMutinySessionFactory().withStatelessTransaction( ss -> ss
-							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
-							  .call( () -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
-							  .invoke( this::assertQueries )
-					  )
-					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
-							  .invoke( results -> assertThat( results ).containsExactly(
-									  new Record( 123L, "hello earth" ),
-									  new Record( 456L, "hello mars" )
-							  ) )
-					  )
-					  .call( () -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
-					  ) )
-					  .invoke( this::assertQueries )
-					  .call( v -> getMutinySessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
-							  .invoke( results -> assertThat( results ).containsExactly(
-									  new Record( 123L, "goodbye earth" ),
-									  new Record( 456L, "hello mars" )
-							  ) )
-					  )
-		);
-	}
-
-	@Test
 	public void testStageUpsert(VertxTestContext context) {
 		test( context, getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "hello earth" ) )
@@ -148,34 +120,6 @@ public class UpsertTest extends BaseReactiveTest {
 					  )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
 							  .upsert( new Record( 123L, "goodbye earth" ) )
-					  ) )
-					  .thenAccept( v -> this.assertQueries() )
-					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
-							  .thenAccept( results -> assertThat( results ).containsExactly(
-									  new Record( 123L, "goodbye earth" ),
-									  new Record( 456L, "hello mars" )
-							  ) )
-					  )
-		);
-	}
-
-	@Test
-	public void testStageUpsertWithEntityName(VertxTestContext context) {
-		test( context, getSessionFactory().withStatelessTransaction( ss -> ss
-							  .upsert( Record.class.getName(), new Record( 123L, "hello earth" ) )
-							  .thenCompose( v -> ss.upsert( Record.class.getName(), new Record( 456L, "hello mars" ) ) )
-					  )
-					  .thenAccept( v -> this.assertQueries() )
-					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-									  .createSelectionQuery( "from Record order by id", Record.class ).getResultList() )
-							  .thenAccept( results -> assertThat( results ).containsExactly(
-									  new Record( 123L, "hello earth" ),
-									  new Record( 456L, "hello mars" )
-							  ) )
-					  )
-					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss
-							  .upsert( Record.class.getName(), new Record( 123L, "goodbye earth" ) )
 					  ) )
 					  .thenAccept( v -> this.assertQueries() )
 					  .thenCompose( v -> getSessionFactory().withStatelessTransaction( ss -> ss

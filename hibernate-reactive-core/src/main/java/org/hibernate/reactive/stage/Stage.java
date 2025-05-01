@@ -1807,15 +1807,6 @@ public interface Stage {
 		CompletionStage<Void> upsert(Object entity);
 
 		/**
-		 *
-		 * @param entityName The entityName for the entity to be merged
-		 * @param entity a detached entity instance
-		 *
-		 * @see org.hibernate.StatelessSession#upsert(String, Object)
-		 */
-		CompletionStage<Void> upsert(String entityName, Object entity);
-
-		/**
 		 * Use a SQL {@code merge into} statement to perform
 		 * an upsert on multiple rows using the size of the given array
 		 * as batch size.

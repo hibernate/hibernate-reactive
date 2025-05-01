@@ -7,6 +7,7 @@ package org.hibernate.reactive.session.impl;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.SessionException;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
@@ -14,6 +15,7 @@ import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
+import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -101,6 +103,7 @@ import static org.hibernate.internal.util.StringHelper.isEmpty;
 import static org.hibernate.internal.util.StringHelper.isNotEmpty;
 import static org.hibernate.loader.ast.spi.CascadingFetchProfile.REFRESH;
 import static org.hibernate.loader.internal.CacheLoadHelper.initializeCollectionFromCache;
+import static org.hibernate.pretty.MessageHelper.collectionInfoString;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.id.impl.IdentifierGeneration.castToIdentifierType;
@@ -591,17 +594,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public CompletionStage<Void> reactiveRefresh(String entityName, Object entity) {
-		return reactiveRefresh( entityName, entity, LockMode.NONE );
-	}
-
-	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
 		return reactiveRefresh( bestGuessEntityName( entity ), entity, lockMode );
 	}
 
-	@Override
-	public CompletionStage<Void> reactiveRefresh(String entityName, Object entity, LockMode lockMode) {
+	private CompletionStage<Void> reactiveRefresh(String entityName, Object entity, LockMode lockMode) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
 		final Object id = persister.getIdentifier( entity, this );
@@ -642,16 +639,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public CompletionStage<Void> reactiveUpsert(Object entity) {
 		checkOpen();
-		return reactiveUpsert( null, entity );
-	}
-
-	/**
-	 * @see StatelessSessionImpl#upsert(String, Object)
-	 */
-	@Override
-	public CompletionStage<Void> reactiveUpsert(String entityName, Object entity) {
-		checkOpen();
-		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
+		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
 		final Object id = idToUpsert( entity, persister );
 		final Object[] state = persister.getValues( entity );
 		if ( firePreUpsert( entity, id, state, persister ) ) {
@@ -765,6 +753,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	public CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id) {
+		if ( persistenceContext.isLoadFinished() ) {
+			throw new SessionException( "proxies cannot be fetched by a stateless session" );
+		}
+		// unless we are still in the process of handling a top-level load
+		return reactiveGet( entityName, id );
+	}
+
+	@Override
 	protected Object internalLoadGet(String entityName, Object id, PersistenceContext persistenceContext) {
 		// otherwise immediately materialize it
 
@@ -774,6 +771,44 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return this.reactiveGet( entityName, id )
 				.whenComplete( (r, e) -> persistenceContext.afterLoad() );
 	}
+
+	@Override
+	public CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing) {
+		checkOpen();
+		final CollectionEntry ce = persistenceContext.getCollectionEntry( collection );
+		if ( ce == null ) {
+			throw new HibernateException( "no entry for collection" );
+		}
+        if ( collection.wasInitialized() ) {
+            return voidFuture();
+        }
+		else {
+            final ReactiveCollectionPersister loadedPersister =
+                    (ReactiveCollectionPersister) ce.getLoadedPersister();
+            final Object loadedKey = ce.getLoadedKey();
+            if ( LOG.isTraceEnabled() ) {
+                LOG.trace( "Initializing collection "
+                        + collectionInfoString( loadedPersister, collection, loadedKey, this ) );
+            }
+            final boolean foundInCache =
+                    initializeCollectionFromCache( loadedKey, loadedPersister, collection, this );
+            if ( foundInCache ) {
+                LOG.trace( "Collection initialized from cache" );
+                return voidFuture();
+            }
+            else {
+                return loadedPersister.reactiveInitialize( loadedKey, this )
+                        .thenAccept( v -> {
+                            handlePotentiallyEmptyCollection( collection, persistenceContext, loadedKey, loadedPersister );
+                            LOG.trace( "Collection initialized" );
+                            final StatisticsImplementor statistics = getFactory().getStatistics();
+                            if ( statistics.isStatisticsEnabled() ) {
+                                statistics.fetchCollection( loadedPersister.getRole() );
+                            }
+                        } );
+            }
+        }
+    }
 
 	@Override
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {

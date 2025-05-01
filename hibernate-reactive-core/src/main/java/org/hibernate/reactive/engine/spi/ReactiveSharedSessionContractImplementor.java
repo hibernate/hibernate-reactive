@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 
+import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistenceContext;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
@@ -21,6 +22,10 @@ public interface ReactiveSharedSessionContractImplementor {
 	default CompletionStage<Boolean> reactiveAutoFlushIfRequired(Set<String> querySpaces) {
 		return falseFuture();
 	}
+
+	CompletionStage<Object> reactiveImmediateLoad(String entityName, Object id);
+
+	CompletionStage<Void> reactiveInitializeCollection(PersistentCollection<?> collection, boolean writing);
 
 	PersistenceContext getPersistenceContext();
 }
