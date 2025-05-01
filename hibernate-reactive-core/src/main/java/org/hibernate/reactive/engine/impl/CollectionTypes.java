@@ -23,7 +23,6 @@ import org.hibernate.collection.spi.PersistentArrayHolder;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -58,7 +57,7 @@ public class CollectionTypes {
 			CollectionType type,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache,
 			ForeignKeyDirection foreignKeyDirection)
@@ -76,7 +75,7 @@ public class CollectionTypes {
 			CollectionType type,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache) throws HibernateException {
 		if ( original == null ) {
@@ -96,7 +95,7 @@ public class CollectionTypes {
 	 */
 	private static Object replaceNullOriginal(
 			Object target,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		if ( target == null ) {
 			return null;
 		}
@@ -132,7 +131,7 @@ public class CollectionTypes {
 			CollectionType type,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Map<Object, Object> copyCache) {
 		final PersistentCollection<?> persistentCollection = (PersistentCollection<?>) original;
 		if ( persistentCollection.hasQueuedOperations() ) {
@@ -165,7 +164,7 @@ public class CollectionTypes {
 			CollectionType type,
 			Object original,
 			Object target,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Object owner,
 			Map<Object, Object> copyCache) {
 
@@ -211,7 +210,7 @@ public class CollectionTypes {
 			Object target,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		if ( type instanceof ArrayType ) {
 			return replaceArrayTypeElements( type, original, target, owner, copyCache, session );
 		}
@@ -246,7 +245,7 @@ public class CollectionTypes {
 			final Collection<Object> result,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		result.clear();
 		// copy elements into newly empty target collection
 		final Type elemType = type.getElementType( session.getFactory() );
@@ -261,7 +260,7 @@ public class CollectionTypes {
 			Collection<Object> result,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Type elemType) {
 		// if the original is a PersistentCollection, and that original
 		// was not flagged as dirty, then reset the target's dirty flag
@@ -293,7 +292,7 @@ public class CollectionTypes {
 			Map<Object, Object> target,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final CollectionPersister persister =
 				session.getFactory().getRuntimeMetamodels().getMappingMetamodel()
 						.getCollectionDescriptor( type.getRole() );
@@ -320,7 +319,7 @@ public class CollectionTypes {
 			Object target,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final Object result;
 		final int length = Array.getLength( original );
 		if ( length != Array.getLength( target ) ) {
@@ -345,7 +344,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object o,
 			Object owner,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Map<Object, Object> copyCache) {
 		return getReplace( elemType, o, null, owner, session, copyCache );
 	}
@@ -355,7 +354,7 @@ public class CollectionTypes {
 			Object object,
 			Object target,
 			Object owner,
-			SessionImplementor session,
+			SharedSessionContractImplementor session,
 			Map<Object, Object> copyCache) {
         return elemType instanceof EntityType entityType
 				? EntityTypes.replace( entityType, object, target, session, owner, copyCache )
@@ -371,7 +370,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final CollectionEntry ce = session.getPersistenceContextInternal().getCollectionEntry( result );
 		if ( ce != null ) {
 			return createSnapshot( original, result, elemType, owner, copyCache, session )
@@ -391,7 +390,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final Serializable originalSnapshot = original.getStoredSnapshot();
 		if ( originalSnapshot instanceof List<?> list ) {
 			return createListSnapshot( list, elemType, owner, copyCache, session );
@@ -416,7 +415,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		return loop( 0, array.length,
 				i -> getReplace( elemType, array[i], owner, session, copyCache )
 						.thenAccept( o -> array[i] = o )
@@ -432,7 +431,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final Map<?, ?> resultSnapshot = (Map<?, ?>) result.getStoredSnapshot();
 		final Map<K, V> targetMap =
 				map instanceof SortedMap<K, V> sortedMap
@@ -457,7 +456,7 @@ public class CollectionTypes {
 			Type elemType,
 			Object owner,
 			Map<Object, Object> copyCache,
-			SessionImplementor session) {
+			SharedSessionContractImplementor session) {
 		final ArrayList<Object> targetList = new ArrayList<>( list.size() );
 		return loop( list,
 				obj -> getReplace( elemType, obj, owner, session, copyCache )
