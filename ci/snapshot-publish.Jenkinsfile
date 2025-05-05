@@ -41,19 +41,15 @@ pipeline {
 				script {
 					withCredentials([
 							// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
-							// TODO: Once we switch to maven-central publishing (from nexus2) we need to add a new credentials
-							//  to use the following env variable names to set the user/password:
-							//  - JRELEASER_MAVENCENTRAL_USERNAME
-							//  - JRELEASER_MAVENCENTRAL_TOKEN
-							//  Also use the new `credentialsId` for Maven Central, e.g.:
-							//  usernamePassword(credentialsId: '???????', passwordVariable: 'JRELEASER_MAVENCENTRAL_TOKEN', usernameVariable: 'JRELEASER_MAVENCENTRAL_USERNAME'),
-							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'JRELEASER_NEXUS2_PASSWORD', usernameVariable: 'JRELEASER_NEXUS2_USERNAME'),
+							// TODO: Once we switch to maven-central publishing (from nexus2) we need to update credentialsId:
+							//  https://docs.gradle.org/current/samples/sample_publishing_credentials.html#:~:text=via%20environment%20variables
+							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'ORG_GRADLE_PROJECT_snapshotsPassword', usernameVariable: 'ORG_GRADLE_PROJECT_snapshotsUsername'),
 							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default'),
 							string(credentialsId: 'Hibernate-CI.github.com', variable: 'JRELEASER_GITHUB_TOKEN')
 					]) {
 						checkoutReleaseScripts()
 						def version = sh(
-								script: ".release/scripts/determine-current-version.sh orm",
+								script: ".release/scripts/determine-current-version.sh reactive",
 								returnStdout: true
 						).trim()
 						echo "Current version: '${version}'"

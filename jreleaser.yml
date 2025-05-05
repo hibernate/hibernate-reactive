@@ -27,16 +27,6 @@ deploy:
         releaseRepository: false
         stagingRepositories:
           - build/staging-deploy/maven
-      maven-central-snapshot:
-        active: SNAPSHOT
-        url: https://oss.sonatype.org/service/local
-        snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots/
-        closeRepository: true
-        releaseRepository: true
-        javadocJar: false
-        sign: false
-        stagingRepositories:
-          - build/staging-deploy/maven
     mavenCentral:
       maven-central:
         # TODO: Change to RELEASE once switching to Maven-Central:
@@ -45,15 +35,5 @@ deploy:
         url: https://central.sonatype.com/api/v1/publisher
         snapshotSupported: false
         applyMavenCentralRules: true
-        stagingRepositories:
-          - build/staging-deploy/maven
-      maven-central-snapshot:
-        # TODO: Change to SNAPSHOT once switching to Maven-Central:
-        active: NEVER
-        url: https://central.sonatype.com/api/v1/publisher
-        snapshotSupported: true
-        applyMavenCentralRules: true
-        javadocJar: false
-        sign: false
         stagingRepositories:
           - build/staging-deploy/maven
