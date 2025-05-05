@@ -212,11 +212,6 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
     }
 
     @Incubating
-    public Uni<Void> upsert(String entityName, Object entity) {
-        return delegate().upsert(entityName, entity);
-    }
-
-    @Incubating
     public Uni<Void> upsertAll(Object... entities) {
         return delegate().upsertAll(entities);
     }
