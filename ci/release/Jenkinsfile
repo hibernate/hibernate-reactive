@@ -151,7 +151,7 @@ pipeline {
 					env.DEVELOPMENT_VERSION = developmentVersion.toString()
 					// Dry run is not supported at the moment
  					env.SCRIPT_OPTIONS = params.RELEASE_DRY_RUN ? "-d" : ""
-					env.JRELEASER_DRY_RUN = true
+					env.JRELEASER_DRY_RUN = params.RELEASE_DRY_RUN
 
 					// Determine version id to check if Jira version exists
 					// This step doesn't work for Hibernate Reactive (the project has been created with a different type on JIRA)
