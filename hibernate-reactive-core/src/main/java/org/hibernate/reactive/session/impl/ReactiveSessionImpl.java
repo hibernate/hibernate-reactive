@@ -404,12 +404,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 		else if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
 			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
-			// Workaround for ORM, can be remove when this issue is solved: https://hibernate.atlassian.net/browse/HHH-19386
-			final Class<R> type =
-					specification.getResultType() == Void.class
-							? null
-							: (Class<R>) specification.getResultType();
-			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, type, this );
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
 		}
 		else {
 			@SuppressWarnings("unchecked")
