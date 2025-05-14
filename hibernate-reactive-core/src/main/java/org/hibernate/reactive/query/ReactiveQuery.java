@@ -33,10 +33,13 @@ import jakarta.persistence.TemporalType;
  * @see org.hibernate.query.Query
  */
 public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMutationQuery<R> {
+	@Override
 	String getQueryString();
 
+	@Override
 	String getComment();
 
+	@Override
 	ReactiveQuery<R> setComment(String comment);
 
 	ReactiveQuery<R> addQueryHint(String hint);
@@ -55,6 +58,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	QueryOptions getQueryOptions();
 
+	@Override
 	ParameterMetadata getParameterMetadata();
 
 	@Override
@@ -98,18 +102,21 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @see #setParameter(int, Object, Type)
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameter(int parameter, P argument, Class<P> type);
 
 	/**
 	 * Bind the given argument to an ordinal query parameter using the given
 	 * {@link Type}.
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameter(int parameter, P argument, Type<P> type);
 
 	/**
 	 * Bind an {@link Instant} value to the ordinal query parameter using
 	 * just the portion indicated by the given {@link TemporalType}.
 	 */
+	@Override
 	ReactiveQuery<R> setParameter(int parameter, Instant argument, TemporalType temporalType);
 
 	/**
@@ -124,10 +131,13 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	@Override
 	ReactiveQuery<R> setParameter(int parameter, Calendar argument, TemporalType temporalType);
 
+	@Override
 	<T> ReactiveQuery<R> setParameter(QueryParameter<T> parameter, T argument);
 
+	@Override
 	<P> ReactiveQuery<R> setParameter(QueryParameter<P> parameter, P argument, Class<P> type);
 
+	@Override
 	<P> ReactiveQuery<R> setParameter(QueryParameter<P> parameter, P argument, Type<P> type);
 
 	@Override
@@ -139,8 +149,10 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	@Override
 	ReactiveQuery<R> setParameter(Parameter<Date> parameter, Date argument, TemporalType temporalType);
 
+	@Override
 	ReactiveQuery<R> setParameterList(String parameter, @SuppressWarnings("rawtypes") Collection arguments);
 
+	@Override
 	<P> ReactiveQuery<R> setParameterList(String parameter, Collection<? extends P> arguments, Class<P> javaType);
 
 	/**
@@ -152,6 +164,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(String parameter, Collection<? extends P> arguments, Type<P> type);
 
  	/**
@@ -165,6 +178,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	ReactiveQuery<R> setParameterList(String parameter, Object[] values);
 
 	/**
@@ -180,6 +194,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(String parameter, P[] arguments, Class<P> javaType);
 
 
@@ -192,6 +207,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(String parameter, P[] arguments, Type<P> type);
 
 	/**
@@ -205,6 +221,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	ReactiveQuery<R> setParameterList(int parameter, @SuppressWarnings("rawtypes") Collection arguments);
 
 	/**
@@ -220,6 +237,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(int parameter, Collection<? extends P> arguments, Class<P> javaType);
 
 	/**
@@ -231,6 +249,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(int parameter, Collection<? extends P> arguments, Type<P> type);
 
 	/**
@@ -244,6 +263,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	ReactiveQuery<R> setParameterList(int parameter, Object[] arguments);
 
 	/**
@@ -259,6 +279,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(int parameter, P[] arguments, Class<P> javaType);
 
 	/**
@@ -270,6 +291,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(int parameter, P[] arguments, Type<P> type);
 
 	/**
@@ -284,6 +306,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments);
 
 	/**
@@ -300,6 +323,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, Class<P> javaType);
 
 	/**
@@ -314,6 +338,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, Type<P> type);
 
 	/**
@@ -329,6 +354,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, P[] arguments);
 
 	/**
@@ -345,6 +371,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, P[] arguments, Class<P> javaType);
 
 	/**
@@ -359,6 +386,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, P[] arguments, Type<P> type);
 
 	/**
@@ -370,6 +398,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	ReactiveQuery<R> setProperties(Object bean);
 
 	/**
@@ -381,6 +410,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
+	@Override
 	ReactiveQuery<R> setProperties(@SuppressWarnings("rawtypes") Map bean);
 
 

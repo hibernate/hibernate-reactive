@@ -53,6 +53,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	CompletionStage<Optional<R>> reactiveUniqueResultOptional();
 
+	@Override
 	ReactiveSelectionQuery<R> setHint(String hintName, Object value);
 
 	// Covariant methods
