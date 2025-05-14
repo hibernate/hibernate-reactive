@@ -5,13 +5,13 @@
  */
 package org.hibernate.reactive.query;
 
+import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
 
@@ -130,7 +130,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameter(String name, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameter(String name, P value, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameter(String name, P value, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Instant value, TemporalType temporalType);
@@ -148,7 +148,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameter(int position, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameter(int position, P value, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameter(int position, P value, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameter(int position, Instant value, TemporalType temporalType);
@@ -166,7 +166,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameter(QueryParameter<P> parameter, P val, Type<P> type);
 
 	@Override
 	<T> ReactiveSelectionQuery<R> setParameter(Parameter<T> param, T value);
@@ -184,7 +184,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(String name, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameterList(String name, Object[] values);
@@ -193,7 +193,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(String name, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(String name, P[] values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(String name, P[] values, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
@@ -202,7 +202,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(int position, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setParameterList(int position, Object[] values);
@@ -211,7 +211,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(int position, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(int position, P[] values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(int position, P[] values, Type<P> type);
 
 	@Override
 	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
@@ -220,7 +220,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values);
@@ -229,7 +229,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+	<P> ReactiveSelectionQuery<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type);
 
 	@Override
 	ReactiveSelectionQuery<R> setProperties(Object bean);

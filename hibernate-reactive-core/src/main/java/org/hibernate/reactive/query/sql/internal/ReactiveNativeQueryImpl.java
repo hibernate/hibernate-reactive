@@ -27,7 +27,6 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -54,6 +53,7 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.metamodel.Type;
 import jakarta.persistence.metamodel.SingularAttribute;
 
 public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
@@ -570,7 +570,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(String name, P val, Type<P> type) {
 		super.setParameter( name, val, type );
 		return this;
 	}
@@ -612,7 +612,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(int position, P val, Type<P> type) {
 		super.setParameter( position, val, type );
 		return this;
 	}
@@ -648,7 +648,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameter(QueryParameter<P> parameter, P val, Type<P> type) {
 		super.setParameter( parameter, val, type );
 		return this;
 	}
@@ -690,7 +690,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			String name,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -708,7 +708,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -732,7 +732,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			int position,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -750,7 +750,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
-	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, BindableType<P> type) {
+	public <P> ReactiveNativeQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -776,7 +776,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
@@ -797,7 +797,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public <P> ReactiveNativeQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			P[] values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}

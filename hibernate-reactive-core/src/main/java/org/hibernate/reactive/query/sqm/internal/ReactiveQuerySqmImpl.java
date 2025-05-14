@@ -32,7 +32,6 @@ import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -69,6 +68,7 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.metamodel.Type;
 
 /**
  * A reactive {@link QuerySqmImpl}
@@ -629,7 +629,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameter(String name, P value, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameter(String name, P value, Type<P> type) {
 		super.setParameter( name, value, type );
 		return this;
 	}
@@ -653,7 +653,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameter(int position, P value, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameter(int position, P value, Type<P> type) {
 		super.setParameter( position, value, type );
 		return this;
 	}
@@ -677,7 +677,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameter(QueryParameter<P> parameter, P value, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameter(QueryParameter<P> parameter, P value, Type<P> type) {
 		super.setParameter( parameter, value, type );
 		return this;
 	}
@@ -737,7 +737,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(String name, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -755,7 +755,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(String name, P[] values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(String name, P[] values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -773,7 +773,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(int position, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -791,7 +791,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(int position, P[] values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(int position, P[] values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -809,7 +809,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
@@ -827,7 +827,7 @@ public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements Reactive
 	}
 
 	@Override
-	public <P> ReactiveQuerySqmImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type) {
+	public <P> ReactiveQuerySqmImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}

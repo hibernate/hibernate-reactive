@@ -11,12 +11,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -173,7 +173,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	ReactiveNativeQueryImplementor<R> setParameter(String name, Object val);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameter(String name, P val, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameter(String name, P val, Type<P> type);
 
 	@Override
 	<P> ReactiveNativeQueryImplementor<R> setParameter(String name, P val, Class<P> type);
@@ -194,7 +194,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameter(int position, P val, Class<P> type);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameter(int position, P val, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameter(int position, P val, Type<P> type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setParameter(int position, Instant value, TemporalType temporalType);
@@ -212,7 +212,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameter(QueryParameter<P> parameter, P val, Class<P> type);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameter(QueryParameter<P> parameter, P val, Type<P> type);
 
 	@Override
 	<P> ReactiveNativeQueryImplementor<R> setParameter(Parameter<P> param, P value);
@@ -230,7 +230,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, Class<P> type);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setParameterList(String name, Object[] values);
@@ -239,7 +239,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, P[] values, Class<P> type);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, P[] values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(String name, P[] values, Type<P> type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
@@ -248,7 +248,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, Class<P> type);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setParameterList(int position, Object[] values);
@@ -257,7 +257,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, P[] values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(int position, P[] values, Type<P> type);
 
 
 	@Override
@@ -267,7 +267,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values);
@@ -276,7 +276,7 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+	<P> ReactiveNativeQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setProperties(Object bean);

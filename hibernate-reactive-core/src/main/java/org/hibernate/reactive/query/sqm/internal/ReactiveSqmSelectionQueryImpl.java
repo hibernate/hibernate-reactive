@@ -14,7 +14,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryLogging;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
@@ -35,6 +34,8 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.metamodel.Type;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -342,7 +343,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, BindableType<P> type) {
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, Type<P> type) {
 		super.setParameter( name, value, type );
 		return this;
 	}
@@ -366,7 +367,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, BindableType<P> type) {
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, Type<P> type) {
 		super.setParameter( position, value, type );
 		return this;
 	}
@@ -393,7 +394,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(
 			QueryParameter<P> parameter,
 			P value,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameter( parameter, value, type );
 		return this;
 	}
@@ -462,7 +463,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
 			String name,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -480,7 +481,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, BindableType<P> type) {
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
@@ -504,7 +505,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
 			int position,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -522,7 +523,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, BindableType<P> type) {
+	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
@@ -548,7 +549,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
@@ -572,7 +573,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			P[] values,
-			BindableType<P> type) {
+			Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
