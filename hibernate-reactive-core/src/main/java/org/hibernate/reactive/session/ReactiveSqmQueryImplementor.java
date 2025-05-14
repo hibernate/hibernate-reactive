@@ -16,7 +16,6 @@ import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -28,6 +27,7 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.metamodel.Type;
 
 
 /**
@@ -101,7 +101,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameter(String name, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameter(String name, P value, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameter(String name, P value, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setParameter(String name, Instant value, TemporalType temporalType);
@@ -119,7 +119,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameter(int position, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameter(int position, P value, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameter(int position, P value, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setParameter(int position, Instant value, TemporalType temporalType);
@@ -137,7 +137,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameter(QueryParameter<P> parameter, P value, Class<P> type);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameter(QueryParameter<P> parameter, P val, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameter(QueryParameter<P> parameter, P val, Type<P> type);
 
 	@Override
 	<T> ReactiveSqmQueryImplementor<R> setParameter(Parameter<T> param, T value);
@@ -155,7 +155,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setParameterList(String name, Object[] values);
@@ -164,7 +164,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, P[] values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(String name, P[] values, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setParameterList(int position, @SuppressWarnings("rawtypes") Collection values);
@@ -173,7 +173,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setParameterList(int position, Object[] values);
@@ -182,7 +182,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, P[] values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(int position, P[] values, Type<P> type);
 
 	@Override
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values);
@@ -191,7 +191,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type);
 
 	@Override
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values);
@@ -200,7 +200,7 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType);
 
 	@Override
-	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, BindableType<P> type);
+	<P> ReactiveSqmQueryImplementor<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setProperties(Object bean);

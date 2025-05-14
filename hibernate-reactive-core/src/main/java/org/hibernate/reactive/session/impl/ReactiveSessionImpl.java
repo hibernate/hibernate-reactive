@@ -80,6 +80,7 @@ import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.query.sqm.tree.select.SqmQueryGroup;
 import org.hibernate.query.sqm.tree.select.SqmQuerySpec;
+import org.hibernate.query.sqm.tree.select.SqmSelectClause;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
@@ -311,9 +312,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		if ( association == null ) {
 			return nullFuture();
 		}
-
-		if ( association instanceof HibernateProxy proxy ) {
-			LazyInitializer initializer = proxy.getHibernateLazyInitializer();
+		else if ( association instanceof HibernateProxy proxy ) {
+			final LazyInitializer initializer = proxy.getHibernateLazyInitializer();
 			if ( !initializer.isUninitialized() ) {
 				return completedFuture( unproxy ? (T) initializer.getImplementation() : association );
 			}
@@ -371,9 +371,10 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final SqmSelectStatement<R> selectStatement = (SqmSelectStatement<R>) criteriaQuery;
 			if ( ! ( selectStatement.getQueryPart() instanceof SqmQueryGroup ) ) {
 				final SqmQuerySpec<R> querySpec = selectStatement.getQuerySpec();
-				if ( querySpec.getSelectClause().getSelections().isEmpty() ) {
+				final SqmSelectClause selectClause = querySpec.getSelectClause();
+				if ( selectClause.getSelections().isEmpty() ) {
 					if ( querySpec.getFromClause().getRoots().size() == 1 ) {
-						querySpec.getSelectClause().setSelection( querySpec.getFromClause().getRoots().get(0) );
+						selectClause.setSelection( querySpec.getFromClause().getRoots().get(0) );
 					}
 				}
 			}
@@ -401,24 +402,27 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
 			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
 		}
-		if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
+		else if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
 			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
 			// Workaround for ORM, can be remove when this issue is solved: https://hibernate.atlassian.net/browse/HHH-19386
-			Class<R> type = specification.getResultType() == Void.class
-					? null
-					: (Class<R>) specification.getResultType();
+			final Class<R> type =
+					specification.getResultType() == Void.class
+							? null
+							: (Class<R>) specification.getResultType();
 			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, type, this );
 		}
-		@SuppressWarnings("unchecked")
-		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
-		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
-		ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
-				typedQueryReference.getName(),
-				memento -> createSqmQueryImplementor( resultType, memento ),
-				memento -> createNativeQueryImplementor( resultType, memento )
-		);
-		typedQueryReference.getHints().forEach( query::setHint );
-		return query;
+		else {
+			@SuppressWarnings("unchecked")
+			// this cast is fine because of all our impls of TypedQueryReference return Class<R>
+			final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
+			final ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
+					typedQueryReference.getName(),
+					memento -> createSqmQueryImplementor(resultType, memento),
+					memento -> createNativeQueryImplementor(resultType, memento)
+			);
+			typedQueryReference.getHints().forEach(query::setHint);
+			return query;
+		}
 	}
 
 	@Override

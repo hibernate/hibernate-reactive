@@ -11,11 +11,11 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.query.BindableType;
 import org.hibernate.query.ParameterMetadata;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -64,7 +64,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	<P> ReactiveQuery<R> setParameter(String parameter, P argument, Class<P> type);
 
 	@Override
-	<P> ReactiveQuery<R> setParameter(String parameter, P argument, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameter(String parameter, P argument, Type<P> type);
 
 	/**
 	 * Bind an {@link Instant} value to the named query parameter using
@@ -85,26 +85,26 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 * which it occurs, use one of the forms which accepts a "type".
 	 *
 	 * @see #setParameter(int, Object, Class)
-	 * @see #setParameter(int, Object, BindableType)
+	 * @see #setParameter(int, Object, Type)
 	 */
 	@Override
 	ReactiveQuery<R> setParameter(int parameter, Object argument);
 
 	/**
 	 * Bind the given argument to an ordinal query parameter using the given
-	 * Class reference to attempt to determine the {@link BindableType}
-	 * to use.  If unable to determine an appropriate {@link BindableType},
+	 * Class reference to attempt to determine the {@link Type}
+	 * to use.  If unable to determine an appropriate {@link Type},
 	 * {@link #setParameter(int, Object)} is used.
 	 *
-	 * @see #setParameter(int, Object, BindableType)
+	 * @see #setParameter(int, Object, Type)
 	 */
 	<P> ReactiveQuery<R> setParameter(int parameter, P argument, Class<P> type);
 
 	/**
 	 * Bind the given argument to an ordinal query parameter using the given
-	 * {@link BindableType}.
+	 * {@link Type}.
 	 */
-	<P> ReactiveQuery<R> setParameter(int parameter, P argument, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameter(int parameter, P argument, Type<P> type);
 
 	/**
 	 * Bind an {@link Instant} value to the ordinal query parameter using
@@ -128,7 +128,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	<P> ReactiveQuery<R> setParameter(QueryParameter<P> parameter, P argument, Class<P> type);
 
-	<P> ReactiveQuery<R> setParameter(QueryParameter<P> parameter, P argument, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameter(QueryParameter<P> parameter, P argument, Type<P> type);
 
 	@Override
 	<T> ReactiveQuery<R> setParameter(Parameter<T> parameter, T argument);
@@ -145,14 +145,14 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to a named query parameter using the given
-	 * {@link BindableType}.
+	 * {@link Type}.
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(String parameter, Collection<? extends P> arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(String parameter, Collection<? extends P> arguments, Type<P> type);
 
  	/**
 	 * Bind multiple arguments to a named query parameter.
@@ -169,11 +169,11 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to a named query parameter using the given
-	 * Class reference to attempt to determine the {@link BindableType}
-	 * to use.  If unable to determine an appropriate {@link BindableType},
+	 * Class reference to attempt to determine the {@link Type}
+	 * to use.  If unable to determine an appropriate {@link Type},
 	 * {@link #setParameterList(String, Collection)} is used.
 	 *
-	 * @see #setParameterList(java.lang.String, Object[], BindableType)
+	 * @see #setParameterList(java.lang.String, Object[], Type)
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
@@ -185,14 +185,14 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to a named query parameter using the given
-	 * {@link BindableType}.
+	 * {@link Type}.
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(String parameter, P[] arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(String parameter, P[] arguments, Type<P> type);
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter.
@@ -209,11 +209,11 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter using the given
-	 * Class reference to attempt to determine the {@link BindableType}
-	 * to use.  If unable to determine an appropriate {@link BindableType},
+	 * Class reference to attempt to determine the {@link Type}
+	 * to use.  If unable to determine an appropriate {@link Type},
 	 * {@link #setParameterList(String, Collection)} is used.
 	 *
-	 * @see #setParameterList(int, Collection, BindableType)
+	 * @see #setParameterList(int, Collection, Type)
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
@@ -224,14 +224,14 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter using the given
-	 * {@link BindableType}.
+	 * {@link Type}.
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(int parameter, Collection<? extends P> arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(int parameter, Collection<? extends P> arguments, Type<P> type);
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter.
@@ -248,11 +248,11 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter using the given
-	 * {@link Class} reference to attempt to determine the {@link BindableType}
-	 * to use. If unable to determine an appropriate {@link BindableType},
+	 * {@link Class} reference to attempt to determine the {@link Type}
+	 * to use. If unable to determine an appropriate {@link Type},
 	 * {@link #setParameterList(String, Collection)} is used.
 	 *
-	 * @see #setParameterList(int, Object[], BindableType)
+	 * @see #setParameterList(int, Object[], Type)
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
@@ -263,14 +263,14 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to an ordinal query parameter using the given
-	 * {@link BindableType}.
+	 * {@link Type}.
 	 *
 	 * @apiNote This is used for binding a list of values to an expression
 	 * such as {@code entity.field in (:values)}.
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(int parameter, P[] arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(int parameter, P[] arguments, Type<P> type);
 
 	/**
 	 * Bind multiple arguments to the query parameter represented by the given
@@ -289,11 +289,11 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	/**
 	 * Bind multiple arguments to the query parameter represented by the given
 	 * {@link QueryParameter} using the given Class reference to attempt to
-	 * determine the {@link BindableType} to use. If unable to determine an
-	 * appropriate {@link BindableType}, {@link #setParameterList(String, Collection)}
+	 * determine the {@link Type} to use. If unable to determine an
+	 * appropriate {@link Type}, {@link #setParameterList(String, Collection)}
 	 * is used.
 	 *
-	 * @see #setParameterList(QueryParameter, java.util.Collection, BindableType)
+	 * @see #setParameterList(QueryParameter, java.util.Collection, Type)
 	 *
 	 * @apiNote This is used for binding a list of values to an expression such
 	 * as {@code entity.field in (:values)}.
@@ -304,7 +304,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to the query parameter represented by the given
-	 * {@link QueryParameter}, inferring the {@link BindableType}.
+	 * {@link QueryParameter}, inferring the {@link Type}.
 	 * <p>
 	 * The "type mapping" for the binding is inferred from the type of the first
 	 * collection element.
@@ -314,7 +314,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> arguments, Type<P> type);
 
 	/**
 	 * Bind multiple arguments to the query parameter represented by the
@@ -334,11 +334,11 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	/**
 	 * Bind multiple arguments to the query parameter represented by the
 	 * given {@link QueryParameter} using the given Class reference to attempt
-	 * to determine the {@link BindableType} to use.  If unable to
-	 * determine an appropriate {@link BindableType},
+	 * to determine the {@link Type} to use.  If unable to
+	 * determine an appropriate {@link Type},
 	 * {@link #setParameterList(String, Collection)} is used
 	 *
-	 * @see #setParameterList(QueryParameter, Object[], BindableType)
+	 * @see #setParameterList(QueryParameter, Object[], Type)
 	 *
 	 * @apiNote This is used for binding a list of values to an expression such
 	 * as {@code entity.field in (:values)}.
@@ -349,7 +349,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	/**
 	 * Bind multiple arguments to the query parameter represented by the
-	 * given {@link QueryParameter}, inferring the {@link BindableType}.
+	 * given {@link QueryParameter}, inferring the {@link Type}.
 	 * <p>
 	 * The "type mapping" for the binding is inferred from the type of
 	 * the first collection element
@@ -359,7 +359,7 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 	 *
 	 * @return {@code this}, for method chaining
 	 */
-	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, P[] arguments, BindableType<P> type);
+	<P> ReactiveQuery<R> setParameterList(QueryParameter<P> parameter, P[] arguments, Type<P> type);
 
 	/**
 	 * Bind the property values of the given bean to named parameters of the query,
