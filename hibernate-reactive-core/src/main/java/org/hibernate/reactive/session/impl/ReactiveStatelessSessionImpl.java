@@ -942,11 +942,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 		if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
 			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
-			// Workaround for ORM, can be remove when this issue is solved: https://hibernate.atlassian.net/browse/HHH-19386
-			Class<R> type = (Class<R>) specification.getResultType() == Void.class
-					? null
-					: (Class<R>) specification.getResultType();
-			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, type, this );
+			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
 		}
 		@SuppressWarnings("unchecked")
 		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
