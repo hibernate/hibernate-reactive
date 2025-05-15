@@ -73,7 +73,7 @@ public class TechEmpowerTest {
 				.compose( this::updates )
 				.onSuccess( res -> context.completeNow() )
 				.onFailure( context::failNow )
-				.eventually( unused -> vertx.close() );
+				.eventually( vertx::close );
 	}
 
 	/**

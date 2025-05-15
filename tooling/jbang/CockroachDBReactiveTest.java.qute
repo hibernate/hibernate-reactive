@@ -5,12 +5,12 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-pg-client:$\{vertx.version:4.5.14}
-//DEPS io.vertx:vertx-unit:$\{vertx.version:4.5.14}
+//DEPS io.vertx:vertx-pg-client:$\{vertx.version:5.0.0}
+//DEPS io.vertx:vertx-unit:$\{vertx.version:5.0.0}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:3.0.0.Beta1}
 //DEPS org.assertj:assertj-core:3.26.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:cockroachdb:1.20.6
+//DEPS org.testcontainers:cockroachdb:1.20.4
 //DEPS org.slf4j:slf4j-simple:2.0.7
 
 //// Testcontainer needs the JDBC drivers to start the container
@@ -70,7 +70,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v24.1.15" ) );
+    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v24.1.0" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

@@ -5,10 +5,10 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS com.ongres.scram:client:2.1
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.14}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.14}
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.14}
+//DEPS com.ongres.scram:scram-client:3.1
+//DEPS io.vertx:vertx-pg-client:${vertx.version:5.0.0}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.0.0}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:5.0.0}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.0.0.Beta1}
 //DEPS org.slf4j:slf4j-simple:2.0.7
 //DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
@@ -59,7 +59,7 @@ import static jakarta.persistence.FetchType.LAZY;
  *             <pre>
  *                 podman run --rm --name HibernateTestingPGSQL \
  *                      -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
- *                      -p 5432:5432 postgres:17.4
+ *                      -p 5432:5432 postgres:16.3
  *              </pre>
  *         </dd>
  *         <dt>3. Run the example with JBang</dt>
