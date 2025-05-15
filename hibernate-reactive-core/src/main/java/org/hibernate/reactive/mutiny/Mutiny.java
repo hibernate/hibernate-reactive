@@ -2030,7 +2030,7 @@ public interface Mutiny {
 
 
 		/**
-		 * Perform work using a {@link Session reactive session}.
+		 * Perform work using a {@linkplain Session reactive session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a session associated with the current
@@ -2049,7 +2049,7 @@ public interface Mutiny {
 		<T> Uni<T> withSession(Function<Session, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} for
+		 * Perform work using a {@linkplain Session reactive session} for
 		 * a specified tenant.
 		 * <p>
 		 * <il>
@@ -2069,12 +2069,12 @@ public interface Mutiny {
 		<T> Uni<T> withSession(String tenantId, Function<Session, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain Session reactive session}
+		 * within an associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
-		 * <li>If there is already a session associated with the
-		 * current reactive stream, then the work will be executed using that
+		 * <li>If there is already a session associated with the current
+		 * reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no session associated with the
 		 * current stream, a new session will be created.
@@ -2092,12 +2092,12 @@ public interface Mutiny {
 		<T> Uni<T> withTransaction(BiFunction<Session, Transaction, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} within an
-		 * associated transaction.
+		 * Perform work using a {@linkplain Session reactive session}
+		 * within an associated transaction.
 		 * <p>
 		 * <il>
-		 * <li>If there is already a session associated with the
-		 * current reactive stream, then the work will be executed using that
+		 * <li>If there is already a session associated with the current
+		 * reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no session associated with the
 		 * current stream, a new session will be created.
@@ -2117,8 +2117,8 @@ public interface Mutiny {
 		}
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * within an associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2128,10 +2128,11 @@ public interface Mutiny {
 		 * current stream, a new stateless session will be created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically and the transaction committed automatically.
+		 * The session will be closed automatically and the transaction committed
+		 * automatically.
 		 *
-		 * @param work a function which accepts the stateless session and returns
-		 * the result of the work as a {@link Uni}.
+		 * @param work a function which accepts the stateless session and
+		 * returns the result of the work as a {@link Uni}.
 		 *
 		 * @see #withStatelessSession(Function)
 		 * @see StatelessSession#withTransaction(Function)
@@ -2141,8 +2142,8 @@ public interface Mutiny {
 		}
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * within an associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2152,7 +2153,8 @@ public interface Mutiny {
 		 * current stream, a new stateless session will be created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically and the transaction committed automatically.
+		 * The session will be closed automatically and the transaction committed
+		 * automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
 		 * the result of the work as a {@link Uni}.
@@ -2163,7 +2165,7 @@ public interface Mutiny {
 		<T> Uni<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession stateless session}.
+		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2181,14 +2183,15 @@ public interface Mutiny {
 		<T> Uni<T> withStatelessSession(Function<StatelessSession, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession stateless session}.
+		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
-		 * current reactive stream and given tenant id, then the work will be executed using that
-		 * session.
+		 * current reactive stream and given tenant id, then the work will be
+		 * executed using that session.
 		 * <li>Otherwise, if there is no stateless session associated with the
-		 * current stream and given tenant id, a new stateless session will be created.
+		 * current stream and given tenant id, a new stateless session will be
+		 * created.
 		 * </il>
 		 * <p>
 		 * The session will be closed automatically.
@@ -2200,15 +2203,17 @@ public interface Mutiny {
 		<T> Uni<T> withStatelessSession(String tenantId, Function<StatelessSession, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} for a
-		 * specified tenant within an associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain Session reactive session} for
+		 * the tenant with the specified tenant id within an associated
+		 * {@link Transaction transaction}.
 		 * <p>
 		 * <il>
-		 * <li>If there is already a session associated with the
-		 * current reactive stream and given tenant id, then the work will be executed using that
-		 * session.
+		 * <li>If there is already a session associated with the current
+		 * reactive stream and given tenant id, then the work will be
+		 * executed using that session.
 		 * <li>Otherwise, if there is no session associated with the
-		 * current stream and given tenant id, a new stateless session will be created.
+		 * current stream and given tenant id, a new stateless session
+		 * will be created.
 		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
@@ -2224,18 +2229,21 @@ public interface Mutiny {
 		<T> Uni<T> withTransaction(String tenantId, BiFunction<Session, Transaction, Uni<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} for a
-		 * specified tenant within an associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * for the tenant with the specified tenant id within an associated
+		 * {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
-		 * current reactive stream and given tenant id, then the work will be executed using that
-		 * session.
+		 * current reactive stream and given tenant id, then the work will be
+		 * executed using that session.
 		 * <li>Otherwise, if there is no stateless session associated with the
-		 * current stream and given tenant id, a new stateless session will be created.
+		 * current stream and given tenant id, a new stateless session will be
+		 * created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically and the transaction committed automatically.
+		 * The session will be closed automatically and the transaction committed
+		 * automatically.
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the stateless session and returns
