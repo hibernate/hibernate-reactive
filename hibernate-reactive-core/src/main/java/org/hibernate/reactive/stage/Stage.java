@@ -1980,7 +1980,7 @@ public interface Stage {
 	interface SessionFactory extends AutoCloseable {
 
 		/**
-		 * Obtain a new {@link Session reactive session} {@link CompletionStage}, the main
+		 * Obtain a new {@linkplain Session reactive session} {@link CompletionStage}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.
 		 * <p>
@@ -1994,7 +1994,7 @@ public interface Stage {
 		CompletionStage<Session> openSession();
 
 		/**
-		 * Obtain a new {@link Session reactive session} {@link CompletionStage} for a
+		 * Obtain a new {@linkplain Session reactive session} {@link CompletionStage} for a
 		 * specified tenant.
 		 * <p>
 		 * When the {@link CompletionStage} completes successfully it returns a newly created session.
@@ -2033,7 +2033,7 @@ public interface Stage {
 		CompletionStage<StatelessSession> openStatelessSession(String tenantId);
 
 		/**
-		 * Perform work using a {@link Session reactive session}.
+		 * Perform work using a {@linkplain Session reactive session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a session associated with the current
@@ -2052,7 +2052,7 @@ public interface Stage {
 		<T> CompletionStage<T> withSession(Function<Session, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} for a
+		 * Perform work using a {@linkplain Session reactive session} for a
 		 * specified tenant.
 		 * <p>
 		 * <il>
@@ -2072,7 +2072,7 @@ public interface Stage {
 		<T> CompletionStage<T> withSession(String tenantId, Function<Session, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} within an
+		 * Perform work using a {@linkplain Session reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
@@ -2096,7 +2096,7 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link Session reactive session} within an
+		 * Perform work using a {@linkplain Session reactive session} within an
 		 * associated transaction.
 		 * <p>
 		 * <il>
@@ -2121,15 +2121,17 @@ public interface Stage {
 		}
 
 		/**
-		 * Perform work using a {@link Session reactive session} for a
-		 * specified tenant within an associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain Session reactive session} for
+		 * the tenant with the specified tenant id within an associated
+		 * {@link Transaction transaction}.
 		 * <p>
 		 * <il>
-		 * <li>If there is already a session associated with the
-		 * current reactive stream and the given tenant, then the work will be executed using that
-		 * session.
-		 * <li>Otherwise, if there is no stateless session associated with the
-		 * current stream and the given tenant, a new stateless session will be created.
+		 * <li>If there is already a session associated with the current
+		 * reactive stream and given tenant id, then the work will be
+		 * executed using that session.
+		 * <li>Otherwise, if there is no stateless session associated with
+		 * the current stream and given tenant id, a new stateless session
+		 * will be created.
 		 * </il>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
@@ -2145,8 +2147,8 @@ public interface Stage {
 		<T> CompletionStage<T> withTransaction(String tenantId, BiFunction<Session, Transaction, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * within an associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2156,7 +2158,8 @@ public interface Stage {
 		 * current stream, a new stateless session will be created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically, and the transaction committed automatically.
+		 * The session will be closed automatically, and the transaction committed
+		 * automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -2169,8 +2172,8 @@ public interface Stage {
 		}
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * within an associated {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2180,7 +2183,8 @@ public interface Stage {
 		 * current stream, a new stateless session will be created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically, and the transaction committed automatically.
+		 * The session will be closed automatically, and the transaction committed
+		 * automatically.
 		 *
 		 * @param work a function which accepts the stateless session and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -2191,18 +2195,21 @@ public interface Stage {
 		<T> CompletionStage<T> withStatelessTransaction(BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession reactive session} within an
-		 * associated {@link Transaction transaction}.
+		 * Perform work using a {@linkplain StatelessSession reactive session}
+		 * for the tenant with the specified tenant id within an associated
+		 * {@link Transaction transaction}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
-		 * current reactive stream and the given tenant, then the work will be executed using that
-		 * session.
+		 * current reactive stream and given tenant id, then the work will be
+		 * executed using that session.
 		 * <li>Otherwise, if there is no stateless session associated with the
-		 * current stream, a new stateless session will be created.
+		 * current stream and given tenant id, a new stateless session will be
+		 * created.
 		 * </il>
 		 * <p>
-		 * The session will be closed automatically, and the transaction committed automatically.
+		 * The session will be closed automatically and the transaction committed
+		 * automatically.
 		 *
 		 * @param tenantId the id of the tenant
 		 * @param work a function which accepts the stateless session and returns
@@ -2214,7 +2221,7 @@ public interface Stage {
 		<T> CompletionStage<T> withStatelessTransaction(String tenantId, BiFunction<StatelessSession, Transaction, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession stateless session}.
+		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the
@@ -2232,7 +2239,7 @@ public interface Stage {
 		<T> CompletionStage<T> withStatelessSession(Function<StatelessSession, CompletionStage<T>> work);
 
 		/**
-		 * Perform work using a {@link StatelessSession stateless session}.
+		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
 		 * <il>
 		 * <li>If there is already a stateless session associated with the

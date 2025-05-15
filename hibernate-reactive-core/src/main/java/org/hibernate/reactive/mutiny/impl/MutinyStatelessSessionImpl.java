@@ -300,6 +300,10 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	private class Transaction<T> implements Mutiny.Transaction {
 		boolean rollback;
 
+		/**
+		 * Execute the given work in a new transaction. Called only
+		 * when no existing transaction was active.
+		 */
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			currentTransaction = this;
 			return begin()
@@ -308,14 +312,15 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		}
 
 		/**
-		 * Run the code assuming that a transaction has already started so that we can
-		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
-		 * and an error thrown by the work.
+		 * Run the code assuming that a transaction has already started
+		 * so that we can differentiate an error starting a transaction
+		 * (which therefore does not need to trigger rollback) from an
+		 * error thrown by the work (which does).
 		 */
 		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
 			return Uni.createFrom().deferred( () -> work.apply( this ) )
 					// in the case of an exception or cancellation
-					// we need to rollback the transaction
+					// we need to roll back the transaction
 					.onFailure().call( this::rollback )
 					.onCancellation().call( this::rollback )
 					// finally, when there was no exception,
