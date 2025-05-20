@@ -103,7 +103,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		final List<Object> idsInBatch = new ArrayList<>();
 		final List<Integer> elementPositionsLoadedByBatch = new ArrayList<>();
 
-		final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+		final boolean coerce = isIdCoercionEnabled();
 		return loop( 0, ids.length, i -> {
 			final Object id = coerce
 					? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i], session )
@@ -311,7 +311,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 			boolean foundAnyManagedEntities = false;
 			final List<Object> nonManagedIds = new ArrayList<>();
 
-			final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+			final boolean coerce = isIdCoercionEnabled();
 			for ( Object o : ids ) {
 				final Object id = coerce
 						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( o, session )
