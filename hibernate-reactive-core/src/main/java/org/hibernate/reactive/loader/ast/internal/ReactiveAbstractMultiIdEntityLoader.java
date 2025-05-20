@@ -62,4 +62,7 @@ public abstract class ReactiveAbstractMultiIdEntityLoader<T> implements Reactive
 
 	protected abstract <K> CompletionStage<List<T>> performUnorderedMultiLoad(K[] ids, MultiIdLoadOptions loadOptions, SharedSessionContractImplementor session);
 
+	protected boolean isIdCoercionEnabled() {
+		return !getSessionFactory().getSessionFactoryOptions().getJpaCompliance().isLoadByIdComplianceEnabled();
+	}
 }

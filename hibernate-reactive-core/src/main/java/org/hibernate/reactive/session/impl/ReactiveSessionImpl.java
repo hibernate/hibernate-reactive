@@ -382,7 +382,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return createReactiveCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
 		}
 		catch (RuntimeException e) {
-			if ( getSessionFactory().getJpaMetamodel().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
+			if ( getSessionFactory().getSessionFactoryOptions().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
 				markForRollbackOnly();
 			}
 			throw getExceptionConverter().convert( e );

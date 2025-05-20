@@ -90,7 +90,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			);
 		}
 
-		final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+		final boolean coerce = isIdCoercionEnabled();
 		final LockOptions lockOptions = ( loadOptions.getLockOptions() == null )
 				? new LockOptions( LockMode.NONE )
 				: loadOptions.getLockOptions();
@@ -312,7 +312,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 			return ids;
 		}
 
-		final boolean coerce = !getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled();
+		final boolean coerce = isIdCoercionEnabled();
 
 		boolean foundAnyResolvedEntities = false;
 		List<K> nonResolvedIds = null;
