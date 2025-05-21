@@ -14,13 +14,13 @@ If you replace `podman` with `sudo docker`, they will also work with [Docker][do
 Example:
 
 ```
-podman run --rm --name HibernateTestingPGSQL postgres:17.4
+podman run --rm --name HibernateTestingPGSQL postgres:17.5
 ```
 
 becomes for Docker:
 
 ```
-sudo docker run --rm --name HibernateTestingPGSQL postgres:17.4
+sudo docker run --rm --name HibernateTestingPGSQL postgres:17.5
 ```
 ---
 
@@ -39,7 +39,7 @@ required credentials and schema to run the tests:
 podman run --rm --name HibernateTestingPGSQL \
     -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
     -e POSTGRES_INITDB_ARGS="-A password" \
-    -p 5432:5432 docker.io/postgres:17.4
+    -p 5432:5432 docker.io/postgres:17.5
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
