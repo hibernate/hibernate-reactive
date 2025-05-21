@@ -11,7 +11,7 @@
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.14}
 //DEPS io.vertx:vertx-unit:${vertx.version:4.5.14}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.0.0.Beta1}
-//DEPS org.assertj:assertj-core:3.26.3
+//DEPS org.assertj:assertj-core:3.27.3
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:postgresql:1.21.0
 //DEPS org.testcontainers:mysql:1.21.0
