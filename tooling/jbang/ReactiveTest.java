@@ -22,7 +22,7 @@
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
 //DEPS org.postgresql:postgresql:42.7.5
-//DEPS com.mysql:mysql-connector-j:9.1.0
+//DEPS com.mysql:mysql-connector-j:9.3.0
 //DEPS org.mariadb.jdbc:mariadb-java-client:3.5.3
 //
 
