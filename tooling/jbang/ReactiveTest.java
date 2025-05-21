@@ -13,11 +13,11 @@
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.0.0.Beta1}
 //DEPS org.assertj:assertj-core:3.26.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:postgresql:1.20.6
-//DEPS org.testcontainers:mysql:1.20.6
-//DEPS org.testcontainers:db2:1.20.6
-//DEPS org.testcontainers:mariadb:1.20.6
-//DEPS org.testcontainers:cockroachdb:1.20.6
+//DEPS org.testcontainers:postgresql:1.21.0
+//DEPS org.testcontainers:mysql:1.21.0
+//DEPS org.testcontainers:db2:1.21.0
+//DEPS org.testcontainers:mariadb:1.21.0
+//DEPS org.testcontainers:cockroachdb:1.21.0
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
