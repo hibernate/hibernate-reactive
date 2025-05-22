@@ -2,7 +2,7 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main", "1.0", "jakarta/main" ]
+    branches: [ "main", "4.0", "3.0", "2.4" ]
   pull_request:
     branches: [ "main" ]
   schedule:
