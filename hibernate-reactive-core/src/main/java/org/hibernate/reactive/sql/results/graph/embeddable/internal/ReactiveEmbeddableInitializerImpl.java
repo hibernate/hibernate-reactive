@@ -5,12 +5,18 @@
  */
 package org.hibernate.reactive.sql.results.graph.embeddable.internal;
 
+
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
 import org.hibernate.metamodel.mapping.EmbeddableMappingType;
+import org.hibernate.metamodel.mapping.VirtualModelPart;
+import org.hibernate.metamodel.spi.EmbeddableInstantiator;
+import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
+import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
+import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.Initializer;
 import org.hibernate.sql.results.graph.InitializerData;
 import org.hibernate.sql.results.graph.InitializerParent;
@@ -19,8 +25,13 @@ import org.hibernate.sql.results.graph.embeddable.EmbeddableResultGraphNode;
 import org.hibernate.sql.results.graph.embeddable.internal.EmbeddableInitializerImpl;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.sql.results.graph.embeddable.EmbeddableLoadingLogger.EMBEDDED_LOAD_LOGGER;
+import static org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer.BATCH_PROPERTY;
 
 public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 		implements ReactiveInitializer<EmbeddableInitializerImpl.EmbeddableInitializerData> {
@@ -31,6 +42,10 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 				EmbeddableInitializerImpl initializer,
 				RowProcessingState rowProcessingState) {
 			super( initializer, rowProcessingState );
+		}
+
+		public Object[] getRowState(){
+			return rowState;
 		}
 
 		@Override
@@ -64,8 +79,126 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 
 	@Override
 	public CompletionStage<Void> reactiveResolveInstance(EmbeddableInitializerData data) {
-		super.resolveInstance( data );
+		if ( data.getState() != State.KEY_RESOLVED ) {
+			return voidFuture();
+		}
+
+		data.setState( State.RESOLVED );
+		return extractRowState( (ReactiveEmbeddableInitializerData) data )
+				.thenAccept( unused -> prepareCompositeInstance( (ReactiveEmbeddableInitializerData) data ) );
+	}
+
+	private CompletionStage<Void> extractRowState(ReactiveEmbeddableInitializerData data) {
+		final DomainResultAssembler<?>[] subAssemblers = assemblers[data.getSubclassId()];
+		final RowProcessingState rowProcessingState = data.getRowProcessingState();
+		final Object[] rowState = data.getRowState();
+		final boolean[] stateAllNull = {true};
+		final int[] index = {0};
+		final boolean[] forceExit = { false };
+		return whileLoop(
+				() -> index[0] < subAssemblers.length && !forceExit[0],
+				() -> {
+					final int i = index[0]++;
+					final DomainResultAssembler<?> assembler = subAssemblers[i];
+					if ( assembler instanceof ReactiveDomainResultsAssembler<?> reactiveAssembler ) {
+						return reactiveAssembler.reactiveAssemble( (ReactiveRowProcessingState) rowProcessingState )
+								.thenAccept( contributorValue -> setContributorValue(
+										contributorValue,
+										i,
+										rowState,
+										stateAllNull,
+										forceExit
+								) );
+					}
+					else {
+						setContributorValue(
+								assembler == null ? null : assembler.assemble( rowProcessingState ),
+								i,
+								rowState,
+								stateAllNull,
+								forceExit
+						);
+						return voidFuture();
+					}
+		})
+				.whenComplete(
+						(unused, throwable) -> {
+							if ( stateAllNull[0] ) {
+								data.setState( State.MISSING );
+							}
+						}
+				);
+	}
+
+	private void setContributorValue(
+			Object contributorValue,
+			int index,
+			Object[] rowState,
+			boolean[] stateAllNull,
+			boolean[] forceExit) {
+		if ( contributorValue == BATCH_PROPERTY ) {
+			rowState[index] = null;
+		}
+		else {
+			rowState[index] = contributorValue;
+		}
+		if ( contributorValue != null ) {
+			stateAllNull[0] = false;
+		}
+		else if ( isPartOfKey() ) {
+			// If this is a foreign key and there is a null part, the whole thing has to be turned into null
+			stateAllNull[0] = true;
+			forceExit[0] = true;
+		}
+	}
+
+	private CompletionStage<Void> prepareCompositeInstance(ReactiveEmbeddableInitializerData data) {
+		// Virtual model parts use the owning entity as container which the fetch parent access provides.
+		// For an identifier or foreign key this is called during the resolveKey phase of the fetch parent,
+		// so we can't use the fetch parent access in that case.
+		final ReactiveInitializer<ReactiveEmbeddableInitializerData> parent = (ReactiveInitializer<ReactiveEmbeddableInitializerData>) getParent();
+		if ( parent != null && getInitializedPart() instanceof VirtualModelPart && !isPartOfKey() && data.getState() != State.MISSING ) {
+			final ReactiveEmbeddableInitializerData subData = parent.getData( data.getRowProcessingState() );
+			return parent
+					.reactiveResolveInstance( subData )
+					.thenCompose(
+							unused -> {
+								data.setInstance( parent.getResolvedInstance( subData ) );
+								if ( data.getState() == State.INITIALIZED ) {
+									return voidFuture();
+								}
+								return doCreateCompositeInstance( data )
+										.thenAccept( v -> EMBEDDED_LOAD_LOGGER.debugf(
+												"Created composite instance [%s]",
+												getNavigablePath()
+										) );
+							} );
+		}
+
+		return doCreateCompositeInstance( data )
+				.thenAccept( v -> EMBEDDED_LOAD_LOGGER.debugf( "Created composite instance [%s]", getNavigablePath() ) );
+
+	}
+
+	private CompletionStage<Void> doCreateCompositeInstance(ReactiveEmbeddableInitializerData data) {
+		if ( data.getInstance() == null ) {
+			return createCompositeInstance( data )
+					.thenAccept( data::setInstance );
+		}
 		return voidFuture();
+	}
+
+	private CompletionStage<Object> createCompositeInstance(ReactiveEmbeddableInitializerData data) {
+		if ( data.getState() == State.MISSING ) {
+			return nullFuture();
+		}
+
+		final EmbeddableInstantiator instantiator = data.getConcreteEmbeddableType() == null
+				? getInitializedPart().getEmbeddableTypeDescriptor().getRepresentationStrategy().getInstantiator()
+				: data.getConcreteEmbeddableType().getInstantiator();
+		final Object instance = instantiator.instantiate( data );
+		data.setState( State.RESOLVED );
+		return completedFuture( instance );
 	}
 
 	@Override
