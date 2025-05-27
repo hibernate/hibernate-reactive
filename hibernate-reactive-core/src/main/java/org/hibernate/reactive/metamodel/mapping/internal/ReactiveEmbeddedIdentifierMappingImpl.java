@@ -13,6 +13,7 @@ import org.hibernate.metamodel.internal.AbstractCompositeIdentifierMapping;
 import org.hibernate.metamodel.mapping.EmbeddableMappingType;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.mapping.internal.EmbeddedIdentifierMappingImpl;
+import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveEmbeddableFetchImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.spi.SqlSelection;
@@ -20,6 +21,7 @@ import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.FetchParent;
+import org.hibernate.sql.results.graph.Fetchable;
 
 public class ReactiveEmbeddedIdentifierMappingImpl extends AbstractCompositeIdentifierMapping {
 
@@ -103,5 +105,14 @@ public class ReactiveEmbeddedIdentifierMappingImpl extends AbstractCompositeIden
 	@Override
 	public String getFetchableName() {
 		return delegate.getFetchableName();
+	}
+
+	@Override
+	public Fetchable getFetchable(int position) {
+		Fetchable fetchable = delegate.getFetchable( position );
+		if ( fetchable instanceof ToOneAttributeMapping ) {
+			return new ReactiveToOneAttributeMapping( (ToOneAttributeMapping) fetchable );
+		}
+		return fetchable;
 	}
 }
