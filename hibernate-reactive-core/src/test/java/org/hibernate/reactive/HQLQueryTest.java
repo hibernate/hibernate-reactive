@@ -5,6 +5,10 @@
  */
 package org.hibernate.reactive;
 
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +24,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import static jakarta.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.FetchType.LAZY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,15 +40,21 @@ public class HQLQueryTest extends BaseReactiveTest {
 	Flour rye = new Flour( 2, "Rye", "Used to bake the traditional sourdough breads of Germany.", "Wheat flour" );
 	Flour almond = new Flour( 3, "Almond", "made from ground almonds.", "Gluten free" );
 
+	Author author1 = new Author( "Madeline Miller");
+	Author author2 = new Author( "Andrea Camilleri");
+	Book book1 = new Book( "9780316556347", "Circe", author1);
+	Book book2 = new Book( "0-330-49286-1 ", "The Shape of Water", author2);
+	Book book3 = new Book( "978-0-14-311203-7", "The Patience of the Spider", author2);
+
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Flour.class );
+		return List.of( Flour.class, Book.class, Author.class );
 	}
 
 	@BeforeEach
 	public void populateDb(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
-				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond ) ) );
+				.withTransaction( (session, transaction) -> session.persistAll( spelt, rye, almond, author1, author2, book1, book2, book3 ) ) );
 	}
 
 	@Test
@@ -129,6 +141,29 @@ public class HQLQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testSelectNewConstructor(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.createQuery(
+										"SELECT NEW Book(b.title, b.author) FROM Book b ORDER BY b.title DESC",
+										Book.class
+								  ).getResultList()
+				)
+				.invoke( books -> {
+					assertThat( books ).hasSize( 3 );
+					books.forEach( book -> {
+						String name = book.getAuthor().getName();
+						if ( book.getTitle().equals( "Circe" ) ) {
+							assertThat( name ).isEqualTo( "Madeline Miller" );
+						}
+						else {
+							assertThat( name ).isEqualTo( "Andrea Camilleri" );
+						}
+					} );
+				} )
+		);
+	}
+
 	@Entity(name = "Flour")
 	@Table(name = "Flour")
 	public static class Flour {
@@ -202,6 +237,83 @@ public class HQLQueryTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash( name, description, type );
+		}
+	}
+
+	@Entity(name = "Book")
+	@Table(name = "Book_HQL")
+	public static class Book {
+		@Id
+		@GeneratedValue
+		private Integer id;
+
+		private String isbn;
+
+		private String title;
+
+		@ManyToOne(fetch = LAZY)
+		private Author author;
+
+		public Book() {
+		}
+
+		public Book(String title, Author author) {
+			this.title = title;
+			this.author = author;
+		}
+
+		public Book(String isbn, String title, Author author) {
+			this.isbn = isbn;
+			this.title = title;
+			this.author = author;
+			author.books.add( this );
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public String getIsbn() {
+			return isbn;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public Author getAuthor() {
+			return author;
+		}
+	}
+
+	@Entity(name = "Author")
+	@Table(name = "Author_HQL")
+	public static class Author {
+		@Id @GeneratedValue
+		private Integer id;
+
+		private String name;
+
+		@OneToMany(mappedBy = "author", cascade = PERSIST)
+		private List<Book> books = new ArrayList<>();
+
+		public Author() {
+		}
+
+		public Author(String name) {
+			this.name = name;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public List<Book> getBooks() {
+			return books;
 		}
 	}
 }
