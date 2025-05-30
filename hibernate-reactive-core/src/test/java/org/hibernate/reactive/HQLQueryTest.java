@@ -5,9 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,7 +18,10 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import static jakarta.persistence.CascadeType.PERSIST;
@@ -29,11 +29,8 @@ import static jakarta.persistence.FetchType.LAZY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class HQLQueryTest extends BaseReactiveTest {
 
 	Flour spelt = new Flour( 1, "Spelt", "An ancient grain, is a hexaploid species of wheat.", "Wheat flour" );
@@ -82,7 +79,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSelectScalarString(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 			Stage.SelectionQuery<String> qr = s.createSelectionQuery( "SELECT 'Prova' FROM Flour WHERE id = " + rye.getId(), String.class );
-			assertNotNull( qr );
+			assertThat( qr ).isNotNull();
 			return qr.getSingleResult();
 		} ).thenAccept( found -> assertEquals( "Prova", found ) ) );
 	}
@@ -91,7 +88,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSelectScalarCount(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 			Stage.SelectionQuery<Long> qr = s.createSelectionQuery( "SELECT count(*) FROM Flour", Long.class );
-			assertNotNull( qr );
+			assertThat( qr ).isNotNull();
 			return qr.getSingleResult();
 		} ).thenAccept( found -> assertEquals( 3L, found ) ) );
 	}
@@ -99,14 +96,17 @@ public class HQLQueryTest extends BaseReactiveTest {
 	@Test
 	public void testSelectWithMultipleScalarValues(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
-				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId(), Object[].class );
-				  assertNotNull( qr );
-				  return qr.getSingleResult();
-			  } ).thenAccept( found -> {
-				  assertTrue( found instanceof Object[] );
-				  assertEquals( "Prova", ( (Object[]) found )[0] );
-				  assertEquals( rye.getId(), ( (Object[]) found )[1] );
-			  } )
+				Stage.SelectionQuery<?> qr = s.createSelectionQuery(
+						"SELECT 'Prova', f.id FROM Flour f WHERE f.id = " + rye.getId(),
+						Object[].class
+				);
+				assertThat( qr ).isNotNull();
+				return qr.getSingleResult();
+			} ).thenAccept( found -> {
+				assertThat( found ).isInstanceOf( Object[].class );
+				assertEquals( "Prova", ( (Object[]) found )[0] );
+				assertEquals( rye.getId(), ( (Object[]) found )[1] );
+			} )
 		);
 	}
 
@@ -114,7 +114,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnId(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "FROM Flour WHERE id = 1", Flour.class );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
 			  } ).thenAccept( flour -> assertEquals( spelt, flour ) )
 		);
@@ -124,7 +124,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnName(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<?> qr = s.createSelectionQuery( "FROM Flour WHERE name = 'Almond'", Flour.class );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
 			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
 		);
@@ -135,7 +135,7 @@ public class HQLQueryTest extends BaseReactiveTest {
 		test( context, getSessionFactory()
 				.withSession( s -> {
 					Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour ORDER BY name", Flour.class );
-					assertNotNull( qr );
+					assertThat( qr ).isNotNull();
 					return qr.getResultList();
 				} )
 				.thenAccept( results -> assertThat( results ).containsExactly( almond, rye, spelt ) )
