@@ -57,6 +57,9 @@ public class ReactiveEmbeddableFetchImpl extends EmbeddableFetchImpl {
 		if ( fetch instanceof EntityFetchSelectImpl entityFetchSelect ) {
 			return new ReactiveEntityFetchSelectImpl( entityFetchSelect );
 		}
+		else if ( fetch instanceof EmbeddableFetchImpl embeddableFetch ) {
+			return new ReactiveEmbeddableFetchImpl( embeddableFetch );
+		}
 		return fetch;
 	}
 }
