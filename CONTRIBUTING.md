@@ -16,6 +16,12 @@ All contributions are subject to the [Developer Certificate of Origin (DCO)](htt
 The DCO text is available verbatim in the [dco.txt](dco.txt) file in the root directory
 of the Hibernate Reactive repository.
 
+Copyright owners are listed in [AUTHORS.txt](AUTHORS.txt).
+Contributors with a valid copyright claim can request to be added to that list
+by sending a pull request to the project's GitHub repository,
+listing at least one relevant contribution in the pull request description.
+Note: one-liner or repetitive patches may not be sufficient to claim copyright.
+
 ## Guidelines
 
 While we try to keep requirements for contributing to a minimum, there are a few guidelines 

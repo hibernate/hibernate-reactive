@@ -1,0 +1,39 @@
+# This file lists copyright owners of the project.
+# The list is not exhaustive: other copyright owners exist.
+# See CONTRIBUTING.md for instructions regarding how to be added to this list.
+
+# Corporate contributors
+
+Red Hat, Inc.
+
+# Individual contributors
+
+Andrea Boriero
+Andrew Guibert
+Barry LaFond
+Thinking Chen (cdmikechen)
+Coding Xu (codingxu97)
+Conor Farrell
+Davide D'Alto
+Derick Hermanson
+Eric Dalquist
+Eric Deandrea
+Gail Badner
+Gavin King
+George Gastaldi
+Georgios Andrianakis
+Jay Erb
+Julien Ponge
+Marko Bekhta
+Max Rydahl Andersen
+(meepown)
+Nesrin Aşan
+Ravi Khadiwala
+Renar Narubin
+Sanne Grinovero
+Scott Marlow
+Stephane Epardaud
+Steve Ebersole
+Stuart Douglas
+Thomas Segismont
+Yoann Rodière
