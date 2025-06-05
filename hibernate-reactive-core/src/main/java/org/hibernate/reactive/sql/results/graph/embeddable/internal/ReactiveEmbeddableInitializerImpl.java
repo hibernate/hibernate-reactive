@@ -214,16 +214,21 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 		final ReactiveEmbeddableInitializerData embeddableInitializerData = (ReactiveEmbeddableInitializerData) data;
 		final RowProcessingState rowProcessingState = embeddableInitializerData.getRowProcessingState();
 		if ( embeddableInitializerData.getConcreteEmbeddableType() == null ) {
-			return loop( subInitializers, subInitializer -> loop( subInitializer, initializer -> consumer
-					.apply( (ReactiveInitializer<?>) initializer, rowProcessingState )
-			) );
+			return loop( subInitializers, subInitializer ->
+					loop( subInitializer, initializer ->
+							initializer != null
+									? consumer.apply( (ReactiveInitializer<?>) initializer, rowProcessingState )
+									: voidFuture()
+					)
+			);
 		}
 		else {
 			Initializer<InitializerData>[] initializers = subInitializers[embeddableInitializerData.getSubclassId()];
-			return loop( 0, initializers.length, i -> {
-				ReactiveInitializer<?> reactiveInitializer = (ReactiveInitializer<?>) initializers[i];
-				return consumer.apply( reactiveInitializer, rowProcessingState );
-			} );
+			return loop(0, initializers.length, i ->
+					initializers[i] != null
+							? consumer.apply( (ReactiveInitializer<?>) initializers[i], rowProcessingState )
+							: voidFuture()
+			);
 		}
 	}
 
