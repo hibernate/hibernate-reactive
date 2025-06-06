@@ -6,9 +6,13 @@
 package org.hibernate.reactive.provider.service;
 
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.reactive.logging.impl.Log;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
 /**
  * A dummy Hibernate {@link ConnectionProvider} throws an
@@ -17,12 +21,13 @@ import java.sql.SQLException;
  * @author Gavin King
  */
 public class NoJdbcConnectionProvider implements ConnectionProvider {
+	private static final Log LOG = make( Log.class, lookup() );
 
 	public static final NoJdbcConnectionProvider INSTANCE = new NoJdbcConnectionProvider();
 
 	@Override
 	public Connection getConnection() throws SQLException {
-		throw new SQLException( "Not using JDBC" );
+		throw LOG.notUsingJdbc();
 	}
 
 	@Override

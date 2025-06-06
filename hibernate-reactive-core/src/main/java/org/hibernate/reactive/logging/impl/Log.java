@@ -7,6 +7,7 @@ package org.hibernate.reactive.logging.impl;
 
 
 
+import java.sql.SQLException;
 import java.sql.SQLWarning;
 
 import jakarta.persistence.PersistenceException;
@@ -265,6 +266,9 @@ public interface Log extends BasicLogger {
 
 	@Message(id = 83, value = "Unexpected request of a non reactive connection")
 	HibernateException unexpectedConnectionRequest();
+
+	@Message(id = 84, value = "The application requested a JDBC connection, but Hibernate Reactive doesn't use JDBC. This could be caused by a bug or the use of an unsupported feature in Hibernate Reactive")
+	SQLException notUsingJdbc();
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
