@@ -6,6 +6,7 @@
 package org.hibernate.reactive.id;
 
 import org.hibernate.Incubating;
+import org.hibernate.generator.EventType;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
@@ -33,4 +34,8 @@ public interface ReactiveIdentifierGenerator<Id> extends Generator {
 	 * @param session the reactive session
 	 */
 	CompletionStage<Id> generate(ReactiveConnectionSupplier session, Object entity);
+
+	default CompletionStage<Id> generate(ReactiveConnectionSupplier session, Object owner, Object currentValue, EventType eventType) {
+		return generate( session, owner );
+	}
 }

@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.GeneratorCreationContext;
+import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.SelectGenerator;
@@ -18,6 +19,7 @@ import org.hibernate.id.enhanced.SequenceStructure;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
+import org.hibernate.mapping.Component;
 import org.hibernate.mapping.GeneratorCreator;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.SimpleValue;
@@ -25,6 +27,7 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
 import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
@@ -67,12 +70,9 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 			return existing;
 		}
 		else {
-			SimpleValue identifier = (SimpleValue) persistentClass.getIdentifier();
-			GeneratorCreator customIdGeneratorCreator = identifier.getCustomIdGeneratorCreator();
-			identifier.setCustomIdGeneratorCreator( context -> {
-				Generator generator = customIdGeneratorCreator.createGenerator( context );
-				return augmentWithReactiveGenerator( generator, context, creationContext );
-			} );
+			final SimpleValue identifier = (SimpleValue) persistentClass.getIdentifier();
+			setCustomIdGenerator( persistentClass, creationContext, identifier );
+
 			final Generator idgenerator = identifier
 					// returns the cached Generator if it was already created
 					.createGenerator(
@@ -86,12 +86,35 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 		}
 	}
 
+	private static void setCustomIdGenerator(
+			PersistentClass persistentClass,
+			RuntimeModelCreationContext creationContext,
+			SimpleValue identifier) {
+		final GeneratorCreator customIdGeneratorCreator = identifier.getCustomIdGeneratorCreator();
+		if ( identifier instanceof Component component ) {
+			final Generator componentIdentifierGenerator = component.createGenerator(
+					creationContext.getDialect(),
+					persistentClass.getRootClass(),
+					persistentClass.getIdentifierProperty(),
+					creationContext.getGeneratorSettings()
+			);
+			identifier.setCustomIdGeneratorCreator( context ->
+				augmentWithReactiveGenerator( componentIdentifierGenerator, context, creationContext )
+			);
+		}
+		else {
+			identifier.setCustomIdGeneratorCreator( context ->
+				augmentWithReactiveGenerator( customIdGeneratorCreator.createGenerator( context ), context, creationContext )
+			);
+		}
+	}
+
 	public static Generator augmentWithReactiveGenerator(
 			Generator generator,
 			GeneratorCreationContext creationContext,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		if ( generator instanceof SequenceStyleGenerator ) {
-			final DatabaseStructure structure = ( (SequenceStyleGenerator) generator ).getDatabaseStructure();
+		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
+			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
 				return initialize( (IdentifierGenerator) generator, new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
 			}
@@ -100,15 +123,27 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 			}
 			throw LOG.unknownStructureType();
 		}
-		if ( generator instanceof TableGenerator ) {
+		if ( generator instanceof TableGenerator tableGenerator ) {
 			return initialize(
 					(IdentifierGenerator) generator,
-					new TableReactiveIdentifierGenerator( (TableGenerator) generator, runtimeModelCreationContext ),
+					new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ),
 					creationContext
 			);
 		}
 		if ( generator instanceof SelectGenerator ) {
 			throw LOG.selectGeneratorIsNotSupportedInHibernateReactive();
+		}
+		if ( generator instanceof CompositeNestedGeneratedValueGenerator compositeNestedGeneratedValueGenerator ) {
+			final ReactiveCompositeNestedGeneratedValueGenerator reactiveCompositeNestedGeneratedValueGenerator = new ReactiveCompositeNestedGeneratedValueGenerator(
+					compositeNestedGeneratedValueGenerator,
+					creationContext,
+					runtimeModelCreationContext
+			);
+			return initialize(
+					(IdentifierGenerator) generator,
+					reactiveCompositeNestedGeneratedValueGenerator,
+					creationContext
+			);
 		}
 		//nothing to do
 		return generator;
