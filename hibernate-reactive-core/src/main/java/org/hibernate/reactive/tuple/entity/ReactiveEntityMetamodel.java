@@ -8,6 +8,8 @@ package org.hibernate.reactive.tuple.entity;
 import java.util.function.Function;
 
 
+import org.hibernate.boot.model.relational.Database;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
@@ -19,9 +21,10 @@ import org.hibernate.id.enhanced.SequenceStructure;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
-import org.hibernate.mapping.Component;
-import org.hibernate.mapping.GeneratorCreator;
+import org.hibernate.mapping.GeneratorSettings;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.mapping.Property;
+import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
@@ -32,7 +35,9 @@ import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.Type;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
@@ -71,41 +76,23 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 		}
 		else {
 			final SimpleValue identifier = (SimpleValue) persistentClass.getIdentifier();
-			setCustomIdGenerator( persistentClass, creationContext, identifier );
-
-			final Generator idgenerator = identifier
-					// returns the cached Generator if it was already created
-					.createGenerator(
+			final Generator idgenerator = augmentWithReactiveGenerator(
+					identifier.createGenerator(
 							creationContext.getDialect(),
 							persistentClass.getRootClass(),
 							persistentClass.getIdentifierProperty(),
 							creationContext.getGeneratorSettings()
-					);
+					),
+					new IdGeneratorCreationContext(
+							persistentClass.getRootClass(),
+							persistentClass.getIdentifierProperty(),
+							creationContext.getGeneratorSettings(),
+							identifier,
+							creationContext
+					),
+					creationContext );
 			creationContext.getGenerators().put( rootName, idgenerator );
 			return idgenerator;
-		}
-	}
-
-	private static void setCustomIdGenerator(
-			PersistentClass persistentClass,
-			RuntimeModelCreationContext creationContext,
-			SimpleValue identifier) {
-		final GeneratorCreator customIdGeneratorCreator = identifier.getCustomIdGeneratorCreator();
-		if ( identifier instanceof Component component ) {
-			final Generator componentIdentifierGenerator = component.createGenerator(
-					creationContext.getDialect(),
-					persistentClass.getRootClass(),
-					persistentClass.getIdentifierProperty(),
-					creationContext.getGeneratorSettings()
-			);
-			identifier.setCustomIdGeneratorCreator( context ->
-				augmentWithReactiveGenerator( componentIdentifierGenerator, context, creationContext )
-			);
-		}
-		else {
-			identifier.setCustomIdGeneratorCreator( context ->
-				augmentWithReactiveGenerator( customIdGeneratorCreator.createGenerator( context ), context, creationContext )
-			);
 		}
 	}
 
@@ -155,5 +142,58 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 			GeneratorCreationContext creationContext) {
 		( (Configurable) reactiveIdGenerator ).initialize( creationContext.getSqlStringGenerationContext() );
 		return new ReactiveGeneratorWrapper( reactiveIdGenerator, idGenerator );
+	}
+
+	private record IdGeneratorCreationContext(
+			RootClass rootClass,
+			Property property,
+			GeneratorSettings defaults,
+			SimpleValue identifier,
+			RuntimeModelCreationContext buildingContext) implements GeneratorCreationContext {
+
+		@Override
+		public Database getDatabase() {
+			return buildingContext.getBootModel().getDatabase();
+		}
+
+		@Override
+		public ServiceRegistry getServiceRegistry() {
+			return buildingContext.getBootstrapContext().getServiceRegistry();
+		}
+
+		@Override
+		public SqlStringGenerationContext getSqlStringGenerationContext() {
+			return defaults.getSqlStringGenerationContext();
+		}
+
+		@Override
+		public String getDefaultCatalog() {
+			return defaults.getDefaultCatalog();
+		}
+
+		@Override
+		public String getDefaultSchema() {
+			return defaults.getDefaultSchema();
+		}
+
+		@Override
+		public RootClass getRootClass() {
+			return rootClass;
+		}
+
+		@Override
+		public PersistentClass getPersistentClass() {
+			return rootClass;
+		}
+
+		@Override
+		public Property getProperty() {
+			return property;
+		}
+
+		@Override
+		public Type getType() {
+			return identifier.getType();
+		}
 	}
 }
