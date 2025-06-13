@@ -21,7 +21,7 @@ jar {
                 'Implementation-Version': project.version,
                 'Implementation-Vendor': 'Hibernate.org',
                 'Implementation-Vendor-Id': 'org.hibernate',
-                'Implementation-Url': 'http://hibernate.org/reactive',
+                'Implementation-Url': 'https://hibernate.org/reactive',
         )
     }
 }
@@ -50,7 +50,7 @@ publishing {
                     license {
                         name = 'Apache License Version 2.0'
                         url = 'https://opensource.org/licenses/Apache-2.0'
-                        comments = 'See discussion at http://hibernate.org/community/license/ for more details.'
+                        comments = 'See discussion at https://hibernate.org/community/license/ for more details.'
                         distribution = 'repo'
                     }
                 }
@@ -81,7 +81,7 @@ publishing {
         }
         maven {
             name = 'snapshots'
-            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
             // So that Gradle uses the `ORG_GRADLE_PROJECT_snapshotsPassword` / `ORG_GRADLE_PROJECT_snapshotsUsername`
             //  env variables to read the username/password for the `snapshots` repository publishing:
             credentials(PasswordCredentials)

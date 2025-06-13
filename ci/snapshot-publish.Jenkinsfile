@@ -43,7 +43,7 @@ pipeline {
 							// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
 							// TODO: Once we switch to maven-central publishing (from nexus2) we need to update credentialsId:
 							//  https://docs.gradle.org/current/samples/sample_publishing_credentials.html#:~:text=via%20environment%20variables
-							usernamePassword(credentialsId: 'ossrh.sonatype.org', passwordVariable: 'ORG_GRADLE_PROJECT_snapshotsPassword', usernameVariable: 'ORG_GRADLE_PROJECT_snapshotsUsername'),
+							usernamePassword(credentialsId: 'central.sonatype.com', passwordVariable: 'ORG_GRADLE_PROJECT_snapshotsPassword', usernameVariable: 'ORG_GRADLE_PROJECT_snapshotsUsername'),
 							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default'),
 							string(credentialsId: 'Hibernate-CI.github.com', variable: 'JRELEASER_GITHUB_TOKEN')
 					]) {
