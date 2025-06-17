@@ -193,6 +193,7 @@ jobs:
           - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
           - { name: "24", java_version_numeric: 24, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "25-ea", java_version_numeric: 25, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "26-ea", java_version_numeric: 26, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
