@@ -149,9 +149,10 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
-
 					Dialect dialect = DialectDelegateWrapper.extractRealDialect( executionContext.getSession().getJdbcServices().getDialect() );
-					// I'm not sure calling Parameters here is necessary, the query should already have the right parameters
+
+					// This must happen at the very last minute in order to process parameters
+					// added in org.hibernate.dialect.pagination.OffsetFetchLimitHandler.processSql
 					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 
