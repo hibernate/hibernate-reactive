@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.results.ResultSetMapping;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -23,7 +22,6 @@ import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.query.internal.ReactiveResultSetMappingProcessor;
 import org.hibernate.reactive.query.spi.ReactiveNativeSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
@@ -61,8 +59,7 @@ public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanI
 			resultSetMapping.addAffectedTableNames( affectedTableNames, sessionFactory );
 		}
 		this.affectedTableNames = affectedTableNames;
-		Dialect dialect = sessionFactory.getJdbcServices().getDialect();
-		this.sql = Parameters.instance( dialect ).process( parser.process() );
+		this.sql = parser.process();
 		this.parameterList = parameterList;
 
 	}
