@@ -43,6 +43,7 @@ import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.hibernate.reactive.QueryTest.Author.AUTHOR_TABLE;
 import static org.hibernate.reactive.QueryTest.Author.HQL_NAMED_QUERY;
 import static org.hibernate.reactive.QueryTest.Author.SQL_NAMED_QUERY;
@@ -392,6 +393,42 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
 						.thenAccept( count -> assertEquals( 1, count ) )
+		);
+	}
+
+	// https://github.com/hibernate/hibernate-reactive/issues/2314
+	@Test
+	public void testNativeEntityQueryWithLimit(VertxTestContext context) {
+		Author author1 = new Author( "Iain M. Banks" );
+		Author author2 = new Author( "Neal Stephenson" );
+		Book book1 = new Book( "1-85723-235-6", "Feersum Endjinn", author1 );
+		Book book2 = new Book( "0-380-97346-4", "Cryptonomicon", author2 );
+		Book book3 = new Book( "0-553-08853-X", "Snow Crash", author2 );
+		author1.books.add( book1 );
+		author2.books.add( book2 );
+		author2.books.add( book3 );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( session -> session.persist( author1, author2 )
+								.thenCompose( v -> session.flush() )
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( session -> session.createNativeQuery(
+										"select * from " + BOOK_TABLE + " order by isbn",
+										Book.class
+								)
+								.setMaxResults( 2 )
+								.getResultList() )
+						.thenAccept( books -> {
+							assertThat( books )
+									.extracting( b -> b.id, b -> b.title, b -> b.isbn )
+									.containsExactly(
+											tuple( book2.id, book2.title, book2.isbn ),
+											tuple( book3.id, book3.title, book3.isbn )
+									);
+						} )
 		);
 	}
 
