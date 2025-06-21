@@ -56,9 +56,9 @@ subprojects {
             // Useful for local development, it should be disabled otherwise
             mavenLocal()
         }
-        // Example: ./gradlew build -PenableSonatypeOpenSourceSnapshotsRep
-        if ( project.hasProperty('enableSonatypeOpenSourceSnapshotsRep') ) {
-            maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        // Example: ./gradlew build -PenableCentralSonatypeSnapshotsRep
+        if ( project.hasProperty('enableCentralSonatypeSnapshotsRep') ) {
+            maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
         }
 
         mavenCentral()
