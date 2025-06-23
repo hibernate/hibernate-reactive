@@ -1,9 +1,7 @@
 #! /usr/bin/groovy
 /*
- * Hibernate, Relational Persistence for Idiomatic Java
- *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
- * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
  */
 
 /*
@@ -89,9 +87,13 @@ pipeline {
 		)
 	}
 	stages {
-		stage('Release check') {
+		stage('Check') {
 			steps {
 				script {
+					print "INFO: params.RELEASE_VERSION = ${params.RELEASE_VERSION}"
+					print "INFO: params.DEVELOPMENT_VERSION = ${params.DEVELOPMENT_VERSION}"
+					print "INFO: params.RELEASE_DRY_RUN? = ${params.RELEASE_DRY_RUN}"
+
 					checkoutReleaseScripts()
 
 					def currentVersion = Version.parseDevelopmentVersion( sh(
@@ -107,7 +109,9 @@ pipeline {
 						echo "Release was requested manually"
 
 						if ( !params.RELEASE_VERSION ) {
-						        throw new IllegalArgumentException( 'Missing value for parameter RELEASE_VERSION. This parameter must be set explicitly to prevent mistakes.' )
+							throw new IllegalArgumentException(
+									'Missing value for parameter RELEASE_VERSION. This parameter must be set explicitly to prevent mistakes.'
+							)
 						}
 						releaseVersion = Version.parseReleaseVersion( params.RELEASE_VERSION )
 
@@ -149,17 +153,12 @@ pipeline {
 
 					env.RELEASE_VERSION = releaseVersion.toString()
 					env.DEVELOPMENT_VERSION = developmentVersion.toString()
-					// Dry run is not supported at the moment
- 					env.SCRIPT_OPTIONS = params.RELEASE_DRY_RUN ? "-d" : ""
+					env.SCRIPT_OPTIONS = params.RELEASE_DRY_RUN ? "-d" : ""
 					env.JRELEASER_DRY_RUN = params.RELEASE_DRY_RUN
-
-					// Determine version id to check if Jira version exists
-					// This step doesn't work for Hibernate Reactive (the project has been created with a different type on JIRA)
-					// sh ".release/scripts/determine-jira-version-id.sh ${env.JIRA_KEY} ${releaseVersion.withoutFinalQualifier}"
 				}
 			}
 		}
-		stage('Release prepare') {
+		stage('Prepare') {
 			steps {
 				script {
 					checkoutReleaseScripts()
@@ -168,13 +167,13 @@ pipeline {
 							configFile(fileId: 'release.config.ssh', targetLocation: "${env.HOME}/.ssh/config"),
 							configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: "${env.HOME}/.ssh/known_hosts")
 					]) {
-
-					sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
+						sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
 							// set release version
 							// update changelog from JIRA
 							// tags the version
 							// changes the version to the provided development version
 							withEnv([
+									"DISABLE_REMOTE_GRADLE_CACHE=true",
 									// Increase the amount of memory for this part since asciidoctor doc rendering consumes a lot of metaspace
 									"GRADLE_OPTS=-Dorg.gradle.jvmargs='-Dlog4j2.disableJmx -Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8'"
 							]) {
@@ -185,7 +184,7 @@ pipeline {
 				}
 			}
 		}
-		stage('Publish release') {
+		stage('Publish') {
 			steps {
 				script {
 					checkoutReleaseScripts()
@@ -195,16 +194,20 @@ pipeline {
 							configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: "${env.HOME}/.ssh/known_hosts")
 					]) {
 						withCredentials([
-							usernamePassword(credentialsId: 'central.sonatype.com', passwordVariable: 'JRELEASER_MAVENCENTRAL_TOKEN', usernameVariable: 'JRELEASER_MAVENCENTRAL_USERNAME'),
-							gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default'),
-							file(credentialsId: 'release.gpg.private-key', variable: 'RELEASE_GPG_PRIVATE_KEY_PATH'),
-							string(credentialsId: 'release.gpg.passphrase', variable: 'JRELEASER_GPG_PASSPHRASE'),
-							string(credentialsId: 'Hibernate-CI.github.com', variable: 'JRELEASER_GITHUB_TOKEN')
+								usernamePassword(credentialsId: 'central.sonatype.com', passwordVariable: 'JRELEASER_MAVENCENTRAL_TOKEN', usernameVariable: 'JRELEASER_MAVENCENTRAL_USERNAME'),
+								gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default'),
+								file(credentialsId: 'release.gpg.private-key', variable: 'RELEASE_GPG_PRIVATE_KEY_PATH'),
+								string(credentialsId: 'release.gpg.passphrase', variable: 'JRELEASER_GPG_PASSPHRASE'),
+								string(credentialsId: 'Hibernate-CI.github.com', variable: 'JRELEASER_GITHUB_TOKEN')
 						]) {
 							sshagent(['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net']) {
 								// performs documentation upload and Sonatype release
 								// push to github
-								sh ".release/scripts/publish.sh -j ${env.SCRIPT_OPTIONS} ${env.PROJECT} ${env.RELEASE_VERSION} ${env.DEVELOPMENT_VERSION} ${env.GIT_BRANCH}"
+								withEnv([
+										"DISABLE_REMOTE_GRADLE_CACHE=true"
+								]) {
+									sh ".release/scripts/publish.sh -j ${env.SCRIPT_OPTIONS} ${env.PROJECT} ${env.RELEASE_VERSION} ${env.DEVELOPMENT_VERSION} ${env.GIT_BRANCH}"
+								}
 							}
 						}
 					}
