@@ -215,6 +215,33 @@ pipeline {
 				}
 			}
 		}
+		stage('Update website') {
+			steps {
+				script {
+					checkoutReleaseScripts()
+
+					configFileProvider([
+							configFile(fileId: 'release.config.ssh', targetLocation: "${env.HOME}/.ssh/config"),
+							configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: "${env.HOME}/.ssh/known_hosts")
+					]) {
+						withCredentials([
+								gitUsernamePassword(credentialsId: 'username-and-token.Hibernate-CI.github.com', gitToolName: 'Default')
+						]) {
+							sshagent( ['ed25519.Hibernate-CI.github.com', 'hibernate.filemgmt.jboss.org', 'hibernate-ci.frs.sourceforge.net'] ) {
+								dir( '.release/hibernate.org' ) {
+									checkout scmGit(
+											branches: [[name: '*/production']],
+											extensions: [],
+											userRemoteConfigs: [[credentialsId: 'ed25519.Hibernate-CI.github.com', url: 'https://github.com/hibernate/hibernate.org.git']]
+									)
+									sh "../scripts/website-release.sh ${env.SCRIPT_OPTIONS} ${env.PROJECT} ${env.RELEASE_VERSION}"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	post {
 		always {
