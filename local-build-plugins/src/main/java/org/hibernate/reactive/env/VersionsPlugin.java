@@ -28,6 +28,7 @@ public class VersionsPlugin implements Plugin<Project> {
 	public static final String SKIP_ORM_VERSION_PARSING = "skipOrmVersionParsing";
 
 	public static final String RELATIVE_FILE = "gradle/version.properties";
+	public static final String RELATIVE_CATALOG = "gradle/libs.versions.toml";
 
 	@Override
 	public void apply(Project project) {
@@ -57,12 +58,13 @@ public class VersionsPlugin implements Plugin<Project> {
 			project.getLogger().lifecycle( "Development version: n/a" );
 		}
 
-		final String ormVersionString = determineOrmVersion( project );
+		final VersionsTomlParser tomlParser = new VersionsTomlParser( RELATIVE_CATALOG );
+		final String ormVersionString = determineOrmVersion( project, tomlParser );
 		final Object ormVersion = resolveOrmVersion( ormVersionString, project );
 		project.getLogger().lifecycle( "ORM version: {}", ormVersion );
 		project.getExtensions().add( ORM_VERSION, ormVersion );
 
-		final Object ormPluginVersion = determineOrmPluginVersion( ormVersion, project );
+		final Object ormPluginVersion = determineOrmPluginVersion( ormVersion, project, tomlParser );
 		project.getLogger().lifecycle( "ORM Gradle plugin version: {}", ormPluginVersion );
 		project.getExtensions().add( ORM_PLUGIN_VERSION, ormPluginVersion );
 	}
@@ -123,9 +125,16 @@ public class VersionsPlugin implements Plugin<Project> {
 		}
 	}
 
-	private String determineOrmVersion(Project project) {
+	private String determineOrmVersion(Project project, VersionsTomlParser parser) {
+		// Check if it has been set in the project
 		if ( project.hasProperty( ORM_VERSION ) ) {
 			return (String) project.property( ORM_VERSION );
+		}
+
+		// Check in the catalog
+		final String version = parser.read( ORM_VERSION );
+		if ( version != null ) {
+			return version;
 		}
 		throw new IllegalStateException( "Hibernate ORM version not specified on project" );
 	}
@@ -138,10 +147,18 @@ public class VersionsPlugin implements Plugin<Project> {
 		return new ProjectVersion( stringForm );
 	}
 
-	private Object determineOrmPluginVersion(Object ormVersion, Project project) {
+	private Object determineOrmPluginVersion(Object ormVersion, Project project, VersionsTomlParser parser) {
+		// Check if it has been set in the project
 		if ( project.hasProperty( ORM_PLUGIN_VERSION ) ) {
 			return project.property( ORM_PLUGIN_VERSION );
 		}
-		return ormVersion;
+
+		// Check in the catalog
+		final String version = parser.read( ORM_PLUGIN_VERSION );
+		if ( version != null ) {
+			return version;
+		}
+
+		throw new IllegalStateException( "Hibernate ORM Gradle plugin version not specified on project" );
 	}
 }

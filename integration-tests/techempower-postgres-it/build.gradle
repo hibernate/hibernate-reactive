@@ -11,37 +11,25 @@ buildscript {
 
 description = 'TechEmpower integration tests'
 
-ext {
-	jacksonDatabindVersion = '2.15.2'
-	jbossLoggingVersion = '3.5.0.Final'
-	assertjVersion = '3.27.3'
-	vertxWebVersion = project.hasProperty( 'vertxWebVersion' )
-			? project.property( 'vertxWebVersion' )
-			: vertxSqlClientVersion
-	vertxWebClientVersion = project.hasProperty( 'vertxWebClientVersion' )
-			? project.property( 'vertxWebClientVersion' )
-			: vertxSqlClientVersion
-}
-
 dependencies {
 	implementation project( ':hibernate-reactive-core' )
-	implementation "io.vertx:vertx-web:${vertxWebVersion}"
-	implementation "io.vertx:vertx-web-client:${vertxWebClientVersion}"
+	implementation(libs.io.vertx.vertx.web)
+	implementation(libs.io.vertx.vertx.web.client)
 
-	runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
+	runtimeOnly(libs.io.vertx.vertx.pg.client)
 	// The Pg client requires this dependency
-	runtimeOnly "com.ongres.scram:client:2.1"
-	runtimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+	runtimeOnly(libs.com.ongres.scram.client)
+	runtimeOnly(libs.com.fasterxml.jackson.core.jackson.databind)
 
 	// logging
-	implementation "org.jboss.logging:jboss-logging:${jbossLoggingVersion}"
+	implementation(libs.org.jboss.logging.jboss.logging)
 
 	// Testcontainers
-	implementation "org.testcontainers:postgresql:${testcontainersVersion}"
+	implementation(libs.org.testcontainers.postgresql)
 
 	// Testing
-	testImplementation "org.assertj:assertj-core:${assertjVersion}"
-	testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
+	testImplementation(libs.org.assertj.assertj.core)
+	testImplementation(libs.io.vertx.vertx.junit5)
 }
 
 // Configuration for the tests

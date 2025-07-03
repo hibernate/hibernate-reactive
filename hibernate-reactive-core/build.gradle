@@ -8,77 +8,77 @@ apply from: publishScript
 
 dependencies {
 
-    api "org.hibernate.orm:hibernate-core:${hibernateOrmVersion}"
+    api(libs.org.hibernate.orm.hibernate.core)
 
-    api 'io.smallrye.reactive:mutiny:2.9.0'
+    api(libs.io.smallrye.reactive.mutiny)
 
     //Logging
-    implementation 'org.jboss.logging:jboss-logging:3.6.1.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging:3.6.1.Final'
+    implementation(libs.org.jboss.logging.jboss.logging)
+    annotationProcessor(libs.org.jboss.logging.jboss.logging)
 
-    compileOnly 'org.jboss.logging:jboss-logging-annotations:3.0.4.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging-annotations:3.0.4.Final'
-    annotationProcessor 'org.jboss.logging:jboss-logging-processor:3.0.4.Final'
+    compileOnly(libs.org.jboss.logging.jboss.logging.annotations)
+    annotationProcessor(libs.org.jboss.logging.jboss.logging.annotations)
+    annotationProcessor(libs.org.jboss.logging.jboss.logging.processor)
 
 
     //Specific implementation details of Hibernate Reactive:
-    implementation "io.vertx:vertx-sql-client:${vertxSqlClientVersion}"
+    implementation(libs.io.vertx.vertx.sql.client)
 
     // Testing
-    testImplementation 'org.assertj:assertj-core:3.27.3'
-    testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
+    testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.io.vertx.vertx.junit5)
 
     // Drivers
-    testImplementation "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
-    testImplementation "io.vertx:vertx-mysql-client:${vertxSqlClientVersion}"
-    testImplementation "io.vertx:vertx-db2-client:${vertxSqlClientVersion}"
-    testImplementation "io.vertx:vertx-mssql-client:${vertxSqlClientVersion}"
-    testImplementation "io.vertx:vertx-oracle-client:${vertxSqlClientVersion}"
+    testImplementation(libs.io.vertx.vertx.pg.client)
+    testImplementation(libs.io.vertx.vertx.mysql.client)
+    testImplementation(libs.io.vertx.vertx.db2.client)
+    testImplementation(libs.io.vertx.vertx.mssql.client)
+    testImplementation(libs.io.vertx.vertx.oracle.client)
 
     // Metrics
-    testImplementation "io.vertx:vertx-micrometer-metrics:${vertxSqlClientVersion}"
+    testImplementation(libs.io.vertx.vertx.micrometer.metrics)
 
     // Optional dependency of vertx-pg-client, essential when connecting via SASL SCRAM
-    testImplementation 'com.ongres.scram:client:2.1'
+    testImplementation(libs.com.ongres.scram.client)
 
     // JUnit Jupiter
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.3'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.3'
+    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
 
     // JDBC driver to test with ORM and PostgreSQL
-    testRuntimeOnly "org.postgresql:postgresql:42.7.5"
+    testRuntimeOnly(libs.org.postgresql.postgresql)
 
     // JDBC driver for Testcontainers with MS SQL Server
-    testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:12.10.0.jre11"
+    testRuntimeOnly(libs.com.microsoft.sqlserver.mssql.jdbc)
 
     // JDBC driver for Testcontainers with MariaDB Server
-    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:3.5.3"
+    testRuntimeOnly(libs.org.mariadb.jdbc.mariadb.java.client)
 
     // JDBC driver for Testcontainers with MYSQL Server
-    testRuntimeOnly "com.mysql:mysql-connector-j:9.3.0"
+    testRuntimeOnly(libs.com.mysql.mysql.connector.j)
 
     // JDBC driver for Db2 server, for testing
-    testRuntimeOnly "com.ibm.db2:jcc:12.1.0.0"
+    testRuntimeOnly(libs.com.ibm.db2.jcc)
 
     // EHCache
-    testRuntimeOnly ("org.ehcache:ehcache:3.10.8") {
+    testRuntimeOnly(libs.org.ehcache.ehcache) {
             capabilities {
                 requireCapability 'org.ehcache.modules:ehcache-xml-jakarta'
             }
     }
-    testRuntimeOnly ("org.hibernate.orm:hibernate-jcache:${hibernateOrmVersion}")
+    testRuntimeOnly(libs.org.hibernate.orm.hibernate.jcache)
 
     // log4j
-    testRuntimeOnly 'org.apache.logging.log4j:log4j-core:2.20.0'
+    testRuntimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
     // Testcontainers
-    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
-    testImplementation "org.testcontainers:mysql:${testcontainersVersion}"
-    testImplementation "org.testcontainers:mariadb:${testcontainersVersion}"
-    testImplementation "org.testcontainers:db2:${testcontainersVersion}"
-    testImplementation "org.testcontainers:cockroachdb:${testcontainersVersion}"
-    testImplementation "org.testcontainers:mssqlserver:${testcontainersVersion}"
-    testImplementation "org.testcontainers:oracle-xe:${testcontainersVersion}"
+    testImplementation(libs.org.testcontainers.postgresql)
+    testImplementation(libs.org.testcontainers.mysql)
+    testImplementation(libs.org.testcontainers.mariadb)
+    testImplementation(libs.org.testcontainers.db2)
+    testImplementation(libs.org.testcontainers.cockroachdb)
+    testImplementation(libs.org.testcontainers.mssqlserver)
+    testImplementation(libs.org.testcontainers.oracle.xe)
 }
 
 // Reproducible Builds

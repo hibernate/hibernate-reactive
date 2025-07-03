@@ -18,7 +18,7 @@ buildscript {
 
 plugins {
     // Optional: Hibernate Gradle plugin to enable bytecode enhancements
-    id "org.hibernate.orm" version "${hibernateOrmGradlePluginVersion}"
+    alias(libs.plugins.org.hibernate.orm)
 }
 
 description = 'Hibernate Reactive Session Examples'
@@ -27,21 +27,21 @@ dependencies {
     implementation project( ':hibernate-reactive-core' )
 
     // Hibernate Validator (optional)
-    implementation 'org.hibernate.validator:hibernate-validator:8.0.2.Final'
-    runtimeOnly 'org.glassfish.expressly:expressly:5.0.0'
+    implementation(libs.org.hibernate.validator.hibernate.validator)
+    runtimeOnly(libs.org.glassfish.expressly.expressly)
 
     // JPA metamodel generation for criteria queries (optional)
-    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
+    annotationProcessor(libs.org.hibernate.orm.hibernate.jpamodelgen)
 
     // database drivers for PostgreSQL and MySQL
-    runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
-    runtimeOnly "io.vertx:vertx-mysql-client:${vertxSqlClientVersion}"
+    runtimeOnly(libs.io.vertx.vertx.pg.client)
+    runtimeOnly(libs.io.vertx.vertx.mysql.client)
 
     // logging (optional)
-    runtimeOnly "org.apache.logging.log4j:log4j-core:2.20.0"
+    runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
     // Allow authentication to PostgreSQL using SCRAM:
-    runtimeOnly 'com.ongres.scram:client:2.1'
+    runtimeOnly(libs.com.ongres.scram.client)
 }
 
 // Optional: enable the bytecode enhancements

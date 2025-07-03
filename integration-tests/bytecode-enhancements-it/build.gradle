@@ -10,37 +10,32 @@ buildscript {
 }
 
 plugins {
-    id "org.hibernate.orm" version "${hibernateOrmGradlePluginVersion}"
+    alias(libs.plugins.org.hibernate.orm)
 }
 
 description = 'Bytecode enhancements integration tests'
-
-ext {
-    log4jVersion = '2.20.0'
-    assertjVersion = '3.27.3'
-}
 
 dependencies {
     implementation project(':hibernate-reactive-core')
 
     // JPA metamodel generation for criteria queries (optional)
-    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateOrmVersion}"
+    annotationProcessor(libs.org.hibernate.orm.hibernate.jpamodelgen)
 
     // Testing on one database should be enough
-    runtimeOnly "io.vertx:vertx-pg-client:${vertxSqlClientVersion}"
+    runtimeOnly(libs.io.vertx.vertx.pg.client)
 
     // Allow authentication to PostgreSQL using SCRAM:
-    runtimeOnly 'com.ongres.scram:client:2.1'
+    runtimeOnly(libs.com.ongres.scram.client)
 
     // logging
-    runtimeOnly "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+    runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
     // Testcontainers
-    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testImplementation(libs.org.testcontainers.postgresql)
 
     // Testing
-    testImplementation "org.assertj:assertj-core:${assertjVersion}"
-    testImplementation "io.vertx:vertx-junit5:${vertxSqlClientVersion}"
+    testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.io.vertx.vertx.junit5)
 }
 
 // Optional: enable the bytecode enhancements

@@ -19,6 +19,44 @@ gradle.ext.baselineJavaVersion = JavaLanguageVersion.of( 17 )
 // You can't use bytecode higher than what Gradle supports, even with toolchains.
 def GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 23
 
+// This overrides the default version catalog in gradle/libs.versions.toml, which can be
+// useful to monitor compatibility for upcoming versions on CI:
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            // ./gradlew build -PhibernateOrmVersion=7.0.2.Final
+            def hibernateOrmVersion = settings.ext.find("hibernateOrmVersion") ?: ""
+            if ( hibernateOrmVersion != "" ) {
+                version("hibernateOrmVersion", hibernateOrmVersion)
+            }
+
+            // ./gradlew build -PhibernateOrmGradlePluginVersion=7.0.2.Final
+            def hibernateOrmGradlePluginVersion = settings.ext.find("hibernateOrmGradlePluginVersion") ?: ""
+            if ( hibernateOrmGradlePluginVersion ) {
+                version("hibernateOrmGradlePluginVersion", hibernateOrmGradlePluginVersion)
+            }
+
+            // ./gradlew build -PvertxSqlClientVersion=4.0.0-SNAPSHOT
+            def vertxSqlClientVersion = settings.ext.find("vertxSqlClientVersion") ?: ""
+            if ( vertxSqlClientVersion ) {
+                version("vertxSqlClientVersion", vertxSqlClientVersion)
+            }
+
+            // ./gradlew build -PvertxWebVersion=4.0.0-SNAPSHOT
+            def vertxWebVersion = settings.ext.find("vertxWebVersion") ?: vertxSqlClientVersion
+            if ( vertxWebVersion ) {
+                version("vertxWebVersion", vertxWebVersion)
+            }
+
+            // ./gradlew build -PvertxWebClientVersion=4.0.0-SNAPSHOT
+            def vertxWebClientVersion = settings.ext.find("vertxWebClientVersion") ?: vertxSqlClientVersion
+            if ( vertxWebClientVersion ) {
+                version("vertxWebClientVersion", vertxWebClientVersion)
+            }
+        }
+    }
+}
+
 // If either 'main.jdk.version' or 'test.jdk.version' is set, enable the toolchain and use the selected jdk.
 // If only one property is set, the other defaults to the baseline Java version (8).
 // Note that when toolchain is enabled, you also need to specify
