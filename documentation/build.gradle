@@ -52,7 +52,7 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		use = true
 		options.encoding = 'UTF-8'
 
-		def matcher = hibernateOrmVersion =~ /\d+\.\d+/
+		def matcher = libs.versions.hibernateOrmVersion =~ /\d+\.\d+/
 		def ormMinorVersion = matcher.find() ? matcher.group() : "5.6";
 
 		links = [

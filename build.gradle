@@ -3,32 +3,14 @@ plugins {
 
     id 'java-library'
     id 'maven-publish'
-    id 'com.diffplug.spotless' version '6.25.0'
-    id 'org.asciidoctor.jvm.convert' version '4.0.2' apply false
-    id 'io.github.gradle-nexus.publish-plugin' version '1.3.0'
+    alias(libs.plugins.com.diffplug.spotless)
+    alias(libs.plugins.org.asciidoctor.jvm.convert) apply false
+    alias(libs.plugins.io.github.gradle.nexus.publish.plugin)
 }
 
 group = "org.hibernate.reactive"
 // leverage the ProjectVersion which comes from the `local.versions` plugin
 version = project.projectVersion.fullName
-
-// Versions which need to be aligned across modules; this also
-// allows overriding the build using a parameter, which can be
-// useful to monitor compatibility for upcoming versions on CI:
-//
-// ./gradlew clean build -PhibernateOrmVersion=5.6.15-SNAPSHOT
-ext {
-    // Mainly, to allow CI to test the latest versions of Vert.X
-    // Example:
-    // ./gradlew build -PvertxSqlClientVersion=4.0.0-SNAPSHOT
-    if ( !project.hasProperty( 'vertxSqlClientVersion' ) ) {
-        vertxSqlClientVersion = '4.5.16'
-    }
-
-    testcontainersVersion = '1.21.0'
-
-    logger.lifecycle "Vert.x SQL Client Version: " + project.vertxSqlClientVersion
-}
 
 subprojects {
     apply plugin: 'java-library'
@@ -135,3 +117,10 @@ subprojects {
     }
 }
 
+rootProject.afterEvaluate {
+    // Workaround since "libs.versions.NAME" notation cannot be used here
+    def libs = project.extensions.getByType(VersionCatalogsExtension).named('libs')
+    logger.lifecycle "ORM version: ${libs.findVersion('hibernateOrmVersion').get().requiredVersion}"
+    logger.lifecycle "ORM Gradle plugin version: ${libs.findVersion('hibernateOrmGradlePluginVersion').get().requiredVersion}"
+    logger.lifecycle "Vert.x SQL Client version: ${libs.findVersion('vertxSqlClientVersion').get().requiredVersion}"
+}

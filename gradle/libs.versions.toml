@@ -1,0 +1,59 @@
+[versions]
+assertjVersion = "3.27.3"
+hibernateOrmVersion = "7.0.2.Final"
+hibernateOrmGradlePluginVersion = "7.0.2.Final"
+jacksonDatabindVersion = "2.15.2"
+jbossLoggingAnnotationVersion = "3.0.4.Final"
+jbossLoggingVersion = "3.6.1.Final"
+junitVersion = "5.11.3"
+log4jVersion = "2.20.0"
+testcontainersVersion = "1.21.0"
+vertxSqlClientVersion = "4.5.16"
+vertxWebVersion= "4.5.16"
+vertxWebClientVersion = "4.5.16"
+
+[libraries]
+com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
+com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.0.0" }
+com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "12.10.0.jre11" }
+com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.3.0" }
+com-ongres-scram-client = { group = "com.ongres.scram", name = "client", version = "2.1" }
+io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.0" }
+io-vertx-vertx-db2-client = { group = "io.vertx", name = "vertx-db2-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-junit5 = { group = "io.vertx", name = "vertx-junit5", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-micrometer-metrics = { group = "io.vertx", name = "vertx-micrometer-metrics", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-mssql-client = { group = "io.vertx", name = "vertx-mssql-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-mysql-client = { group = "io.vertx", name = "vertx-mysql-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-oracle-client = { group = "io.vertx", name = "vertx-oracle-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-pg-client = { group = "io.vertx", name = "vertx-pg-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-sql-client = { group = "io.vertx", name = "vertx-sql-client", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-web = { group = "io.vertx", name = "vertx-web", version.ref = "vertxWebVersion" }
+io-vertx-vertx-web-client = { group = "io.vertx", name = "vertx-web-client", version.ref = "vertxWebClientVersion" }
+org-apache-logging-log4j-log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
+org-assertj-assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
+org-ehcache-ehcache = { group = "org.ehcache", name = "ehcache", version = "3.10.8" }
+org-glassfish-expressly-expressly = { group = "org.glassfish.expressly", name = "expressly", version = "5.0.0" }
+org-hibernate-orm-hibernate-core = { group = "org.hibernate.orm", name = "hibernate-core", version.ref = "hibernateOrmVersion" }
+org-hibernate-orm-hibernate-jcache = { group = "org.hibernate.orm", name = "hibernate-jcache", version.ref = "hibernateOrmVersion" }
+org-hibernate-orm-hibernate-jpamodelgen = { group = "org.hibernate.orm", name = "hibernate-jpamodelgen", version.ref = "hibernateOrmVersion" }
+org-hibernate-validator-hibernate-validator = { group = "org.hibernate.validator", name = "hibernate-validator", version = "8.0.2.Final" }
+org-jboss-logging-jboss-logging = { group = "org.jboss.logging", name = "jboss-logging", version.ref = "jbossLoggingVersion" }
+org-jboss-logging-jboss-logging-annotations = { group = "org.jboss.logging", name = "jboss-logging-annotations", version.ref = "jbossLoggingAnnotationVersion" }
+org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingAnnotationVersion" }
+org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
+org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
+org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.3" }
+org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.5" }
+org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
+org-testcontainers-db2 = { group = "org.testcontainers", name = "db2", version.ref = "testcontainersVersion" }
+org-testcontainers-mariadb = { group = "org.testcontainers", name = "mariadb", version.ref = "testcontainersVersion" }
+org-testcontainers-mssqlserver = { group = "org.testcontainers", name = "mssqlserver", version.ref = "testcontainersVersion" }
+org-testcontainers-mysql = { group = "org.testcontainers", name = "mysql", version.ref = "testcontainersVersion" }
+org-testcontainers-oracle-xe = { group = "org.testcontainers", name = "oracle-xe", version.ref = "testcontainersVersion" }
+org-testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainersVersion" }
+
+[plugins]
+com-diffplug-spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
+io-github-gradle-nexus-publish-plugin = { id = "io.github.gradle-nexus.publish-plugin", version = "1.3.0" }
+org-asciidoctor-jvm-convert = { id = "org.asciidoctor.jvm.convert", version = "4.0.2" }
+org-hibernate-orm = { id = "org.hibernate.orm", version.ref = "hibernateOrmGradlePluginVersion" }
