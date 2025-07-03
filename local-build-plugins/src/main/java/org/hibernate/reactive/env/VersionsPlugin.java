@@ -23,8 +23,6 @@ public class VersionsPlugin implements Plugin<Project> {
 	public static final String RELEASE_VERSION = "releaseVersion";
 	public static final String DEVELOPMENT_VERSION = "developmentVersion";
 
-	public static final String ORM_VERSION = "hibernateOrmVersion";
-	public static final String ORM_PLUGIN_VERSION = "hibernateOrmGradlePluginVersion";
 	public static final String SKIP_ORM_VERSION_PARSING = "skipOrmVersionParsing";
 
 	public static final String RELATIVE_FILE = "gradle/version.properties";
@@ -57,14 +55,6 @@ public class VersionsPlugin implements Plugin<Project> {
 			project.getLogger().lifecycle( "Development version: n/a" );
 		}
 
-		final String ormVersionString = determineOrmVersion( project );
-		final Object ormVersion = resolveOrmVersion( ormVersionString, project );
-		project.getLogger().lifecycle( "ORM version: {}", ormVersion );
-		project.getExtensions().add( ORM_VERSION, ormVersion );
-
-		final Object ormPluginVersion = determineOrmPluginVersion( ormVersion, project );
-		project.getLogger().lifecycle( "ORM Gradle plugin version: {}", ormPluginVersion );
-		project.getExtensions().add( ORM_PLUGIN_VERSION, ormPluginVersion );
 	}
 
 	private ProjectVersion determineReleaseVersion(Project project) {
@@ -121,27 +111,5 @@ public class VersionsPlugin implements Plugin<Project> {
 		catch (IOException e) {
 			throw new RuntimeException( "Error reading file stream = " + file.getAbsolutePath(), e );
 		}
-	}
-
-	private String determineOrmVersion(Project project) {
-		if ( project.hasProperty( ORM_VERSION ) ) {
-			return (String) project.property( ORM_VERSION );
-		}
-		throw new IllegalStateException( "Hibernate ORM version not specified on project" );
-	}
-
-	private Object resolveOrmVersion(String stringForm, Project project) {
-		if ( project.hasProperty( SKIP_ORM_VERSION_PARSING )
-				&& Boolean.parseBoolean( (String) project.property( SKIP_ORM_VERSION_PARSING ) ) ) {
-			return stringForm;
-		}
-		return new ProjectVersion( stringForm );
-	}
-
-	private Object determineOrmPluginVersion(Object ormVersion, Project project) {
-		if ( project.hasProperty( ORM_PLUGIN_VERSION ) ) {
-			return project.property( ORM_PLUGIN_VERSION );
-		}
-		return ormVersion;
 	}
 }
