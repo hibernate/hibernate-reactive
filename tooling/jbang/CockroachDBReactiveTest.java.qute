@@ -10,7 +10,7 @@
 //DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:3.0.0.Final}
 //DEPS org.assertj:assertj-core:3.27.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:cockroachdb:1.21.0
+//DEPS org.testcontainers:cockroachdb:1.21.3
 //DEPS org.slf4j:slf4j-simple:2.0.7
 
 //// Testcontainer needs the JDBC drivers to start the container
