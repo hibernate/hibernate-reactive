@@ -12,7 +12,7 @@ import org.hibernate.HibernateException;
 import org.testcontainers.containers.CockroachContainer;
 import org.testcontainers.containers.Container;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
 class CockroachDBDatabase extends PostgreSQLDatabase {
 
@@ -25,7 +25,7 @@ class CockroachDBDatabase extends PostgreSQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final CockroachContainer cockroachDb = new CockroachContainer( imageName( "cockroachdb/cockroach", "v24.3.13" ) )
+	public static final CockroachContainer cockroachDb = new CockroachContainer( fromDockerfile( "cockroachdb" ) )
 			// Username, password and database are not supported by test container at the moment
 			// Testcontainers will use a database named 'postgres' and the 'root' user
 			.withReuse( true );
