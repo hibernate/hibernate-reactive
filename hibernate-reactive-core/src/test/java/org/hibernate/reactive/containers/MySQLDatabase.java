@@ -5,7 +5,7 @@
  */
 package org.hibernate.reactive.containers;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -87,7 +87,7 @@ class MySQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MySQLContainer<?> mysql = new MySQLContainer<>( imageName( "mysql", "9.2.0") )
+	public static final MySQLContainer<?> mysql = new MySQLContainer<>( fromDockerfile( "mysql" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

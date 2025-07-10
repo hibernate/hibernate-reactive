@@ -29,7 +29,7 @@ import org.hibernate.type.YesNoConverter;
 
 import org.testcontainers.containers.OracleContainer;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
 /**
  * Connection string for Oracle thin should be something like:
@@ -88,9 +88,7 @@ class OracleDatabase implements TestableDatabase {
 		}
 	}
 
-	public static final OracleContainer oracle = new OracleContainer(
-				imageName( "gvenzl/oracle-free", "23-slim-faststart" )
-					.asCompatibleSubstituteFor( "gvenzl/oracle-xe" ) )
+	public static final OracleContainer oracle = new OracleContainer( fromDockerfile( "oracle" ).asCompatibleSubstituteFor( "gvenzl/oracle-xe" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
