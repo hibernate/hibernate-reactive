@@ -52,6 +52,12 @@ subprojects {
         options.encoding = 'UTF-8'
     }
 
+    // Configure test tasks for all subprojects
+    tasks.withType( Test ).configureEach {
+        // Set the project root for finding Docker files - available to all modules
+        systemProperty 'hibernate.reactive.project.root', rootProject.projectDir.absolutePath
+    }
+
     if ( !gradle.ext.javaToolchainEnabled ) {
         sourceCompatibility = JavaVersion.toVersion( gradle.ext.baselineJavaVersion )
         targetCompatibility = JavaVersion.toVersion( gradle.ext.baselineJavaVersion )

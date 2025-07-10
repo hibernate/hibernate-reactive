@@ -28,7 +28,7 @@ import org.hibernate.type.YesNoConverter;
 
 import org.testcontainers.containers.MSSQLServerContainer;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
 /**
  * The JDBC driver syntax is:
@@ -96,7 +96,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( imageName( "mcr.microsoft.com", "mssql/server", "2022-latest" ) )
+	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( fromDockerfile( "sqlserver" ) )
 			.acceptLicense()
 			.withPassword( PASSWORD )
 			.withReuse( true );
