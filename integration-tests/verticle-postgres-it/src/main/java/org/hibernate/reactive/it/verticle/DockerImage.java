@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.containers;
+package org.hibernate.reactive.it.verticle;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.testcontainers.utility.DockerImageName;
-
 
 /**
  * A utility class with methods to generate a {@link DockerImageName} for Testcontainers.

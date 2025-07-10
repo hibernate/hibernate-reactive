@@ -52,9 +52,7 @@ public abstract class BaseReactiveIT {
 	// These properties are in DatabaseConfiguration in core
 	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
-	public static final DockerImageName IMAGE_NAME = DockerImageName
-			.parse( "docker.io/postgres:17.5" )
-			.asCompatibleSubstituteFor( "postgres" );
+	public static final DockerImageName IMAGE_NAME = DockerImage.fromDockerfile( "postgresql" );
 
 	public static final String USERNAME = "hreact";
 	public static final String PASSWORD = "hreact";

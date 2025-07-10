@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive.containers;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -30,9 +28,11 @@ import org.hibernate.type.YesNoConverter;
 
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
+
 class PostgreSQLDatabase implements TestableDatabase {
 
-	public static PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
+	public static final PostgreSQLDatabase INSTANCE = new PostgreSQLDatabase();
 
 	private static Map<Class<?>, String> expectedDBTypeForClass = new HashMap<>();
 
@@ -87,7 +87,7 @@ class PostgreSQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( imageName( "postgres", "17.5" ) )
+	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( fromDockerfile( "postgresql" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

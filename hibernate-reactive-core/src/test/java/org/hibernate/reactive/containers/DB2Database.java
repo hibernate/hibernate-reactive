@@ -28,7 +28,7 @@ import org.hibernate.type.YesNoConverter;
 
 import org.testcontainers.containers.Db2Container;
 
-import static org.hibernate.reactive.containers.DockerImage.imageName;
+import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
 class DB2Database implements TestableDatabase {
 
@@ -87,7 +87,7 @@ class DB2Database implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	static final Db2Container db2 = new Db2Container( imageName( "icr.io", "db2_community/db2", "12.1.0.0" ) )
+	static final Db2Container db2 = new Db2Container( fromDockerfile( "db2" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

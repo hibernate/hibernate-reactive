@@ -21,6 +21,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
@@ -36,7 +37,8 @@ public class VertxServer {
 	// These properties are in DatabaseConfiguration in core
 	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
 
-	public static final String IMAGE_NAME = "postgres:17.5";
+	public static final DockerImageName IMAGE_NAME = DockerImage.fromDockerfile( "postgresql" );
+
 	public static final String USERNAME = "hreact";
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
