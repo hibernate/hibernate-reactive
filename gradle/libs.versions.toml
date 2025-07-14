@@ -2,7 +2,7 @@
 assertjVersion = "3.27.3"
 hibernateOrmVersion = "7.0.2.Final"
 hibernateOrmGradlePluginVersion = "7.0.2.Final"
-jacksonDatabindVersion = "2.15.2"
+jacksonDatabindVersion = "2.19.1"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
 jbossLoggingVersion = "3.6.1.Final"
 junitVersion = "5.11.3"
@@ -14,8 +14,8 @@ vertxWebClientVersion = "5.0.0"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
-com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.0.0" }
-com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "12.10.0.jre11" }
+com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.2.0" }
+com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.1.0.jre11-preview" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.3.0" }
 com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.1" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.0" }
@@ -42,8 +42,8 @@ org-jboss-logging-jboss-logging-annotations = { group = "org.jboss.logging", nam
 org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingAnnotationVersion" }
 org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
-org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.3" }
-org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.5" }
+org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.4" }
+org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.7" }
 org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
 org-testcontainers-db2 = { group = "org.testcontainers", name = "db2", version.ref = "testcontainersVersion" }
 org-testcontainers-mariadb = { group = "org.testcontainers", name = "mariadb", version.ref = "testcontainersVersion" }
