@@ -19,8 +19,6 @@ updates:
 
   - package-ecosystem: "gradle"
     directory: "/"
-    registries:
-      - gradle-plugin-portal
     schedule:
       interval: "weekly"
       day: "tuesday"
