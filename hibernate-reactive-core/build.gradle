@@ -44,6 +44,7 @@ dependencies {
     // JUnit Jupiter
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.launcher)
 
     // JDBC driver to test with ORM and PostgreSQL
     testRuntimeOnly(libs.org.postgresql.postgresql)
