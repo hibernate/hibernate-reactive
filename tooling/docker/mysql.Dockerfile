@@ -1,3 +1,3 @@
 # MySQL
 # See https://hub.docker.com/_/mysql
-FROM docker.io/mysql:9.2.0
+FROM container-registry.oracle.com/mysql/community-server:9.3.0
