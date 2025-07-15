@@ -72,7 +72,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "docker.io", "mysql", "9.2.0" ) );
+    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "container-registry.oracle.com", "mysql/community-server", "9.3.0" ).asCompatibleSubstituteFor( "mysql" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
