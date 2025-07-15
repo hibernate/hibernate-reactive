@@ -8,9 +8,9 @@ jbossLoggingVersion = "3.6.1.Final"
 junitVersion = "5.11.3"
 log4jVersion = "2.25.1"
 testcontainersVersion = "1.21.3"
-vertxSqlClientVersion = "5.0.0"
-vertxWebVersion= "5.0.0"
-vertxWebClientVersion = "5.0.0"
+vertxSqlClientVersion = "5.0.1"
+vertxWebVersion= "5.0.1"
+vertxWebClientVersion = "5.0.1"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
