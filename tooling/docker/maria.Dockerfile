@@ -1,3 +1,3 @@
 # MariaDB
 # See https://hub.docker.com/_/mariadb
-FROM docker.io/mariadb:11.7.2
+FROM docker.io/mariadb:11.8.2
