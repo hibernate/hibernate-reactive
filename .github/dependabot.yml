@@ -24,6 +24,10 @@ updates:
       day: "tuesday"
     open-pull-requests-limit: 20
     groups:
+      hibernate-validator:
+        patterns:
+          - "org.hibernate.validator*"
+          - "org.glassfish.expressly*"
       hibernate:
         patterns:
           - "org.hibernate*"
@@ -46,6 +50,9 @@ updates:
           - "org.mariadb.jdbc*"
 
     ignore:
+      # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
+      - dependency-name: "org.glassfish.expressly*"
+        update-types: ["version-update-:semver-major"]
       # Only patches for Hibernate ORM and Vert.x
       - dependency-name: "org.hibernate*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
