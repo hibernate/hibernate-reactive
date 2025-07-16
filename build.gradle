@@ -5,7 +5,6 @@ plugins {
     id 'maven-publish'
     alias(libs.plugins.com.diffplug.spotless)
     alias(libs.plugins.org.asciidoctor.jvm.convert) apply false
-    alias(libs.plugins.io.github.gradle.nexus.publish.plugin)
 }
 
 group = "org.hibernate.reactive"
