@@ -15,6 +15,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.internal.util.NullnessUtil;
+import org.hibernate.metamodel.mapping.EntityRowIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -30,6 +31,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	private final boolean isVersionIncrementDisabled;
 	private boolean executed;
 	private boolean transientReferencesNullified;
+	private Object rowId;
 
 	public ReactiveEntityIdentityInsertAction(
 			Object[] state,
@@ -107,6 +109,13 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			Object instance,
 			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session) {
+		final EntityRowIdMapping rowIdMapping = persister.getRowIdMapping();
+		if ( rowIdMapping != null ) {
+			rowId = generatedValues.getGeneratedValue( rowIdMapping );
+			if ( rowId != null && !isEarlyInsert() ) {
+				session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+			}
+		}
 		return persister.hasInsertGeneratedProperties()
 				? persister.reactiveProcessInsertGenerated( generatedId, instance, getState(), generatedValues, session )
 				: voidFuture();
@@ -151,5 +160,10 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	@Override
 	public void setTransientReferencesNullified() {
 		transientReferencesNullified = true;
+	}
+
+	@Override
+	public Object getRowId() {
+		return rowId;
 	}
 }

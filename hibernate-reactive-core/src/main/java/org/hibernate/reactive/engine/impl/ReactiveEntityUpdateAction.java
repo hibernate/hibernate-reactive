@@ -14,6 +14,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.metamodel.mapping.EntityRowIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -142,7 +143,19 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setNextVersion( Versioning.getVersion( getState(), persister ) );
 			}
-			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), generatedValues, session );
+			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), generatedValues, session )
+					.thenAccept( v -> {
+						// Process row-id values when available early by replacing the entity entry
+						if ( generatedValues != null ) {
+							final EntityRowIdMapping rowIdMapping = persister.getRowIdMapping();
+							if ( rowIdMapping != null ) {
+								final Object rowId = generatedValues.getGeneratedValue( rowIdMapping );
+								if ( rowId != null ) {
+									session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+								}
+							}
+						}
+					} );
 
 		}
 		else {

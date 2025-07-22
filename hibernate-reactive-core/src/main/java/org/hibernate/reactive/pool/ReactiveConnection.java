@@ -61,8 +61,22 @@ public interface ReactiveConnection {
 
 	CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues);
 
+	/**
+	 * @deprecated without substitution
+	 */
+	@Deprecated
 	<T> CompletionStage<T> insertAndSelectIdentifier(String sql, Object[] paramValues, Class<T> idClass, String idColumnName);
+
+	/**
+	 * @deprecated use {@link #executeAndSelectGeneratedValues(String, Object[], List, List)}
+	 */
+	@Deprecated
 	CompletionStage<ResultSet> insertAndSelectIdentifierAsResultSet(String sql, Object[] paramValues, Class<?> idClass, String idColumnName);
+
+
+	CompletionStage<ResultSet> selectJdbc(String sql);
+
+	CompletionStage<ResultSet> executeAndSelectGeneratedValues(String sql, Object[] paramValues, List<Class<?>> idClass, List<String> generatedColumnName);
 
 	<T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass);
 

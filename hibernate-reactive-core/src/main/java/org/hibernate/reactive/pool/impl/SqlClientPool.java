@@ -364,6 +364,21 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		}
 
 		@Override
+		public CompletionStage<ResultSet> selectJdbc(String sql) {
+			return connection().thenCompose( conn -> conn.selectJdbc( sql ) );
+		}
+
+		@Override
+		public CompletionStage<ResultSet> executeAndSelectGeneratedValues(
+				String sql,
+				Object[] paramValues,
+				List<Class<?>> idClass,
+				List<String> generatedColumnName) {
+			return connection().thenCompose( conn -> conn
+					.executeAndSelectGeneratedValues( sql, paramValues, idClass, generatedColumnName ) );
+		}
+
+		@Override
 		public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 			return connection().thenCompose( conn -> conn.selectIdentifier( sql, paramValues, idClass ) );
 		}

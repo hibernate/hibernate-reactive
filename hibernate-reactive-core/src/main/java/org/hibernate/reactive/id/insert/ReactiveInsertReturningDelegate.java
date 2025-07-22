@@ -6,21 +6,17 @@ package org.hibernate.reactive.id.insert;
 
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
-import org.hibernate.generator.values.GeneratedValueBasicResultBuilder;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.internal.TableUpdateReturningBuilder;
-import org.hibernate.id.insert.AbstractReturningDelegate;
 import org.hibernate.id.insert.InsertReturningDelegate;
 import org.hibernate.id.insert.TableInsertReturningBuilder;
 import org.hibernate.jdbc.Expectation;
@@ -28,40 +24,23 @@ import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.model.ast.MutatingTableReference;
 import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
 
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static org.hibernate.generator.EventType.INSERT;
-import static org.hibernate.generator.values.internal.GeneratedValuesHelper.getActualGeneratedModelPart;
-import static org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper.getGeneratedValues;
 
 /**
  * @see InsertReturningDelegate
  */
-public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate implements ReactiveAbstractReturningDelegate {
+public class ReactiveInsertReturningDelegate extends ReactiveAbstractReturningDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private final EntityPersister persister;
 	private final MutatingTableReference tableReference;
-	private final List<ColumnReference> generatedColumns;
 
 	public ReactiveInsertReturningDelegate(EntityPersister persister, EventType timing) {
-		this( persister, timing, false );
-	}
-
-	public ReactiveInsertReturningDelegate(EntityPersister persister, Dialect dialect) {
-		// With JDBC it's possible to enabled GetGeneratedKeys for identity generation.
-		// Vert.x doesn't have this option, so we always use the same strategy for all database.
-		// But MySQL requires setting supportsArbitraryValues to false or it's not going to work.
-		this( persister, INSERT, supportsArbitraryValues( dialect ) );
-	}
-
-	private static boolean supportsArbitraryValues( Dialect dialect) {
-		return !( dialect instanceof MySQLDialect );
+		this( persister, timing, true );
 	}
 
 	private ReactiveInsertReturningDelegate(EntityPersister persister, EventType timing, boolean supportsArbitraryValues) {
@@ -71,33 +50,25 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 				supportsArbitraryValues,
 				persister.getFactory().getJdbcServices().getDialect().supportsInsertReturningRowId()
 		);
-		this.persister = persister;
 		this.tableReference = new MutatingTableReference( persister.getIdentifierTableMapping() );
-		final List<GeneratedValueBasicResultBuilder> resultBuilders = jdbcValuesMappingProducer.getResultBuilders();
-		this.generatedColumns = new ArrayList<>( resultBuilders.size() );
-		for ( GeneratedValueBasicResultBuilder resultBuilder : resultBuilders ) {
-			generatedColumns.add( new ColumnReference(
-					tableReference,
-					getActualGeneratedModelPart( resultBuilder.getModelPart() )
-			) );
-		}
 	}
+
 	@Override
 	public TableMutationBuilder<?> createTableMutationBuilder(
 			Expectation expectation,
 			SessionFactoryImplementor sessionFactory) {
 		if ( getTiming() == INSERT ) {
-			return new TableInsertReturningBuilder( persister, tableReference, generatedColumns, sessionFactory );
+			return new TableInsertReturningBuilder( getPersister(), tableReference, getGeneratedColumns(), sessionFactory );
 		}
 		else {
-			return new TableUpdateReturningBuilder( persister, tableReference, generatedColumns, sessionFactory );
+			return new TableUpdateReturningBuilder( getPersister(), tableReference, getGeneratedColumns(), sessionFactory );
 		}
 	}
 
 	@Override
 	public String prepareIdentifierGeneratingInsert(String insertSQL) {
 		return dialect().getIdentityColumnSupport().appendIdentitySelectToInsert(
-				( (BasicEntityIdentifierMapping) persister.getRootEntityDescriptor().getIdentifierMapping() ).getSelectionExpression(),
+				( (BasicEntityIdentifierMapping) getPersister().getRootEntityDescriptor().getIdentifierMapping() ).getSelectionExpression(),
 				insertSQL
 		);
 	}
@@ -105,11 +76,6 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 	@Override
 	public PreparedStatement prepareStatement(String sql, SharedSessionContractImplementor session) {
 		return session.getJdbcCoordinator().getMutationStatementPreparer().prepareStatement( sql, NO_GENERATED_KEYS );
-	}
-
-	@Override
-	public EntityPersister getPersister() {
-		return persister;
 	}
 
 	@Override
@@ -122,18 +88,50 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 	}
 
 	@Override
-	public CompletionStage<GeneratedValues> reactiveExecuteAndExtractReturning(String sql, Object[] params, SharedSessionContractImplementor session)  {
-		final Class<?> idType = getPersister().getIdentifierType().getReturnedClass();
-		final String identifierColumnName = getPersister().getIdentifierColumnNames()[0];
-		return ( (ReactiveConnectionSupplier) session )
-				.getReactiveConnection()
-				.insertAndSelectIdentifierAsResultSet( sql, params, idType, identifierColumnName )
-				.thenCompose( rs -> getGeneratedValues( rs, getPersister(), getTiming(), session ) )
-				.thenApply( this::validateGeneratedIdentityId );
+	protected GeneratedValues executeAndExtractReturning(String sql, PreparedStatement preparedStatement, SharedSessionContractImplementor session) {
+		throw LOG.nonReactiveMethodCall( "reactiveExecuteAndExtractReturning" );
 	}
 
 	@Override
-	protected GeneratedValues executeAndExtractReturning(String sql, PreparedStatement preparedStatement, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "reactiveExecuteAndExtractReturning" );
+	public String createSqlString(String sql, List<String> columnNames, Dialect dialect) {
+		/*
+			SQLServerDialect does not fully support insert returning but in Hibernate Reactive
+			we are using the `output` clause ( it does not work for columns using formulas or having a trigger).
+		 */
+		if ( dialect instanceof SQLServerDialect ) {
+			assert !columnNames.isEmpty();
+			final StringBuilder builder = new StringBuilder( sql );
+			final int index = builder.lastIndexOf( " returning " + columnNames.get( 0 ) );
+			// FIXME: this is a hack for HHH-16365
+			if ( index > -1 ) {
+				builder.delete( index, builder.length() );
+			}
+			final int defaultValues = sql.indexOf( "default values" );
+			if ( defaultValues > -1 ) {
+				builder.delete( defaultValues, builder.length() );
+				builder.append( "output " )
+						.append( getSQLServerDialectInserted( columnNames ) )
+						.append( " default values" );
+			}
+			else {
+				int start = builder.lastIndexOf( ") values (" );
+				builder.replace(
+						start,
+						start + 10,
+						") output " + getSQLServerDialectInserted( columnNames ) + " values ("
+				);
+			}
+			return builder.toString();
+		}
+		return sql;
+	}
+
+	private static String getSQLServerDialectInserted(List<String> generatedColumNames) {
+		String sql = "";
+		for ( String generatedColumName : generatedColumNames ) {
+			sql += ", inserted." + generatedColumName;
+		}
+		// Remove the initial comma
+		return sql.substring( 2 );
 	}
 }

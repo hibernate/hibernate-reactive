@@ -29,6 +29,7 @@ import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterc
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributesMetadata;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
@@ -67,13 +68,11 @@ import org.hibernate.sql.Update;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.type.BasicType;
-import org.hibernate.type.Type;
 
 import jakarta.persistence.metamodel.Attribute;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyMap;
-import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize;
@@ -104,8 +103,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ReactiveSingleTableEntityPersister
  */
 public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister {
-
-	Log LOG = make( Log.class, lookup() );
 
 	/**
 	 * A self-reference of type {@code AbstractEntityPersister}.
@@ -376,51 +373,32 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			EntityEntry entry,
 			String fieldName,
 			SharedSessionContractImplementor session) {
-		return isNonLazyPropertyName( fieldName )
-			   ? initLazyProperty( entity, id, entry, fieldName, session )
-			   : initLazyProperties( entity, id, entry, fieldName, session );
-	}
 
-	boolean isNonLazyPropertyName(String fieldName);
+		if ( !hasLazyProperties() ) {
+			throw new AssertionFailure( "no lazy properties" );
+		}
 
-	private CompletionStage<Object> initLazyProperty(
-			Object entity,
-			Object id,
-			EntityEntry entry,
-			String fieldName,
-			SharedSessionContractImplementor session) {
-		// An eager property can be lazy because of an applied EntityGraph
-		final int propertyIndex = getPropertyIndex( fieldName );
-		final List<ModelPart> partsToSelect = List.of( getAttributeMapping( propertyIndex ) );
-		return reactiveGetOrCreateLazyLoadPlan( fieldName, partsToSelect )
-				.load( id, session )
-				.thenApply( results -> {
-					final Object result = results[0];
-					initializeLazyProperty( entity, entry, result, propertyIndex, getPropertyTypes()[propertyIndex] );
-					return result;
-				} );
-	}
+		final PersistentAttributeInterceptor interceptor = ManagedTypeHelper.asPersistentAttributeInterceptable( entity ).$$_hibernate_getInterceptor();
+		if ( interceptor == null ) {
+			throw new AssertionFailure( "Expecting bytecode interceptor to be non-null" );
+		}
 
-	ReactiveSingleIdArrayLoadPlan reactiveGetOrCreateLazyLoadPlan(String fieldName, List<ModelPart> partsToSelect);
+		make( Log.class, lookup() ).tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
 
-	private CompletionStage<Object> initLazyProperties(
-			Object entity,
-			Object id,
-			EntityEntry entry,
-			String fieldName,
-			SharedSessionContractImplementor session) {
+		final String fetchGroup = getEntityPersister().getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupName( fieldName );
+		final List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors = getEntityPersister().getBytecodeEnhancementMetadata()
+				.getLazyAttributesMetadata()
+				.getFetchGroupAttributeDescriptors( fetchGroup );
 
-		assert hasLazyProperties();
-		LOG.tracef( "Initializing lazy properties from datastore (triggered for '%s')", fieldName );
+		@SuppressWarnings("deprecation")
+		Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
 
-		final var interceptor = asPersistentAttributeInterceptable( entity ).$$_hibernate_getInterceptor();
-		assert interceptor != null : "Expecting bytecode interceptor to be non-null";
-		final Set<String> initializedLazyAttributeNames = interceptor.getInitializedLazyAttributeNames();
-		LOG.tracef( "Initializing lazy properties from datastore (triggered for `%s`)", fieldName );
-
-		final var lazyAttributesMetadata = getBytecodeEnhancementMetadata().getLazyAttributesMetadata();
-		final String fetchGroup = lazyAttributesMetadata.getFetchGroupName( fieldName );
-		final var fetchGroupAttributeDescriptors = lazyAttributesMetadata.getFetchGroupAttributeDescriptors( fetchGroup );
+		// FIXME: How do I pass this to the query?
+		Object[] arguments = PreparedStatementAdaptor.bind(
+				statement -> getIdentifierType().nullSafeSet( statement, id, 1, session )
+		);
 
 		return reactiveGetSQLLazySelectLoadPlan( fetchGroup )
 				.load( id, session )
@@ -441,55 +419,51 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			PersistentAttributeInterceptor interceptor,
 			List<LazyAttributeDescriptor> fetchGroupAttributeDescriptors,
 			Set<String> initializedLazyAttributeNames,
-			Object[] results) {    // Load all the lazy properties that are in the same fetch group
-		CompletionStage<Object> finalResultStage = nullFuture();
-		final int[] i = { 0 };
-		for ( var fetchGroupAttributeDescriptor : fetchGroupAttributeDescriptors ) {
-			final String attributeName = fetchGroupAttributeDescriptor.getName();
-			final boolean previousInitialized = initializedLazyAttributeNames.contains( attributeName );
-			final int index = i[0]++;
-			if ( previousInitialized ) {
+			Object[] values) {    // Load all the lazy properties that are in the same fetch group
+		CompletionStage<Object> resultStage = nullFuture();
+		int i = 0;
+		for ( LazyAttributeDescriptor fetchGroupAttributeDescriptor : fetchGroupAttributeDescriptors ) {
+			if ( initializedLazyAttributeNames.contains( fetchGroupAttributeDescriptor.getName() ) ) {
 				// Already initialized
-				if ( attributeName.equals( fieldName ) ) {
-					finalResultStage = finalResultStage
-							.thenApply( finalResult -> entry.getLoadedValue( fetchGroupAttributeDescriptor.getName() ) );
+				if ( fetchGroupAttributeDescriptor.getName().equals( fieldName ) ) {
+					resultStage = completedFuture( entry.getLoadedValue( fetchGroupAttributeDescriptor.getName() ) );
 				}
-				// it's already been initialized (e.g. by a write) so we don't want to overwrite
-				// TODO: we should consider un-marking an attribute as dirty based on the selected value
-				// - we know the current value:
-				//   getPropertyValue( entity, fetchGroupAttributeDescriptor.getAttributeIndex() );
-				// - we know the selected value (see selectedValue below)
-				// - we can use the attribute Type to tell us if they are the same
-				// - assuming entity is a SelfDirtinessTracker we can also know if the attribute is currently
-				//   considered dirty, and if really not dirty we would do the un-marking
-				// - of course that would mean a new method on SelfDirtinessTracker to allow un-marking
 				continue;
 			}
 
-			final Object result = results[index];
-			if ( result instanceof CompletionStage ) {
+			final Object selectedValue = values[i++];
+			if ( selectedValue instanceof CompletionStage ) {
 				// This happens with a lazy one-to-one (bytecode enhancement enabled)
-				final CompletionStage<Object> resultStage = (CompletionStage<Object>) result;
-				finalResultStage = finalResultStage.thenCompose( finalResult -> resultStage
-						.thenApply( value -> {
-							if ( initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor, result ) ) {
-								interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
-								return value;
-							}
-							return finalResult;
-						} )
-				);
+				CompletionStage<Object> selectedValueStage = (CompletionStage<Object>) selectedValue;
+				resultStage = resultStage
+						.thenCompose( result -> selectedValueStage
+								.thenApply( selected -> {
+									final boolean set = initializeLazyProperty(
+											fieldName,
+											entity,
+											entry,
+											fetchGroupAttributeDescriptor.getLazyIndex(),
+											selected
+									);
+									if ( set ) {
+										interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
+										return selected;
+									}
+									return result;
+								} )
+						);
 			}
 			else {
-				if ( initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor, result ) ) {
+				final boolean set = initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor.getLazyIndex(), selectedValue );
+				if ( set ) {
+					resultStage = completedFuture( selectedValue );
 					interceptor.attributeInitialized( fetchGroupAttributeDescriptor.getName() );
-					finalResultStage = finalResultStage.thenApply( finalResult -> result );
 				}
 			}
 		}
 
-		return finalResultStage.thenApply( result -> {
-			LOG.trace( "Done initializing lazy properties" );
+		return resultStage.thenApply( result -> {
+			make( Log.class, lookup() ).trace( "Done initializing lazy properties" );
 			return result;
 		} );
 	}
@@ -551,11 +525,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				.load( identifier, entity, lockOptions, session );
 	}
 
-	boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, LazyAttributeDescriptor fetchGroupAttributeDescriptor, Object propValue);
-
-	void initializeLazyProperty(Object entity, EntityEntry entry, Object propValue, int index, Type type);
-
 	SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session, LockOptions lockOptions);
+
+	boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue);
 
 	Object initializeLazyProperty(String fieldName, Object entity, SharedSessionContractImplementor session);
 

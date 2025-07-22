@@ -13,7 +13,6 @@ import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
@@ -32,7 +31,6 @@ import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
-import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
@@ -46,7 +44,6 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
-import org.hibernate.reactive.generator.values.GeneratedValuesMutationDelegateAdaptor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
@@ -61,7 +58,6 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
-import org.hibernate.type.Type;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
@@ -84,16 +80,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
-	}
-
-	@Override
-	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, LazyAttributeDescriptor fetchGroupAttributeDescriptor, Object propValue) {
-		return super.initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor, propValue );
-	}
-
-	@Override
-	public void initializeLazyProperty(Object entity, EntityEntry entry, Object propValue, int index, Type type) {
-		super.initializeLazyProperty( entity, entry, propValue, index, type );
 	}
 
 	@Override
@@ -163,7 +149,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		if ( insertDelegate == null ) {
 			return null;
 		}
-		return new GeneratedValuesMutationDelegateAdaptor( insertDelegate );
+		return insertDelegate ;
 	}
 
 	@Override
@@ -172,7 +158,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		if ( updateDelegate == null ) {
 			return null;
 		}
-		return new GeneratedValuesMutationDelegateAdaptor( updateDelegate );
+		return updateDelegate;
 	}
 
 	@Override
@@ -234,6 +220,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 				fetchMode,
 				creationProcess
 		);
+	}
+
+	@Override
+	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
+		return super.initializeLazyProperty(fieldName, entity, entry, lazyIndex, selectedValue);
 	}
 
 	@Override
@@ -465,15 +456,5 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
-	}
-
-	@Override
-	public ReactiveSingleIdArrayLoadPlan reactiveGetOrCreateLazyLoadPlan(String fieldName, List<ModelPart> partsToSelect) {
-		return reactiveDelegate.getOrCreateLazyLoadPlan( fieldName, partsToSelect );
-	}
-
-	@Override
-	public boolean isNonLazyPropertyName(String fieldName) {
-		return super.isNonLazyPropertyName( fieldName );
 	}
 }
