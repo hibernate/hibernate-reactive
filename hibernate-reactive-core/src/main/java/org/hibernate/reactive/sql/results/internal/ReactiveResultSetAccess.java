@@ -34,7 +34,8 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 
 	ResultSet getResultSet();
 
-	SessionFactoryImplementor getFactory();
+	SessionFactoryImplementor getSessionFactory();
+
 	void release();
 
 	/**
@@ -51,7 +52,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 			return getResultSet().getMetaData().getColumnCount();
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
+			throw getSessionFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
 					e,
 					"Unable to access ResultSet column count"
 			);
@@ -63,7 +64,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 			return getResultSet().findColumn( columnName );
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
+			throw getSessionFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
 					e,
 					"Unable to find column position by name"
 			);
@@ -72,13 +73,13 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 
 	default String resolveColumnName(int position) {
 		try {
-			return getFactory().getJdbcServices().getJdbcEnvironment()
+			return getSessionFactory().getJdbcServices().getJdbcEnvironment()
 					.getDialect()
 					.getColumnAliasExtractor()
 					.extractColumnAlias( getResultSet().getMetaData(), position );
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
+			throw getSessionFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
 					e,
 					"Unable to find column name by position"
 			);
@@ -87,7 +88,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 
 	@Override
 	default <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, TypeConfiguration typeConfiguration) {
-		final JdbcServices jdbcServices = getFactory().getJdbcServices();
+		final JdbcServices jdbcServices = getSessionFactory().getJdbcServices();
 		try {
 			final ResultSetMetaData metaData = getResultSet().getMetaData();
 			final String columnTypeName = metaData.getColumnTypeName( position );
@@ -145,7 +146,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 
 							@Override
 							public Dialect getDialect() {
-								return getFactory().getJdbcServices().getDialect();
+								return getSessionFactory().getJdbcServices().getDialect();
 							}
 						}
 				);
