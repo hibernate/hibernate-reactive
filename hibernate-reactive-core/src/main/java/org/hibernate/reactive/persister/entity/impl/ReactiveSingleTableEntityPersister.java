@@ -42,7 +42,6 @@ import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
-import org.hibernate.reactive.generator.values.GeneratedValuesMutationDelegateAdaptor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
@@ -136,7 +135,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		if ( insertDelegate == null ) {
 			return null;
 		}
-		return new GeneratedValuesMutationDelegateAdaptor( insertDelegate );
+		return insertDelegate ;
 	}
 
 	@Override
@@ -145,7 +144,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		if ( updateDelegate == null ) {
 			return null;
 		}
-		return new GeneratedValuesMutationDelegateAdaptor( updateDelegate );
+		return updateDelegate;
 	}
 
 	@Override
