@@ -19,6 +19,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.loader.ast.spi.MultiIdEntityLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.ast.spi.SingleIdEntityLoader;
@@ -387,6 +388,16 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
 		return this.getLazyLoadPlanByFetchGroup( getSubclassPropertyNameClosure() ).get(fetchGroup );
+	}
+
+	@Override
+	public GeneratedValuesMutationDelegate createInsertDelegate() {
+		return ReactiveAbstractEntityPersister.super.createReactiveInsertDelegate();
+	}
+
+	@Override
+	protected GeneratedValuesMutationDelegate createUpdateDelegate() {
+		return ReactiveAbstractEntityPersister.super.createReactiveUpdateDelegate();
 	}
 
 }
