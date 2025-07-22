@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.values.GeneratedValues;
+import org.hibernate.metamodel.mapping.EntityRowIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -110,8 +111,19 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 //				setVersion( Versioning.getVersion( getState(), persister ) );
 			}
 			return persister.reactiveProcessInsertGenerated( id, instance, getState(), generatedValues, session )
-					.thenAccept( v -> entry.postUpdate( instance, getState(), getVersion() ) );
-
+					.thenAccept( v -> {
+						// Process row-id values when available early by replacing the entity entry
+						if ( generatedValues != null ) {
+							final EntityRowIdMapping rowIdMapping = persister.getRowIdMapping();
+							if ( rowIdMapping != null ) {
+								final Object rowId = generatedValues.getGeneratedValue( rowIdMapping );
+								if ( rowId != null ) {
+									session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+								}
+							}
+						}
+						entry.postUpdate( instance, getState(), getVersion() );
+					} );
 		}
 		else {
 			return voidFuture();

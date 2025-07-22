@@ -75,6 +75,7 @@ import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages.Completable;
@@ -442,7 +443,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	private CompletionStage<?> generateIdForInsert(Object entity, Generator generator, ReactiveEntityPersister persister) {
 		if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
-			return reactiveGenerator.generate( this, entity )
+			return reactiveGenerator.generate( (ReactiveConnectionSupplier) this, entity )
 					.thenApply( id -> castToIdentifierType( id, persister ) );
 		}
 

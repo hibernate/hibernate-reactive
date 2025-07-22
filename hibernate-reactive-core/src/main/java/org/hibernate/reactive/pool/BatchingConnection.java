@@ -5,12 +5,13 @@
 package org.hibernate.reactive.pool;
 
 
+import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
@@ -94,6 +95,7 @@ public class BatchingConnection implements ReactiveConnection {
 		}
 	}
 
+	@Override
 	public CompletionStage<Void> update(
 			String sql, Object[] paramValues,
 			boolean allowBatching, Expectation expectation) {
@@ -129,18 +131,22 @@ public class BatchingConnection implements ReactiveConnection {
 		return batchedSql != null;
 	}
 
+	@Override
 	public CompletionStage<Void> execute(String sql) {
 		return delegate.execute( sql );
 	}
 
+	@Override
 	public CompletionStage<Void> executeUnprepared(String sql) {
 		return delegate.executeUnprepared( sql );
 	}
 
+	@Override
 	public CompletionStage<Void> executeOutsideTransaction(String sql) {
 		return delegate.executeOutsideTransaction( sql );
 	}
 
+	@Override
 	public CompletionStage<Integer> update(String sql) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.update( sql ) )
@@ -154,6 +160,7 @@ public class BatchingConnection implements ReactiveConnection {
 				: delegate.update( sql, paramValues );
 	}
 
+	@Override
 	public CompletionStage<int[]> update(String sql, List<Object[]> paramValues) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.update( sql, paramValues ) )
@@ -176,24 +183,46 @@ public class BatchingConnection implements ReactiveConnection {
 				.thenApply( id -> new ResultSetAdaptor( id, idClass, idColumnName ) );
 	}
 
+	@Override
+	public CompletionStage<ResultSet> executeAndSelectGeneratedValues(
+			String sql,
+			Object[] paramValues,
+			List<Class<?>> idClasses,
+			List<String> generatedColumnNames) {
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.executeAndSelectGeneratedValues( sql, paramValues, idClasses, generatedColumnNames ) )
+				: delegate.executeAndSelectGeneratedValues( sql, paramValues, idClasses, generatedColumnNames );
+	}
+
+	@Override
 	public CompletionStage<ReactiveConnection.Result> select(String sql) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.select( sql ) )
 				: delegate.select( sql );
 	}
 
+	@Override
 	public CompletionStage<ReactiveConnection.Result> select(String sql, Object[] paramValues) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.select( sql, paramValues ) )
 				: delegate.select( sql, paramValues );
 	}
 
+	@Override
 	public CompletionStage<ResultSet> selectJdbc(String sql, Object[] paramValues) {
 		return hasBatch()
 				? executeBatch().thenCompose( v -> delegate.selectJdbc( sql, paramValues ) )
 				: delegate.selectJdbc( sql, paramValues );
 	}
 
+	@Override
+	public CompletionStage<ResultSet> selectJdbc(String sql) {
+		return hasBatch()
+				? executeBatch().thenCompose( v -> delegate.selectJdbc( sql ) )
+				: delegate.selectJdbc( sql );
+	}
+
+	@Override
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		// Do not want to execute the batch here
 		// because we want to be able to select
@@ -202,18 +231,22 @@ public class BatchingConnection implements ReactiveConnection {
 		return delegate.selectIdentifier( sql, paramValues, idClass );
 	}
 
+	@Override
 	public CompletionStage<Void> beginTransaction() {
 		return delegate.beginTransaction();
 	}
 
+	@Override
 	public CompletionStage<Void> commitTransaction() {
 		return delegate.commitTransaction();
 	}
 
+	@Override
 	public CompletionStage<Void> rollbackTransaction() {
 		return delegate.rollbackTransaction();
 	}
 
+	@Override
 	public CompletionStage<Void> close() {
 		return delegate.close();
 	}

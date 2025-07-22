@@ -13,7 +13,11 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
+import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.MariaDBDialect;
+import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.OracleDialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
 import org.hibernate.generator.Generator;
@@ -33,9 +37,8 @@ import org.hibernate.id.enhanced.SequenceStructure;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
-import org.hibernate.id.insert.GetGeneratedKeysDelegate;
-import org.hibernate.id.insert.UniqueKeySelectingDelegate;
 import org.hibernate.metamodel.mapping.ModelPart;
+import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
@@ -46,7 +49,9 @@ import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGener
 import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.insert.ReactiveGetGeneratedKeysDelegate;
 import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
+import org.hibernate.reactive.id.insert.ReactiveUniqueKeySelectingDelegate;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
@@ -60,7 +65,6 @@ import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.results.internal.RowTransformerArrayImpl;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.WrapperOptions;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -68,6 +72,7 @@ import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCu
 import static org.hibernate.internal.NaturalIdHelper.getNaturalIdPropertyNames;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.NONE;
+import static org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions.NO_OPTIONS;
 
 /**
  * @see org.hibernate.generator.values.internal.GeneratedValuesHelper
@@ -81,13 +86,21 @@ public class ReactiveGeneratedValuesHelper {
 	 * @see GeneratedValuesHelper#getGeneratedValuesDelegate(EntityPersister, EventType)
 	 */
 	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(EntityPersister persister, EventType timing) {
-		final boolean hasGeneratedProperties = !persister.getGeneratedProperties( timing ).isEmpty();
+		final List<? extends ModelPart> generatedProperties = persister.getGeneratedProperties( timing );
+		final boolean hasGeneratedProperties = !generatedProperties.isEmpty();
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 
+		final boolean hasFormula =
+				generatedProperties.stream()
+						.anyMatch( part -> part instanceof SelectableMapping selectable
+								&& selectable.isFormula() );
+
+		// Cockroach supports insert returning it but the CockroachDb#supportsInsertReturningRowId() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
+		boolean supportsInsertReturningRowId = dialect.supportsInsertReturningRowId() || dialect instanceof CockroachDialect;
 		if ( hasRowId
-				&& dialect.supportsInsertReturning()
-				&& dialect.supportsInsertReturningRowId()
+				&& supportsInsertReturning( dialect )
+				&& supportsInsertReturningRowId
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it
@@ -98,26 +111,40 @@ public class ReactiveGeneratedValuesHelper {
 			return null;
 		}
 
-		if ( dialect.supportsInsertReturningGeneratedKeys()
-				&& persister.getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
-			return new GetGeneratedKeysDelegate( persister, false, timing );
-		}
-		else if ( supportsReturning( dialect, timing ) && noCustomSql( persister, timing ) ) {
+		if ( supportsReturning( dialect, timing ) && noCustomSql( persister, timing ) ) {
 			return new ReactiveInsertReturningDelegate( persister, timing );
 		}
-		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null
-				&& !persister.getEntityMetamodel().isNaturalIdentifierInsertGenerated() ) {
-			return new UniqueKeySelectingDelegate(
-					persister,
-					getNaturalIdPropertyNames( persister ),
-					timing
-			);
+		else if ( !hasFormula && dialect.supportsInsertReturningGeneratedKeys() ) {
+			return new ReactiveGetGeneratedKeysDelegate( persister, false, timing );
+		}
+		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null && !persister.getEntityMetamodel()
+				.isNaturalIdentifierInsertGenerated() ) {
+			return new ReactiveUniqueKeySelectingDelegate( persister, getNaturalIdPropertyNames( persister ), timing );
 		}
 		return null;
 	}
 
-	private static boolean supportsReturning(Dialect dialect, EventType timing) {
-		return timing == EventType.INSERT ? dialect.supportsInsertReturning() : dialect.supportsUpdateReturning();
+	public static boolean supportReactiveGetGeneratedKey(Dialect dialect, List<? extends ModelPart> generatedProperties) {
+		return dialect instanceof OracleDialect
+				|| (dialect instanceof MySQLDialect && generatedProperties.size() == 1 && !(dialect instanceof MariaDBDialect));
+	}
+
+	public static boolean supportsReturning(Dialect dialect, EventType timing) {
+		if ( dialect instanceof CockroachDialect ) {
+			// Cockroach supports insert and update returning but the CockroachDb#supportsInsertReturning() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
+			return true;
+		}
+		return timing == EventType.INSERT
+				? dialect.supportsInsertReturning()
+				: dialect.supportsUpdateReturning();
+	}
+
+	public static boolean supportsInsertReturning(Dialect dialect) {
+		if ( dialect instanceof CockroachDialect ) {
+			// Cockroach supports insert returning but the CockroachDb#supportsInsertReturning() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
+			return true;
+		}
+		return dialect.supportsInsertReturning();
 	}
 
 	/**
@@ -198,31 +225,9 @@ public class ReactiveGeneratedValuesHelper {
 				executionContext
 		);
 
-		final JdbcValuesSourceProcessingOptions processingOptions = new JdbcValuesSourceProcessingOptions() {
-			@Override
-			public Object getEffectiveOptionalObject() {
-				return null;
-			}
-
-			@Override
-			public String getEffectiveOptionalEntityName() {
-				return null;
-			}
-
-			@Override
-			public Object getEffectiveOptionalId() {
-				return null;
-			}
-
-			@Override
-			public boolean shouldReturnProxies() {
-				return true;
-			}
-		};
-
 		final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState = new JdbcValuesSourceProcessingStateStandardImpl(
 				executionContext,
-				processingOptions
+				NO_OPTIONS
 		);
 
 		final ReactiveRowReader<Object[]> rowReader = ReactiveResultsHelper.createRowReader(
@@ -234,7 +239,7 @@ public class ReactiveGeneratedValuesHelper {
 
 		final ReactiveRowProcessingState rowProcessingState = new ReactiveRowProcessingState( valuesProcessingState, executionContext, rowReader, jdbcValues );
 		return ReactiveListResultsConsumer.<Object[]>instance( NONE )
-				.consume( jdbcValues, session, processingOptions, valuesProcessingState, rowProcessingState, rowReader )
+				.consume( jdbcValues, session, NO_OPTIONS, valuesProcessingState, rowProcessingState, rowReader )
 				.thenApply( results -> {
 					if ( results.isEmpty() ) {
 						throw new HibernateException( "The database returned no natively generated values : " + persister.getNavigableRole().getFullPath() );
