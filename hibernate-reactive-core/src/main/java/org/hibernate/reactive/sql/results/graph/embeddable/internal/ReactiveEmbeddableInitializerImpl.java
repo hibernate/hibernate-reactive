@@ -85,7 +85,7 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 
 		data.setState( State.RESOLVED );
 		return extractRowState( (ReactiveEmbeddableInitializerData) data )
-				.thenAccept( unused -> prepareCompositeInstance( (ReactiveEmbeddableInitializerData) data ) );
+				.thenCompose( unused -> prepareCompositeInstance( (ReactiveEmbeddableInitializerData) data ) );
 	}
 
 	private CompletionStage<Void> extractRowState(ReactiveEmbeddableInitializerData data) {
