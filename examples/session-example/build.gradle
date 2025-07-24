@@ -17,6 +17,9 @@ buildscript {
 }
 
 plugins {
+    id "hr-java-library"
+    id "hr-print-resolved-version"
+
     // Optional: Hibernate Gradle plugin to enable bytecode enhancements
     alias(libs.plugins.org.hibernate.orm)
 }
@@ -80,36 +83,4 @@ tasks.register( "runAllExamplesOnMySQL" ) {
 tasks.register( "runAllExamples" ) {
     dependsOn = ["runAllExamplesOnPostgreSQL", "runAllExamplesOnMySQL"]
     description = "Run all examples on ${dbs}"
-}
-
-// Optional: Task to print the resolved versions of Hibernate ORM and Vert.x
-tasks.register( "printResolvedVersions" ) {
-    description = "Print the resolved hibernate-orm-core and vert.x versions"
-    doLast {
-        def hibernateCoreVersion = "n/a"
-        def vertxVersion = "n/a"
-
-        // Resolve Hibernate Core and Vert.x versions from compile classpath
-        configurations.compileClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-            if (artifact.moduleVersion.id.name == 'hibernate-core') {
-                hibernateCoreVersion = artifact.moduleVersion.id.version
-            }
-            if (artifact.moduleVersion.id.group == 'io.vertx' && artifact.moduleVersion.id.name == 'vertx-sql-client') {
-                vertxVersion = artifact.moduleVersion.id.version
-            }
-        }
-
-        // Print the resolved versions
-        println "Resolved Hibernate ORM Core Version: ${hibernateCoreVersion}"
-        println "Resolved Vert.x SQL client Version: ${vertxVersion}"
-    }
-}
-
-// Make the version printing task run before tests and JavaExec tasks
-tasks.withType( Test ).configureEach {
-    dependsOn printResolvedVersions
-}
-
-tasks.withType( JavaExec ).configureEach {
-    dependsOn printResolvedVersions
 }
