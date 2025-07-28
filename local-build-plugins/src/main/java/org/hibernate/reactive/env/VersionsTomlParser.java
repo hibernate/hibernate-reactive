@@ -1,6 +1,7 @@
 package org.hibernate.reactive.env;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -13,11 +14,12 @@ public class VersionsTomlParser {
 
     private final Map<String, String> data = new HashMap<>();
 
-    public VersionsTomlParser(String filePath) {
+    public VersionsTomlParser(File filePath) {
         parse( filePath );
     }
 
-    private void parse(String filePath) {
+    private void parse(File filePath) {
+
         try ( BufferedReader reader = new BufferedReader( new FileReader( filePath ) ) ) {
             String line;
             String currentSection = null;
