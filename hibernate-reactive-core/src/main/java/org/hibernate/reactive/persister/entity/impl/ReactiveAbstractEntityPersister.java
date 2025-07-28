@@ -474,13 +474,9 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			Object entity,
 			String nameOfAttributeBeingAccessed,
 			SharedSessionContractImplementor session) {
-
 		final BytecodeEnhancementMetadata enhancementMetadata = getEntityPersister().getBytecodeEnhancementMetadata();
 		final BytecodeLazyAttributeInterceptor currentInterceptor = enhancementMetadata.extractLazyInterceptor( entity );
-		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-			final EnhancementAsProxyLazinessInterceptor proxyInterceptor =
-					(EnhancementAsProxyLazinessInterceptor) currentInterceptor;
-
+		if ( currentInterceptor instanceof EnhancementAsProxyLazinessInterceptor proxyInterceptor ) {
 			final EntityKey entityKey = proxyInterceptor.getEntityKey();
 			final Object identifier = entityKey.getIdentifier();
 
@@ -494,19 +490,17 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 									.handleEntityNotFound( entityKey.getEntityName(), identifier );
 						}
 
+						final LazyAttributeLoadingInterceptor interceptor = enhancementMetadata
+								.injectInterceptor( entity, identifier, session );
+
 						if ( nameOfAttributeBeingAccessed == null ) {
 							return null;
 						}
 						else {
-							final LazyAttributeLoadingInterceptor interceptor = enhancementMetadata
-									.injectInterceptor( entity, identifier, session );
 							return interceptor.readObject(
-									entity,
-									nameOfAttributeBeingAccessed,
-									interceptor.isAttributeLoaded( nameOfAttributeBeingAccessed )
-											? getPropertyValue( entity, nameOfAttributeBeingAccessed )
-											: ( (LazyPropertyInitializer) this )
-													.initializeLazyProperty( nameOfAttributeBeingAccessed, entity, session )
+									entity, nameOfAttributeBeingAccessed, interceptor.isAttributeLoaded( nameOfAttributeBeingAccessed )
+																		  ? getPropertyValue( entity, nameOfAttributeBeingAccessed )
+																		  : ( (LazyPropertyInitializer) this ).initializeLazyProperty( nameOfAttributeBeingAccessed, entity, session )
 							);
 						}
 					} );
@@ -528,11 +522,12 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 				return completedFuture( loaded );
 			}
 		}
-		return ( (ReactiveSingleIdEntityLoader<?>) determineLoaderToUse( session ) )
-				.load( identifier, entity, LockOptions.NONE, session );
+		final LockOptions lockOptions = new LockOptions();
+		return ( (ReactiveSingleIdEntityLoader<?>) determineLoaderToUse( session, lockOptions ) )
+				.load( identifier, entity, lockOptions, session );
 	}
 
-	SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session);
+	SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session, LockOptions lockOptions);
 
 	boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue);
 

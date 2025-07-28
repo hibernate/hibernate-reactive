@@ -146,14 +146,14 @@ public class LazyPropertyTest extends BaseReactiveTest {
 		private Author author;
 
 		public Book(String isbn, String title, Author author) {
-			super( "Book", 1, singleton( "isbn" ), null );
+			super( new EntityRelatedState( "Book", singleton( "isbn" ) ), 1, null );
 			this.title = title;
 			this.isbn = isbn;
 			this.author = author;
 		}
 
 		public Book() {
-			super( "Book", 1, singleton( "isbn" ), null );
+			super( new EntityRelatedState( "Book", singleton( "isbn" ) ), 1, null );
 		}
 
 		@Override
