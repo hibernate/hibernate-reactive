@@ -14,6 +14,11 @@ plugins {
     id 'hr-test-containers'
 }
 
+test {
+    def db = project.properties['db']
+    enabled = db == null || db.equals( 'PostgreSQL' )
+}
+
 description = 'Bytecode enhancements integration tests'
 
 dependencies {
