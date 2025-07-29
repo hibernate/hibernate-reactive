@@ -27,7 +27,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
-import org.hibernate.loader.internal.CacheLoadHelper;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.CompositeIdentifierMapping;
@@ -48,7 +47,7 @@ import org.hibernate.stat.spi.StatisticsImplementor;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSecondLevelCache;
-import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSessionCache;
+import static org.hibernate.reactive.loader.internal.ReactiveCacheLoadHelper.loadFromSessionCache;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
@@ -653,15 +652,17 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 			return nullFuture();
 		}
 		else {
-			final CacheLoadHelper.PersistenceContextEntry persistenceContextEntry =
-					loadFromSessionCache( keyToLoad, event.getLockOptions(), options, event.getSession() );
-			final Object entity = persistenceContextEntry.entity();
-			if ( entity != null ) {
-				return persistenceContextEntry.isManaged() ? initializeIfNecessary( entity ) : nullFuture();
-			}
-			else {
-				return loadFromCacheOrDatasource( event, persister, keyToLoad );
-			}
+			return loadFromSessionCache( keyToLoad, event.getLockOptions(), options, event.getSession() ).thenCompose(
+					persistenceContextEntry -> {
+						final Object entity = persistenceContextEntry.entity();
+						if ( entity != null ) {
+							return persistenceContextEntry.isManaged() ? initializeIfNecessary( entity ) : nullFuture();
+						}
+						else {
+							return loadFromCacheOrDatasource( event, persister, keyToLoad );
+						}
+					}
+			);
 		}
 	}
 
