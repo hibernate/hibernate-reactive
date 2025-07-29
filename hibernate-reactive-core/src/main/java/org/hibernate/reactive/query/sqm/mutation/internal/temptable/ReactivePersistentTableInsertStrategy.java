@@ -53,7 +53,8 @@ public class ReactivePersistentTableInsertStrategy extends PersistentTableInsert
 				sqmInsertStatement,
 				domainParameterXref,
 				getTemporaryTable(),
-				getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+				getTemporaryTableStrategy(),
+				false,
 				ReactivePersistentTableStrategy::sessionIdentifier,
 				getSessionFactory()
 		).reactiveExecute( context ) );
