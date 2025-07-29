@@ -43,7 +43,7 @@ org-jboss-logging-jboss-logging-annotations = { group = "org.jboss.logging", nam
 org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingAnnotationVersion" }
 org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
-org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "junitPlatformVersion" }
+org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.13.4" }
 org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.4" }
 org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.7" }
 org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
