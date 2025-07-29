@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -83,7 +84,8 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 
 	private final EntityMappingType entityDescriptor;
 	private final TemporaryTable idTable;
-	private final AfterUseAction afterUseAction;
+	private final TemporaryTableStrategy temporaryTableStrategy;
+	private final boolean forceDropAfterUse;
 	private final SqmDeleteStatement<?> sqmDelete;
 	private final DomainParameterXref domainParameterXref;
 	private final SessionFactoryImplementor sessionFactory;
@@ -94,7 +96,8 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 	public ReactiveRestrictedDeleteExecutionDelegate(
 			EntityMappingType entityDescriptor,
 			TemporaryTable idTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			SqmDeleteStatement<?> sqmDelete,
 			DomainParameterXref domainParameterXref,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
@@ -104,7 +107,8 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 			SessionFactoryImplementor sessionFactory) {
 		this.entityDescriptor = entityDescriptor;
 		this.idTable = idTable;
-		this.afterUseAction = afterUseAction;
+		this.temporaryTableStrategy = temporaryTableStrategy;
+		this.forceDropAfterUse = forceDropAfterUse;
 		this.sqmDelete = sqmDelete;
 		this.domainParameterXref = domainParameterXref;
 		this.sessionUidAccess = sessionUidAccess;
@@ -517,14 +521,14 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 		);
 
 		return ReactiveExecuteWithTemporaryTableHelper
-				.performBeforeTemporaryTableUseActions( idTable, executionContext )
+				.performBeforeTemporaryTableUseActions( idTable, temporaryTableStrategy, executionContext )
 				.thenCompose( v -> executeUsingIdTable( predicate, executionContext, jdbcParameterBindings )
 						.handle( CompletionStages::handle )
 						.thenCompose( resultHandler -> ReactiveExecuteWithTemporaryTableHelper
 								.performAfterTemporaryTableUseActions(
 										idTable,
 										sessionUidAccess,
-										afterUseAction,
+										getAfterUseAction(),
 										executionContext
 								)
 								.thenCompose( resultHandler::getResultAsCompletionStage )
@@ -636,5 +640,10 @@ public class ReactiveRestrictedDeleteExecutionDelegate
 				executionContext
 		);
 	}
+
+	protected AfterUseAction getAfterUseAction() {
+		return forceDropAfterUse ? AfterUseAction.DROP : temporaryTableStrategy.getTemporaryTableAfterUseAction();
+	}
+
 
 }

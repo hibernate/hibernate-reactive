@@ -37,7 +37,8 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 				sqmUpdate,
 				domainParameterXref,
 				getTemporaryTable(),
-				afterUseAction(),
+				getTemporaryTableStrategy(),
+				isDropIdTables(),
 				ReactiveLocalTemporaryTableMutationStrategy::throwUnexpectedAccessToSessionUID,
 				getSessionFactory()
 		).reactiveExecute( context );
@@ -52,7 +53,8 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 				sqmDelete,
 				domainParameterXref,
 				getTemporaryTable(),
-				afterUseAction(),
+				getTemporaryTableStrategy(),
+				isDropIdTables(),
 				ReactiveLocalTemporaryTableMutationStrategy::throwUnexpectedAccessToSessionUID,
 				getSessionFactory()
 		).reactiveExecute( context );

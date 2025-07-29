@@ -56,7 +56,8 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 						sqmUpdateStatement,
 						domainParameterXref,
 						getTemporaryTable(),
-						getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+						getTemporaryTableStrategy(),
+						false,
 						ReactivePersistentTableStrategy::sessionIdentifier,
 						getSessionFactory()
 				).reactiveExecute( context ) );
@@ -72,7 +73,8 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 						sqmDeleteStatement,
 						domainParameterXref,
 						getTemporaryTable(),
-						getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+						getTemporaryTableStrategy(),
+						false,
 						ReactivePersistentTableStrategy::sessionIdentifier,
 						getSessionFactory()
 				).reactiveExecute( context ) );

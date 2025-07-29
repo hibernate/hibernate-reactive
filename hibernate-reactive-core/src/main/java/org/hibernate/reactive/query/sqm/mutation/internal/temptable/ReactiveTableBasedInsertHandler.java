@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -19,7 +20,6 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedInsertHandler;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -50,10 +50,11 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			SqmInsertStatement<?> sqmInsert,
 			DomainParameterXref domainParameterXref,
 			TemporaryTable entityTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			SessionFactoryImplementor sessionFactory) {
-		super( sqmInsert, domainParameterXref, entityTable, afterUseAction, sessionUidAccess, sessionFactory );
+		super( sqmInsert, domainParameterXref, entityTable, temporaryTableStrategy, forceDropAfterUse, sessionUidAccess, sessionFactory );
 	}
 
 	@Override
@@ -81,12 +82,14 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			SqmInsertStatement<?> sqmInsert,
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable entityTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			DomainParameterXref domainParameterXref,
 			TableGroup insertingTableGroup,
 			Map<String, TableReference> tableReferenceByAlias,
 			List<Assignment> assignments,
+			boolean assignsId,
 			InsertSelectStatement insertStatement,
 			ConflictClause conflictClause,
 			JdbcParameter sessionUidParameter,
@@ -94,12 +97,14 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 		return new ReactiveInsertExecutionDelegate(
 				sqmConverter,
 				entityTable,
-				afterUseAction,
+				temporaryTableStrategy,
+				forceDropAfterUse,
 				sessionUidAccess,
 				domainParameterXref,
 				insertingTableGroup,
 				tableReferenceByAlias,
 				assignments,
+				assignsId,
 				insertStatement,
 				conflictClause,
 				sessionUidParameter,

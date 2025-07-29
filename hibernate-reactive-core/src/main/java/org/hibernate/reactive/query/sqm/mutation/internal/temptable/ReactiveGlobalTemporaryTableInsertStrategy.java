@@ -56,7 +56,8 @@ public class ReactiveGlobalTemporaryTableInsertStrategy extends GlobalTemporaryT
 				sqmInsertStatement,
 				domainParameterXref,
 				getTemporaryTable(),
-				getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+				getTemporaryTableStrategy(),
+				false,
 				// generally a global temp table should already track a Connection-specific uid,
 				// but just in case a particular env needs it...
 				ReactiveGlobalTemporaryTableStrategy::sessionIdentifier,
