@@ -31,7 +31,8 @@ public class ReactiveLocalTemporaryTableInsertStrategy extends LocalTemporaryTab
 				sqmInsertStatement,
 				domainParameterXref,
 				getTemporaryTable(),
-				afterUserAction(),
+				getTemporaryTableStrategy(),
+				isDropIdTables(),
 				ReactiveLocalTemporaryTableInsertStrategy::throwUnexpectedCallToSessionUIDError,
 				getSessionFactory()
 		).reactiveExecute( context );

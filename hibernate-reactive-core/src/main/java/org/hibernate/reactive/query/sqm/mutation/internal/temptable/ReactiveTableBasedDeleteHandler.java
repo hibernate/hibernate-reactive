@@ -10,12 +10,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedDeleteHandler;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -38,34 +38,56 @@ public class ReactiveTableBasedDeleteHandler extends TableBasedDeleteHandler imp
 			SqmDeleteStatement<?> sqmDeleteStatement,
 			DomainParameterXref domainParameterXref,
 			TemporaryTable idTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			SessionFactoryImplementor sessionFactory) {
-		super( sqmDeleteStatement, domainParameterXref, idTable, afterUseAction, sessionUidAccess, sessionFactory );
+		super(
+				sqmDeleteStatement,
+				domainParameterXref,
+				idTable,
+				temporaryTableStrategy,
+				forceDropAfterUse,
+				sessionUidAccess,
+				sessionFactory
+		);
 	}
 
 	@Override
 	public CompletionStage<Integer> reactiveExecute(DomainQueryExecutionContext executionContext) {
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracef(
-					"Starting multi-table delete execution - %s",
-					getSqmDeleteOrUpdateStatement().getRoot().getModel().getName()
-			);
+			LOG.tracef( "Starting multi-table delete execution - %s", getSqmDeleteOrUpdateStatement().getRoot().getModel().getName() );
 		}
 		return resolveDelegate( executionContext ).reactiveExecute( executionContext );
 	}
 
 	protected ReactiveExecutionDelegate resolveDelegate(DomainQueryExecutionContext executionContext) {
+		if ( getEntityDescriptor().getSoftDeleteMapping() != null ) {
+			return new ReactiveSoftDeleteExecutionDelegate(
+					getEntityDescriptor(),
+					getIdTable(),
+					getTemporaryTableStrategy(),
+					isForceDropAfterUse(),
+					getSqmDeleteOrUpdateStatement(),
+					getDomainParameterXref(),
+					executionContext.getQueryOptions(),
+					executionContext.getSession().getLoadQueryInfluencers(),
+					executionContext.getQueryParameterBindings(),
+					getSessionUidAccess(),
+					getSessionFactory()
+			);
+		}
 		return new ReactiveRestrictedDeleteExecutionDelegate(
 				getEntityDescriptor(),
 				getIdTable(),
-				getAfterUseAction(),
+				getTemporaryTableStrategy(),
+				isForceDropAfterUse(),
 				getSqmDeleteOrUpdateStatement(),
 				getDomainParameterXref(),
-				getSessionUidAccess(),
 				executionContext.getQueryOptions(),
 				executionContext.getSession().getLoadQueryInfluencers(),
 				executionContext.getQueryParameterBindings(),
+				getSessionUidAccess(),
 				getSessionFactory()
 		);
 	}

@@ -17,6 +17,7 @@ import org.hibernate.boot.TempTableDdlTransactionHandling;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.dialect.temptable.TemporaryTableColumn;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -33,6 +34,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.TemporaryTableCreationWork;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.SqlAstJoinType;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
@@ -52,6 +54,8 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
 
 import static org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.cleanTemporaryTableRows;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -104,15 +108,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 
 		mutatingEntityDescriptor.getIdentifierMapping().forEachSelectable(
 				(selectionIndex, selection) -> {
-					final TableReference tableReference = mutatingTableGroup.resolveTableReference(
-							mutatingTableGroup.getNavigablePath(),
-							selection.getContainingTableExpression()
-					);
 					matchingIdSelection.getSelectClause().addSqlSelection(
 							new SqlSelectionImpl(
 									selectionIndex + 1,
 									sqmConverter.getSqlExpressionResolver().resolveSqlExpression(
-											tableReference,
+											mutatingTableGroup.resolveTableReference( mutatingTableGroup.getNavigablePath(), selection.getContainingTableExpression() ),
 											selection
 									)
 							)
@@ -155,7 +155,8 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			temporaryTableInsert.getSourceSelectStatement().visitQuerySpecs(
 					querySpec -> querySpec.getFromClause().visitTableJoins(
 								tableJoin -> {
-									if ( tableJoin.getJoinType() != SqlAstJoinType.INNER ) {
+									if ( tableJoin.isInitialized()
+											&& tableJoin.getJoinType() != SqlAstJoinType.INNER ) {
 										lockOptions.setLockMode( lockMode );
 									}
 								}
@@ -210,7 +211,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 
 		querySpec.getFromClause().addRoot( idTableGroup );
 
-		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart );
+		applyIdTableSelections( querySpec, idTableReference, idTable, fkModelPart, entityDescriptor );
 		applyIdTableRestrictions( querySpec, idTableReference, idTable, sessionUidAccess, executionContext );
 
 		return querySpec;
@@ -221,9 +222,10 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			QuerySpec querySpec,
 			TableReference tableReference,
 			TemporaryTable idTable,
-			ModelPart fkModelPart) {
+			ModelPart fkModelPart,
+			EntityMappingType entityDescriptor) {
 		if ( fkModelPart == null ) {
-			final int size = idTable.getEntityDescriptor().getIdentifierMapping().getJdbcTypeCount();
+			final int size = entityDescriptor.getIdentifierMapping().getJdbcTypeCount();
 			for ( int i = 0; i < size; i++ ) {
 				final TemporaryTableColumn temporaryTableColumn = idTable.getColumns().get( i );
 				if ( temporaryTableColumn != idTable.getSessionUidColumn() ) {
@@ -285,12 +287,31 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		}
 	}
 
+	@Deprecated(forRemoval = true, since = "3.1")
 	public static CompletionStage<Void> performBeforeTemporaryTableUseActions(
 			TemporaryTable temporaryTable,
 			ExecutionContext executionContext) {
+		return performBeforeTemporaryTableUseActions(
+				temporaryTable,
+				executionContext.getSession().getDialect().getTemporaryTableBeforeUseAction(),
+				executionContext
+		).thenCompose( CompletionStages::voidFuture );
+	}
+
+	public static CompletionStage<Boolean> performBeforeTemporaryTableUseActions(
+			TemporaryTable temporaryTable,
+			TemporaryTableStrategy temporaryTableStrategy,
+			ExecutionContext executionContext) {
+		return performBeforeTemporaryTableUseActions( temporaryTable, temporaryTableStrategy.getTemporaryTableBeforeUseAction(), executionContext );
+	}
+
+	public static CompletionStage<Boolean> performBeforeTemporaryTableUseActions(
+			TemporaryTable temporaryTable,
+			BeforeUseAction beforeUseAction,
+			ExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final Dialect dialect = factory.getJdbcServices().getDialect();
-		if ( dialect.getTemporaryTableBeforeUseAction() == BeforeUseAction.CREATE ) {
+		if ( beforeUseAction == BeforeUseAction.CREATE ) {
 			final TemporaryTableCreationWork temporaryTableCreationWork = new TemporaryTableCreationWork( temporaryTable, factory );
 			final TempTableDdlTransactionHandling ddlTransactionHandling = dialect.getTemporaryTableDdlTransactionHandling();
 			if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
@@ -298,7 +319,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			}
 			throw LOG.notYetImplemented();
 		}
-		return voidFuture();
+		return falseFuture();
 	}
 
 	public static CompletionStage<Void> performAfterTemporaryTableUseActions(
@@ -308,14 +329,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
 		final Dialect dialect = factory.getJdbcServices().getDialect();
-		switch ( afterUseAction ) {
-			case CLEAN:
-				return cleanTemporaryTableRows( temporaryTable, dialect.getTemporaryTableExporter(), sessionUidAccess, executionContext.getSession() );
-			case DROP:
-				return dropAction( temporaryTable, executionContext, factory, dialect );
-			default:
-				return voidFuture();
-		}
+		return switch ( afterUseAction ) {
+			case CLEAN -> cleanTemporaryTableRows( temporaryTable, dialect.getTemporaryTableExporter(), sessionUidAccess, executionContext.getSession() );
+			case DROP -> dropAction( temporaryTable, executionContext, factory, dialect );
+			default -> voidFuture();
+		};
 	}
 
 	private static CompletionStage<Void> dropAction(
@@ -327,10 +345,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
 			return new ReactiveTemporaryTableHelper
 					.TemporaryTableDropWork( temporaryTable, factory )
-					.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() );
+					.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() )
+					.thenCompose( CompletionStages::voidFuture );
 		}
 
-		throw LOG.notYetImplemented();
+		return failedFuture( LOG.notYetImplemented() );
 	}
 
 	private static void doNothing(Integer integer, PreparedStatement preparedStatement) {

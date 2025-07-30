@@ -7,14 +7,15 @@ package org.hibernate.reactive.sql.results.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -63,6 +64,17 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		super( jdbcSelect, jdbcParameterBindings, executionContext, statementCreator, resultCountEstimate );
 		this.executionContext = executionContext;
 		this.sqlStatementLogger = executionContext.getSession().getJdbcServices().getSqlStatementLogger();
+	}
+
+	@Override
+	public JdbcServices getJdbcServices() {
+		return getFactory().getJdbcServices();
+	}
+
+	@Override
+	public JDBCException convertSqlException(SQLException e, String message) {
+		return getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper()
+				.convert( e, message );
 	}
 
 	/**
@@ -139,20 +151,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 	private JdbcValuesMetadata convertToMetadata(ResultSet resultSet) {
 		return (JdbcValuesMetadata) resultSet;
-	}
-
-	@Override
-	public CompletionStage<ResultSetMetaData> getReactiveMetadata() {
-		return getReactiveResultSet().thenApply( this::reactiveMetadata );
-	}
-
-	private ResultSetMetaData reactiveMetadata(ResultSet resultSet) {
-		try {
-			return resultSet.getMetaData();
-		}
-		catch (SQLException e) {
-			throw new RuntimeException( e );
-		}
 	}
 
 	private static int columnCount(ResultSet resultSet) {
