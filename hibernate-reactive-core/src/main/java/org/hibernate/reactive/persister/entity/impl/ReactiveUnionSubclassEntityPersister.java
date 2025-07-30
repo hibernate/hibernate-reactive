@@ -139,8 +139,8 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
-	public SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session) {
-		return super.determineLoaderToUse( session );
+	public SingleIdEntityLoader<?> determineLoaderToUse(SharedSessionContractImplementor session, LockOptions lockOptions) {
+		return super.determineLoaderToUse( session, lockOptions );
 	}
 
 	@Override

@@ -41,5 +41,8 @@ dependencies {
     testImplementation(libs.io.vertx.vertx.junit5)
 }
 
-// Optional: enable the bytecode enhancements
-hibernate { enhancement }
+hibernate {
+    enhancement {
+        // We want everything enabled for the tests
+    }
+}

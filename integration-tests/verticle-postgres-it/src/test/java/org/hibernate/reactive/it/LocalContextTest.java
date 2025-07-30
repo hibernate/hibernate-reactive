@@ -49,7 +49,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  * that's been close ahead of time by someone else.
  * Theoretically, everything could happen in the right order because of chance,
  * but it's unlikely and at the moment I don't have a better solution.
- * See the <a href="https://github.com/hibernate/hibernate-reactive/issues/1073">the related issue</a>
+ * See <a href="https://github.com/hibernate/hibernate-reactive/issues/1073">the related issue</a>
  * for more details.
  * <p>
  */

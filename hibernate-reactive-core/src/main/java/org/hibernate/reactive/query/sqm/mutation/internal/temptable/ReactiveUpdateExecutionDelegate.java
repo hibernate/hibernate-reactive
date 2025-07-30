@@ -17,6 +17,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
@@ -24,7 +25,6 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.UpdateExecutionDelegate;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
@@ -60,7 +60,8 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 	public ReactiveUpdateExecutionDelegate(
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable idTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			DomainParameterXref domainParameterXref,
 			TableGroup updatingTableGroup,
@@ -71,7 +72,8 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 		super(
 				sqmConverter,
 				idTable,
-				afterUseAction,
+				temporaryTableStrategy,
+				forceDropAfterUse,
 				sessionUidAccess,
 				domainParameterXref,
 				updatingTableGroup,
@@ -94,6 +96,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 	public CompletionStage<Integer> reactiveExecute(ExecutionContext executionContext) {
 		return performBeforeTemporaryTableUseActions(
 						getIdTable(),
+						getTemporaryTableStrategy(),
 						executionContext
 				)
 				.thenCompose( v -> saveMatchingIdsIntoIdTable(

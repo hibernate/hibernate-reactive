@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -19,7 +20,6 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedUpdateHandler;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -47,10 +47,11 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 			SqmUpdateStatement<?> sqmUpdate,
 			DomainParameterXref domainParameterXref,
 			TemporaryTable idTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			SessionFactoryImplementor sessionFactory) {
-		super( sqmUpdate, domainParameterXref, idTable, afterUseAction, sessionUidAccess, sessionFactory );
+		super( sqmUpdate, domainParameterXref, idTable, temporaryTableStrategy, forceDropAfterUse, sessionUidAccess, sessionFactory );
 	}
 
 	@Override
@@ -80,7 +81,8 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 	protected ReactiveUpdateExecutionDelegate buildExecutionDelegate(
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable idTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			DomainParameterXref domainParameterXref,
 			TableGroup updatingTableGroup,
@@ -91,7 +93,8 @@ public class ReactiveTableBasedUpdateHandler extends TableBasedUpdateHandler imp
 		return new ReactiveUpdateExecutionDelegate(
 				sqmConverter,
 				idTable,
-				afterUseAction,
+				temporaryTableStrategy,
+				forceDropAfterUse,
 				sessionUidAccess,
 				domainParameterXref,
 				updatingTableGroup,

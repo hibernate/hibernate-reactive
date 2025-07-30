@@ -44,8 +44,8 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.sqm.internal.QuerySqmImpl;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
+import org.hibernate.query.sqm.internal.SqmQueryImpl;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
@@ -71,9 +71,9 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.Type;
 
 /**
- * A reactive {@link QuerySqmImpl}
+ * A reactive {@link SqmQueryImpl}
  */
-public class ReactiveQuerySqmImpl<R> extends QuerySqmImpl<R> implements ReactiveSqmQueryImplementor<R> {
+public class ReactiveQuerySqmImpl<R> extends SqmQueryImpl<R> implements ReactiveSqmQueryImplementor<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 

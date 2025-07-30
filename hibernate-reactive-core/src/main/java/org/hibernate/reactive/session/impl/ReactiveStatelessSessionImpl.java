@@ -319,11 +319,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	private CompletionStage<Void> recreateCollections(Object entity, Object id, EntityPersister persister) {
 		final Completable<Void> stage = new Completable<>();
+		final String entityName = persister.getEntityName();
+		final EventMonitor eventMonitor = getEventMonitor();
 		final Loop loop = new Loop();
 		forEachOwnedCollection(
 				entity, id, persister, (descriptor, collection) -> {
-					firePreRecreate( collection, descriptor );
-					final EventMonitor eventMonitor = getEventMonitor();
+					firePreRecreate( collection, descriptor, entityName, entity );
 					final DiagnosticEvent event = eventMonitor.beginCollectionRecreateEvent();
 					loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
 							.reactiveRecreate( collection, id, this ) )
@@ -335,7 +336,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 								if ( statistics.isStatisticsEnabled() ) {
 									statistics.recreateCollection( descriptor.getRole() );
 								}
-								firePostRecreate( collection, descriptor );
+								firePostRecreate( collection, id, entityName, descriptor );
 							} )
 					);
 				}
@@ -480,29 +481,35 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private CompletionStage<Void> removeCollections(Object entity, Object id, EntityPersister persister) {
-		final Completable<Void> stage = new Completable<>();
-		final Loop loop = new Loop();
-		forEachOwnedCollection( entity, id, persister,
-								(descriptor, collection) -> {
-									firePreRemove( collection, entity, descriptor );
-									final EventMonitor eventMonitor = getEventMonitor();
-									final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
-									loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
-											.reactiveRemove( id, this ) )
-											.whenComplete( (unused, throwable) -> eventMonitor
-													.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
-											)
-											.thenAccept( v -> {
-												firePostRemove( collection, entity, descriptor );
-												final StatisticsImplementor statistics = getFactory().getStatistics();
-												if ( statistics.isStatisticsEnabled() ) {
-													statistics.removeCollection( descriptor.getRole() );
-												}
-											} )
-									);
-								} );
-		loop.whenComplete( stage::complete );
-		return stage.getStage();
+		if ( persister.hasOwnedCollections() ) {
+			final Loop loop = new Loop();
+			final Completable<Void> stage = new Completable<>();
+			final String entityName = persister.getEntityName();
+			forEachOwnedCollection(
+					entity, id, persister,
+					(descriptor, collection) -> {
+						firePreRemove( collection, id, entityName, entity );
+						final EventMonitor eventMonitor = getEventMonitor();
+						final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
+						loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
+								.reactiveRemove( id, this ) )
+								.whenComplete( (unused, throwable) -> eventMonitor
+										.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
+								)
+								.thenAccept( v -> {
+									firePostRemove( collection, id, entityName, entity );
+									final StatisticsImplementor statistics = getFactory().getStatistics();
+									if ( statistics.isStatisticsEnabled() ) {
+										statistics.removeCollection( descriptor.getRole() );
+									}
+								} )
+						);
+					}
+			);
+			loop.whenComplete( stage::complete );
+			return stage.getStage();
+		}
+		return voidFuture();
 	}
 
 	@Override
@@ -561,31 +568,37 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private CompletionStage<Void> removeAndRecreateCollections(Object entity, Object id, EntityPersister persister) {
-		final Completable<Void> stage = new Completable<>();
-		final Loop loop = new Loop();
-		forEachOwnedCollection( entity, id, persister,
-								(descriptor, collection) -> {
-									firePreUpdate( collection, descriptor );
-									final EventMonitor eventMonitor = getEventMonitor();
-									final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
-									ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) persister;
-									loop.then( () -> supplyStage( () -> reactivePersister
-											.reactiveRemove( id, this )
-											.thenCompose( v -> reactivePersister.reactiveRecreate( collection, id, this ) ) )
-											.whenComplete( (unused, throwable) -> eventMonitor
-													.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
-											)
-											.thenAccept( v -> {
-												firePostUpdate( collection, descriptor );
-												final StatisticsImplementor statistics = getFactory().getStatistics();
-												if ( statistics.isStatisticsEnabled() ) {
-													statistics.updateCollection( descriptor.getRole() );
-												}
-											} )
-									);
-								} );
-		loop.whenComplete( stage::complete );
-		return stage.getStage();
+		if ( persister.hasOwnedCollections() ) {
+			final String entityName = persister.getEntityName();
+			final Completable<Void> stage = new Completable<>();
+			final Loop loop = new Loop();
+			forEachOwnedCollection(
+					entity, id, persister,
+					(descriptor, collection) -> {
+						firePreUpdate( collection, id, entityName, entity );
+						final EventMonitor eventMonitor = getEventMonitor();
+						final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
+						ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) persister;
+						loop.then( () -> supplyStage( () -> reactivePersister
+								.reactiveRemove( id, this )
+								.thenCompose( v -> reactivePersister.reactiveRecreate( collection, id, this ) ) )
+								.whenComplete( (unused, throwable) -> eventMonitor
+										.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
+								)
+								.thenAccept( v -> {
+									firePostUpdate( collection, id, entityName, entity);
+									final StatisticsImplementor statistics = getFactory().getStatistics();
+									if ( statistics.isStatisticsEnabled() ) {
+										statistics.updateCollection( descriptor.getRole() );
+									}
+								} )
+						);
+					}
+			);
+			loop.whenComplete( stage::complete );
+			return stage.getStage();
+		}
+		return voidFuture();
 	}
 
 	@Override
