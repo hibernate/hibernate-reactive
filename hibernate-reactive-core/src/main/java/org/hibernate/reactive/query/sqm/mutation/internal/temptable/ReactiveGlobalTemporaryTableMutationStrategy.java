@@ -59,7 +59,8 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 						sqmUpdateStatement,
 						domainParameterXref,
 						getTemporaryTable(),
-						getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+						getTemporaryTableStrategy(),
+						false,
 						ReactivePersistentTableStrategy::sessionIdentifier,
 						getSessionFactory()
 				).reactiveExecute( context ) );
@@ -75,7 +76,8 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 						sqmDeleteStatement,
 						domainParameterXref,
 						getTemporaryTable(),
-						getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction(),
+						getTemporaryTableStrategy(),
+						false,
 						ReactiveGlobalTemporaryTableStrategy::sessionIdentifier,
 						getSessionFactory()
 				).reactiveExecute( context ) );

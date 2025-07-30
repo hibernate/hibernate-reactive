@@ -5,26 +5,27 @@
  */
 package org.hibernate.reactive.type.descriptor.jdbc;
 
-import org.hibernate.metamodel.mapping.EmbeddableMappingType;
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import org.hibernate.type.SqlTypes;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.BasicPluralJavaType;
 import org.hibernate.type.descriptor.java.JavaType;
-import org.hibernate.type.descriptor.jdbc.AggregateJdbcType;
+import org.hibernate.type.descriptor.java.spi.UnknownBasicJavaType;
 import org.hibernate.type.descriptor.jdbc.BasicBinder;
 import org.hibernate.type.descriptor.jdbc.BasicExtractor;
 import org.hibernate.type.descriptor.jdbc.JdbcLiteralFormatter;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.JsonHelper;
-import org.hibernate.type.descriptor.jdbc.JsonJdbcType;
+import org.hibernate.type.descriptor.jdbc.spi.JsonGeneratingVisitor;
+import org.hibernate.type.format.StringJsonDocumentWriter;
 
 import io.vertx.core.json.JsonArray;
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * @see org.hibernate.type.descriptor.jdbc.JsonArrayJdbcType
@@ -65,21 +66,24 @@ public class ReactiveJsonArrayJdbcType extends ReactiveArrayJdbcType {
 		if ( string == null ) {
 			return null;
 		}
-
-		return JsonHelper.arrayFromString( javaType, getElementJdbcType(), string, options );
+		if ( ((BasicPluralJavaType<?>) javaType).getElementJavaType() instanceof UnknownBasicJavaType<?> ) {
+			return options.getJsonFormatMapper().fromString( string, javaType, options );
+		}
+		else {
+			return JsonHelper.arrayFromString( javaType, this.getElementJdbcType(), string, options );
+		}
 	}
 
 	protected <X> String toString(X value, JavaType<X> javaType, WrapperOptions options) {
-		final JdbcType elementJdbcType = getElementJdbcType();
-		final Object[] domainObjects = javaType.unwrap( value, Object[].class, options );
-		if ( elementJdbcType instanceof JsonJdbcType jsonElementJdbcType ) {
-			final EmbeddableMappingType embeddableMappingType = jsonElementJdbcType.getEmbeddableMappingType();
-			return JsonHelper.arrayToString( embeddableMappingType, domainObjects, options );
+		final JavaType<?> elementJavaType = ( (BasicPluralJavaType<?>) javaType ).getElementJavaType();
+		if ( elementJavaType instanceof UnknownBasicJavaType<?> ) {
+			return options.getJsonFormatMapper().toString( value, javaType, options);
 		}
 		else {
-			assert !( elementJdbcType instanceof AggregateJdbcType );
-			final JavaType<?> elementJavaType = ( (BasicPluralJavaType<?>) javaType ).getElementJavaType();
-			return JsonHelper.arrayToString( elementJavaType, elementJdbcType, domainObjects, options );
+			final Object[] domainObjects = javaType.unwrap( value, Object[].class, options );
+			final StringJsonDocumentWriter writer = new StringJsonDocumentWriter();
+			JsonGeneratingVisitor.INSTANCE.visitArray( elementJavaType, getElementJdbcType(), domainObjects, options, writer );
+			return writer.getJson();
 		}
 	}
 
@@ -121,12 +125,8 @@ public class ReactiveJsonArrayJdbcType extends ReactiveArrayJdbcType {
 			}
 
 			private X getObject(Object array, WrapperOptions options) throws SQLException {
-				if ( array == null ) {
-					return null;
-				}
-
-				return ( (ReactiveJsonArrayJdbcType) getJdbcType() )
-						.fromString( ( (JsonArray) array ).encode(), getJavaType(), options );
+				final String json = array == null ? null : ( (JsonArray) array ).encode();
+				return ( (ReactiveJsonArrayJdbcType) getJdbcType() ).fromString( json, getJavaType(), options );
 			}
 		};
 	}

@@ -10,9 +10,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.JDBCException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -27,14 +27,14 @@ import jakarta.persistence.EnumType;
  */
 public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 	CompletionStage<ResultSet> getReactiveResultSet();
-	CompletionStage<ResultSetMetaData> getReactiveMetadata();
 	CompletionStage<Integer> getReactiveColumnCount();
 
 	CompletionStage<JdbcValuesMetadata> resolveJdbcValueMetadata();
 
 	ResultSet getResultSet();
 
-	SessionFactoryImplementor getFactory();
+	JdbcServices getJdbcServices();
+
 	void release();
 
 	/**
@@ -51,43 +51,35 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 			return getResultSet().getMetaData().getColumnCount();
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
-					e,
-					"Unable to access ResultSet column count"
-			);
+			throw convertSqlException( e, "Unable to access ResultSet column count" );
 		}
 	}
+
+	JDBCException convertSqlException(SQLException e, String message);
 
 	default int resolveColumnPosition(String columnName) {
 		try {
 			return getResultSet().findColumn( columnName );
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
-					e,
-					"Unable to find column position by name"
-			);
+			throw convertSqlException( e, "Unable to find column position by name" );
 		}
 	}
 
 	default String resolveColumnName(int position) {
 		try {
-			return getFactory().getJdbcServices().getJdbcEnvironment()
+			return getJdbcServices().getJdbcEnvironment()
 					.getDialect()
 					.getColumnAliasExtractor()
 					.extractColumnAlias( getResultSet().getMetaData(), position );
 		}
 		catch (SQLException e) {
-			throw getFactory().getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert(
-					e,
-					"Unable to find column name by position"
-			);
+			throw convertSqlException( e, "Unable to find column name by position" );
 		}
 	}
 
 	@Override
 	default <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, TypeConfiguration typeConfiguration) {
-		final JdbcServices jdbcServices = getFactory().getJdbcServices();
 		try {
 			final ResultSetMetaData metaData = getResultSet().getMetaData();
 			final String columnTypeName = metaData.getColumnTypeName( position );
@@ -95,7 +87,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 			final int scale = metaData.getScale( position );
 			final int precision = metaData.getPrecision( position );
 			final int displaySize = metaData.getColumnDisplaySize( position );
-			final Dialect dialect = jdbcServices.getDialect();
+			final Dialect dialect = getJdbcServices().getDialect();
 			final int length = dialect.resolveSqlTypeLength(
 					columnTypeName,
 					columnType,
@@ -104,13 +96,7 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 					displaySize
 			);
 			final JdbcType resolvedJdbcType = dialect
-					.resolveSqlTypeDescriptor(
-							columnTypeName,
-							columnType,
-							length,
-							scale,
-							typeConfiguration.getJdbcTypeRegistry()
-					);
+					.resolveSqlTypeDescriptor( columnTypeName, columnType, length, scale, typeConfiguration.getJdbcTypeRegistry() );
 			final JavaType<J> javaType;
 			final JdbcType jdbcType;
 			// If there is an explicit JavaType, then prefer its recommended JDBC type
@@ -145,26 +131,19 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 
 							@Override
 							public Dialect getDialect() {
-								return getFactory().getJdbcServices().getDialect();
+								return getJdbcServices().getDialect();
 							}
 						}
 				);
 			}
 			else {
 				jdbcType = resolvedJdbcType;
-				javaType = jdbcType.getJdbcRecommendedJavaTypeMapping(
-						length,
-						scale,
-						typeConfiguration
-				);
+				javaType = jdbcType.getJdbcRecommendedJavaTypeMapping( length, scale, typeConfiguration );
 			}
 			return typeConfiguration.getBasicTypeRegistry().resolve( javaType, jdbcType );
 		}
 		catch (SQLException e) {
-			throw jdbcServices.getSqlExceptionHelper().convert(
-					e,
-					"Unable to determine JDBC type code for ResultSet position " + position
-			);
+			throw convertSqlException( e, "Unable to determine JDBC type code for ResultSet position " + position );
 		}
 	}
 }

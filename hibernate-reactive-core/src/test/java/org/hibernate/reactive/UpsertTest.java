@@ -144,14 +144,10 @@ public class UpsertTest extends BaseReactiveTest {
 	}
 
 	private boolean hasMergeOperator() {
-		switch ( dbType() ) {
-			case SQLSERVER:
-			case ORACLE:
-			case POSTGRESQL:
-				return true;
-			default:
-				return false;
-		}
+		return switch ( dbType() ) {
+			case SQLSERVER, ORACLE, POSTGRESQL, DB2 -> true;
+			default -> false;
+		};
 	}
 
 	@Entity(name = "Record")

@@ -144,27 +144,10 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 		final BaseSqmToSqlAstConverter.AdditionalInsertValues additionalInsertValues = sqmConverter.visitInsertionTargetPaths(
 				(assignable, columnReferences) -> {
 					final SqmPathInterpretation<?> pathInterpretation = (SqmPathInterpretation<?>) assignable;
-					final int offset = CteTable.determineModelPartStartIndex(
-							entityDescriptor,
-							pathInterpretation.getExpressionType()
-					);
-					if ( offset == -1 ) {
-						throw new IllegalStateException( "Couldn't find matching cte column for: " + ( (Expression) assignable ).getExpressionType() );
-					}
-					final int end = offset + pathInterpretation.getExpressionType().getJdbcTypeCount();
-					// Find a matching cte table column and set that at the current index
-					final List<CteColumn> columns = getCteTable().getCteColumns().subList( offset, end );
+					final List<CteColumn> columns = getCteTable().findCteColumns( pathInterpretation.getExpressionType() );
 					insertStatement.addTargetColumnReferences( columnReferences );
 					targetPathCteColumns.addAll( columns );
-					targetPathColumns.add(
-							new AbstractMap.SimpleEntry<>(
-									columns,
-									new Assignment(
-											assignable,
-											(Expression) assignable
-									)
-							)
-					);
+					targetPathColumns.add( new AbstractMap.SimpleEntry<>( columns, new Assignment( assignable, (Expression) assignable ) ) );
 				},
 				sqmInsertStatement,
 				entityDescriptor,
@@ -205,15 +188,8 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 							);
 						}
 						if ( !assignsId && entityDescriptor.getGenerator().generatedOnExecution() ) {
-							querySpec.getSelectClause().addSqlSelection(
-									new SqlSelectionImpl(
-											0,
-											SqmInsertStrategyHelper.createRowNumberingExpression(
-													querySpec,
-													sessionFactory
-											)
-									)
-							);
+							querySpec.getSelectClause()
+									.addSqlSelection( new SqlSelectionImpl( 0, SqmInsertStrategyHelper.createRowNumberingExpression( querySpec, sessionFactory ) ) );
 						}
 					}
 			);
@@ -249,6 +225,17 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 							)
 					);
 				}
+			}
+			if ( !assignsId && entityDescriptor.getGenerator().generatedOnExecution() ) {
+				querySpec.getSelectClause().addSqlSelection(
+						new SqlSelectionImpl(
+								0,
+								SqmInsertStrategyHelper.createRowNumberingExpression(
+										querySpec,
+										sessionFactory
+								)
+						)
+				);
 			}
 			final ValuesTableGroup valuesTableGroup = new ValuesTableGroup(
 					navigablePath,

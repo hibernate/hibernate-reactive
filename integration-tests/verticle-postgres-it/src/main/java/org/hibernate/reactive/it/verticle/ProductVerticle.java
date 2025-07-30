@@ -40,19 +40,10 @@ public class ProductVerticle extends AbstractVerticle {
 		this.emfSupplier = emfSupplier;
 	}
 
-	private void startHibernate(Promise<Object> p) {
-		try {
-			this.emf = emfSupplier.get();
-			p.complete();
-		}
-		catch (Throwable t) {
-			p.fail( t );
-		}
-	}
-
 	@Override
 	public void start(Promise<Void> startPromise) {
-		final Future<Object> startHibernate = vertx.executeBlocking( this::startHibernate )
+		final Future<Mutiny.SessionFactory> startHibernate = vertx
+				.executeBlocking( this::startHibernate )
 				.onSuccess( s -> LOG.infof( "✅ Hibernate Reactive is ready" ) );
 
 		Router router = Router.router( vertx );
@@ -74,9 +65,15 @@ public class ProductVerticle extends AbstractVerticle {
 				.onFailure( startPromise::fail );
 	}
 
+	private Mutiny.SessionFactory startHibernate() {
+		this.emf = emfSupplier.get();
+		return this.emf;
+	}
+
 	@Override
 	public void stop(Promise<Void> stopPromise) {
-		httpServer.close().onComplete( unused -> emf.close() )
+		httpServer.close()
+				.onComplete( unused -> emf.close() )
 				.onSuccess( s -> stopPromise.complete() )
 				.onFailure( stopPromise::fail );
 	}

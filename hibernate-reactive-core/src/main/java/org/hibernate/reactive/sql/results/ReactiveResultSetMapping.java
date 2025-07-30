@@ -27,7 +27,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
 /**
- * @see org.hibernate.query.results.ResultSetMappingImpl
+ * @see org.hibernate.query.results.internal.ResultSetMappingImpl
  */
 public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValuesMappingProducer {
 
@@ -60,6 +60,11 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 		return ( (ReactiveResultSetAccess) jdbcResultsMetadata )
 				.getReactiveResultSet()
 				.thenApply( columnCount -> delegate.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
+	}
+
+	@Override
+	public ResultSetMapping cacheKeyInstance() {
+		return new ReactiveResultSetMapping( delegate.cacheKeyInstance() );
 	}
 
 	@Override

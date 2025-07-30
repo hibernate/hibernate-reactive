@@ -11,12 +11,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.MultiTableSqmMutationConverter;
 import org.hibernate.query.sqm.mutation.internal.temptable.InsertExecutionDelegate;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTableBasedInsertHandler;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.from.TableGroup;
@@ -34,12 +34,14 @@ public class ReactiveInsertExecutionDelegate extends InsertExecutionDelegate imp
 	public ReactiveInsertExecutionDelegate(
 			MultiTableSqmMutationConverter sqmConverter,
 			TemporaryTable entityTable,
-			AfterUseAction afterUseAction,
+			TemporaryTableStrategy temporaryTableStrategy,
+			boolean forceDropAfterUse,
 			Function<SharedSessionContractImplementor, String> sessionUidAccess,
 			DomainParameterXref domainParameterXref,
 			TableGroup insertingTableGroup,
 			Map<String, TableReference> tableReferenceByAlias,
 			List<Assignment> assignments,
+			boolean assignedId,
 			InsertSelectStatement insertStatement,
 			ConflictClause conflictClause,
 			JdbcParameter sessionUidParameter,
@@ -47,12 +49,14 @@ public class ReactiveInsertExecutionDelegate extends InsertExecutionDelegate imp
 		super(
 				sqmConverter,
 				entityTable,
-				afterUseAction,
+				temporaryTableStrategy,
+				forceDropAfterUse,
 				sessionUidAccess,
 				domainParameterXref,
 				insertingTableGroup,
 				tableReferenceByAlias,
 				assignments,
+				assignedId,
 				insertStatement,
 				conflictClause,
 				sessionUidParameter,
