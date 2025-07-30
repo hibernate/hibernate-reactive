@@ -96,6 +96,7 @@ public class ReactiveUpdateExecutionDelegate extends UpdateExecutionDelegate imp
 	public CompletionStage<Integer> reactiveExecute(ExecutionContext executionContext) {
 		return performBeforeTemporaryTableUseActions(
 						getIdTable(),
+						getTemporaryTableStrategy(),
 						executionContext
 				)
 				.thenCompose( v -> saveMatchingIdsIntoIdTable(
