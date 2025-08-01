@@ -58,7 +58,7 @@ public class VersionsPlugin implements Plugin<Project> {
 			project.getLogger().lifecycle( "Development version: n/a" );
 		}
 
-		final VersionsTomlParser tomlParser = new VersionsTomlParser( RELATIVE_CATALOG );
+		final VersionsTomlParser tomlParser = new VersionsTomlParser( project.getRootProject().file( RELATIVE_CATALOG ) );
 		final String ormVersionString = determineOrmVersion( project, tomlParser );
 		final Object ormVersion = resolveOrmVersion( ormVersionString, project );
 		project.getLogger().lifecycle( "ORM version: {}", ormVersion );

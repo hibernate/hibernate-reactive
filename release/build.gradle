@@ -1,5 +1,8 @@
 import java.nio.charset.StandardCharsets
 
+plugins {
+    id "hr-java-library"
+}
 ext {
     // Select which repository to use for publishing the documentation
     // Example:
