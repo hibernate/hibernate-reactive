@@ -44,7 +44,6 @@ public class ReactiveTemporaryTableHelper {
 	public static class TemporaryTableCreationWork implements ReactiveWork {
 		private final TemporaryTable temporaryTable;
 		private final TemporaryTableExporter exporter;
-		private final SessionFactoryImplementor sessionFactory;
 
 		public TemporaryTableCreationWork(
 				TemporaryTable temporaryTable,
@@ -62,7 +61,6 @@ public class ReactiveTemporaryTableHelper {
 				SessionFactoryImplementor sessionFactory) {
 			this.temporaryTable = temporaryTable;
 			this.exporter = exporter;
-			this.sessionFactory = sessionFactory;
 		}
 
 		@Override

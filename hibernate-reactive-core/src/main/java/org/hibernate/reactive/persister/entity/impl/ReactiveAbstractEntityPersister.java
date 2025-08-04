@@ -80,7 +80,6 @@ import static org.hibernate.internal.util.collections.CollectionHelper.setOfSize
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -303,25 +302,25 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 
 		return getReactiveConnection( session )
 				.selectJdbc( delegate().getVersionSelectString(), params )
-				.thenCompose( resultSet -> currentVersion( session, resultSet ) );
+				.thenApply( resultSet -> currentVersion( session, resultSet ) );
 	}
 
-	private CompletionStage<Object> currentVersion(SharedSessionContractImplementor session, ResultSet resultSet) {
+	private Object currentVersion(SharedSessionContractImplementor session, ResultSet resultSet) {
 		try {
 			if ( !resultSet.next() ) {
-				return nullFuture();
+				return null;
 			}
 			if ( !isVersioned() ) {
-				return completedFuture( this );
+				return this;
 			}
-			return completedFuture( getVersionType()
-											.getJdbcMapping()
-											.getJdbcValueExtractor()
-											.extract( resultSet, 1, session ) );
+			return getVersionType()
+					.getJdbcMapping()
+					.getJdbcValueExtractor()
+					.extract( resultSet, 1, session );
 		}
 		catch (SQLException sqle) {
 			//can never happen
-			return failedFuture( new JDBCException( "error reading version", sqle ) );
+			throw new JDBCException( "error reading version", sqle );
 		}
 	}
 

@@ -5,15 +5,15 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.util.concurrent.CompletionStage;
-
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.util.MutableObject;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandler;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
+import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 public class ReactiveLocalTemporaryTableInsertStrategy extends LocalTemporaryTableInsertStrategy
 		implements ReactiveSqmMultiTableInsertStrategy {
@@ -23,28 +23,21 @@ public class ReactiveLocalTemporaryTableInsertStrategy extends LocalTemporaryTab
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteInsert(
-			SqmInsertStatement<?> sqmInsertStatement,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
-		return new ReactiveTableBasedInsertHandler(
+	public MultiTableHandlerBuildResult buildHandler(SqmInsertStatement<?> sqmInsertStatement, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
+		final MutableObject<JdbcParameterBindings> firstJdbcParameterBindings = new MutableObject<>();
+		final MultiTableHandler multiTableHandler = new ReactiveTableBasedInsertHandler(
 				sqmInsertStatement,
 				domainParameterXref,
 				getTemporaryTable(),
 				getTemporaryTableStrategy(),
 				isDropIdTables(),
-				ReactiveLocalTemporaryTableInsertStrategy::throwUnexpectedCallToSessionUIDError,
-				getSessionFactory()
-		).reactiveExecute( context );
+				session -> {
+					throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
+				},
+				context,
+				firstJdbcParameterBindings
+		);
+		return new MultiTableHandlerBuildResult( multiTableHandler, firstJdbcParameterBindings.get() );
 	}
 
-	private static String throwUnexpectedCallToSessionUIDError(SharedSessionContractImplementor session) {
-		throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
-	}
-
-	private AfterUseAction afterUserAction() {
-		return isDropIdTables()
-				? AfterUseAction.DROP
-				: getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction();
-	}
 }

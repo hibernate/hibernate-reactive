@@ -6,40 +6,26 @@
 package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.hibernate.ScrollMode;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
-import org.hibernate.metamodel.mapping.MappingModelExpressible;
+import org.hibernate.internal.util.MutableObject;
 import org.hibernate.query.Query;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.QueryParameterImplementor;
 import org.hibernate.query.spi.ScrollableResultsImplementor;
+import org.hibernate.query.sqm.internal.CacheableSqmInterpretation;
 import org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.spi.SqmParameterMappingModelResolutionAccess;
-import org.hibernate.query.sqm.sql.SqmTranslation;
-import org.hibernate.query.sqm.sql.SqmTranslator;
-import org.hibernate.query.sqm.sql.SqmTranslatorFactory;
-import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.spi.FromClauseAccess;
+import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.tree.expression.Expression;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
@@ -68,7 +54,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	private final SqmSelectStatement<?> sqm;
 	private final DomainParameterXref domainParameterXref;
 
-	private volatile CacheableSqmInterpretation cacheableSqmInterpretation;
+	private volatile CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> cacheableSqmInterpretation;
 
 	public ConcreteSqmSelectReactiveQueryPlan(
 			SqmSelectStatement<?> sqm,
@@ -91,49 +77,31 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			String hql,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext executionContext,
-			CacheableSqmInterpretation sqmInterpretation,
+			CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings,
 			RowTransformer<R> rowTransformer) {
 		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
-		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
-		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
-		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
-				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, JdbcParametersList.empty(), jdbcParameterBindings );
-		return completedFuture( fetchHandlerSupplier )
-				.thenApply( Supplier::get )
-				.thenCompose( subSelectFetchKeyHandler ->  session
-							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
-							.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
-									.list( jdbcSelect,
-										   jdbcParameterBindings,
-										   ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext( hql, executionContext, jdbcSelect, subSelectFetchKeyHandler ),
-										   rowTransformer,
-										   ReactiveListResultsConsumer.UniqueSemantic.ALLOW
-									)
-							)
-				)
-				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
-	}
+		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.jdbcOperation();
 
-	private static <R> CompletionStage<Object> executeQueryInterpreter(
-			String hql,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext executionContext,
-			CacheableSqmInterpretation sqmInterpretation,
-			JdbcParameterBindings jdbcParameterBindings,
-			RowTransformer<R> rowTransformer,
-			ReactiveResultsConsumer<Object, R> resultsConsumer) {
-		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
-		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.getJdbcSelect();
-		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
-		Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
-				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.selectStatement, JdbcParametersList.empty(), jdbcParameterBindings );
-		return completedFuture( fetchHandlerSupplier )
-				.thenApply( Supplier::get )
-				.thenCompose( subSelectFetchKeyHandler ->  session
-						.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
-						.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
-								.executeQuery(
+		return CompletionStages
+				.supplyStage( () -> {
+					final var subSelectFetchKeyHandler = SubselectFetch.createRegistrationHandler(
+							session.getPersistenceContext()
+									.getBatchFetchQueue(),
+							sqmInterpretation.statement(),
+							JdbcParametersList.empty(),
+							jdbcParameterBindings
+					);
+					return session
+							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
+							.thenCompose( required -> {
+								final Expression fetchExpression = sqmInterpretation.statement()
+										.getQueryPart()
+										.getFetchClauseExpression();
+								final int resultCountEstimate = fetchExpression != null
+										? interpretIntExpression( fetchExpression, jdbcParameterBindings )
+										: -1;
+								return StandardReactiveSelectExecutor.INSTANCE.list(
 										jdbcSelect,
 										jdbcParameterBindings,
 										ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext(
@@ -143,19 +111,63 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 												subSelectFetchKeyHandler
 										),
 										rowTransformer,
-										null,
-										resultCountEstimate( sqmInterpretation, jdbcParameterBindings ),
-										resultsConsumer
-								)
-						)
-				)
+										(Class<R>) executionContext.getResultType(),
+										ReactiveListResultsConsumer.UniqueSemantic.ALLOW,
+										resultCountEstimate
+								);
+							} );
+				} )
+				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
+	}
+
+	private static <R> CompletionStage<Object> executeQueryInterpreter(
+			String hql,
+			DomainParameterXref domainParameterXref,
+			DomainQueryExecutionContext executionContext,
+			CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
+			JdbcParameterBindings jdbcParameterBindings,
+			RowTransformer<R> rowTransformer,
+			ReactiveResultsConsumer<Object, R> resultsConsumer) {
+		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
+		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.jdbcOperation();
+		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
+		final Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
+				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.statement(), JdbcParametersList.empty(), jdbcParameterBindings );
+		return CompletionStages
+				.supplyStage( () -> {
+					final var subSelectFetchKeyHandler = SubselectFetch.createRegistrationHandler(
+							session.getPersistenceContext()
+									.getBatchFetchQueue(),
+							sqmInterpretation.statement(),
+							JdbcParametersList.empty(),
+							jdbcParameterBindings
+					);
+					return session
+							.reactiveAutoFlushIfRequired( jdbcSelect.getAffectedTableNames() )
+							.thenCompose( required -> StandardReactiveSelectExecutor.INSTANCE
+									.executeQuery(
+											jdbcSelect,
+											jdbcParameterBindings,
+											ConcreteSqmSelectQueryPlan.listInterpreterExecutionContext(
+													hql,
+													executionContext,
+													jdbcSelect,
+													subSelectFetchKeyHandler
+											),
+											rowTransformer,
+											null,
+											resultCountEstimate( sqmInterpretation, jdbcParameterBindings ),
+											resultsConsumer
+									)
+							);
+				})
 				.whenComplete( (rs, t) -> domainParameterXref.clearExpansions() );
 	}
 
 	private static int resultCountEstimate(
-			CacheableSqmInterpretation sqmInterpretation,
+			CacheableSqmInterpretation<SelectStatement,JdbcOperationQuerySelect> sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings) {
-		final Expression fetchExpression = sqmInterpretation.selectStatement.getQueryPart()
+		final Expression fetchExpression = sqmInterpretation.statement().getQueryPart()
 				.getFetchClauseExpression();
 		return fetchExpression != null
 				? interpretIntExpression( fetchExpression, jdbcParameterBindings )
@@ -191,16 +203,16 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		//		to protect access.  However, synchronized is much simpler here.  We will verify
 		// 		during throughput testing whether this is an issue and consider changes then
 
-		CacheableSqmInterpretation localCopy = cacheableSqmInterpretation;
+		CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> localCopy = cacheableSqmInterpretation;
 		JdbcParameterBindings jdbcParameterBindings = null;
 
 		if ( localCopy == null ) {
 			synchronized ( this ) {
 				localCopy = cacheableSqmInterpretation;
 				if ( localCopy == null ) {
-					localCopy = buildCacheableSqmInterpretation( sqm, domainParameterXref, executionContext );
-					jdbcParameterBindings = localCopy.firstParameterBindings;
-					localCopy.firstParameterBindings = null;
+					final MutableObject<JdbcParameterBindings> mutableValue = new MutableObject<>();
+					localCopy = buildInterpretation( sqm, domainParameterXref, executionContext, mutableValue );
+					jdbcParameterBindings = mutableValue.get();
 					cacheableSqmInterpretation = localCopy;
 				}
 			}
@@ -208,15 +220,15 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		else {
 			// If the translation depends on parameter bindings, or it isn't compatible with the current query options,
 			// we have to rebuild the JdbcSelect, which is still better than having to translate from SQM to SQL AST again
-			if ( localCopy.jdbcSelect.dependsOnParameterBindings() ) {
+			if ( localCopy.jdbcOperation().dependsOnParameterBindings() ) {
 				jdbcParameterBindings = createJdbcParameterBindings( localCopy, executionContext );
 			}
 			// If the translation depends on the limit or lock options, we have to rebuild the JdbcSelect
 			// We could avoid this by putting the lock options into the cache key
-			if ( !localCopy.jdbcSelect.isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
-				localCopy = buildCacheableSqmInterpretation( sqm, domainParameterXref, executionContext );
-				jdbcParameterBindings = localCopy.firstParameterBindings;
-				localCopy.firstParameterBindings = null;
+			if ( !localCopy.jdbcOperation().isCompatibleWith( jdbcParameterBindings, executionContext.getQueryOptions() ) ) {
+				final MutableObject<JdbcParameterBindings> mutableValue = new MutableObject<>();
+				localCopy = buildInterpretation( sqm, domainParameterXref, executionContext, mutableValue );
+				jdbcParameterBindings = mutableValue.get();
 				cacheableSqmInterpretation = localCopy;
 			}
 		}
@@ -228,130 +240,12 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		return interpreter.interpret( context, executionContext, localCopy, jdbcParameterBindings );
 	}
 
-	// Copy and paste from ORM
-	private JdbcParameterBindings createJdbcParameterBindings(CacheableSqmInterpretation sqmInterpretation, DomainQueryExecutionContext executionContext) {
-		return SqmUtil.createJdbcParameterBindings(
-				executionContext.getQueryParameterBindings(),
-				domainParameterXref,
-				sqmInterpretation.getJdbcParamsXref(),
-				new SqmParameterMappingModelResolutionAccess() {
-					//this is pretty ugly!
-					@Override @SuppressWarnings("unchecked")
-					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypes().get(parameter);
-					}
-				},
-				executionContext.getSession()
-		);
-	}
-
-	private static CacheableSqmInterpretation buildCacheableSqmInterpretation(
-			SqmSelectStatement<?> sqm,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext executionContext) {
-		final SharedSessionContractImplementor session = executionContext.getSession();
-		final SessionFactoryImplementor sessionFactory = session.getFactory();
-		final QueryEngine queryEngine = sessionFactory.getQueryEngine();
-
-		final SqmTranslatorFactory sqmTranslatorFactory = queryEngine.getSqmTranslatorFactory();
-
-		final SqmTranslator<SelectStatement> sqmConverter = sqmTranslatorFactory.createSelectTranslator(
-				sqm,
-				executionContext.getQueryOptions(),
-				domainParameterXref,
-				executionContext.getQueryParameterBindings(),
-				executionContext.getSession().getLoadQueryInfluencers(),
-				sessionFactory.getSqlTranslationEngine(),
-				true
-		);
-
-//			tableGroupAccess = sqmConverter.getFromClauseAccess();
-		final SqmTranslation<SelectStatement> sqmInterpretation = sqmConverter.translate();
-		final FromClauseAccess tableGroupAccess = sqmConverter.getFromClauseAccess();
-		final JdbcServices jdbcServices = sessionFactory.getJdbcServices();
-		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
-		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
-		final SqlAstTranslator<JdbcOperationQuerySelect> selectTranslator = sqlAstTranslatorFactory
-				.buildSelectTranslator( sessionFactory, sqmInterpretation.getSqlAst() );
-		final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref = SqmUtil
-				.generateJdbcParamsXref( domainParameterXref, sqmInterpretation::getJdbcParamsBySqmParam );
-		final JdbcParameterBindings jdbcParameterBindings = SqmUtil.createJdbcParameterBindings(
-				executionContext.getQueryParameterBindings(),
-				domainParameterXref,
-				jdbcParamsXref,
-				new SqmParameterMappingModelResolutionAccess() {
-					@Override @SuppressWarnings("unchecked")
-					public <T> MappingModelExpressible<T> getResolvedMappingModelType(SqmParameter<T> parameter) {
-						return (MappingModelExpressible<T>) sqmInterpretation.getSqmParameterMappingModelTypeResolutions().get(parameter);
-					}
-				},
-				session
-		);
-
-		final JdbcOperationQuerySelect jdbcSelect = selectTranslator.translate(
-				jdbcParameterBindings,
-				executionContext.getQueryOptions()
-		);
-
-		return new CacheableSqmInterpretation(
-				sqmInterpretation.getSqlAst(),
-				jdbcSelect,
-				tableGroupAccess,
-				jdbcParamsXref,
-				sqmInterpretation.getSqmParameterMappingModelTypeResolutions(),
-				jdbcParameterBindings
-		);
-	}
-
 	private interface SqmInterpreter<T, X> {
 		CompletionStage<T> interpret(
 				X context,
 				DomainQueryExecutionContext executionContext,
-				CacheableSqmInterpretation sqmInterpretation,
+				CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
 				JdbcParameterBindings jdbcParameterBindings);
 	}
 
-	private static class CacheableSqmInterpretation {
-		private final SelectStatement selectStatement;
-		private final JdbcOperationQuerySelect jdbcSelect;
-		private final FromClauseAccess tableGroupAccess;
-		private final Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref;
-		private final Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParameterMappingModelTypes;
-		private transient JdbcParameterBindings firstParameterBindings;
-
-		CacheableSqmInterpretation(
-				SelectStatement selectStatement,
-				JdbcOperationQuerySelect jdbcSelect,
-				FromClauseAccess tableGroupAccess,
-				Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> jdbcParamsXref,
-				Map<SqmParameter<?>, MappingModelExpressible<?>> sqmParameterMappingModelTypes,
-				JdbcParameterBindings firstParameterBindings) {
-			this.selectStatement = selectStatement;
-			this.jdbcSelect = jdbcSelect;
-			this.tableGroupAccess = tableGroupAccess;
-			this.jdbcParamsXref = jdbcParamsXref;
-			this.sqmParameterMappingModelTypes = sqmParameterMappingModelTypes;
-			this.firstParameterBindings = firstParameterBindings;
-		}
-
-		SelectStatement getSelectStatement() {
-			return selectStatement;
-		}
-
-		JdbcOperationQuerySelect getJdbcSelect() {
-			return jdbcSelect;
-		}
-
-		FromClauseAccess getTableGroupAccess() {
-			return tableGroupAccess;
-		}
-
-		Map<QueryParameterImplementor<?>, Map<SqmParameter<?>, List<JdbcParametersList>>> getJdbcParamsXref() {
-			return jdbcParamsXref;
-		}
-
-		public Map<SqmParameter<?>, MappingModelExpressible<?>> getSqmParameterMappingModelTypes() {
-			return sqmParameterMappingModelTypes;
-		}
-	}
 }
