@@ -5,17 +5,21 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 
-import java.util.concurrent.CompletionStage;
-
+import org.hibernate.internal.util.MutableObject;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandler;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
+import org.hibernate.query.sqm.tree.SqmDeleteOrUpdateStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
+import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 public class ReactiveCteMutationStrategy extends CteMutationStrategy implements ReactiveSqmMultiTableMutationStrategy {
 
@@ -28,22 +32,51 @@ public class ReactiveCteMutationStrategy extends CteMutationStrategy implements 
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteUpdate(
-			SqmUpdateStatement<?> sqmUpdateStatement,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
-		checkMatch( sqmUpdateStatement );
-		return new ReactiveCteUpdateHandler( getIdCteTable(), sqmUpdateStatement, domainParameterXref, this, getSessionFactory() )
-				.reactiveExecute( context );
+	public MultiTableHandlerBuildResult buildHandler(SqmDeleteOrUpdateStatement<?> sqmStatement, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
+		final MutableObject<JdbcParameterBindings> firstJdbcParameterBindings = new MutableObject<>();
+		final MultiTableHandler multiTableHandler = sqmStatement instanceof SqmDeleteStatement<?> sqmDelete
+				? buildHandler( sqmDelete, domainParameterXref, context, firstJdbcParameterBindings)
+				: buildHandler( (SqmUpdateStatement<?>) sqmStatement, domainParameterXref, context, firstJdbcParameterBindings );
+		return new MultiTableHandlerBuildResult( multiTableHandler, firstJdbcParameterBindings.get() );
 	}
 
-	@Override
-	public CompletionStage<Integer> reactiveExecuteDelete(
-			SqmDeleteStatement<?> sqmDeleteStatement,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
-		checkMatch( sqmDeleteStatement );
-		return new ReactiveCteDeleteHandler( getIdCteTable(), sqmDeleteStatement, domainParameterXref, this, getSessionFactory() )
-				.reactiveExecute( context );
+	public ReactiveHandler buildHandler(SqmDeleteStatement<?> sqmDelete, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context, MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
+		checkMatch( sqmDelete );
+		if ( getRootDescriptor().getSoftDeleteMapping() != null ) {
+			return new ReactiveCteSoftDeleteHandler(
+					getIdCteTable(),
+					sqmDelete,
+					domainParameterXref,
+					this,
+					getSessionFactory(),
+					context,
+					firstJdbcParameterBindingsConsumer
+			);
+		}
+		else {
+			return new ReactiveCteDeleteHandler(
+					getIdCteTable(),
+					sqmDelete,
+					domainParameterXref,
+					this,
+					getSessionFactory(),
+					context,
+					firstJdbcParameterBindingsConsumer
+			);
+		}
 	}
+
+	public MultiTableHandler buildHandler(SqmUpdateStatement<?> sqmUpdate, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context, MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
+		checkMatch( sqmUpdate );
+		return new ReactiveCteUpdateHandler(
+				getIdCteTable(),
+				sqmUpdate,
+				domainParameterXref,
+				this,
+				getSessionFactory(),
+				context,
+				firstJdbcParameterBindingsConsumer
+		);
+	}
+
 }

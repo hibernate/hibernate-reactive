@@ -5,16 +5,16 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
-import java.util.concurrent.CompletionStage;
-
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.internal.util.MutableObject;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
-import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandler;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
+import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryTableMutationStrategy
 		implements ReactiveSqmMultiTableMutationStrategy {
@@ -23,46 +23,59 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 		super( mutationStrategy.getTemporaryTable(), mutationStrategy.getSessionFactory() );
 	}
 
-	private static String throwUnexpectedAccessToSessionUID(SharedSessionContractImplementor session) {
-		// Should probably go in the LOG
-		throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
-	}
-
-	@Override
-	public CompletionStage<Integer> reactiveExecuteUpdate(
+	public MultiTableHandler buildHandler(
 			SqmUpdateStatement<?> sqmUpdate,
 			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
+			DomainQueryExecutionContext context,
+			MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
 		return new ReactiveTableBasedUpdateHandler(
 				sqmUpdate,
 				domainParameterXref,
 				getTemporaryTable(),
 				getTemporaryTableStrategy(),
 				isDropIdTables(),
-				ReactiveLocalTemporaryTableMutationStrategy::throwUnexpectedAccessToSessionUID,
-				getSessionFactory()
-		).reactiveExecute( context );
+				session -> {
+					throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
+				},
+				context,
+				firstJdbcParameterBindingsConsumer
+		);
 	}
 
-	@Override
-	public CompletionStage<Integer> reactiveExecuteDelete(
+	public MultiTableHandler buildHandler(
 			SqmDeleteStatement<?> sqmDelete,
 			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
-		return new ReactiveTableBasedDeleteHandler(
-				sqmDelete,
-				domainParameterXref,
-				getTemporaryTable(),
-				getTemporaryTableStrategy(),
-				isDropIdTables(),
-				ReactiveLocalTemporaryTableMutationStrategy::throwUnexpectedAccessToSessionUID,
-				getSessionFactory()
-		).reactiveExecute( context );
-	}
-
-	private AfterUseAction afterUseAction() {
-		return isDropIdTables()
-				? AfterUseAction.DROP
-				: getSessionFactory().getJdbcServices().getDialect().getTemporaryTableAfterUseAction();
+			DomainQueryExecutionContext context,
+			MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
+		final EntityPersister rootDescriptor = context.getSession().getFactory().getMappingMetamodel()
+				.getEntityDescriptor( sqmDelete.getRoot().getEntityName() );
+		if ( rootDescriptor.getSoftDeleteMapping() != null ) {
+			return new ReactiveTableBasedSoftDeleteHandler(
+					sqmDelete,
+					domainParameterXref,
+					getTemporaryTable(),
+					getTemporaryTableStrategy(),
+					isDropIdTables(),
+					session -> {
+						throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
+					},
+					context,
+					firstJdbcParameterBindingsConsumer
+			);
+		}
+		else {
+			return new ReactiveTableBasedDeleteHandler(
+					sqmDelete,
+					domainParameterXref,
+					getTemporaryTable(),
+					getTemporaryTableStrategy(),
+					isDropIdTables(),
+					session -> {
+						throw new UnsupportedOperationException( "Unexpected call to access Session uid" );
+					},
+					context,
+					firstJdbcParameterBindingsConsumer
+			);
+		}
 	}
 }
