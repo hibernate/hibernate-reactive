@@ -14,6 +14,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeDescriptor;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadeStyle;
@@ -30,6 +31,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
+import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
@@ -56,6 +58,7 @@ import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.EntityType;
+import org.hibernate.type.Type;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -74,6 +77,16 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
+	}
+
+	@Override
+	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, LazyAttributeDescriptor fetchGroupAttributeDescriptor, Object propValue) {
+		return super.initializeLazyProperty( fieldName, entity, entry, fetchGroupAttributeDescriptor, propValue );
+	}
+
+	@Override
+	public void initializeLazyProperty(Object entity, EntityEntry entry, Object propValue, int index, Type type) {
+		super.initializeLazyProperty( entity, entry, propValue, index, type );
 	}
 
 	@Override
@@ -182,11 +195,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
-	}
-
-	@Override
-	public boolean initializeLazyProperty(String fieldName, Object entity, EntityEntry entry, int lazyIndex, Object selectedValue) {
-		return super.initializeLazyProperty( fieldName, entity, entry, lazyIndex, selectedValue );
 	}
 
 	/**
@@ -414,5 +422,15 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
 		return this.getLazyLoadPlanByFetchGroup( getSubclassPropertyNameClosure() ).get(fetchGroup );
+	}
+
+	@Override
+	public ReactiveSingleIdArrayLoadPlan reactiveGetOrCreateLazyLoadPlan(String fieldName, List<ModelPart> partsToSelect) {
+		return reactiveDelegate.getOrCreateLazyLoadPlan( fieldName, partsToSelect );
+	}
+
+	@Override
+	public boolean isNonLazyPropertyName(String fieldName) {
+		return super.isNonLazyPropertyName( fieldName );
 	}
 }

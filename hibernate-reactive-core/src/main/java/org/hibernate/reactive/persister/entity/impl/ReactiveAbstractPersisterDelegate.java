@@ -11,6 +11,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.hibernate.FetchMode;
@@ -23,6 +24,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
+import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -34,6 +36,7 @@ import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
+import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.EmbeddedIdentifierMappingImpl;
 import org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor;
@@ -48,6 +51,7 @@ import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderArrayParam;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderStandard;
+import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderProvidedQueryImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdEntityLoaderStandardImpl;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleUniqueKeyEntityLoaderStandard;
@@ -64,6 +68,8 @@ import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonA
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
@@ -90,6 +96,7 @@ public class ReactiveAbstractPersisterDelegate {
 	private final EntityPersister entityDescriptor;
 
 	private Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> uniqueKeyLoadersNew;
+	private ConcurrentHashMap<String, ReactiveSingleIdArrayLoadPlan> nonLazyPropertyLoadPlansByName;
 
 	public ReactiveAbstractPersisterDelegate(
 			final EntityPersister entityPersister,
@@ -344,6 +351,61 @@ public class ReactiveAbstractPersisterDelegate {
 		}
 		else {
 			return entityIdentifierMapping;
+		}
+	}
+
+	/*
+	 * Same as AbstractEntityPersister#getOrCreateLazyLoadPlan
+	 */
+	public ReactiveSingleIdArrayLoadPlan getOrCreateLazyLoadPlan(String fieldName, List<ModelPart> partsToSelect) {
+		var propertyLoadPlansByName = nonLazyPropertyLoadPlansByName;
+		if ( propertyLoadPlansByName == null ) {
+			propertyLoadPlansByName = new ConcurrentHashMap<>();
+			final ReactiveSingleIdArrayLoadPlan newLazyLoanPlan = createLazyLoadPlan( partsToSelect );
+			propertyLoadPlansByName.put( fieldName, newLazyLoanPlan );
+			nonLazyPropertyLoadPlansByName = propertyLoadPlansByName;
+			return newLazyLoanPlan;
+		}
+		else {
+			final ReactiveSingleIdArrayLoadPlan lazyLoanPlan = nonLazyPropertyLoadPlansByName.get( fieldName );
+			if ( lazyLoanPlan == null ) {
+				final ReactiveSingleIdArrayLoadPlan newLazyLoanPlan = createLazyLoadPlan( partsToSelect );
+				nonLazyPropertyLoadPlansByName.put( fieldName, newLazyLoanPlan );
+				return newLazyLoanPlan;
+			}
+			else {
+				return lazyLoanPlan;
+			}
+		}
+	}
+
+	private ReactiveSingleIdArrayLoadPlan createLazyLoadPlan(List<ModelPart> partsToSelect) {
+		if ( partsToSelect.isEmpty() ) {
+			// only one-to-one is lazily fetched
+			return null;
+		}
+		else {
+			final LockOptions lockOptions = new LockOptions();
+			final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder();
+			final SelectStatement select = LoaderSelectBuilder.createSelect(
+					entityDescriptor,
+					partsToSelect,
+					entityDescriptor.getIdentifierMapping(),
+					null,
+					1,
+					new LoadQueryInfluencers( entityDescriptor.getFactory() ),
+					lockOptions,
+					jdbcParametersBuilder::add,
+					entityDescriptor.getFactory()
+			);
+			return new ReactiveSingleIdArrayLoadPlan(
+					entityDescriptor,
+					entityDescriptor.getIdentifierMapping(),
+					select,
+					jdbcParametersBuilder.build(),
+					lockOptions,
+					entityDescriptor.getFactory()
+			);
 		}
 	}
 
