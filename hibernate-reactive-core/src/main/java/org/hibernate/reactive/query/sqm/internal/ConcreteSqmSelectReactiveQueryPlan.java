@@ -7,7 +7,6 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import org.hibernate.ScrollMode;
 import org.hibernate.engine.spi.SubselectFetch;
@@ -130,9 +129,6 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			ReactiveResultsConsumer<Object, R> resultsConsumer) {
 		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
 		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.jdbcOperation();
-		// I'm using a supplier so that the whenComplete at the end will catch any errors, like a finally-block
-		final Supplier<SubselectFetch.RegistrationHandler> fetchHandlerSupplier = () -> SubselectFetch
-				.createRegistrationHandler( session.getPersistenceContext().getBatchFetchQueue(), sqmInterpretation.statement(), JdbcParametersList.empty(), jdbcParameterBindings );
 		return CompletionStages
 				.supplyStage( () -> {
 					final var subSelectFetchKeyHandler = SubselectFetch.createRegistrationHandler(
