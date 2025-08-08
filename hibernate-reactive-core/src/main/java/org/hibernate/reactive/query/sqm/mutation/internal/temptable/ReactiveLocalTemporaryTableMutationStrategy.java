@@ -23,6 +23,7 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 		super( mutationStrategy.getTemporaryTable(), mutationStrategy.getSessionFactory() );
 	}
 
+	@Override
 	public MultiTableHandler buildHandler(
 			SqmUpdateStatement<?> sqmUpdate,
 			DomainParameterXref domainParameterXref,
@@ -42,6 +43,7 @@ public class ReactiveLocalTemporaryTableMutationStrategy extends LocalTemporaryT
 		);
 	}
 
+	@Override
 	public MultiTableHandler buildHandler(
 			SqmDeleteStatement<?> sqmDelete,
 			DomainParameterXref domainParameterXref,
