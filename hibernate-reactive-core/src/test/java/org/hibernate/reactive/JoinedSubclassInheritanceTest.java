@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive;
 
+import org.hibernate.reactive.annotations.DisabledFor;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,7 @@ import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -182,6 +185,31 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 						) )
 						.thenCompose( v -> openSession().thenCompose( s -> s.find(Book.class, 6) ) )
 						.thenAccept( Assertions::assertNull )
+		);
+	}
+
+	@Test
+	@DisabledFor( value = POSTGRESQL, reason = "vertx-sql-client issue: https://github.com/eclipse-vertx/vertx-sql-client/issues/1540" )
+	public void testHqlInsertWithTransaction(VertxTestContext context) {
+		Integer id = 1;
+		String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.createMutationQuery( "insert into SpellBook (id, title, forbidden) values (:id, :title, :forbidden)" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.executeUpdate()
+				).call( () -> getMutinySessionFactory()
+						.withTransaction( session -> session.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
+								.setParameter( "id", id )
+								.getSingleResult()
+								.invoke( spellBook -> {
+											 assertThat( spellBook.getTitle() ).isEqualTo( title );
+											 assertThat( spellBook.forbidden ).isTrue();
+										 }
+								)
+						)
+				)
 		);
 	}
 
