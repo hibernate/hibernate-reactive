@@ -40,6 +40,7 @@ public class ReactiveCteMutationStrategy extends CteMutationStrategy implements 
 		return new MultiTableHandlerBuildResult( multiTableHandler, firstJdbcParameterBindings.get() );
 	}
 
+	@Override
 	public ReactiveHandler buildHandler(SqmDeleteStatement<?> sqmDelete, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context, MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
 		checkMatch( sqmDelete );
 		if ( getRootDescriptor().getSoftDeleteMapping() != null ) {
@@ -66,6 +67,7 @@ public class ReactiveCteMutationStrategy extends CteMutationStrategy implements 
 		}
 	}
 
+	@Override
 	public MultiTableHandler buildHandler(SqmUpdateStatement<?> sqmUpdate, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context, MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
 		checkMatch( sqmUpdate );
 		return new ReactiveCteUpdateHandler(
