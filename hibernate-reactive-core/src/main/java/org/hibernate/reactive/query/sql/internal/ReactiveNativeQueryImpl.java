@@ -142,19 +142,14 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	private ReactiveNonSelectQueryPlan reactiveNonSelectPlan() {
 		final QueryInterpretationCache.Key cacheKey = generateNonSelectInterpretationsKey();
 		if ( cacheKey != null ) {
-			NonSelectQueryPlan queryPlan = getSession().getFactory().getQueryEngine()
-					.getInterpretationCache().getNonSelectQueryPlan( cacheKey );
+			NonSelectQueryPlan queryPlan = getSession().getFactory().getQueryEngine().getInterpretationCache().getNonSelectQueryPlan( cacheKey );
 			if ( queryPlan != null ) {
 				return (ReactiveNonSelectQueryPlan) queryPlan;
 			}
 		}
 
-		final String sqlString = expandParameterLists();
-		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan(
-				sqlString,
-				getQuerySpaces(),
-				getParameterOccurrences()
-		);
+		final String sqlString = expandParameterLists( 1 );
+		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan( sqlString, getQuerySpaces(), getParameterOccurrences() );
 		if ( cacheKey != null ) {
 			getSession().getFactory().getQueryEngine().getInterpretationCache()
 					.cacheNonSelectQueryPlan( cacheKey, queryPlan );

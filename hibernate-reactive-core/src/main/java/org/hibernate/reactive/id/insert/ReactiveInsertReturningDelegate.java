@@ -91,7 +91,7 @@ public class ReactiveInsertReturningDelegate extends AbstractReturningDelegate i
 			return new TableInsertReturningBuilder( persister, tableReference, generatedColumns, sessionFactory );
 		}
 		else {
-			return new TableUpdateReturningBuilder<>( persister, tableReference, generatedColumns, sessionFactory );
+			return new TableUpdateReturningBuilder( persister, tableReference, generatedColumns, sessionFactory );
 		}
 	}
 

@@ -8,9 +8,11 @@ package org.hibernate.reactive.sql.results.internal;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.JDBCException;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.logging.impl.Log;
@@ -40,8 +42,13 @@ public class ReactiveDirectResultSetAccess extends DirectResultSetAccess impleme
 	}
 
 	@Override
-	public SessionFactoryImplementor getFactory() {
-		return getPersistenceContext().getFactory();
+	public JdbcServices getJdbcServices() {
+		return getFactory().getJdbcServices();
+	}
+
+	@Override
+	public JDBCException convertSqlException(SQLException e, String message) {
+		return getJdbcServices().getJdbcEnvironment().getSqlExceptionHelper().convert( e, message );
 	}
 
 	@Override
@@ -71,11 +78,6 @@ public class ReactiveDirectResultSetAccess extends DirectResultSetAccess impleme
 	@Override
 	public CompletionStage<ResultSet> getReactiveResultSet() {
 		return completedFuture( resultSet );
-	}
-
-	@Override
-	public CompletionStage<ResultSetMetaData> getReactiveMetadata() {
-		return completedFuture( getMetaData() );
 	}
 
 	@Override

@@ -24,7 +24,7 @@ import jakarta.persistence.metamodel.Type;
 /**
  * @see org.hibernate.query.sqm.SqmSelectionQuery
  */
-public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R>, SqmQuery {
+public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R>, SqmQuery<R> {
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setParameter(String name, Object value);

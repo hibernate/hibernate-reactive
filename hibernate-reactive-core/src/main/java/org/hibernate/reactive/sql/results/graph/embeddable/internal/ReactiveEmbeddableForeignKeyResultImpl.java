@@ -20,7 +20,7 @@ public class ReactiveEmbeddableForeignKeyResultImpl<T> extends EmbeddableForeign
 	@Override
 	public EmbeddableInitializer<?> createInitializer(InitializerParent parent, AssemblerCreationState creationState) {
 		return getReferencedModePart() instanceof NonAggregatedIdentifierMapping
-				? new ReactiveNonAggregatedIdentifierMappingInitializer( this, null, creationState, true )
-				: new ReactiveEmbeddableInitializerImpl( this, null, null, creationState, true );
+			   ? new ReactiveNonAggregatedIdentifierMappingInitializer( this, null, creationState, true )
+			   : new ReactiveEmbeddableInitializerImpl( this, null, null, null, creationState, true );
 	}
 }

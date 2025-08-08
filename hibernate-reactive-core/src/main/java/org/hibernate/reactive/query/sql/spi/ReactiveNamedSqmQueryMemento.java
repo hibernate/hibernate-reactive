@@ -20,7 +20,7 @@ import org.hibernate.query.sqm.SqmSelectionQuery;
 import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 
 /**
@@ -49,10 +49,10 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	public <T> SqmQueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
 		// A bit of a hack, I'm sure that if we have a better look at this we can avoid the instanceof
 		if ( delegate instanceof NamedHqlQueryMementoImpl ) {
-			return new ReactiveQuerySqmImpl<>( (NamedHqlQueryMementoImpl) delegate, resultType, session );
+			return new ReactiveSqmQueryImpl<>( (NamedHqlQueryMementoImpl) delegate, resultType, session );
 		}
 		if ( delegate instanceof NamedCriteriaQueryMementoImpl ) {
-			return new ReactiveQuerySqmImpl<>( (NamedCriteriaQueryMementoImpl) delegate, resultType, session );
+			return new ReactiveSqmQueryImpl<>( (NamedCriteriaQueryMementoImpl) delegate, resultType, session );
 		}
 		else {
 			throw new UnsupportedOperationException( "NamedSqmQueryMemento not recognized: " + delegate.getClass() );

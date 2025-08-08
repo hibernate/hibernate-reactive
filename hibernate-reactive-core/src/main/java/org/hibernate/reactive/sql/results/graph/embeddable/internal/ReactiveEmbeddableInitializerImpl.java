@@ -16,6 +16,7 @@ import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
+import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.Initializer;
 import org.hibernate.sql.results.graph.InitializerData;
@@ -66,10 +67,11 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 	public ReactiveEmbeddableInitializerImpl(
 			EmbeddableResultGraphNode resultDescriptor,
 			BasicFetch<?> discriminatorFetch,
+			DomainResult<Boolean> nullIndicatorResult,
 			InitializerParent<?> parent,
 			AssemblerCreationState creationState,
 			boolean isResultInitializer) {
-		super( resultDescriptor, discriminatorFetch, parent, creationState, isResultInitializer );
+		super( resultDescriptor, discriminatorFetch, nullIndicatorResult, parent, creationState, isResultInitializer );
 	}
 
 	@Override

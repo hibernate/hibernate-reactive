@@ -5,16 +5,18 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.cte;
 
-import java.util.concurrent.CompletionStage;
-
+import org.hibernate.internal.util.MutableObject;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
+import org.hibernate.query.sqm.mutation.internal.InsertHandler;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
+import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 public class ReactiveCteInsertStrategy extends CteInsertStrategy implements ReactiveSqmMultiTableInsertStrategy {
 
@@ -31,11 +33,16 @@ public class ReactiveCteInsertStrategy extends CteInsertStrategy implements Reac
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecuteInsert(
-			SqmInsertStatement<?> sqmInsertStatement,
-			DomainParameterXref domainParameterXref,
-			DomainQueryExecutionContext context) {
-		return new ReactiveCteInsertHandler( getEntityCteTable(), sqmInsertStatement, domainParameterXref, getSessionFactory() )
-				.reactiveExecute( context );
+	public MultiTableHandlerBuildResult buildHandler(SqmInsertStatement<?> sqmInsertStatement, DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
+		final MutableObject<JdbcParameterBindings> firstJdbcParameterBindings = new MutableObject<>();
+		final InsertHandler multiTableHandler = new ReactiveCteInsertHandler(
+				getEntityCteTable(),
+				sqmInsertStatement,
+				domainParameterXref,
+				context,
+				firstJdbcParameterBindings
+		);
+		return new MultiTableHandlerBuildResult( multiTableHandler, firstJdbcParameterBindings.get() );
 	}
+
 }

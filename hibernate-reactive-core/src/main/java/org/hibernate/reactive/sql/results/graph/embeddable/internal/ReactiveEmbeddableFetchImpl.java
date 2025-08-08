@@ -38,10 +38,8 @@ public class ReactiveEmbeddableFetchImpl extends EmbeddableFetchImpl {
 	}
 
 	@Override
-	public EmbeddableInitializer<?> createInitializer(
-			InitializerParent<?> parent,
-			AssemblerCreationState creationState) {
-		return new ReactiveEmbeddableInitializerImpl( this, getDiscriminatorFetch(), parent, creationState, true );
+	public EmbeddableInitializer<?> createInitializer(InitializerParent<?> parent, AssemblerCreationState creationState) {
+		return new ReactiveEmbeddableInitializerImpl( this, getDiscriminatorFetch(), getNullIndicatorResult(), parent, creationState, true );
 	}
 
 	@Override

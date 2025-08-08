@@ -22,6 +22,7 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
+import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
@@ -160,6 +161,9 @@ public final class ReactiveServiceInitiators {
 
 		// Custom for Hibernate Reactive: BatchLoaderFactory
 		serviceInitiators.add( ReactiveBatchLoaderFactoryInitiator.INSTANCE );
+
+		// [standard] InternalCacheFactoryService
+		serviceInitiators.add( InternalCacheFactoryInitiator.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 

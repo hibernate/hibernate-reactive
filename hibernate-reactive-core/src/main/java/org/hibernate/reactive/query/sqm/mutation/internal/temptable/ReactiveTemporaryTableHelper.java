@@ -23,7 +23,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 
 /**
  * @see org.hibernate.dialect.temptable.TemporaryTableHelper
@@ -38,13 +38,12 @@ public class ReactiveTemporaryTableHelper {
 	 * @see org.hibernate.jdbc.Work
 	 */
 	public interface ReactiveWork {
-		CompletionStage<Void> reactiveExecute(ReactiveConnection connection);
+		CompletionStage<Boolean> reactiveExecute(ReactiveConnection connection);
 	}
 
 	public static class TemporaryTableCreationWork implements ReactiveWork {
 		private final TemporaryTable temporaryTable;
 		private final TemporaryTableExporter exporter;
-		private final SessionFactoryImplementor sessionFactory;
 
 		public TemporaryTableCreationWork(
 				TemporaryTable temporaryTable,
@@ -62,23 +61,25 @@ public class ReactiveTemporaryTableHelper {
 				SessionFactoryImplementor sessionFactory) {
 			this.temporaryTable = temporaryTable;
 			this.exporter = exporter;
-			this.sessionFactory = sessionFactory;
 		}
 
 		@Override
-		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
+		public CompletionStage<Boolean> reactiveExecute(ReactiveConnection connection) {
 			try {
 				final String creationCommand = exporter.getSqlCreateCommand( temporaryTable );
 
 				return connection.executeUnprepared( creationCommand )
 						.handle( (integer, throwable) -> {
+							if ( throwable == null ) {
+								return true;
+							}
 							logException( "create", creationCommand, temporaryTable, throwable );
-							return null;
+							return false;
 						} );
 			}
 			catch (Exception e) {
 				logException( "create", null, temporaryTable, e );
-				return voidFuture();
+				return falseFuture();
 			}
 		}
 	}
@@ -111,19 +112,22 @@ public class ReactiveTemporaryTableHelper {
 		}
 
 		@Override
-		public CompletionStage<Void> reactiveExecute(ReactiveConnection connection) {
+		public CompletionStage<Boolean> reactiveExecute(ReactiveConnection connection) {
 			try {
 				final String dropCommand = exporter.getSqlDropCommand( temporaryTable );
 
 				return connection.update( dropCommand )
 						.handle( (integer, throwable) -> {
+							if ( throwable == null ) {
+								return true;
+							}
 							logException( "drop", dropCommand, temporaryTable, throwable );
-							return null;
+							return false;
 						} );
 			}
 			catch (Exception e) {
 				logException( "drop", null, temporaryTable, e );
-				return voidFuture();
+				return falseFuture();
 			}
 		}
 	}

@@ -109,7 +109,7 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
-import org.hibernate.reactive.query.sqm.internal.ReactiveQuerySqmImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -390,7 +390,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	protected <T> ReactiveQueryImplementor<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
-		final ReactiveQuerySqmImpl<T> query = new ReactiveQuerySqmImpl<>( criteria, resultType, this );
+		final ReactiveSqmQueryImpl<T> query = new ReactiveSqmQueryImpl<>( criteria, resultType, this );
 		applyQuerySettingsAndHints( query );
 		return query;
 	}
@@ -400,11 +400,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checksBeforeQueryCreation();
 		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
+			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
 		}
 		else if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
 			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveQuerySqmImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
+			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
 		}
 		else {
 			@SuppressWarnings("unchecked")
@@ -433,8 +433,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 		try {
 			final HqlInterpretation<?> interpretation = interpretHql( queryString, expectedResultType );
-			final ReactiveQuerySqmImpl<R> query =
-					new ReactiveQuerySqmImpl<>( queryString, interpretation, expectedResultType, this );
+			final ReactiveSqmQueryImpl<R> query =
+					new ReactiveSqmQueryImpl<>( queryString, interpretation, expectedResultType, this );
 			applyQuerySettingsAndHints( query );
 			query.setComment( queryString );
 			return query;
@@ -611,7 +611,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return (ReactiveNativeQueryImpl<T>) query;
 	}
 
-	protected <T> ReactiveQuerySqmImpl<T> createReactiveSqmQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
+	protected <T> ReactiveSqmQueryImpl<T> createReactiveSqmQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
 		final SqmQueryImplementor<T> query = memento.toQuery( this, resultType );
 		if ( isEmpty( query.getComment() ) ) {
 			query.setComment( "dynamic query" );
@@ -620,7 +620,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		if ( memento.getLockOptions() != null ) {
 			query.setLockOptions( memento.getLockOptions() );
 		}
-		return (ReactiveQuerySqmImpl<T>) query;
+		return (ReactiveSqmQueryImpl<T>) query;
 	}
 
 	private RuntimeException convertNamedQueryException(RuntimeException e) {
@@ -649,7 +649,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final QueryImplementor<?> query = createQuery( hqlString );
 		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
 		checkMutationQuery( hqlString, sqmStatement );
-		return new ReactiveQuerySqmImpl<>( sqmStatement, null, this );
+		return new ReactiveSqmQueryImpl<>( sqmStatement, null, this );
 	}
 
 	@Override
