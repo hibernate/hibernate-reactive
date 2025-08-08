@@ -64,6 +64,7 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 		return new MultiTableHandlerBuildResult( multiTableHandler, firstJdbcParameterBindings.get() );
 	}
 
+	@Override
 	public MultiTableHandler buildHandler(
 			SqmUpdateStatement<?> sqmUpdate,
 			DomainParameterXref domainParameterXref,
@@ -83,6 +84,7 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 		);
 	}
 
+	@Override
 	public MultiTableHandler buildHandler(
 			SqmDeleteStatement<?> sqmDelete,
 			DomainParameterXref domainParameterXref,
