@@ -48,7 +48,7 @@ dependencies {
 }
 
 // Optional: enable the bytecode enhancements
-hibernate { enhancement }
+hibernate { enhancement {} }
 
 // Create tasks to run the different API available.
 //
