@@ -37,13 +37,17 @@ Hibernate Reactive has been tested with:
 - CockroachDB v24
 - MS SQL Server 2022
 - Oracle 23
-- [Hibernate ORM][] 6.6.15.Final
-- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.5.16
-- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.5.16
-- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.5.16
-- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 4.5.16
-- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 4.5.16
+- [Hibernate ORM][] 6.6
+- [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 4.5
+- [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 4.5
+- [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 4.5
+- [Vert.x Reactive MS SQL Server Client](https://vertx.io/docs/vertx-mssql-client/java/) 4.5
+- [Vert.x Reactive Oracle Client](https://vertx.io/docs/vertx-oracle-client/java/) 4.5
 - [Quarkus][Quarkus] via the Hibernate Reactive extension
+
+The exact version of the libraries and images are in the
+[catalog](https://github.com/hibernate/hibernate-reactive/blob/2.4/gradle/libs.versions.toml)
+and in the [tooling/docker](https://github.com/hibernate/hibernate-reactive/tree/2.4/tooling/docker) folder.
 
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
