@@ -189,27 +189,26 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@DisabledFor( value = POSTGRESQL, reason = "vertx-sql-client issue: https://github.com/eclipse-vertx/vertx-sql-client/issues/1540" )
+	@DisabledFor(value = POSTGRESQL, reason = "https://github.com/hibernate/hibernate-reactive/issues/2412")
 	public void testHqlInsertWithTransaction(VertxTestContext context) {
-		Integer id = 1;
-		String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
-		test( context, getMutinySessionFactory()
-				.withTransaction( session -> session.createMutationQuery( "insert into SpellBook (id, title, forbidden) values (:id, :title, :forbidden)" )
+		final Integer id = 1;
+		final String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+					  .createMutationQuery( "insert into SpellBook (id, title, forbidden) values (:id, :title, :forbidden)" )
+					  .setParameter( "id", id )
+					  .setParameter( "title", title )
+					  .setParameter( "forbidden", true )
+					  .executeUpdate() )
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
 						.setParameter( "id", id )
-						.setParameter( "title", title )
-						.setParameter( "forbidden", true )
-						.executeUpdate()
-				).call( () -> getMutinySessionFactory()
-						.withTransaction( session -> session.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
-								.setParameter( "id", id )
-								.getSingleResult()
-								.invoke( spellBook -> {
-											 assertThat( spellBook.getTitle() ).isEqualTo( title );
-											 assertThat( spellBook.forbidden ).isTrue();
-										 }
-								)
+						.getSingleResult()
+						.invoke( spellBook -> {
+									 assertThat( spellBook.getTitle() ).isEqualTo( title );
+									 assertThat( spellBook.forbidden ).isTrue();
+								 }
 						)
-				)
+				) )
 		);
 	}
 
