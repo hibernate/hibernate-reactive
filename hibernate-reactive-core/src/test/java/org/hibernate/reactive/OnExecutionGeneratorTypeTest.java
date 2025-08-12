@@ -15,6 +15,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.hibernate.annotations.IdGeneratorType;
+import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.ValueGenerationType;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.generator.EventType;
@@ -58,6 +59,7 @@ public class OnExecutionGeneratorTypeTest extends BaseReactiveTest {
 		@FunctionCreatedValueId
 		Date id;
 
+		@NaturalId
 		String name;
 
 		@FunctionCreatedValue

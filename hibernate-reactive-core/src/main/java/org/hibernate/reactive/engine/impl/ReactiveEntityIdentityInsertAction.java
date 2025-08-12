@@ -31,6 +31,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	private final boolean isVersionIncrementDisabled;
 	private boolean executed;
 	private boolean transientReferencesNullified;
+	private Object rowId;
 
 	public ReactiveEntityIdentityInsertAction(
 			Object[] state,
@@ -108,6 +109,12 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			Object instance,
 			GeneratedValues generatedValues,
 			SharedSessionContractImplementor session) {
+		if ( persister.getRowIdMapping() != null ) {
+			rowId = generatedValues.getGeneratedValue( persister.getRowIdMapping() );
+			if ( rowId != null && !isEarlyInsert() ) {
+				session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+			}
+		}
 		return persister.hasInsertGeneratedProperties()
 				? persister.reactiveProcessInsertGenerated( generatedId, instance, getState(), generatedValues, session )
 				: voidFuture();
@@ -152,5 +159,10 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	@Override
 	public void setTransientReferencesNullified() {
 		transientReferencesNullified = true;
+	}
+
+	@Override
+	public Object getRowId() {
+		return rowId;
 	}
 }

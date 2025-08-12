@@ -69,12 +69,12 @@ public class BeforeExecutionIdGeneratorTypeTest extends BaseReactiveTest {
 				.invoke( () -> assertThat( person.getId() ).isGreaterThan( 0 ) )
 				// Check that the value has been saved
 				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
-						.createNativeQuery( "select id,name from Person", Object[].class ).getSingleResult() )
+						.createQuery( "from Person", Person.class ).getSingleResult() )
 				)
-				.invoke( row -> {
+				.invoke( p -> {
 					// The raw type might not be a Long, so we have to cast it
-					assertThat( (Long) row[0] ).isEqualTo( person.id );
-					assertThat( row[1] ).isEqualTo( person.name );
+					assertThat( p.id ).isEqualTo( person.id );
+					assertThat( p.name ).isEqualTo( person.name );
 				} )
 
 		);

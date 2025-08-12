@@ -28,6 +28,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
@@ -138,6 +139,10 @@ public class ResultSetAdaptor implements ResultSet {
 		this( rows, rows.property( propertyKind ), idColumnName, idClass );
 	}
 
+	public ResultSetAdaptor(RowSet<Row> rows, PropertyKind<Row> propertyKind, List<String> generatedColumnNames, List<Class<?>> generatedColumnClasses) {
+		this( rows, rows.property( propertyKind ), generatedColumnNames, generatedColumnClasses );
+	}
+
 	public ResultSetAdaptor(RowSet<Row> rows, Collection<?> ids, String idColumnName, Class<?> idClass) {
 		this( rows, new RowFromId( ids, idColumnName ), idColumnName, idClass );
 	}
@@ -148,6 +153,17 @@ public class ResultSetAdaptor implements ResultSet {
 		this.iterator = List.of( row ).iterator();
 		this.columnNames = List.of( idColumnName );
 		this.columnDescriptors = List.of( toColumnDescriptor( idClass, idColumnName ) );
+	}
+
+	private ResultSetAdaptor(RowSet<Row> rows, Row row, List<String> columnNames, List<Class<?>> columnClasses) {
+		requireNonNull( rows );
+		requireNonNull( columnNames );
+		this.iterator = List.of( row ).iterator();
+		this.columnNames =  columnNames ;
+		this.columnDescriptors = new ArrayList<>(columnNames.size());
+		for (int i =0; i < columnNames.size(); i++) {
+			columnDescriptors.add( toColumnDescriptor( columnClasses.get( i ), columnNames.get(i) ) );
+		}
 	}
 
 	private static ColumnDescriptor toColumnDescriptor(Class<?> idClass, String idColumnName) {

@@ -143,7 +143,16 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 				throw new UnsupportedOperationException( "generated version attribute not supported in Hibernate Reactive" );
 //				setNextVersion( Versioning.getVersion( getState(), persister ) );
 			}
-			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), generatedValues, session );
+			return persister.reactiveProcessUpdateGenerated( id, instance, getState(), generatedValues, session )
+					.thenAccept( v -> {
+						// Process row-id values when available early by replacing the entity entry
+						if ( generatedValues != null && persister.getRowIdMapping() != null ) {
+							final Object rowId = generatedValues.getGeneratedValue( persister.getRowIdMapping() );
+							if ( rowId != null ) {
+								session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+							}
+						}
+					} );
 
 		}
 		else {
