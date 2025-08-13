@@ -52,7 +52,7 @@ updates:
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
-        update-types: ["version-update-:semver-major"]
+        update-types: ["version-update:semver-major"]
       # Only patches for Hibernate ORM and Vert.x
       - dependency-name: "org.hibernate*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
