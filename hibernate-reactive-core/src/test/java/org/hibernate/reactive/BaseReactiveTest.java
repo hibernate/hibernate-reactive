@@ -308,38 +308,32 @@ public abstract class BaseReactiveTest {
 	}
 
 	protected static CompletionStage<Void> closeSession(Object closable) {
-		if ( closable instanceof CompletionStage<?> ) {
-			CompletionStage<?> closableStage = (CompletionStage<?>) closable;
+		if ( closable instanceof CompletionStage<?> closableStage ) {
 			return closableStage.thenCompose( BaseReactiveTest::closeSession );
 		}
-		if ( closable instanceof Uni<?> ) {
-			Uni<?> closableUni = (Uni<?>) closable;
+		if ( closable instanceof Uni<?> closableUni ) {
 			return closableUni.subscribeAsCompletionStage()
 					.thenCompose( BaseReactiveTest::closeSession );
 		}
-		if ( closable instanceof ReactiveConnection ) {
-			return ( (ReactiveConnection) closable ).close();
+		if ( closable instanceof ReactiveConnection reactiveConnection) {
+			return reactiveConnection.close();
 		}
-		if ( closable instanceof Mutiny.Session ) {
-			Mutiny.Session mutiny = (Mutiny.Session) closable;
+		if ( closable instanceof Mutiny.Session mutiny ) {
 			if ( mutiny.isOpen() ) {
 				return mutiny.close().subscribeAsCompletionStage();
 			}
 		}
-		if ( closable instanceof Stage.Session ) {
-			Stage.Session stage = (Stage.Session) closable;
+		if ( closable instanceof Stage.Session stage ) {
 			if ( stage.isOpen() ) {
 				return stage.close();
 			}
 		}
-		if ( closable instanceof Mutiny.StatelessSession ) {
-			Mutiny.StatelessSession mutiny = (Mutiny.StatelessSession) closable;
+		if ( closable instanceof Mutiny.StatelessSession mutiny ) {
 			if ( mutiny.isOpen() ) {
 				return mutiny.close().subscribeAsCompletionStage();
 			}
 		}
-		if ( closable instanceof Stage.StatelessSession ) {
-			Stage.StatelessSession stage = (Stage.StatelessSession) closable;
+		if ( closable instanceof Stage.StatelessSession stage ) {
 			if ( stage.isOpen() ) {
 				return stage.close();
 			}
