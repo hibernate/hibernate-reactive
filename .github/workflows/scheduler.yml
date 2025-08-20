@@ -10,6 +10,7 @@ on:
 jobs:
   build-snapshots:
     strategy:
+      fail-fast: false
       matrix:
         branch: [ 'wip/2.4', 'wip/3.0', 'wip/3.1', 'wip/4.0', 'wip/4.1' ]
     uses: ./.github/workflows/build.yml
