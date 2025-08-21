@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
 import org.hibernate.LockOptions;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
@@ -24,7 +23,6 @@ import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -172,11 +170,6 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 		return completedFuture( logicalConnection )
 				.thenCompose( lg -> {
 					LOG.tracef( "Executing query to retrieve ResultSet : %s", getFinalSql() );
-
-					Dialect dialect = executionContext.getSession().getJdbcServices().getDialect();
-					// This must happen at the very last minute in order to process parameters
-					// added in org.hibernate.dialect.pagination.OffsetFetchLimitHandler.processSql
-					final String sql = Parameters.instance( dialect ).process( getFinalSql() );
 					Object[] parameters = PreparedStatementAdaptor.bind( super::bindParameters );
 
 					final SessionEventListenerManager eventListenerManager = executionContext
@@ -186,7 +179,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 
 					eventListenerManager.jdbcExecuteStatementStart();
 					return connection()
-							.selectJdbc( sql, parameters )
+							.selectJdbc( getFinalSql(), parameters )
 							.thenCompose( this::validateResultSet )
 							.whenComplete( (resultSet, throwable) -> {
 								// FIXME: I don't know if this event makes sense for Vert.x
