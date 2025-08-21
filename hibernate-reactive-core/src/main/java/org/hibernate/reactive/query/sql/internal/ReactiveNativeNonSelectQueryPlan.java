@@ -5,7 +5,6 @@
  */
 package org.hibernate.reactive.query.sql.internal;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,7 +19,6 @@ import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
-import org.hibernate.reactive.pool.impl.Parameters;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
@@ -71,10 +69,8 @@ public class ReactiveNativeNonSelectQueryPlan implements ReactiveNonSelectQueryP
 							}
 
 							final SQLQueryParser parser = new SQLQueryParser( sql, null, session.getFactory() );
-
-							Parameters parameters = Parameters.instance( session.getDialect() );
 							final JdbcOperationQueryMutation jdbcMutation = new JdbcOperationQueryMutationNative(
-									parameters.process( parser.process() ),
+									parser.process(),
 									jdbcParameterBinders,
 									affectedTableNames
 							);
