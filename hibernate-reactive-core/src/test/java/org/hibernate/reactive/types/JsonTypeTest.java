@@ -8,7 +8,6 @@ package org.hibernate.reactive.types;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import org.hibernate.reactive.BaseReactiveTest;
@@ -26,19 +25,17 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test types that we expect to work only on selected DBs.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-
 @DisabledFor(value = DB2, reason = "java.sql.SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
 @DisabledFor(value = SQLSERVER, reason = "java.lang.IllegalArgumentException: Unsupported value class: class io.vertx.core.json.JsonObject")
 @DisabledFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: https://docs.oracle.com/error-help/db/ora-17004/")
@@ -48,15 +45,6 @@ public class JsonTypeTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Basic.class );
-	}
-
-	@Override
-	public CompletionStage<Void> deleteEntities(Class<?>... types) {
-		return getSessionFactory()
-				.withTransaction( s -> loop( types, entityClass -> s
-						.createSelectionQuery( "from JsonEntity", entityClass )
-						.getResultList()
-						.thenCompose( list -> loop( list, entity -> s.remove( entity ) ) ) ) );
 	}
 
 	@Test
@@ -79,16 +67,15 @@ public class JsonTypeTest extends BaseReactiveTest {
 	 * Persist the entity, find it and execute the assertions
 	 */
 	private void testField(VertxTestContext context, Basic original, Consumer<Basic> consumer) {
-		test(
-				context,
-				getSessionFactory().withTransaction( (s, t) -> s.persist( original ) )
-						.thenCompose( v -> openSession() )
-						.thenCompose( s2 -> s2.find( Basic.class, original.id )
-								.thenAccept( found -> {
-									assertNotNull( found );
-									assertEquals( original, found );
-									consumer.accept( found );
-								} ) )
+		test( context, getSessionFactory()
+				.withTransaction( s -> s.persist( original ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.find( Basic.class, original.id ) )
+				)
+				.thenAccept( found -> {
+					assertThat( found ).isEqualTo( original );
+					consumer.accept( found );
+				} )
 		);
 	}
 
