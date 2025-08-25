@@ -7,11 +7,15 @@ package org.hibernate.reactive.types;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.type.SqlTypes;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -45,6 +50,39 @@ public class JsonTypeTest extends BaseReactiveTest {
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Basic.class );
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void nativeQuestionMarkOperatorForPostgres(VertxTestContext context) {
+		Basic basic = new Basic();
+		basic.jsonAsMap = Map.of( "sport", "Cheese Rolling" );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( basic ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createNativeQuery( "select id from JsonEntity where jsonAsMap -> 'sport' \\? 'Cheese Rolling'" )
+						.getSingleResult() )
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( basic.id ) )
+		);
+	}
+
+	@Test
+	@EnabledFor(POSTGRESQL)
+	public void nativeQuestionMarkOperatorWithParameterForPostgres(VertxTestContext context) {
+		Basic basic = new Basic();
+		basic.jsonAsMap = Map.of( "sport", "Chess boxing" );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( basic ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createNativeQuery( "select id from JsonEntity where jsonAsMap -> 'sport' \\? ?" )
+						.setParameter( 1, "Chess boxing" )
+						.getSingleResult() )
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( basic.id ) )
+		);
 	}
 
 	@Test
@@ -91,6 +129,9 @@ public class JsonTypeTest extends BaseReactiveTest {
 		String string;
 
 		private JsonObject jsonObj;
+
+		@JdbcTypeCode(SqlTypes.JSON)
+		Map<String, Object> jsonAsMap;
 
 		public Basic() {
 		}

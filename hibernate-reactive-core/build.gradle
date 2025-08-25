@@ -35,6 +35,9 @@ dependencies {
     testImplementation(libs.io.vertx.vertx.mssql.client)
     testImplementation(libs.io.vertx.vertx.oracle.client)
 
+	// Some tests using JSON need a formatter
+	testRuntimeOnly(libs.com.fasterxml.jackson.core.jackson.databind)
+
     // Metrics
     testImplementation(libs.io.vertx.vertx.micrometer.metrics)
 
