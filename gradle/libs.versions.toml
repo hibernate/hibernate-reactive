@@ -56,5 +56,5 @@ org-testcontainers-postgresql = { group = "org.testcontainers", name = "postgres
 
 [plugins]
 com-diffplug-spotless = { id = "com.diffplug.spotless", version = "7.2.1" }
-org-asciidoctor-jvm-convert = { id = "org.asciidoctor.jvm.convert", version = "4.0.4" }
+org-asciidoctor-jvm-convert = { id = "org.asciidoctor.jvm.convert", version = "4.0.5" }
 org-hibernate-orm = { id = "org.hibernate.orm", version.ref = "hibernateOrmGradlePluginVersion" }
