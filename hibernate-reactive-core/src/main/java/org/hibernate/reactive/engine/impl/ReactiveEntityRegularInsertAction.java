@@ -111,8 +111,16 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 //				setVersion( Versioning.getVersion( getState(), persister ) );
 			}
 			return persister.reactiveProcessInsertGenerated( id, instance, getState(), generatedValues, session )
-					.thenAccept( v -> entry.postUpdate( instance, getState(), getVersion() ) );
-
+					.thenAccept( v -> {
+						// Process row-id values when available early by replacing the entity entry
+						if ( generatedValues != null && persister.getRowIdMapping() != null ) {
+							final Object rowId = generatedValues.getGeneratedValue( persister.getRowIdMapping() );
+							if ( rowId != null ) {
+								session.getPersistenceContext().replaceEntityEntryRowId( getInstance(), rowId );
+							}
+						}
+						entry.postUpdate( instance, getState(), getVersion() );
+					} );
 		}
 		else {
 			return voidFuture();
