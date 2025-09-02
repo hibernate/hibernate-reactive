@@ -30,8 +30,8 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 	public InsertGeneratedIdentifierDelegate getGeneratedIdentifierDelegate(EntityPersister persister) {
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 		/*
-			Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`
-			but Vertex driver does not support get generated keys.
+			Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`,
+			but the Vert.x driver does not support get generated keys.
 		 */
 		final boolean supportsInsertReturning = ReactiveGeneratedValuesHelper.supportsInsertReturning( dialect );
 		if ( supportsInsertReturning && noCustomSql( persister, INSERT ) ) {

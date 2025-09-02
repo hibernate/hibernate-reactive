@@ -82,7 +82,6 @@ public class ReactiveGeneratedValuesHelper {
 	private static final Log LOG = make( Log.class, lookup() );
 
 	/**
-	 *
 	 * @see GeneratedValuesHelper#getGeneratedValuesDelegate(EntityPersister, EventType)
 	 */
 	public static GeneratedValuesMutationDelegate getGeneratedValuesDelegate(EntityPersister persister, EventType timing) {
@@ -91,10 +90,8 @@ public class ReactiveGeneratedValuesHelper {
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
 
-		final boolean hasFormula =
-				generatedProperties.stream()
-						.anyMatch( part -> part instanceof SelectableMapping selectable
-								&& selectable.isFormula() );
+		final boolean hasFormula = generatedProperties.stream()
+				.anyMatch( ReactiveGeneratedValuesHelper::isFormula );
 
 		boolean supportsInsertReturningRowId = trueIfCockroach( dialect, dialect.supportsInsertReturningRowId() );
 		if ( hasRowId
@@ -116,8 +113,8 @@ public class ReactiveGeneratedValuesHelper {
 		else if ( !hasFormula && dialect.supportsInsertReturningGeneratedKeys() ) {
 			return new ReactiveGetGeneratedKeysDelegate( persister, false, timing );
 		}
-		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null && !persister.getEntityMetamodel()
-				.isNaturalIdentifierInsertGenerated() ) {
+		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null
+				&& !persister.getEntityMetamodel().isNaturalIdentifierInsertGenerated() ) {
 			return new ReactiveUniqueKeySelectingDelegate( persister, getNaturalIdPropertyNames( persister ), timing );
 		}
 		return null;
@@ -129,6 +126,10 @@ public class ReactiveGeneratedValuesHelper {
 	 */
 	private static boolean trueIfCockroach(Dialect dialect, boolean predicate) {
 		return predicate || dialect instanceof CockroachDialect;
+	}
+
+	private static boolean isFormula(ModelPart part) {
+		return part instanceof SelectableMapping selectable && selectable.isFormula();
 	}
 
 	public static boolean supportReactiveGetGeneratedKey(Dialect dialect, List<? extends ModelPart> generatedProperties) {
