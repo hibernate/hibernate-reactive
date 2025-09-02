@@ -35,7 +35,6 @@ public class ReactiveUniqueKeySelectingDelegate extends UniqueKeySelectingDelega
 	private final String[] uniqueKeyPropertyNames;
 	private final Type[] uniqueKeyTypes;
 
-
 	public ReactiveUniqueKeySelectingDelegate(
 			EntityPersister persister,
 			String[] uniqueKeyPropertyNames,
@@ -59,8 +58,8 @@ public class ReactiveUniqueKeySelectingDelegate extends UniqueKeySelectingDelega
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, jdbcServices );
 			valueBindings.beforeStatement( details );
 		} );
-		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
-				.update(  statementDetails.getSqlString(), params )
+		return ( (ReactiveConnectionSupplier) session ).getReactiveConnection()
+				.update( statementDetails.getSqlString(), params )
 				.thenCompose( unused -> getGeneratedValues( entity, session ) );
 	}
 
