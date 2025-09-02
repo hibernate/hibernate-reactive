@@ -14,7 +14,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.insert.AbstractSelectingDelegate;
-import org.hibernate.id.insert.BasicSelectingDelegate;
 import org.hibernate.jdbc.Expectation;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
@@ -31,7 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 /**
- * @see BasicSelectingDelegate
+ * @see org.hibernate.id.insert.BasicSelectingDelegate
  */
 public class ReactiveBasicSelectingDelegate extends AbstractSelectingDelegate implements
 		ReactiveGeneratedValuesMutationDelegate {
@@ -56,7 +55,7 @@ public class ReactiveBasicSelectingDelegate extends AbstractSelectingDelegate im
 			PreparedStatementDetails details = new PrepareStatementDetailsAdaptor( statementDetails, statement, jdbcServices );
 			valueBindings.beforeStatement( details );
 		} );
-		return ((ReactiveConnectionSupplier) session).getReactiveConnection()
+		return ( (ReactiveConnectionSupplier) session ).getReactiveConnection()
 				.update(  statementDetails.getSqlString(), params )
 				.thenCompose( unused -> getGeneratedValues( session ) );
 	}
