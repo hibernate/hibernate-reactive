@@ -50,7 +50,7 @@ public class MutationDelegateTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( ValuesOnly.class,ValuesAndRowId.class, ValuesAndNaturalId.class );
+		return List.of( ValuesOnly.class, ValuesAndRowId.class, ValuesAndNaturalId.class );
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class MutationDelegateTest extends BaseReactiveTest {
 
 		// Construct a tracker that collects query statements via the SqlStatementLogger framework.
 		// Pass in configuration properties to hand off any actual logging properties
-		sqlTracker = new SqlStatementTracker( MutationDelegateTest::filter, configuration.getProperties() );
+		sqlTracker = new SqlStatementTracker( s -> true, configuration.getProperties() );
 		return configuration;
 	}
 
@@ -75,19 +75,10 @@ public class MutationDelegateTest extends BaseReactiveTest {
 		sqlTracker.registerService( builder );
 	}
 
-	private static boolean filter(String s) {
-		String[] accepted = { "insert ", "update ", "delete ", "select " };
-		for ( String valid : accepted ) {
-			if ( s.toLowerCase().startsWith( valid ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	@Test
 	public void testInsertGeneratedValues(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( ValuesOnly.class, MutationType.INSERT );
+		final int expectedQueriesSize = delegate != null && delegate.supportsArbitraryValues() ? 1 : 2;
 
 		ValuesOnly entity = new ValuesOnly( 1L );
 		test( context, getMutinySessionFactory().withTransaction( s -> s
@@ -95,8 +86,8 @@ public class MutationDelegateTest extends BaseReactiveTest {
 				.call( s::flush )
 				.invoke( () -> {
 					assertThat( entity.getName() ).isEqualTo( "default_name" );
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
 					assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
-					assertExecutedQueriesCount( delegate != null && delegate.supportsArbitraryValues() ? 1 : 2 );
 				} ) )
 		);
 	}
@@ -104,6 +95,7 @@ public class MutationDelegateTest extends BaseReactiveTest {
 	@Test
 	public void testUpdateGeneratedValues(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( ValuesOnly.class, MutationType.UPDATE );
+		final int expectedQueriesSize = delegate != null && delegate.supportsArbitraryValues() ? 3 : 4;
 		final ValuesOnly entity = new ValuesOnly( 2L );
 
 		test( context, getMutinySessionFactory()
@@ -117,11 +109,11 @@ public class MutationDelegateTest extends BaseReactiveTest {
 						.find( ValuesOnly.class, 2 ) )
 						.invoke( valuesOnly -> {
 							assertThat( entity.getUpdateDate() ).isNotNull();
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "update" );
-							assertExecutedQueriesCount(delegate != null && delegate.supportsArbitraryValues() ? 3 : 4 );
-							}
-						)
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+									.startsWith( "select" )
+									.contains( "update" );
+						} )
 				)
 		);
 	}
@@ -130,6 +122,7 @@ public class MutationDelegateTest extends BaseReactiveTest {
 	@DisabledFor(value = ORACLE, reason = "Vert.x driver doesn't support RowId type parameters")
 	public void testGeneratedValuesAndRowId(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( ValuesAndRowId.class, MutationType.INSERT );
+		final int expectedQueriesSize = delegate != null && delegate.supportsArbitraryValues() ? 1 : 2;
 		final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().rowId( "" ) != null;
 
 		final ValuesAndRowId entity = new ValuesAndRowId( 1L );
@@ -139,13 +132,12 @@ public class MutationDelegateTest extends BaseReactiveTest {
 						.call( s::flush )
 						.invoke( () -> {
 							assertThat( entity.getName() ).isEqualTo( "default_name" );
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
 							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
-							assertExecutedQueriesCount(delegate != null && delegate.supportsArbitraryValues() ? 1 : 2 );
-							s.getFactory();
 							if ( shouldHaveRowId ) {
 								// assert row-id was populated in entity entry
-								final PersistenceContext pc = ( (MutinySessionImpl) s ).unwrap( ReactiveSession.class )
-										.getPersistenceContext();
+								final PersistenceContext pc = ( (MutinySessionImpl) s )
+										.unwrap( ReactiveSession.class ).getPersistenceContext();
 								final EntityEntry entry = pc.getEntry( entity );
 								assertThat( entry.getRowId() ).isNotNull();
 							}
@@ -159,31 +151,31 @@ public class MutationDelegateTest extends BaseReactiveTest {
 						} )
 				)
 				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
-				.find( ValuesAndRowId.class, 1 )
-				.invoke( valuesAndRowId -> assertThat( valuesAndRowId.getUpdateDate() ).isNotNull() )
-			  ) )
+						.find( ValuesAndRowId.class, 1 )
+						.invoke( valuesAndRowId -> assertThat( valuesAndRowId.getUpdateDate() ).isNotNull() )
+				) )
 		);
 	}
 
 	@Test
 	public void testInsertGeneratedValuesAndNaturalId(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( ValuesAndNaturalId.class, MutationType.INSERT );
+		final boolean isUniqueKeyDelegate = delegate instanceof ReactiveUniqueKeySelectingDelegate;
+		int expectedQueriesSize = delegate == null || isUniqueKeyDelegate ? 2 : 1;
 		final ValuesAndNaturalId entity = new ValuesAndNaturalId( 1L, "natural_1" );
 
 		test( context, getMutinySessionFactory().withTransaction( s -> s
-				.persist( entity )
-				.chain( s::flush )
-				.invoke( () -> {
-					assertThat( entity.getName() ).isEqualTo( "default_name" );
-					assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
-
-					final boolean isUniqueKeyDelegate = delegate instanceof ReactiveUniqueKeySelectingDelegate;
-					assertExecutedQueriesCount(delegate == null || isUniqueKeyDelegate ? 2 : 1);
-					if ( isUniqueKeyDelegate ) {
-						assertNumberOfOccurrenceInQueryNoSpace( 1, "data", 1 );
-						assertNumberOfOccurrenceInQueryNoSpace( 1, "id_column", 0 );
-					}
-				} )
+					  .persist( entity )
+					  .chain( s::flush )
+					  .invoke( () -> {
+						  assertThat( entity.getName() ).isEqualTo( "default_name" );
+						  assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
+						  assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
+						  if ( isUniqueKeyDelegate ) {
+							  assertNumberOfOccurrenceInQueryNoSpace( 1, "data", 1 );
+							  assertNumberOfOccurrenceInQueryNoSpace( 1, "id_column", 0 );
+						  }
+					  } )
 			  )
 		);
 	}
@@ -194,17 +186,12 @@ public class MutationDelegateTest extends BaseReactiveTest {
 		assertThat( actual ).as( "number of " + toCheck ).isEqualTo( expectedNumberOfOccurrences );
 	}
 
-	private static void assertExecutedQueriesCount(int expected) {
-		assertThat( sqlTracker.getLoggedQueries().size() ).isEqualTo( expected );
-	}
-
 	private static GeneratedValuesMutationDelegate getDelegate(Class<?> entityClass, MutationType mutationType) {
-		GeneratedValuesMutationDelegate mutationDelegate = ( (SessionFactoryImplementor) factoryManager
+		return  ( (SessionFactoryImplementor) factoryManager
 				.getHibernateSessionFactory() )
 				.getMappingMetamodel()
 				.findEntityDescriptor( entityClass )
 				.getMutationDelegate( mutationType );
-		return mutationDelegate;
 	}
 
 	@Entity( name = "ValuesOnly" )
