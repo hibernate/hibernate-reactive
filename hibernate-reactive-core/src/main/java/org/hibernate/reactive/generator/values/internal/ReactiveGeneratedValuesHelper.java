@@ -96,8 +96,7 @@ public class ReactiveGeneratedValuesHelper {
 						.anyMatch( part -> part instanceof SelectableMapping selectable
 								&& selectable.isFormula() );
 
-		// Cockroach supports insert returning it but the CockroachDb#supportsInsertReturningRowId() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
-		boolean supportsInsertReturningRowId = dialect.supportsInsertReturningRowId() || dialect instanceof CockroachDialect;
+		boolean supportsInsertReturningRowId = trueIfCockroach( dialect, dialect.supportsInsertReturningRowId() );
 		if ( hasRowId
 				&& supportsInsertReturning( dialect )
 				&& supportsInsertReturningRowId
@@ -124,27 +123,29 @@ public class ReactiveGeneratedValuesHelper {
 		return null;
 	}
 
+	/**
+	 * Cockroach supports returning SQL for insert and update statements, but the dialect wrongly returns false.
+	 * @see <a href="https://hibernate.atlassian.net/browse/HHH-19717">HHH-19717</a>
+	 */
+	private static boolean trueIfCockroach(Dialect dialect, boolean predicate) {
+		return predicate || dialect instanceof CockroachDialect;
+	}
+
 	public static boolean supportReactiveGetGeneratedKey(Dialect dialect, List<? extends ModelPart> generatedProperties) {
 		return dialect instanceof OracleDialect
 				|| (dialect instanceof MySQLDialect && generatedProperties.size() == 1 && !(dialect instanceof MariaDBDialect));
 	}
 
 	public static boolean supportsReturning(Dialect dialect, EventType timing) {
-		if ( dialect instanceof CockroachDialect ) {
-			// Cockroach supports insert and update returning but the CockroachDb#supportsInsertReturning() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
-			return true;
-		}
-		return timing == EventType.INSERT
-				? dialect.supportsInsertReturning()
-				: dialect.supportsUpdateReturning();
+		return trueIfCockroach(
+				dialect, timing == EventType.INSERT
+						? dialect.supportsInsertReturning()
+						: dialect.supportsUpdateReturning()
+		);
 	}
 
 	public static boolean supportsInsertReturning(Dialect dialect) {
-		if ( dialect instanceof CockroachDialect ) {
-			// Cockroach supports insert returning but the CockroachDb#supportsInsertReturning() wrongly returns false ( https://hibernate.atlassian.net/browse/HHH-19717 )
-			return true;
-		}
-		return dialect.supportsInsertReturning();
+		return trueIfCockroach( dialect, dialect.supportsInsertReturning() );
 	}
 
 	/**
