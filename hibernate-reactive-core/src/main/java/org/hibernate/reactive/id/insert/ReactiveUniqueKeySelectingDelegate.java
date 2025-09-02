@@ -14,6 +14,7 @@ import org.hibernate.id.insert.UniqueKeySelectingDelegate;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
 import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -26,7 +27,8 @@ import java.util.concurrent.CompletionStage;
 /**
  * @see UniqueKeySelectingDelegate
  */
-public class ReactiveUniqueKeySelectingDelegate extends UniqueKeySelectingDelegate implements ReactiveAbstractSelectingDelegate {
+public class ReactiveUniqueKeySelectingDelegate extends UniqueKeySelectingDelegate implements
+		ReactiveGeneratedValuesMutationDelegate {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
