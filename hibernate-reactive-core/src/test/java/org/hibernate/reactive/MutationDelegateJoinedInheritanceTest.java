@@ -53,10 +53,7 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 
 		// Construct a tracker that collects query statements via the SqlStatementLogger framework.
 		// Pass in configuration properties to hand off any actual logging properties
-		sqlTracker = new SqlStatementTracker(
-				MutationDelegateJoinedInheritanceTest::filter,
-				configuration.getProperties()
-		);
+		sqlTracker = new SqlStatementTracker( s -> true, configuration.getProperties() );
 		return configuration;
 	}
 
@@ -70,20 +67,12 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 		sqlTracker.registerService( builder );
 	}
 
-	private static boolean filter(String s) {
-		String[] accepted = { "insert ", "update ", "delete ", "select " };
-		for ( String valid : accepted ) {
-			if ( s.toLowerCase().startsWith( valid ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	@Test
 	public void testInsertBaseEntity(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( BaseEntity.class, MutationType.INSERT );
-
+		final int expectedQueriesSize = delegate instanceof AbstractSelectingDelegate
+				? 3
+				: delegate != null && delegate.supportsArbitraryValues() ? 1 : 2;
 		final BaseEntity entity = new BaseEntity();
 
 		test( context, getMutinySessionFactory().withTransaction( s -> s
@@ -94,11 +83,7 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 					assertThat( entity.getName() ).isEqualTo( "default_name" );
 
 					assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
-					assertExecutedQueriesCount(
-							delegate instanceof AbstractSelectingDelegate
-									? 3
-									: delegate != null && delegate.supportsArbitraryValues() ? 1 : 2
-					);
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
 				} ) )
 		);
 	}
@@ -116,20 +101,21 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 					assertThat( entity.getChildName() ).isEqualTo( "default_child_name" );
 
 					if ( delegate instanceof AbstractSelectingDelegate ) {
+						assertThat( sqlTracker.getLoggedQueries() ).hasSize( 4 );
 						assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
 						assertThat( sqlTracker.getLoggedQueries().get( 2 ) ).contains( "insert" );
 						// Note: this is a current restriction, mutation delegates only retrieve generated values
 						// on the "root" table, and we expect other values to be read through a subsequent select
 						assertThat( sqlTracker.getLoggedQueries().get( 3 ) ).startsWith( "select" );
-						assertExecutedQueriesCount( 4 );
+
 					}
 					else {
+						assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
 						assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "insert" );
 						assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).contains( "insert" );
 						// Note: this is a current restriction, mutation delegates only retrieve generated values
 						// on the "root" table, and we expect other values to be read through a subsequent select
 						assertThat( sqlTracker.getLoggedQueries().get( 2 ) ).startsWith( "select" );
-						assertExecutedQueriesCount( 3 );
 					}
 				} ) )
 		);
@@ -138,7 +124,7 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 	@Test
 	public void testUpdateBaseEntity(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( BaseEntity.class, MutationType.UPDATE );
-
+		final int expectedQueriesSize = delegate != null && delegate.supportsArbitraryValues() ? 2 : 3;
 		final BaseEntity entity = new BaseEntity();
 
 		test( context, getMutinySessionFactory().withTransaction( s -> s.persist( entity ) )
@@ -149,12 +135,9 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 								.call( s::flush )
 								.invoke( baseEntity -> {
 									assertThat( entity.getUpdateDate() ).isNotNull();
-									assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
-
-									assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "update" );
-									assertExecutedQueriesCount(
-											delegate != null && delegate.supportsArbitraryValues() ? 2 : 3
-									);
+									assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
+									assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+											.startsWith( "select" ).contains( "update" );
 								} )
 						)
 				)
@@ -174,13 +157,11 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 							assertThat( entity.getUpdateDate() ).isNotNull();
 							assertThat( entity.getChildUpdateDate() ).isNotNull();
 
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "update" );
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" ).contains( "update" );
 							// Note: this is a current restriction, mutation delegates only retrieve generated values
 							// on the "root" table, and we expect other values to be read through a subsequent select
 							assertThat( sqlTracker.getLoggedQueries().get( 2 ) ).startsWith( "select" );
-
-							assertExecutedQueriesCount( 3 );
 						} )
 				) )
 		);
@@ -198,7 +179,7 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 				.call( s::flush )
 				.invoke( () -> {
 					assertThat( generatedChild.getName() ).isEqualTo( "child_name" );
-					assertExecutedQueriesCount( 3 );
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
 					assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "insert" );
 					assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).startsWith( "insert" );
 					assertThat( sqlTracker.getLoggedQueries().get( 2 ) ).startsWith( "select" );
@@ -206,17 +187,12 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 		));
 	}
 
-	private static void assertExecutedQueriesCount(int expected) {
-		assertThat( sqlTracker.getLoggedQueries().size() ).isEqualTo( expected );
-	}
-
 	private static GeneratedValuesMutationDelegate getDelegate(Class<?> entityClass, MutationType mutationType) {
-		GeneratedValuesMutationDelegate mutationDelegate = ( (SessionFactoryImplementor) factoryManager
+		return ( (SessionFactoryImplementor) factoryManager
 				.getHibernateSessionFactory() )
 				.getMappingMetamodel()
 				.findEntityDescriptor( entityClass )
 				.getMutationDelegate( mutationType );
-		return mutationDelegate;
 	}
 
 	@Entity(name = "BaseEntity")
