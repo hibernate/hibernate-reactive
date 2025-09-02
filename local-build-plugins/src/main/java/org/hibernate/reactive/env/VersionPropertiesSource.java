@@ -25,10 +25,10 @@ public abstract class VersionPropertiesSource implements ValueSource<String, Ver
 		final var props = new Properties();
 		try (final var in = new FileInputStream( file )) {
 			props.load( in );
+			return props.getProperty( "projectVersion" );
 		}
 		catch (Exception e) {
 			throw new RuntimeException( "Unable to load properties from file - " + file.getAbsolutePath(), e );
 		}
-		return props.getProperty( "projectVersion" );
 	}
 }
