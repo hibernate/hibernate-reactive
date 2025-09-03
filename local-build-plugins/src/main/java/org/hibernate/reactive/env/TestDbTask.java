@@ -1,17 +1,18 @@
 package org.hibernate.reactive.env;
 
-import org.gradle.api.tasks.CacheableTask;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.api.tasks.testing.TestDescriptor;
+import org.gradle.api.tasks.testing.TestListener;
 import org.gradle.api.tasks.testing.TestResult;
 
-import groovy.lang.Closure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@CacheableTask
 public abstract class TestDbTask extends Test {
 
 	@NotNull
@@ -61,6 +62,14 @@ public abstract class TestDbTask extends Test {
 		this.showStandardStreams = showStandardStreams;
 	}
 
+	@Input
+	public Map<String, String> getCustomSystemProperties() {
+		final Map<String, String> props = new HashMap<>();
+		props.put("db", dbName);
+		props.put("docker", dockerEnabled ? "true" : "false");
+		return props;
+	}
+
 	public TestDbTask() {
 		// Default logging configuration
 		setDefaultCharacterEncoding( "UTF-8" );
@@ -75,11 +84,27 @@ public abstract class TestDbTask extends Test {
 		// enforcing Hibernate internal state
 		systemProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" );
 
-		// Add afterSuite hook
-		afterSuite( new Closure<Object>( this, this ) {
-			public Object doCall(TestDescriptor desc, TestResult result) {
-				logSummary( desc, result );
-				return null;
+		addTestListener( new TestListener() {
+
+			@Override
+			public void beforeSuite(TestDescriptor suite) {
+				/* Do nothing */
+			}
+
+			// Add afterSuite hook
+			@Override
+			public void afterSuite(TestDescriptor suite, TestResult result) {
+				logSummary( suite, result );
+			}
+
+			@Override
+			public void beforeTest(TestDescriptor testDescriptor) {
+				/* Do nothing */
+			}
+
+			@Override
+			public void afterTest(TestDescriptor testDescriptor, TestResult result) {
+				/* Do nothing */
 			}
 		} );
 	}
@@ -87,8 +112,7 @@ public abstract class TestDbTask extends Test {
 	@Override
 	public void executeTests() {
 		// Apply system properties before running
-		systemProperty( "db", dbName );
-		systemProperty( "docker", dockerEnabled ? "true" : "false" );
+		getCustomSystemProperties().forEach(this::systemProperty);
 		getTestLogging().setShowStandardStreams( showStandardStreams );
 
 		if ( includeTests != null && !includeTests.isEmpty() ) {
