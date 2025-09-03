@@ -19,6 +19,10 @@ import org.hibernate.jdbc.Expectation;
 import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 
+/**
+ * @deprecated No longer used
+ */
+@Deprecated(since = "7.1",  forRemoval = true)
 public class GeneratedValuesMutationDelegateAdaptor implements ReactiveGeneratedValuesMutationDelegate {
 	private final ReactiveGeneratedValuesMutationDelegate delegate;
 
