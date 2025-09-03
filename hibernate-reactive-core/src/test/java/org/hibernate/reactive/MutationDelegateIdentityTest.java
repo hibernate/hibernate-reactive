@@ -141,8 +141,8 @@ public class MutationDelegateIdentityTest extends BaseReactiveTest {
 						.invoke( identityAndValues -> {
 							assertThat( entity.getUpdateDate() ).isNotNull();
 							assertThat( sqlTracker.getLoggedQueries().size() ).isEqualTo( expectedQuerySize );
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-									.startsWith( "select" ).contains( "update" );
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
+							assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).contains( "update " );
 						} )
 				) )
 		);
@@ -181,7 +181,7 @@ public class MutationDelegateIdentityTest extends BaseReactiveTest {
 						.call( s::flush )
 						.invoke( () -> {
 							assertThat( entity.getUpdateDate() ).isNotNull();
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "update" );
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "update " );
 							assertNumberOfOccurrenceInQueryNoSpace( 0, "id_column", shouldHaveRowId ? 0 : 1 );
 						} )
 				)
@@ -226,10 +226,19 @@ public class MutationDelegateIdentityTest extends BaseReactiveTest {
 		);
 	}
 
+	/**
+	 * The method is used to verify that the query logged at position `queryNumber`
+	 * contains the `expectedNumberOfOccurrences` occurrences of the value `toCkeck`.
+	 * e.g. `assertNumberOfOccurrenceInQueryNoSpace(1, "id", 3)` verifies the 1st executed query contains 3 occurrences of `id`
+	 *
+	 * @param queryNumber the position of the logged query
+	 * @param toCheck the String we want to check the number of occurrences in the query
+	 * @param expectedNumberOfOccurrences the number of occurrences of the `toCkeck` value we expect
+	 */
 	private static void assertNumberOfOccurrenceInQueryNoSpace(int queryNumber, String toCheck, int expectedNumberOfOccurrences) {
 		String query = sqlTracker.getLoggedQueries().get( queryNumber );
 		int actual = query.split( toCheck, -1 ).length - 1;
-		assertThat( actual ).as( "number of " + toCheck ).isEqualTo( expectedNumberOfOccurrences );
+		assertThat( actual ).as( "Unexpected number of '" + toCheck + "' in the query " + query ).isEqualTo( expectedNumberOfOccurrences );
 	}
 
 	private static GeneratedValuesMutationDelegate getDelegate(Class<?> entityClass, MutationType mutationType) {
