@@ -13,14 +13,53 @@ dbs.each { db ->
 	}
 }
 
-// replace default task 'test' with custom TestDbTask to always configure with cache safe task
-tasks.replace( "test", TestDbTask ).configure {
-	dbName = project.findProperty( "db" ) ?: "PostgreSQL"
-	dockerEnabled = project.hasProperty( "docker" )
-	if ( project.hasProperty( "includeTests" ) ) {
-		includeTests = project.property( "includeTests" )
+// configure default task 'test' with same config of TestDbTask, with cache safe
+tasks.named( "test", Test ).configure { t ->
+	def dbName = providers.gradleProperty( "db" ).orElse( "PostgreSQL" )
+	def dockerEnabled = providers.gradleProperty( "docker" ).isPresent()
+	def includeTests = providers.gradleProperty( "includeTests" ).orNull
+	def showStandardStreams = providers.gradleProperty( "showStandardOutput" ).isPresent()
+
+	t.systemProperty( "db", dbName.get() )
+	t.systemProperty( "docker", dockerEnabled ? "true" : "false" )
+	t.systemProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" )
+
+	if ( includeTests ) {
+		t.filter { f -> f.includeTestsMatching( includeTests ) }
 	}
-	description = "Default test task using TestDbTask"
+
+	t.defaultCharacterEncoding = "UTF-8"
+	t.useJUnitPlatform()
+	t.testLogging {
+		it.showStandardStreams = showStandardStreams
+		it.showStackTraces = true
+		it.exceptionFormat = 'full'
+		it.displayGranularity = 1
+		it.events = ['PASSED', 'FAILED', 'SKIPPED']
+	}
+
+	t.addTestListener( new TestListener() {
+		void beforeSuite(TestDescriptor suite) {
+			/* Do nothing */
+		}
+
+		void beforeTest(TestDescriptor testDescriptor) {
+			/* Do nothing */
+		}
+
+		void afterTest(TestDescriptor testDescriptor, TestResult result) {
+			/* Do nothing */
+		}
+
+		// Add afterSuite hook
+		void afterSuite(TestDescriptor desc, TestResult result) {
+			if ( !desc.parent ) {
+				def output = "${dbName.get()} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+				def line = '-' * (output.length() + 1)
+				logger.lifecycle( "\n${line}\n${output}\n${line}" )
+			}
+		}
+	} )
 }
 
 // configure all testDbTask with docker and filter test
