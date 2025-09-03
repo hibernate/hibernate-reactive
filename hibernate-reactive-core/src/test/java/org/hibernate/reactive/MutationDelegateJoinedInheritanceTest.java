@@ -136,8 +136,8 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 								.invoke( baseEntity -> {
 									assertThat( entity.getUpdateDate() ).isNotNull();
 									assertThat( sqlTracker.getLoggedQueries() ).hasSize( expectedQueriesSize );
-									assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
-											.startsWith( "select" ).contains( "update" );
+									assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
+									assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).contains( "update " );
 								} )
 						)
 				)
@@ -158,7 +158,8 @@ public class MutationDelegateJoinedInheritanceTest extends BaseReactiveTest {
 							assertThat( entity.getChildUpdateDate() ).isNotNull();
 
 							assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
-							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" ).contains( "update" );
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).startsWith( "select" );
+							assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).contains( "update " );
 							// Note: this is a current restriction, mutation delegates only retrieve generated values
 							// on the "root" table, and we expect other values to be read through a subsequent select
 							assertThat( sqlTracker.getLoggedQueries().get( 2 ) ).startsWith( "select" );
