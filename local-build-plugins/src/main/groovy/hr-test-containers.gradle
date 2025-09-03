@@ -1,79 +1,38 @@
-// Print a summary of the results of the tests (number of failures, successes and skipped)
-def loggingSummary(db, result, desc) {
-	if ( !desc.parent ) { // will match the outermost suite
-		def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-		def repeatLength = output.length() + 1
-		logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
-	}
-}
+import org.hibernate.reactive.env.TestDbTask
 
-// Example:
-// gradle test -Pdb=MySQL
-test {
-	def selectedDb
+def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
 
-	doFirst {
-			selectedDb = project.hasProperty( 'db' )
-					? project.properties['db']
-					: 'PostgreSQL'
-		systemProperty 'db', selectedDb
-	}
-	afterSuite { desc, result ->
-		loggingSummary( selectedDb, result, desc )
-	}
-}
-
-// Configuration for the tests
-tasks.withType( Test ).configureEach {
-	defaultCharacterEncoding = "UTF-8"
-	useJUnitPlatform()
-	testLogging {
-		showStandardStreams = project.hasProperty('showStandardOutput')
-		showStackTraces = true
-		exceptionFormat = 'full'
-		displayGranularity = 1
-		events = ['PASSED', 'FAILED', 'SKIPPED']
-	}
-	systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
-	systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
-
-	if ( project.hasProperty( 'includeTests' ) ) {
-		// Example: ./gradlew testAll -PincludeTests=DefaultPortTest
-		filter {
-			includeTestsMatching project.properties['includeTests'] ?: '*' as String
-		}
-	}
-}
-
-def createTestDbTask(dbName) {
-	tasks.register( "testDb${dbName}", Test ) {
-		description = "Run tests for ${dbName}"
-
-		doFirst() {
-			systemProperty 'db', dbName
-		}
-		afterSuite { desc, result ->
-			loggingSummary( dbName, result, desc )
-		}
-	}
-}
-
-// Rule to recognize calls to testDb<dbName>
+// create a task for each DB, now is static configure and not dynamic with rule pattern
 // and run the tests on the selected db
 // Example:
-// gradle testDbMySQL testDbDB2
-tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
-	if ( taskName.startsWith( "testDb" ) ) {
-		def dbName = taskName.substring( "testDb".length() )
-		createTestDbTask( dbName )
+// gradlew testDbMySQL testDbDB2
+dbs.each { db ->
+	tasks.register( "testDb${db}", TestDbTask ) {
+		dbName = db
+		description = "Run tests for ${db}"
 	}
 }
 
-// The dbs we want to test when running testAll
-def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
-dbs.forEach { createTestDbTask it }
+// replace default task 'test' with custom TestDbTask to always configure with cache safe task
+tasks.replace( "test", TestDbTask ).configure {
+	dbName = project.findProperty( "db" ) ?: "PostgreSQL"
+	dockerEnabled = project.hasProperty( "docker" )
+	if ( project.hasProperty( "includeTests" ) ) {
+		includeTests = project.property( "includeTests" )
+	}
+	description = "Default test task using TestDbTask"
+}
 
+// configure all testDbTask with docker and filter test
+tasks.withType( TestDbTask ).configureEach {
+	dockerEnabled = project.hasProperty( 'docker' )
+	if ( project.hasProperty( 'includeTests' ) ) {
+		includeTests = project.property( 'includeTests' )
+	}
+}
+
+// task with all database
 tasks.register( "testAll", Test ) {
 	description = "Run tests for ${dbs}"
-	dependsOn = dbs.collect( [] as HashSet ) { db -> "testDb${db}" }
+	dependsOn( dbs.collect { "testDb${it}" } )
 }
