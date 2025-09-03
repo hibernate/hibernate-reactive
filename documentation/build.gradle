@@ -101,30 +101,40 @@ asciidoctor {
 	enabled = false
 }
 
-def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumentation', AsciidoctorTask ) {
-	description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
-	sourceDir = file( 'src/main/asciidoc/reference' )
+def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumentation", AsciidoctorTask ) {
+	description = "Renders the Reference Documentation in HTML format using Asciidoctor."
+	notCompatibleWithConfigurationCache( "AsciidoctorGradlePlugin does not support configuration cache yet" )
+
+	// use of provider to obtain info and cache the value
+	def versionFamily = providers.provider { project.projectVersion.family }
+	def fullVersion = providers.provider { project.version.toString() }
+	def asciidocReference = layout.projectDirectory.dir("src/main/asciidoc/reference")
+
+	sourceDir = asciidocReference.asFile
+
 	sources {
-		include 'index.adoc'
+		include( "index.adoc" )
 	}
 
 	resources {
-		from( sourceDir ) {
-			include 'images/**'
-			include 'css/**'
+		from( asciidocReference ) {
+			include( "images/**", "css/**" )
 		}
 	}
 
-	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
-	options logDocuments: true
+	outputDir = layout.buildDirectory.dir("asciidoc/reference/html_single").get().asFile
 
-	attributes icons: 'font',
-			   'source-highlighter': 'rouge',
-			   experimental: true,
-			   linkcss: true,
-			   majorMinorVersion: project.projectVersion.family,
-			   fullVersion: project.version.toString(),
-			   docinfo: 'private'
+	options( logDocuments: true )
+
+	attributes(
+			"icons": "font",
+			"source-highlighter": "rouge",
+			"experimental": true,
+			"linkcss": true,
+			"majorMinorVersion": versionFamily.get(),
+			"fullVersion": fullVersion.get(),
+			"docinfo": "private"
+	)
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
