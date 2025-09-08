@@ -13,9 +13,9 @@ import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.mapping.Component;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.tuple.entity.ReactiveEntityMetamodel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +46,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 		final List<GenerationPlan> plans = new ArrayList<>();
 		for ( GenerationPlan plan : generator.getGenerationPlans() ) {
 			final GenerationPlan reactivePlane = new Component.ValueGenerationPlan(
-					(BeforeExecutionGenerator) ReactiveEntityMetamodel.augmentWithReactiveGenerator(
+					(BeforeExecutionGenerator) ReactiveGeneratedValuesHelper.augmentWithReactiveGenerator(
 							plan.getGenerator(),
 							creationContext,
 							runtimeModelCreationContext
