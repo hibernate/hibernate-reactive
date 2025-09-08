@@ -6,6 +6,7 @@
 package org.hibernate.reactive.type.descriptor.jdbc;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.sql.CallableStatement;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -20,6 +21,7 @@ import java.time.LocalTime;
 
 import org.hibernate.reactive.adaptor.impl.ArrayAdaptor;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.type.BasicPluralType;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
@@ -32,8 +34,10 @@ import org.hibernate.type.descriptor.jdbc.BasicExtractor;
 import org.hibernate.type.descriptor.jdbc.JdbcLiteralFormatter;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.descriptor.jdbc.internal.JdbcLiteralFormatterArray;
+import org.hibernate.type.internal.ParameterizedTypeImpl;
 import org.hibernate.type.spi.TypeConfiguration;
 
+import static java.lang.reflect.Array.newInstance;
 
 
 /**
@@ -63,10 +67,22 @@ public class ReactiveArrayJdbcType implements JdbcType {
 			Integer precision,
 			Integer scale,
 			TypeConfiguration typeConfiguration) {
-		final JavaType<Object> elementJavaType = elementJdbcType
-				.getJdbcRecommendedJavaTypeMapping( precision, scale, typeConfiguration );
-		return typeConfiguration.getJavaTypeRegistry()
-				.resolveDescriptor( Array.newInstance( elementJavaType.getJavaTypeClass(), 0 ).getClass() );
+		final JavaType<?> elementJavaType =
+				elementJdbcType.getJdbcRecommendedJavaTypeMapping( precision, scale, typeConfiguration );
+		final var javaType =
+				typeConfiguration.getJavaTypeRegistry()
+						.resolveDescriptor( newInstance( elementJavaType.getJavaTypeClass(), 0 ).getClass() );
+		if ( javaType instanceof BasicPluralType<?, ?> ) {
+			//noinspection unchecked
+			return (JavaType<T>) javaType;
+		}
+		else {
+			//noinspection unchecked
+			return (JavaType<T>) javaType.createJavaType(
+					new ParameterizedTypeImpl( javaType.getJavaTypeClass(), new Type[0], null ),
+					typeConfiguration
+			);
+		}
 	}
 
 	@Override
