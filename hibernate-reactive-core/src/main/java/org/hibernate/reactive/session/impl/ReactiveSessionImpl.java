@@ -195,8 +195,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	protected PersistenceContext createPersistenceContext() {
-		return new ReactivePersistenceContextAdapter( super.createPersistenceContext() );
+	protected PersistenceContext createPersistenceContext(SessionCreationOptions options) {
+		return new ReactivePersistenceContextAdapter( super.createPersistenceContext( options ) );
 	}
 
 	@Override
