@@ -5,27 +5,50 @@
  */
 package org.hibernate.reactive.generator.values.internal;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
+import org.hibernate.generator.Generator;
+import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.generator.values.GeneratedValueBasicResultBuilder;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.generator.values.internal.GeneratedValuesHelper;
 import org.hibernate.generator.values.internal.GeneratedValuesImpl;
 import org.hibernate.generator.values.internal.GeneratedValuesMappingProducer;
-import org.hibernate.id.IdentifierGeneratorHelper;
+import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
+import org.hibernate.id.Configurable;
+import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.SelectGenerator;
+import org.hibernate.id.enhanced.DatabaseStructure;
+import org.hibernate.id.enhanced.SequenceStructure;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.id.enhanced.TableGenerator;
+import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.id.insert.GetGeneratedKeysDelegate;
 import org.hibernate.id.insert.UniqueKeySelectingDelegate;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.metamodel.mapping.ModelPart;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
+import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
+import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
+import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
+import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
 import org.hibernate.reactive.sql.results.internal.ReactiveDirectResultSetAccess;
@@ -41,15 +64,10 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.WrapperOptions;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCustomSql;
 import static org.hibernate.internal.NaturalIdHelper.getNaturalIdPropertyNames;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.NONE;
 
 /**
@@ -57,7 +75,7 @@ import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer
  */
 @Internal
 public class ReactiveGeneratedValuesHelper {
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( IdentifierGeneratorHelper.class );
+	private static final Log LOG = make( Log.class, lookup() );
 
 	/**
 	 *
@@ -225,4 +243,53 @@ public class ReactiveGeneratedValuesHelper {
 					return results.get( 0 );
 				} );
 	}
+
+	public static Generator augmentWithReactiveGenerator(
+			Generator generator,
+			GeneratorCreationContext creationContext,
+			RuntimeModelCreationContext runtimeModelCreationContext) {
+		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
+			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
+			if ( structure instanceof TableStructure ) {
+				return initialize( (IdentifierGenerator) generator, new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
+			}
+			if ( structure instanceof SequenceStructure ) {
+				return initialize( (IdentifierGenerator) generator, new ReactiveSequenceIdentifierGenerator( structure, runtimeModelCreationContext ), creationContext );
+			}
+			throw LOG.unknownStructureType();
+		}
+		if ( generator instanceof TableGenerator tableGenerator ) {
+			return initialize(
+					(IdentifierGenerator) generator,
+					new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ),
+					creationContext
+			);
+		}
+		if ( generator instanceof SelectGenerator ) {
+			throw LOG.selectGeneratorIsNotSupportedInHibernateReactive();
+		}
+		if ( generator instanceof CompositeNestedGeneratedValueGenerator compositeNestedGeneratedValueGenerator ) {
+			final ReactiveCompositeNestedGeneratedValueGenerator reactiveCompositeNestedGeneratedValueGenerator = new ReactiveCompositeNestedGeneratedValueGenerator(
+					compositeNestedGeneratedValueGenerator,
+					creationContext,
+					runtimeModelCreationContext
+			);
+			return initialize(
+					(IdentifierGenerator) generator,
+					reactiveCompositeNestedGeneratedValueGenerator,
+					creationContext
+			);
+		}
+		//nothing to do
+		return generator;
+	}
+
+	private static Generator initialize(
+			IdentifierGenerator idGenerator,
+			ReactiveIdentifierGenerator<?> reactiveIdGenerator,
+			GeneratorCreationContext creationContext) {
+		( (Configurable) reactiveIdGenerator ).initialize( creationContext.getSqlStringGenerationContext() );
+		return new ReactiveGeneratorWrapper( reactiveIdGenerator, idGenerator );
+	}
+
 }
