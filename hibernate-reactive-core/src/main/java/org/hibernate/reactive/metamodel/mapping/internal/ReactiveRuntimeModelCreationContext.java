@@ -7,6 +7,7 @@ package org.hibernate.reactive.metamodel.mapping.internal;
 
 import java.util.Map;
 
+import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataImplementor;
@@ -16,20 +17,29 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.generator.Generator;
+import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.mapping.GeneratorSettings;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.mapping.Property;
+import org.hibernate.mapping.RootClass;
+import org.hibernate.mapping.SimpleValue;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
-import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.reactive.boot.spi.ReactiveBootstrapContextAdapter;
-import org.hibernate.reactive.tuple.entity.ReactiveEntityMetamodel;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.Type;
 import org.hibernate.type.descriptor.java.spi.JavaTypeRegistry;
 import org.hibernate.type.spi.TypeConfiguration;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper.augmentWithReactiveGenerator;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+
 public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreationContext {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	private final RuntimeModelCreationContext delegate;
 	private final BootstrapContext bootstrapContext;
@@ -37,11 +47,6 @@ public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreation
 	public ReactiveRuntimeModelCreationContext(RuntimeModelCreationContext delegate) {
 		this.delegate = delegate;
 		bootstrapContext = new ReactiveBootstrapContextAdapter( delegate.getBootstrapContext() );
-	}
-
-	@Override
-	public EntityMetamodel createEntityMetamodel(PersistentClass persistentClass, EntityPersister persister) {
-		return new ReactiveEntityMetamodel( persistentClass, persister, delegate );
 	}
 
 	@Override
@@ -128,4 +133,86 @@ public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreation
 	public GeneratorSettings getGeneratorSettings() {
 		return delegate.getGeneratorSettings();
 	}
+
+	@Override
+	public Generator getOrCreateIdGenerator(String rootName, PersistentClass persistentClass){
+		final Generator existing = getGenerators().get( rootName );
+		if ( existing != null ) {
+			return existing;
+		}
+		else {
+			final SimpleValue identifier = (SimpleValue) persistentClass.getIdentifier();
+			final Generator idgenerator = augmentWithReactiveGenerator(
+					identifier.createGenerator(
+							getDialect(),
+							persistentClass.getRootClass(),
+							persistentClass.getIdentifierProperty(),
+							getGeneratorSettings()
+					),
+					new IdGeneratorCreationContext(
+							persistentClass.getRootClass(),
+							persistentClass.getIdentifierProperty(),
+							getGeneratorSettings(),
+							identifier,
+							this
+					),
+					this );
+			getGenerators().put( rootName, idgenerator );
+			return idgenerator;
+		}
+	}
+
+	private record IdGeneratorCreationContext(
+			RootClass rootClass,
+			Property property,
+			GeneratorSettings defaults,
+			SimpleValue identifier,
+			RuntimeModelCreationContext buildingContext) implements GeneratorCreationContext {
+
+		@Override
+		public Database getDatabase() {
+			return buildingContext.getBootModel().getDatabase();
+		}
+
+		@Override
+		public ServiceRegistry getServiceRegistry() {
+			return buildingContext.getBootstrapContext().getServiceRegistry();
+		}
+
+		@Override
+		public SqlStringGenerationContext getSqlStringGenerationContext() {
+			return defaults.getSqlStringGenerationContext();
+		}
+
+		@Override
+		public String getDefaultCatalog() {
+			return defaults.getDefaultCatalog();
+		}
+
+		@Override
+		public String getDefaultSchema() {
+			return defaults.getDefaultSchema();
+		}
+
+		@Override
+		public RootClass getRootClass() {
+			return rootClass;
+		}
+
+		@Override
+		public PersistentClass getPersistentClass() {
+			return rootClass;
+		}
+
+		@Override
+		public Property getProperty() {
+			return property;
+		}
+
+		@Override
+		public Type getType() {
+			return identifier.getType();
+		}
+	}
+
 }

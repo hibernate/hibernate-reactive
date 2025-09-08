@@ -94,7 +94,7 @@ public class ReactiveEntityUpdateAction extends EntityUpdateAction implements Re
 							.thenAccept( v -> {
 								handleDeleted( entry );
 								updateCacheItem( persister, ck, entry );
-								handleNaturalIdResolutions( persister, session, id );
+								handleNaturalIdSharedResolutions( id, persister, session.getPersistenceContext() );
 								postUpdate();
 
 								final StatisticsImplementor statistics = session.getFactory().getStatistics();
