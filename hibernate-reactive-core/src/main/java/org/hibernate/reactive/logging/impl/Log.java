@@ -159,11 +159,8 @@ public interface Log extends BasicLogger {
 	@Message(id = 47, value = "Generated identifier smaller or equal to 0: %1$d")
 	HibernateException generatedIdentifierSmallerOrEqualThanZero(Long id);
 
-	@Message(id = 48, value = "Could not determine Dialect from JDBC driver metadata (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')")
-	HibernateException couldNotDetermineDialectFromJdbcDriverMetadata();
-
-	@Message(id = 49, value = "Could not determine Dialect from connection URI: '%1$s' (specify a connection URI with scheme 'postgresql:', 'mysql:', 'cockroachdb', or 'db2:')")
-	HibernateException couldNotDetermineDialectFromConnectionURI(String url);
+	@Message(id = 49, value = "Could not determine Dialect from connection URI: '%1$s' (specify a connection URI with scheme 'postgresql:', 'postgres:', 'mariadb:', 'mysql:', 'db2:', 'cockroachdb:', 'sqlserver:' or 'oracle:' )")
+	IllegalArgumentException couldNotDetermineDialectFromConnectionURI(String url);
 
 	@Message(id = 50, value = "SelectGenerator is not supported in Hibernate Reactive")
 	HibernateException selectGeneratorIsNotSupportedInHibernateReactive();

@@ -29,6 +29,8 @@ import java.util.function.Function;
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
+import static org.hibernate.cfg.JdbcSettings.ALLOW_METADATA_ON_BOOT;
+import static org.hibernate.internal.util.config.ConfigurationHelper.getBooleanWrapper;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -84,7 +86,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 			Integer explicitDatabaseMajorVersion,
 			Integer explicitDatabaseMinorVersion,
 			String explicitDatabaseVersion) {
-		try {
+		if ( getBooleanWrapper( ALLOW_METADATA_ON_BOOT, configurationValues, true ) ) {
+			// We query the database for the metadata to build the Dialect
 			final Dialect dialect = new DialectBuilder( configurationValues, registry )
 					.build(
 							dialectFactory,
@@ -97,7 +100,8 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 					);
 			return new JdbcEnvironmentImpl( registry, dialect );
 		}
-		catch (RuntimeException e) {
+		else {
+			// We don't query the database but use default config values
 			return getJdbcEnvironmentWithDefaults( configurationValues, registry, dialectFactory );
 		}
 	}
