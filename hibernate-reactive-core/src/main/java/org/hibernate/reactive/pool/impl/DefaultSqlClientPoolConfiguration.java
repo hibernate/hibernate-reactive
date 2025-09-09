@@ -90,12 +90,17 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 	@Override
 	public SqlConnectOptions connectOptions(URI uri) {
-		String scheme = uri.getScheme();
-		String path = scheme.equals( "oracle" )
+		final String scheme = uri.getScheme();
+		if ( !isSchemeSupported( scheme ) ) {
+			throw new IllegalArgumentException( "Unsupported URI scheme: " + scheme + " for uri:" + uri
+														+ "; supported schemes are 'postgresql', 'postgres', 'mariadb', 'mysql', 'db2', 'cockroachdb', 'sqlserver', 'oracle' ");
+		}
+
+		final String path = scheme.equals( "oracle" )
 				? oraclePath( uri )
 				: uri.getPath();
 
-		String database = path.length() > 0
+		String database = path != null && !path.isEmpty()
 				? path.substring( 1 )
 				: "";
 
@@ -105,8 +110,8 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			database = database.substring( 0, database.indexOf( ':' ) );
 		}
 
-		String host = findHost( uri, scheme );
-		int port = findPort( uri, scheme );
+		final String host = findHost( uri, scheme );
+		final int port = findPort( uri, scheme );
 
 		//see if the credentials were specified via properties
 		String username = user;
@@ -383,6 +388,13 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 			default:
 				throw new IllegalArgumentException( "Unknown default port for scheme: " + scheme );
 		}
+	}
+
+	private boolean isSchemeSupported(String scheme) {
+		return switch ( scheme ) {
+			case "postgresql", "postgres", "mariadb", "mysql", "db2", "cockroachdb", "sqlserver", "oracle" -> true;
+			default -> false;
+		};
 	}
 
 }

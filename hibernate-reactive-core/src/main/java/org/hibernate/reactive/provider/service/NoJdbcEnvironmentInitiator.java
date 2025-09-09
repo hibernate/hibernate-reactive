@@ -29,6 +29,7 @@ import java.util.function.Function;
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.function.Function.identity;
+import static org.hibernate.cfg.JdbcSettings.ALLOW_METADATA_ON_BOOT;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 
 /**
@@ -84,7 +85,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 			Integer explicitDatabaseMajorVersion,
 			Integer explicitDatabaseMinorVersion,
 			String explicitDatabaseVersion) {
-		try {
+		if ( configurationValues.containsKey( ALLOW_METADATA_ON_BOOT ) ) {
 			final Dialect dialect = new DialectBuilder( configurationValues, registry )
 					.build(
 							dialectFactory,
@@ -97,7 +98,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 					);
 			return new JdbcEnvironmentImpl( registry, dialect );
 		}
-		catch (RuntimeException e) {
+		else {
 			return getJdbcEnvironmentWithDefaults( configurationValues, registry, dialectFactory );
 		}
 	}
