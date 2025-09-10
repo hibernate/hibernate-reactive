@@ -5,6 +5,14 @@
  */
 package org.hibernate.reactive.session.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
@@ -21,7 +29,7 @@ import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLaziness
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.engine.creation.internal.SessionCreationOptions;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -49,7 +57,6 @@ import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
@@ -88,6 +95,7 @@ import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
 import org.hibernate.reactive.event.ReactiveLoadEventListener;
@@ -124,13 +132,6 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import static java.lang.Boolean.TRUE;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -168,7 +169,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private transient ExceptionConverter exceptionConverter;
 
 	public ReactiveSessionImpl(
-			SessionFactoryImpl delegate, SessionCreationOptions options,
+			SessionFactoryImpl delegate,
+			SessionCreationOptions options,
 			ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
