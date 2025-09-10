@@ -271,7 +271,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 			return (JavaType<R>) resultJavaTypes.get( 0 );
 		}
 
-		return javaTypeRegistry.resolveDescriptor( Object[].class );
+		return javaTypeRegistry.getDescriptor( Object[].class );
 	}
 
 	@Override

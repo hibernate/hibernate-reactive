@@ -27,7 +27,6 @@ import org.hibernate.mapping.Property;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
-import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
@@ -42,17 +41,19 @@ import org.hibernate.type.Type;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 
+/**
+ * @deprecated No Longer used
+ */
+@Deprecated(since = "4.2", forRemoval = true)
 public class ReactiveEntityMetamodel extends EntityMetamodel {
 
 	private static final Log LOG = make( Log.class, lookup() );
 
 	public ReactiveEntityMetamodel(
 			PersistentClass persistentClass,
-			EntityPersister persister,
 			RuntimeModelCreationContext creationContext) {
 		this(
 				persistentClass,
-				persister,
 				creationContext,
 				s -> buildIdGenerator( s, persistentClass, creationContext )
 		);
@@ -60,10 +61,9 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 
 	public ReactiveEntityMetamodel(
 			PersistentClass persistentClass,
-			EntityPersister persister,
 			RuntimeModelCreationContext creationContext,
 			Function<String, Generator> generatorSupplier) {
-		super( persistentClass, persister, creationContext, generatorSupplier );
+		super( persistentClass, creationContext, generatorSupplier );
 	}
 
 	private static Generator buildIdGenerator(

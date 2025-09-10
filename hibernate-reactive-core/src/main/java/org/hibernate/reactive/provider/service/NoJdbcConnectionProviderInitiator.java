@@ -7,7 +7,7 @@ package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiator;
-import org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl;
+import org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
@@ -28,7 +28,7 @@ public class NoJdbcConnectionProviderInitiator implements StandardServiceInitiat
 	@Override
 	public ConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
 		ConnectionProvider provider = ConnectionProviderInitiator.INSTANCE.initiateService(configurationValues, registry);
-		if (provider instanceof DriverManagerConnectionProviderImpl) {
+		if ( provider instanceof DriverManagerConnectionProvider ) {
 			return NoJdbcConnectionProvider.INSTANCE;
 		}
 		return provider;
