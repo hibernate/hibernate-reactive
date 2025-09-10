@@ -13,7 +13,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.Cache;
-import org.hibernate.internal.SessionCreationOptions;
+import org.hibernate.engine.creation.internal.SessionBuilderImpl;
+import org.hibernate.engine.creation.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
@@ -133,11 +134,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	}
 
 	private SessionCreationOptions options() {
-		return new SessionFactoryImpl.SessionBuilderImpl( delegate );
+		return new SessionBuilderImpl( delegate );
 	}
 
 	private SessionCreationOptions options(String tenantIdentifier) {
-		return new SessionFactoryImpl.SessionBuilderImpl( delegate )
+		return (SessionCreationOptions) new SessionBuilderImpl( delegate )
 				.tenantIdentifier( tenantIdentifier );
 	}
 
