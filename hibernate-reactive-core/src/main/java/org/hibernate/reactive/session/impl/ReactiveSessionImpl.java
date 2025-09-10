@@ -20,6 +20,7 @@ import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.creation.internal.SessionCreationOptions;
 import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
@@ -48,7 +49,6 @@ import org.hibernate.event.spi.RefreshEvent;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
-import org.hibernate.internal.SessionCreationOptions;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
@@ -167,7 +167,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private transient ExceptionConverter exceptionConverter;
 
 	public ReactiveSessionImpl(
-			SessionFactoryImpl delegate, SessionCreationOptions options,
+			SessionFactoryImpl delegate,
+			SessionCreationOptions options,
 			ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
