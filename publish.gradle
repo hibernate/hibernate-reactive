@@ -24,6 +24,11 @@ jar {
                 'Implementation-Url': 'https://hibernate.org/reactive',
         )
     }
+	metaInf {
+		from(rootProject.projectDir, {
+			include "LICENSE"
+		})
+	}
 }
 
 javadoc {
