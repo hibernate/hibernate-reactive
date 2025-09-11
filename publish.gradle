@@ -10,6 +10,9 @@ java {
     withSourcesJar()
 }
 
+def moduleNameBase = project.name.startsWith( 'hibernate-' ) ? name.drop( 'hibernate-'.length() ): name
+def moduleName = "org.hibernate.$moduleNameBase".replace('-','.')
+
 jar {
     manifest {
         attributes(
@@ -22,6 +25,7 @@ jar {
                 'Implementation-Vendor': 'Hibernate.org',
                 'Implementation-Vendor-Id': 'org.hibernate',
                 'Implementation-Url': 'https://hibernate.org/reactive',
+				'Automatic-Module-Name': moduleName,
         )
     }
 }
