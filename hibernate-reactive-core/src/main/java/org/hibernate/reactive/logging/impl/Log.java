@@ -270,6 +270,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 84, value = "The application requested a JDBC connection, but Hibernate Reactive doesn't use JDBC. This could be caused by a bug or the use of an unsupported feature in Hibernate Reactive")
 	SQLException notUsingJdbc();
 
+	@Message(id = 85, value = "Reactive sessions do not support transparent lazy fetching - use Stage.fetch() or Mutiny.fetch() (property '%1$S' of entity '%2$s' was not loaded)")
+	LazyInitializationException lazyFieldInitializationException(String fieldName, String entityName);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
