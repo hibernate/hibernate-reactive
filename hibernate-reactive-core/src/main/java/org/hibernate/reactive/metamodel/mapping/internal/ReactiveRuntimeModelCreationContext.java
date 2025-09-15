@@ -22,6 +22,7 @@ import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
+import org.hibernate.reactive.boot.spi.ReactiveBootstrapContextAdapter;
 import org.hibernate.reactive.tuple.entity.ReactiveEntityMetamodel;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tuple.entity.EntityMetamodel;
@@ -31,9 +32,11 @@ import org.hibernate.type.spi.TypeConfiguration;
 public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreationContext {
 
 	private final RuntimeModelCreationContext delegate;
+	private final BootstrapContext bootstrapContext;
 
 	public ReactiveRuntimeModelCreationContext(RuntimeModelCreationContext delegate) {
 		this.delegate = delegate;
+		bootstrapContext = new ReactiveBootstrapContextAdapter( delegate.getBootstrapContext() );
 	}
 
 	@Override
@@ -48,7 +51,7 @@ public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreation
 
 	@Override
 	public BootstrapContext getBootstrapContext() {
-		return delegate.getBootstrapContext();
+		return bootstrapContext;
 	}
 
 	@Override
