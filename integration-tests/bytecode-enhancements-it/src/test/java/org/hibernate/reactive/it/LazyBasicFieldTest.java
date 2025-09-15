@@ -5,6 +5,9 @@
  */
 package org.hibernate.reactive.it;
 
+import org.hibernate.LazyInitializationException;
+
+import io.smallrye.mutiny.Uni;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,5 +49,47 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 										.invoke( fate -> assertThat( fate ).isEqualTo( emily.getFate() ) )
 								) ) )
 		);
+	}
+
+	@Test
+	public void testTransparentLazyFetching(VertxTestContext context) {
+		final Crew emily = new Crew();
+		emily.setId( 21L );
+		emily.setName( "Emily Jackson" );
+		emily.setRole( "Passenger" );
+		emily.setFate( "Unknown" );
+
+		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
+					  .withTransaction( session -> session.persist( emily ) )
+					  .call( () -> getMutinySessionFactory().withSession( session -> session.find( Crew.class, emily.getId() )
+							  .invoke( Crew::getRole ) ) )
+			  ).invoke( exception -> assertThat( exception.getMessage() ).contains( "Reactive sessions do not support transparent lazy fetching" ) )
+		);
+	}
+
+	@Test
+	public void testGetReferenceAndTransparentLazyFetching(VertxTestContext context) {
+		final Crew emily = new Crew();
+		emily.setId( 21L );
+		emily.setName( "Emily Jackson" );
+		emily.setRole( "Passenger" );
+		emily.setFate( "Unknown" );
+
+		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
+					  .withTransaction( session -> session.persist( emily ) )
+					  .chain( () -> getMutinySessionFactory().withSession( session -> {
+						  Crew crew = session.getReference( Crew.class, emily.getId() );
+						  String role = crew.getRole();
+						  return session.flush();
+					  } ) )
+			  ).invoke( exception -> assertThat( exception.getMessage() ).contains( "Reactive sessions do not support transparent lazy fetching" ) )
+		);
+	}
+
+	public static <U extends Throwable> Uni<U> assertThrown(Class<U> expectedException, Uni<?> uni) {
+		return uni.onItemOrFailure().transform( (s, e) -> {
+			assertThat( e ).isInstanceOf( expectedException );
+			return (U) e;
+		} );
 	}
 }
