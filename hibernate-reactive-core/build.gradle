@@ -9,6 +9,7 @@ apply from: publishScript
 dependencies {
 
     api(libs.org.hibernate.orm.hibernate.core)
+	compileOnly(libs.org.hibernate.models)
 
     api(libs.io.smallrye.reactive.mutiny)
 

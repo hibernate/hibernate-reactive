@@ -5,11 +5,13 @@
  */
 package org.hibernate.reactive.tuple.entity;
 
+import java.util.Set;
 import java.util.function.Function;
 
 
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
@@ -28,6 +30,7 @@ import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
@@ -37,6 +40,7 @@ import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tuple.entity.EntityMetamodel;
+import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -196,4 +200,16 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 			return identifier.getType();
 		}
 	}
+
+	@Override
+	protected BytecodeEnhancementMetadata getBytecodeEnhancementMetadataPojo(PersistentClass persistentClass, RuntimeModelCreationContext creationContext, Set<String> idAttributeNames, CompositeType nonAggregatedCidMapper, boolean collectionsInDefaultFetchGroupEnabled) {
+		return ReactiveBytecodeEnhancementMetadataPojoImplAdapter.from(
+				persistentClass,
+				idAttributeNames,
+				nonAggregatedCidMapper,
+				collectionsInDefaultFetchGroupEnabled,
+				creationContext.getMetadata()
+		);
+	}
+
 }
