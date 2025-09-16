@@ -153,7 +153,7 @@ public class LazyPropertyTest extends BaseReactiveTest {
 		}
 
 		public Book() {
-			super( new EntityRelatedState( "Book", singleton( "isbn" ) ), 1, null );
+			super( new EntityRelatedState( Book.class.getName(), singleton( "isbn" ) ), 1, null );
 		}
 
 		@Override

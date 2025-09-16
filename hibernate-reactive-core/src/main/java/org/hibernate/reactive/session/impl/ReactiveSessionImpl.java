@@ -18,6 +18,7 @@ import org.hibernate.TypeMismatchException;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
@@ -359,8 +360,20 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <E, T> CompletionStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
-		return ( (ReactiveEntityPersister) getEntityPersister( null, entity ) )
-				.reactiveInitializeLazyProperty( field, entity, this );
+		final ReactiveEntityPersister entityPersister = (ReactiveEntityPersister) getEntityPersister( null, entity );
+		LazyAttributeLoadingInterceptor lazyAttributeLoadingInterceptor = entityPersister.getBytecodeEnhancementMetadata()
+				.extractInterceptor( entity );
+		final String attributeName = field.getName();
+		if ( !lazyAttributeLoadingInterceptor.isAttributeLoaded( attributeName ) ) {
+			return ( (CompletionStage<T>) lazyAttributeLoadingInterceptor.fetchAttribute( entity, field.getName() ) )
+					.thenApply( value -> {
+						lazyAttributeLoadingInterceptor.attributeInitialized( attributeName );
+						return value;
+					} );
+		}
+		else {
+			return completedFuture( (T) entityPersister.getPropertyValue( entity, attributeName ) );
+		}
 	}
 
 	@Override
