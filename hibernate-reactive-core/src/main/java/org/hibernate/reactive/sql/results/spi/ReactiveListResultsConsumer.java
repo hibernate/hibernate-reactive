@@ -13,7 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ResultListTransformer;
