@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.engine.internal;
+package org.hibernate.reactive.engine.impl;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -36,7 +36,6 @@ import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PostLoadEventListener;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
@@ -106,10 +105,10 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		throw LOG.nonReactiveMethodCall( "reactiveGetDatabaseSnapshot" );
 	}
 
-	private static final Object[] NO_ROW = new Object[] {StatefulPersistenceContext.NO_ROW};
+	private static final Object[] NO_ROW = new Object[] {PersistenceContext.NO_ROW};
 
 	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
-		SessionImplementor session = (SessionImplementor) getSession();
+		final SessionImplementor session = (SessionImplementor) getSession();
 		final EntityKey key = session.generateEntityKey( id, persister );
 		final Object[] cached = getEntitySnapshotsByKey() == null
 				? null
