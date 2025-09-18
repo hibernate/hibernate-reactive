@@ -6,6 +6,7 @@
 package org.hibernate.reactive;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -46,6 +47,61 @@ public class EmbeddedIdTest extends BaseReactiveTest {
 	public void testFindSingleId(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( s -> s.find( Delivery.class, verbania ) )
 				.invoke( result -> assertThat( result ).isEqualTo( pizza ) )
+		);
+	}
+
+	@Test
+	public void testQueryWithListOfParametersValues(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( s -> s
+				.createQuery( "from Delivery d where d.locationId in (?1)", Delivery.class )
+				.setParameter( 1, verbania )
+				.getResultList()
+			  ).invoke( deliveries -> {
+				assertThat( deliveries ).hasSize( 1 );
+				assertThat( deliveries ).contains( pizza );
+			  } )
+		);
+	}
+
+	@Test
+	public void testQueryWithWhereClauseContainingInOperator(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( s -> s
+					.createQuery( "from Delivery d where d.locationId in ?1", Delivery.class )
+				.setParameter( 1, List.of( verbania ) )
+				.getResultList()
+			  ).invoke( deliveries -> {
+				assertThat( deliveries ).hasSize( 1 );
+				assertThat( deliveries ).contains( pizza );
+			  } )
+		);
+	}
+
+	@Test
+	public void testQueryWithWhereClauseContainingInOperatorListOfTwoValues(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( s -> s
+					.createQuery( "from Delivery d where d.locationId in ?1", Delivery.class )
+					.setParameter( 1, List.of( verbania, hallein ) )
+				.getResultList()
+			  ).invoke( deliveries -> {
+				assertThat( deliveries ).hasSize( 2 );
+				assertThat( deliveries ).contains( pizza );
+				assertThat( deliveries ).contains( schnitzel );
+			  } )
+		);
+	}
+
+	@Test
+	public void testQueryWithWhereClauseContainingInOperatorAndTwoParameters(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( s -> s
+				.createQuery( "from Delivery d where d.locationId in (?1,?2)", Delivery.class )
+				.setParameter( 1, verbania )
+				.setParameter( 2, hallein )
+				.getResultList()
+			  ).invoke( deliveries -> {
+				assertThat( deliveries ).hasSize( 2 );
+				assertThat( deliveries ).contains( pizza );
+				assertThat( deliveries ).contains( schnitzel );
+			  } )
 		);
 	}
 
