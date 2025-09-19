@@ -193,8 +193,8 @@ jobs:
           # and it's useful to test that.
           - { name: "20", java_version_numeric: 20, jvm_args: '--enable-preview' }
           - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
-          - { name: "24", java_version_numeric: 24, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-          - { name: "25-ea", java_version_numeric: 25, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "24", java_version_numeric: 24, jvm_args: '--enable-preview' }
+          - { name: "25", java_version_numeric: 25, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "26-ea", java_version_numeric: 26, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
