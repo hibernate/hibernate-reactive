@@ -34,8 +34,8 @@ import jakarta.persistence.UniqueConstraint;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

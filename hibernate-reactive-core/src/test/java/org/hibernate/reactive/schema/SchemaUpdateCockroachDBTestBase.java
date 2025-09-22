@@ -35,8 +35,8 @@ import org.assertj.core.api.Assertions;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
