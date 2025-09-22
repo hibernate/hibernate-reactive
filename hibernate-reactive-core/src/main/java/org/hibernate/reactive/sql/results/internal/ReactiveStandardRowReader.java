@@ -29,7 +29,7 @@ import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.sql.results.LoadingLogger.LOGGER;
+import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
 
 
 /**
@@ -121,7 +121,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 
 	@Override
 	public CompletionStage<R> reactiveReadRow(ReactiveRowProcessingState rowProcessingState, JdbcValuesSourceProcessingOptions options) {
-		LOGGER.trace( "ReactiveStandardRowReader#readRow" );
+		LOADING_LOGGER.trace( "ReactiveStandardRowReader#readRow" );
 
 		return coordinateInitializers( rowProcessingState )
 				.thenCompose( v -> {
@@ -160,7 +160,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final boolean[] resultRow = new boolean[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -181,7 +181,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final byte[] resultRow = new byte[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -202,7 +202,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final char[] resultRow = new char[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -223,7 +223,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final short[] resultRow = new short[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -244,7 +244,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final int[] resultRow = new int[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -265,7 +265,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final long[] resultRow = new long[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -286,7 +286,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final float[] resultRow = new float[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -307,7 +307,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final double[] resultRow = new double[resultAssemblers.length];
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -328,7 +328,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 		final Object[] resultRow = (Object[]) Array.newInstance( resultElementClass, resultAssemblers.length );
 		return loop( 0, assemblerCount, i -> {
 			final DomainResultAssembler<?> assembler = resultAssemblers[i];
-			LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
+			LOADING_LOGGER.debugf( "Calling top-level assembler (%s / %s) : %s", i, assemblerCount, assembler );
 			if ( assembler instanceof ReactiveDomainResultsAssembler ) {
 				return ( (ReactiveDomainResultsAssembler) assembler )
 						.reactiveAssemble( rowProcessingState, options )
@@ -362,7 +362,7 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 	}
 
 	private void afterRow(RowProcessingState rowProcessingState) {
-		LOGGER.trace( "ReactiveStandardRowReader#afterRow" );
+		LOADING_LOGGER.trace( "ReactiveStandardRowReader#afterRow" );
 		finishUpRow();
 	}
 
