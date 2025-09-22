@@ -27,6 +27,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
+import org.hibernate.mapping.Value;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
@@ -192,6 +193,11 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 		@Override
 		public Property getProperty() {
 			return property;
+		}
+
+		@Override
+		public Value getValue() {
+			return identifier;
 		}
 
 		@Override
