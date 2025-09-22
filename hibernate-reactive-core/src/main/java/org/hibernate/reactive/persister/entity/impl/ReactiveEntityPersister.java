@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.bytecode.BytecodeLogging;
+import org.hibernate.bytecode.enhance.internal.BytecodeEnhancementLogging;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
@@ -183,7 +183,7 @@ public interface ReactiveEntityPersister extends EntityPersister {
 			Object entityId,
 			String entityName,
 			SharedSessionContractImplementor session) {
-		BytecodeLogging.LOGGER.tracef(
+		BytecodeEnhancementLogging.ENHANCEMENT_LOGGER.tracef(
 				"EnhancementAsProxyLazinessInterceptor#forceInitialize : %s#%s -> %s )",
 				entityName,
 				entityId,
