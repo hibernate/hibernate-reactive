@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.internal.CoreLogging;
-import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.tool.schema.extract.spi.ExtractionContext;
 import org.hibernate.type.SqlTypes;
 
@@ -25,8 +23,6 @@ import org.hibernate.type.SqlTypes;
  * @author Gail Badner
  */
 public class PostgreSqlReactiveInformationExtractorImpl extends AbstractReactiveInformationSchemaBasedExtractorImpl {
-
-	private static final CoreMessageLogger LOG = CoreLogging.messageLogger( PostgreSqlReactiveInformationExtractorImpl.class );
 
 	public PostgreSqlReactiveInformationExtractorImpl(ExtractionContext extractionContext) {
 		super( extractionContext );
