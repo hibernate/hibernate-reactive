@@ -23,6 +23,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
+import org.hibernate.mapping.Value;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
@@ -207,6 +208,11 @@ public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreation
 		@Override
 		public Property getProperty() {
 			return property;
+		}
+
+		@Override
+		public Value getValue() {
+			return identifier;
 		}
 
 		@Override
