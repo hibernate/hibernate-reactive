@@ -7,8 +7,11 @@ package org.hibernate.reactive.stage.impl;
 
 import jakarta.persistence.metamodel.Metamodel;
 import org.hibernate.Cache;
-import org.hibernate.internal.SessionCreationOptions;
+import org.hibernate.engine.creation.internal.SessionBuilderImpl;
+import org.hibernate.engine.creation.internal.SessionCreationOptions;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.internal.SessionImpl;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
@@ -76,7 +79,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public CompletionStage<Stage.Session> openSession() {
 		SessionCreationOptions options = options();
-		return connection( options.getTenantIdentifier() )
+		return connection( getTenantIdentifier( options ) )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveSessionImpl( delegate, options, connection ) ) )
 				.thenApply( StageSessionImpl::new );
@@ -93,7 +96,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
-		return connection( options.getTenantIdentifier() )
+		return connection( getTenantIdentifier( options ) )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
 				.thenApply( StageStatelessSessionImpl::new );
@@ -124,12 +127,26 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	}
 
 	private SessionCreationOptions options() {
-		return new SessionFactoryImpl.SessionBuilderImpl( delegate );
+		return new SessionBuilderImpl( delegate ) {
+			@Override
+			protected SessionImplementor createSession() {
+				return new SessionImpl( delegate, this );
+			}
+		};
 	}
 
-	private SessionCreationOptions options(String tenantIdentifier) {
-		return new SessionFactoryImpl.SessionBuilderImpl( delegate )
-				.tenantIdentifier( tenantIdentifier );
+	private SessionCreationOptions options(String tenantId) {
+		return new SessionBuilderImpl( delegate ) {
+			@Override
+			protected SessionImplementor createSession() {
+				return new SessionImpl( delegate, this );
+			}
+
+			@Override
+			public Object getTenantIdentifierValue() {
+				return tenantId;
+			}
+		};
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
@@ -288,4 +305,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		return delegate.getCriteriaBuilder();
 	}
 
+	private String getTenantIdentifier(SessionCreationOptions options) {
+		return options.getTenantIdentifierValue() == null ? null : delegate.getTenantIdentifierJavaType().toString(
+				options.getTenantIdentifierValue() );
+	}
 }

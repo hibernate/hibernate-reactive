@@ -35,8 +35,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**

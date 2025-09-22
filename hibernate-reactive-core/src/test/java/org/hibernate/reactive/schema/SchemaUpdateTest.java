@@ -32,8 +32,8 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
-import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
+import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
