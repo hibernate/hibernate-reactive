@@ -6,7 +6,7 @@
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS io.vertx:vertx-pg-client:${vertx.version:5.0.2}
-//DEPS com.ongres.scram:scram-client:3.1
+//DEPS com.ongres.scram:scram-client:3.2
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.0.2}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.0.2}
 //DEPS io.vertx:vertx-unit:${vertx.version:5.0.2}

@@ -13,7 +13,7 @@
 //DEPS org.testcontainers:postgresql:1.21.3
 //DEPS org.slf4j:slf4j-simple:2.0.7
 //DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
-//DEPS com.ongres.scram:client:2.1
+//DEPS com.ongres.scram:scram-client:3.2
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
