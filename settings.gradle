@@ -24,13 +24,13 @@ def GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 23
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            // ./gradlew build -PhibernateOrmVersion=7.1.0.Final
+            // ./gradlew build -PhibernateOrmVersion=7.1.1.Final
             def hibernateOrmVersion = settings.ext.find("hibernateOrmVersion") ?: ""
             if ( hibernateOrmVersion != "" ) {
                 version("hibernateOrmVersion", hibernateOrmVersion)
             }
 
-            // ./gradlew build -PhibernateOrmGradlePluginVersion=7.1.0.Final
+            // ./gradlew build -PhibernateOrmGradlePluginVersion=7.1.1.Final
             def hibernateOrmGradlePluginVersion = settings.ext.find("hibernateOrmGradlePluginVersion") ?: ""
             if ( hibernateOrmGradlePluginVersion ) {
                 version("hibernateOrmGradlePluginVersion", hibernateOrmGradlePluginVersion)
