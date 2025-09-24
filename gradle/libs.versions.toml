@@ -1,24 +1,24 @@
 [versions]
-assertjVersion = "3.27.4"
-hibernateOrmVersion = "7.1.0.Final"
-hibernateOrmGradlePluginVersion = "7.1.0.Final"
+assertjVersion = "3.27.6"
+hibernateOrmVersion = "7.1.1.Final"
+hibernateOrmGradlePluginVersion = "7.1.1.Final"
 jacksonDatabindVersion = "2.20.0"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
 jbossLoggingVersion = "3.6.1.Final"
 junitVersion = "5.13.4"
 junitPlatformVersion = "1.13.3"
-log4jVersion = "2.25.1"
+log4jVersion = "2.25.2"
 testcontainersVersion = "1.21.3"
-vertxSqlClientVersion = "5.0.3"
-vertxWebVersion= "5.0.3"
-vertxWebClientVersion = "5.0.3"
+vertxSqlClientVersion = "5.0.4"
+vertxWebVersion= "5.0.4"
+vertxWebClientVersion = "5.0.4"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
 com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.2.0" }
 com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.2.0.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.4.0" }
-com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.1" }
+com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.2" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "3.0.0" }
 io-vertx-vertx-db2-client = { group = "io.vertx", name = "vertx-db2-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-junit5 = { group = "io.vertx", name = "vertx-junit5", version.ref = "vertxSqlClientVersion" }
@@ -44,8 +44,8 @@ org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name 
 org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
 org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.13.4" }
-org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.5" }
-org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.7" }
+org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.6" }
+org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.8" }
 org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
 org-testcontainers-db2 = { group = "org.testcontainers", name = "db2", version.ref = "testcontainersVersion" }
 org-testcontainers-mariadb = { group = "org.testcontainers", name = "mariadb", version.ref = "testcontainersVersion" }

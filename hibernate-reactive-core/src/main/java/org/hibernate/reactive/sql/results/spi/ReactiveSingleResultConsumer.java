@@ -8,7 +8,7 @@ package org.hibernate.reactive.sql.results.spi;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.Incubating;
-import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
