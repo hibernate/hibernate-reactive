@@ -156,11 +156,21 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
             into docWebsiteReactiveFolder.dir("javadocs")
         }
 
+		copy {
+			from documentationDir.dir("javadocs")
+			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/javadocs")
+		}
+
         // Reference Documentation
         copy {
             from documentationDir.dir("asciidoc/reference/html_single")
             into docWebsiteReactiveFolder.dir("reference/html_single")
-        }
+		}
+
+		copy {
+			from documentationDir.dir("asciidoc/reference/html_single")
+			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/reference/html_single")
+		}
     }
 }
 
