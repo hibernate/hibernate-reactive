@@ -106,9 +106,8 @@ public class BatchingConnection implements ReactiveConnection {
 					return voidFuture();
 				}
 				else {
-					CompletionStage<Void> lastBatch = executeBatch();
-					newBatch( sql, paramValues, expectation );
-					return lastBatch;
+					return executeBatch()
+							.thenAccept( v -> newBatch( sql, paramValues, expectation ) );
 				}
 			}
 		}
