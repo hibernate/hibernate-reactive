@@ -98,15 +98,7 @@ public class MultithreadedInsertionTest {
 
 	@BeforeAll
 	public static void setupSessionFactory() {
-		final VertxOptions vertxOptions = new VertxOptions();
-		vertxOptions.setEventLoopPoolSize( N_THREADS );
-		//We relax the blocked thread checks as we'll actually use latches to block them
-		//intentionally for the purpose of the test; functionally this isn't required
-		//but it's useful as self-test in the design of this, to ensure that the way
-		//things are setup are indeed being run in multiple, separate threads.
-		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
-		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
-		vertx = Vertx.vertx( vertxOptions );
+		vertx = Vertx.vertx( getVertxOptions() );
 		Configuration configuration = new Configuration();
 		setDefaultProperties( configuration );
 		configuration.addAnnotatedClass( EntityWithGeneratedId.class );
@@ -119,6 +111,18 @@ public class MultithreadedInsertionTest {
 		StandardServiceRegistry registry = builder.build();
 		sessionFactory = configuration.buildSessionFactory( registry );
 		stageSessionFactory = sessionFactory.unwrap( Stage.SessionFactory.class );
+	}
+
+	private static VertxOptions getVertxOptions() {
+		final VertxOptions vertxOptions = new VertxOptions();
+		vertxOptions.setEventLoopPoolSize( N_THREADS );
+		//We relax the blocked thread checks as we'll actually use latches to block them
+		//intentionally for the purpose of the test; functionally this isn't required,
+		//but it's useful as self-test in the design of this, to ensure that the way
+		//things are set up are indeed being run in multiple, separate threads.
+		vertxOptions.setBlockedThreadCheckInterval( TIMEOUT_MINUTES );
+		vertxOptions.setBlockedThreadCheckIntervalUnit( TimeUnit.MINUTES );
+		return vertxOptions;
 	}
 
 	@AfterAll
@@ -203,7 +207,7 @@ public class MultithreadedInsertionTest {
 	 */
 	@Entity
 	@Table(name="Entity")
-	private static class EntityWithGeneratedId {
+	public static class EntityWithGeneratedId {
 		@Id
 		@GeneratedValue
 		Long id;
