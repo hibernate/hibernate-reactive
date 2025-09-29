@@ -1,0 +1,5 @@
+---
+branches:
+  enabled: true
+  titlePrefix: "[%s]"
+  label: "%s"
