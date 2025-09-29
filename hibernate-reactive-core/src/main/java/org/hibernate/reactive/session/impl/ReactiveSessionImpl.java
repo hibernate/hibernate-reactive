@@ -1134,6 +1134,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
+	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
+		return reactiveRefresh( entity, toLockOptions( lockMode ) );
+	}
+
+	@Override
 	public CompletionStage<Void> reactiveRefresh(Object object, RefreshContext refreshedAlready) {
 		checkOpenOrWaitingForAutoClose();
 		return fireRefresh( refreshedAlready, new RefreshEvent( null, object, this ) );
@@ -1191,6 +1196,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public CompletionStage<Void> reactiveLock(Object object, LockOptions lockOptions) {
 		checkOpen();
 		return fireLock( new LockEvent( object, lockOptions, this ) );
+	}
+
+	@Override
+	public CompletionStage<Void> reactiveLock(Object entity, LockMode lockMode) {
+		return reactiveLock( entity, toLockOptions( lockMode ) );
 	}
 
 	@Override
@@ -1252,6 +1262,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 					getLoadQueryInfluencers().setReadOnly( null );
 				} );
+	}
+
+	@Override
+	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph){
+		return reactiveFind( entityClass, id, toLockOptions( lockMode ), fetchGraph );
 	}
 
 	private <T> CompletionStage<T> handleReactiveFindException(
@@ -1318,7 +1333,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final Object normalizedIdValues = persister.getNaturalIdMapping().normalizeInput( ids );
 		return new NaturalIdLoadAccessImpl<T>( this, persister, requireEntityPersister( entityClass ) )
 				.resolveNaturalId( normalizedIdValues )
-				.thenCompose( id -> reactiveFind( entityClass, id, null, null ) );
+				.thenCompose( id -> reactiveFind( entityClass, id ) );
 	}
 
 	private <T> ReactiveEntityPersister entityPersister(Class<T> entityClass) {
@@ -1810,5 +1825,22 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw LOG.wrongEntityType();
 		}
 		return (RootGraphImplementor<T>) entityGraph;
+	}
+
+	/**
+	 * Convert a {@link LockMode} into a {@link LockOptions} object.
+	 * <p>
+	 *     We need to make sure that we use the method {@link LockOptions#setLockMode(LockMode)} for the conversion
+	 *     because it also set a {@link LockOptions#timeout} that will affect the way SQL queries are generated.
+	 *     There's also the constructor {@link LockOptions#LockOptions(LockMode)}, but it doesn't set a time-out
+	 *     causing some generated SQL queries to not have the expected syntax (for example, it won't apply
+	 *     the "nowait" clause in PostgreSQL, even if set to {@link LockMode#UPGRADE_NOWAIT} ).
+	 * </p>
+	 * @see <a href="https://github.com/hibernate/hibernate-reactive/issues/2534">Hibernate Reactive issue 2534</a>
+	 */
+	private static LockOptions toLockOptions(LockMode lockMode) {
+		return lockMode == null
+				? null
+				: new LockOptions().setLockMode( lockMode );
 	}
 }
