@@ -221,7 +221,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey) {
-		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, null, null ) );
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey ) );
 	}
 
 	@Override
@@ -236,7 +236,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
-		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, new LockOptions( lockMode ), null ) );
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, lockMode, null ) );
 	}
 
 	@Override
@@ -252,7 +252,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraph<T>) entityGraph ).getGraphedType().getJavaType();
-		return uni( () -> delegate.reactiveFind( entityClass, id, null, entityGraph ) );
+		return uni( () -> delegate.reactiveFind( entityClass, id, (LockMode) null, entityGraph ) );
 	}
 
 	@Override
@@ -297,7 +297,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> refresh(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveRefresh( entity, new LockOptions( lockMode ) ) );
+		return uni( () -> delegate.reactiveRefresh( entity, lockMode ) );
 	}
 
 	@Override
@@ -317,7 +317,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> lock(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveLock( entity, new LockOptions( lockMode ) ) );
+		return uni( () -> delegate.reactiveLock( entity, lockMode ) );
 	}
 
 	@Override
