@@ -212,7 +212,7 @@ public class MultithreadedIdentityGenerationTest {
 									startPromise.fail( "Thread switch detected!" );
 								}
 								else {
-									allResults.deliverResulst( generatedIds );
+									allResults.deliverResults( generatedIds );
 									startPromise.complete();
 								}
 							}
@@ -233,7 +233,7 @@ public class MultithreadedIdentityGenerationTest {
 
 		private final ConcurrentMap<String, List<Long>> resultsByThread = new ConcurrentHashMap<>();
 
-		public void deliverResulst(List<Long> generatedIds) {
+		public void deliverResults(List<Long> generatedIds) {
 			final String threadName = Thread.currentThread().getName();
 			resultsByThread.put( threadName, generatedIds );
 		}

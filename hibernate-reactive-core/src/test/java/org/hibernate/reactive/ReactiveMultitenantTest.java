@@ -23,14 +23,11 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.DEFAULT;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_1;
 import static org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant.TENANT_2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This class creates multiple additional databases so that we can check that queries run
@@ -46,10 +43,8 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	protected Configuration constructConfiguration() {
 		Configuration configuration = super.constructConfiguration();
 		configuration.addAnnotatedClass( GuineaPig.class );
-		configuration.setProperty(
-				AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
-				"anything"
-		);//FIXME this is terrible?
+		// FIXME this is terrible?
+		configuration.setProperty( AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER, "anything" );
 		configuration.getProperties().put( Settings.MULTI_TENANT_IDENTIFIER_RESOLVER, TENANT_RESOLVER );
 		// Contains the SQL scripts for the creation of the additional databases
 		configuration.setProperty( Settings.HBM2DDL_IMPORT_FILES, "/multitenancy-test.sql" );
@@ -61,27 +56,27 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	public void reactivePersistFindDelete(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( DEFAULT );
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
-		test(
-				context,
-				getSessionFactory().openSession()
-						.thenCompose( session -> session.withTransaction( t -> session
-								.persist( guineaPig )
-								.thenCompose( v -> session.flush() )
-								.thenAccept( v -> session.detach( guineaPig ) )
-								.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
-								.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-								.thenAccept( actualPig -> {
-									assertThatPigsAreEqual( guineaPig, actualPig );
-									assertTrue( session.contains( actualPig ) );
-									assertFalse( session.contains( guineaPig ) );
-									assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
-									session.detach( actualPig );
-									assertFalse( session.contains( actualPig ) );
-								} )
-								.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-								.thenCompose( session::remove )
-								.thenCompose( v -> session.flush() ) )
-						)
+		test( context, openSession()
+				.thenCompose( session -> session
+						.persist( guineaPig )
+						.thenCompose( v -> session.flush() )
+						.thenAccept( v -> session.detach( guineaPig ) )
+						.thenAccept( v -> assertThat( session.contains( guineaPig ) ).isFalse() )
+						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+						.thenAccept( actualPig -> {
+							assertThat( actualPig ).isNotNull();
+							assertThat( actualPig.getId() ).isEqualTo( guineaPig.getId() );
+							assertThat( actualPig.getName() ).isEqualTo( guineaPig.getName() );
+							assertThat( session.contains( actualPig ) ).isTrue();
+							assertThat( session.contains( guineaPig ) ).isFalse();
+							assertThat( session.getLockMode( actualPig ) ).isEqualTo( LockMode.READ );
+							session.detach( actualPig );
+							assertThat( session.contains( actualPig ) ).isFalse();
+						} )
+						.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+						.thenCompose( session::remove )
+						.thenCompose( v -> session.flush() )
+				)
 		);
 	}
 
@@ -92,13 +87,13 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) ) )
+						.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_1.getDbName() ) ) )
 				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.thenCompose( unused -> openSession() )
 				.thenCompose( session -> session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) ) )
+						.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_2.getDbName() ) ) )
 		);
 	}
 
@@ -109,14 +104,14 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 				.thenCompose( t1Session -> t1Session
 					.createNativeQuery( "select current_database()" )
 					.getSingleResult()
-					.thenAccept( result -> assertEquals( TENANT_1.getDbName(), result ) )
+					.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_1.getDbName() ) )
 					.thenCompose( unused -> t1Session.close() ) )
 				.thenAccept( unused -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.thenCompose( v -> getSessionFactory().openStatelessSession() )
 				.thenCompose( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.thenAccept( result -> assertEquals( TENANT_2.getDbName(), result ) )
+						.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_2.getDbName() ) )
 						.thenCompose( v -> t2Session.close() ) )
 		);
 	}
@@ -124,24 +119,19 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 	@Test
 	public void testTenantSelectionStatelessSessionMutiny(VertxTestContext context) {
 		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
-		test( context, getMutinySessionFactory().withStatelessSession( t1Session ->
-				t1Session
-				.createNativeQuery( "select current_database()" )
-				.getSingleResult()
-				.invoke( result -> assertEquals( TENANT_1.getDbName(), result ) )
-			  )
+		test( context, getMutinySessionFactory()
+				.withStatelessSession( t1Session -> t1Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.invoke( result -> assertThat( result ).isEqualTo( TENANT_1.getDbName() ) )
+				)
 				.invoke( result -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
 				.chain( () -> getMutinySessionFactory().withStatelessSession( t2Session -> t2Session
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
-						.invoke( result -> assertEquals( TENANT_2.getDbName(), result ) ) ) )
+						.invoke( result -> assertThat( result ).isEqualTo( TENANT_2.getDbName() ) )
+				) )
 		);
-	}
-
-	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
-		assertNotNull( actual );
-		assertEquals( expected.getId(), actual.getId() );
-		assertEquals( expected.getName(), actual.getName() );
 	}
 
 	@Entity(name = "GuineaPig")

@@ -92,17 +92,18 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public Uni<Mutiny.Session> openSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( getTenantIdentifier( options ) ) )
-				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveSessionImpl( delegate, options, reactiveConnection ) ) )
-				.map( s -> new MutinySessionImpl(s, this) );
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveSessionImpl( delegate, options, reactiveConnection )
+				) )
+				.map( s -> new MutinySessionImpl( s, this ) );
 	}
 
 	@Override
 	public Uni<Mutiny.Session> openSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
-				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
-				.map( s -> new MutinySessionImpl(s, this) );
+				.chain( reactiveConnection -> create( reactiveConnection, () -> new ReactiveSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+				.map( s -> new MutinySessionImpl( s, this ) );
 	}
 
 	/**
@@ -122,16 +123,20 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	public Uni<Mutiny.StatelessSession> openStatelessSession() {
 		SessionCreationOptions options = options();
 		return uni( () -> connection( getTenantIdentifier( options ) ) )
-				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection ) ) )
-				.map( s -> new MutinyStatelessSessionImpl(s, this) );
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options, reactiveConnection )
+				) )
+				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
 	@Override
 	public Uni<Mutiny.StatelessSession> openStatelessSession(String tenantId) {
 		return uni( () -> connection( tenantId ) )
-				.chain( reactiveConnection -> create( reactiveConnection,
-						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection ) ) )
+				.chain( reactiveConnection -> create(
+						reactiveConnection,
+						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection )
+				) )
 				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
@@ -190,8 +195,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		Objects.requireNonNull( tenantId, "parameter 'tenantId' is required" );
 		Objects.requireNonNull( work, "parameter 'work' is required" );
 		Context.Key<Mutiny.Session> key = new MultitenantKey<>( contextKeyForSession, tenantId );
-		Mutiny.Session current = context.get(key);
-		if ( current!=null && current.isOpen() ) {
+		Mutiny.Session current = context.get( key );
+		if ( current != null && current.isOpen() ) {
 			LOG.debugf( "Reusing existing open Mutiny.Session which was found in the current Vert.x context for current tenant '%s'", tenantId );
 			return work.apply( current );
 		}
@@ -227,11 +232,11 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		}
 		else {
 			LOG.debugf( "No existing open Mutiny.StatelessSession was found in the current Vert.x context for current tenant '%s': opening a new instance", tenantId );
-			return withSession( openStatelessSession( tenantId), work, key );
+			return withSession( openStatelessSession( tenantId ), work, key );
 		}
 	}
 
-	private<S extends Mutiny.Closeable, T> Uni<T> withSession(
+	private <S extends Mutiny.Closeable, T> Uni<T> withSession(
 			Uni<S> sessionUni,
 			Function<S, Uni<T>> work,
 			Context.Key<S> contextKey) {
@@ -246,25 +251,25 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	@Override
 	public <T> Uni<T> withTransaction(BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		return withSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
+		return withSession( s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessTransaction(BiFunction<Mutiny.StatelessSession, Mutiny.Transaction, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		return withStatelessSession( s -> s.withTransaction( t -> work.apply(s, t) ) );
+		return withStatelessSession( s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 
 	@Override
 	public <T> Uni<T> withTransaction(String tenantId, BiFunction<Mutiny.Session, Mutiny.Transaction, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		return withSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
+		return withSession( tenantId, s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 
 	@Override
 	public <T> Uni<T> withStatelessTransaction(String tenantId, BiFunction<Mutiny.StatelessSession, Mutiny.Transaction, Uni<T>> work) {
 		Objects.requireNonNull( work, "parameter 'work' is required" );
-		return withStatelessSession( tenantId, s -> s.withTransaction( t -> work.apply(s, t) ) );
+		return withStatelessSession( tenantId, s -> s.withTransaction( t -> work.apply( s, t ) ) );
 	}
 
 	@Override
