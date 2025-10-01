@@ -138,6 +138,7 @@ include 'bytecode-enhancements-it'
 include 'verticle-postgres-it'
 include 'techempower-postgres-it'
 include 'hibernate-validator-postgres-it'
+include 'local-build-asciidoctor-extensions'
 
 // Examples
 for ( project in rootProject.children ) {
