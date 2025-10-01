@@ -6,6 +6,14 @@ plugins {
 	id "org.asciidoctor.jvm.convert"
 }
 
+configurations {
+	themezip
+}
+
+dependencies {
+	themezip 'org.hibernate.infra:hibernate-asciidoctor-theme:6.0.0.Final@zip'
+}
+
 ext {
 	projectsToSkipWhenAggregatingJavadocs = [
 			'example',
@@ -18,6 +26,23 @@ rootProject.subprojects { subproject ->
 	if ( !this.projectsToSkipWhenAggregatingJavadocs.contains( subproject.name ) ) {
 		this.evaluationDependsOn( subproject.path )
 	}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Prepare the theme for Javadocs/Asciidoc
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tasks.register('unpackTheme', Copy) {
+	def unpackDir = rootProject.layout.buildDirectory.dir("unpacked-theme")
+
+	onlyIf {
+		!unpackDir.get().asFile.exists()
+	}
+	destinationDir = unpackDir.get().asFile
+
+	def zipFile = configurations.themezip.singleFile
+	from zipTree(zipFile)
+
+	dependsOn configurations.themezip
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +74,9 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		windowTitle = 'Hibernate Reactive API documentation'
 		docTitle = "Hibernate Reactive API documentation ($project.version)"
 		bottom = "Copyright &copy; $inceptionYear-$currentYear <a href=\"http://redhat.com\">Red Hat, Inc</a>. All Rights Reserved."
+		// Pick the styles for the JDK that is used to "build" the Javadocs:
+		stylesheetFile = rootProject.layout.buildDirectory.dir("unpacked-theme").get()
+				.dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk21").file("stylesheet.css").asFile
 		use = true
 		options.encoding = 'UTF-8'
 
@@ -89,6 +117,8 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 			classpath += subProject.sourceSets.main.output + subProject.sourceSets.main.compileClasspath
 		}
 	}
+
+	dependsOn 'unpackTheme'
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +133,11 @@ asciidoctor {
 def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumentation', AsciidoctorTask ) {
 	description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
 	sourceDir = file( 'src/main/asciidoc/reference' )
+	asciidoctorj {
+		version '3.0.0'
+		docExtensions(project(':local-build-asciidoctor-extensions'))
+	}
+
 	sources {
 		include 'index.adoc'
 	}
@@ -110,7 +145,12 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 	resources {
 		from( sourceDir ) {
 			include 'images/**'
+		}
+		from(rootProject.layout.buildDirectory.dir("unpacked-theme").get()
+				.dir("hibernate-asciidoctor-theme").dir("asciidoc")) {
 			include 'css/**'
+			include 'images/**'
+			include 'script/**'
 		}
 	}
 
@@ -118,12 +158,22 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 	options logDocuments: true
 
 	attributes icons: 'font',
-			   'source-highlighter': 'rouge',
-			   experimental: true,
-			   linkcss: true,
-			   majorMinorVersion: project.projectVersion.family,
-			   fullVersion: project.version.toString(),
-			   docinfo: 'private'
+			'source-highlighter': 'rouge',
+			majorMinorVersion: project.projectVersion.family,
+			fullVersion: project.version.toString(),
+			stylesdir: "css",
+			'iconfont-remote': false,
+			'iconfont-name': 'font-awesome/css/solid',
+			docinfo: 'shared,private',
+			docinfodir: rootProject.layout.buildDirectory.dir("unpacked-theme").get()
+					.dir("hibernate-asciidoctor-theme").dir("asciidoc").dir("docinfo").dir('hibernate').asFile.absolutePath,
+			'html.meta.project-key': 'orm',
+			'html.outdated-content.project-key': 'orm',
+			'html-meta-description': 'Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation',
+			'html-meta-keywords': 'hibernate, reactive, hibernate reactive, database, db, vert.x',
+			'html-meta-version-family': project.projectVersion.family
+
+	dependsOn 'unpackTheme'
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

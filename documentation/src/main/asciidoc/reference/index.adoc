@@ -1,11 +1,11 @@
 = Hibernate Reactive {fullVersion} Reference Documentation
 Davide D'Alto <davide@hibernate.org>; Gavin King <gavin@hibernate.org>
-:stylesheet: css/hibernate.css
 :toc2:
 :toclevels: 3
 :sectanchors:
 :sourcedir: src/main/asciidoc/reference
 :leveloffset: +1
+:version-selector-enabled: true
 
 include::{sourcedir}/preface.adoc[]
 
