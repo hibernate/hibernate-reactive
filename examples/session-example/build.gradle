@@ -70,6 +70,18 @@ mainJavaClasses.each { String mainJavaClass ->
     }
 }
 
+mainJavaClasses.eachWithIndex { String mainJavaClass, int idx ->
+	dbs.each { String db ->
+		def t = tasks.named("runExampleOn${db}${mainJavaClass}")
+		if (idx > 0) {
+			def prev = tasks.named("runExampleOn${db}${mainJavaClasses[idx - 1]}")
+			t.configure {
+				mustRunAfter(prev)
+			}
+		}
+	}
+}
+
 tasks.register( "runAllExamplesOnPostgreSQL" ) {
     dependsOn = mainJavaClasses.collect( [] as HashSet ) { mainClass -> "runExampleOnPostgreSQL${mainClass}" }
     description = "Run ${mainJavaClasses} on PostgreSQL"
