@@ -6,6 +6,7 @@ Davide D'Alto <davide@hibernate.org>; Gavin King <gavin@hibernate.org>
 :sourcedir: src/main/asciidoc/reference
 :leveloffset: +1
 :version-selector-enabled: true
+:html-meta-canonical-link: https://docs.hibernate.org/stable/reactive/reference/html_single
 
 include::{sourcedir}/preface.adoc[]
 
