@@ -12,7 +12,7 @@ configurations {
 }
 
 dependencies {
-	themezip 'org.hibernate.infra:hibernate-asciidoctor-theme:6.0.0.Final@zip'
+	themezip 'org.hibernate.infra:hibernate-asciidoctor-theme:6.0.2.Final@zip'
 }
 
 ext {
@@ -168,8 +168,8 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 			docinfo: 'shared,private',
 			docinfodir: rootProject.layout.buildDirectory.dir("unpacked-theme").get()
 					.dir("hibernate-asciidoctor-theme").dir("asciidoc").dir("docinfo").dir('hibernate').asFile.absolutePath,
-			'html.meta.project-key': 'orm',
-			'html.outdated-content.project-key': 'orm',
+			'html-meta-project-key': 'reactive',
+			'html-outdated-content-project-key': 'reactive',
 			'html-meta-description': 'Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation',
 			'html-meta-keywords': 'hibernate, reactive, hibernate reactive, database, db, vert.x',
 			'html-meta-version-family': project.projectVersion.family
