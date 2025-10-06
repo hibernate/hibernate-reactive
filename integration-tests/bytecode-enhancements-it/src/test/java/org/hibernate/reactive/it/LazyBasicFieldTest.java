@@ -6,12 +6,17 @@
 package org.hibernate.reactive.it;
 
 import org.hibernate.LazyInitializationException;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+
+import org.hibernate.testing.SqlStatementTracker;
 
 import io.smallrye.mutiny.Uni;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -25,6 +30,33 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class LazyBasicFieldTest extends BaseReactiveIT {
+
+	private static SqlStatementTracker sqlTracker;
+
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+
+		// Construct a tracker that collects query statements via the SqlStatementLogger framework.
+		// Pass in configuration properties to hand off any actual logging properties
+		sqlTracker = new SqlStatementTracker( LazyBasicFieldTest::selectQueryFilter, configuration.getProperties() );
+		return configuration;
+	}
+
+	@BeforeEach
+	public void clearTracker() {
+		sqlTracker.clear();
+	}
+
+	@Override
+	protected void addServices(StandardServiceRegistryBuilder builder) {
+		sqlTracker.registerService( builder );
+	}
+
+	private static boolean selectQueryFilter(String s) {
+		return s.toLowerCase().startsWith( "select " );
+	}
+
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Crew.class );
@@ -47,6 +79,31 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 										.invoke( role -> assertThat( role ).isEqualTo( emily.getRole() ) ) )
 								.call( crew -> session.fetch( crew, Crew_.fate )
 										.invoke( fate -> assertThat( fate ).isEqualTo( emily.getFate() ) )
+								) ) )
+		);
+	}
+
+	@Test
+	public void testFetchBasicFieldAlsoInitializesIt(VertxTestContext context) {
+		final Crew emily = new Crew();
+		emily.setId( 21L );
+		emily.setName( "Emily Jackson" );
+		emily.setRole( "Passenger" );
+		emily.setFate( "Unknown" );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persist( emily ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( session -> session
+								.find( Crew.class, emily.getId() )
+								.call( crew -> session.fetch( crew, Crew_.role )
+										.invoke( role -> assertThat( role ).isEqualTo( emily.getRole() ) ) )
+								.invoke( () -> sqlTracker.clear() )
+								.call( crew -> session.fetch( crew, Crew_.role )
+										.invoke( role -> {
+											// No select query expected, the previous fetch must have initialized the role attribute
+											assertThat(sqlTracker.getLoggedQueries()).hasSize( 0 );
+											assertThat( role ).isEqualTo( emily.getRole() );} )
 								) ) )
 		);
 	}
