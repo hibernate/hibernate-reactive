@@ -37,7 +37,7 @@ org-glassfish-expressly-expressly = { group = "org.glassfish.expressly", name = 
 org-hibernate-orm-hibernate-core = { group = "org.hibernate.orm", name = "hibernate-core", version.ref = "hibernateOrmVersion" }
 org-hibernate-orm-hibernate-jcache = { group = "org.hibernate.orm", name = "hibernate-jcache", version.ref = "hibernateOrmVersion" }
 org-hibernate-orm-hibernate-jpamodelgen = { group = "org.hibernate.orm", name = "hibernate-jpamodelgen", version.ref = "hibernateOrmVersion" }
-org-hibernate-validator-hibernate-validator = { group = "org.hibernate.validator", name = "hibernate-validator", version = "8.0.2.Final" }
+org-hibernate-validator-hibernate-validator = { group = "org.hibernate.validator", name = "hibernate-validator", version = "8.0.3.Final" }
 org-jboss-logging-jboss-logging = { group = "org.jboss.logging", name = "jboss-logging", version.ref = "jbossLoggingVersion" }
 org-jboss-logging-jboss-logging-annotations = { group = "org.jboss.logging", name = "jboss-logging-annotations", version.ref = "jbossLoggingAnnotationVersion" }
 org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingAnnotationVersion" }
