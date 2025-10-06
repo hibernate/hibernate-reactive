@@ -32,7 +32,7 @@ io-vertx-vertx-web = { group = "io.vertx", name = "vertx-web", version.ref = "ve
 io-vertx-vertx-web-client = { group = "io.vertx", name = "vertx-web-client", version.ref = "vertxWebClientVersion" }
 org-apache-logging-log4j-log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 org-assertj-assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
-org-ehcache-ehcache = { group = "org.ehcache", name = "ehcache", version = "3.10.8" }
+org-ehcache-ehcache = { group = "org.ehcache", name = "ehcache", version = "3.11.1" }
 org-glassfish-expressly-expressly = { group = "org.glassfish.expressly", name = "expressly", version = "5.0.0" }
 org-hibernate-orm-hibernate-core = { group = "org.hibernate.orm", name = "hibernate-core", version.ref = "hibernateOrmVersion" }
 org-hibernate-orm-hibernate-jcache = { group = "org.hibernate.orm", name = "hibernate-jcache", version.ref = "hibernateOrmVersion" }
