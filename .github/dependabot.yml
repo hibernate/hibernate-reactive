@@ -67,56 +67,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-  - package-ecosystem: "gradle"
-    directory: "/"
-    target-branch: "main"
-    schedule:
-      interval: "weekly"
-      day: "tuesday"
-    open-pull-requests-limit: 20
-    groups:
-      hibernate-validator:
-        patterns:
-          - "org.hibernate.validator*"
-          - "org.glassfish.expressly*"
-      hibernate:
-        patterns:
-          - "org.hibernate*"
-      vertx:
-        patterns:
-          - "io.vertx*"
-      mutiny:
-        patterns:
-          - "io.smallrye.reactive*"
-      # Testcontainers plus the JDBC driver we need for testing
-      testcontainers:
-        patterns:
-          - "org.testcontainers*"
-          - "com.ibm.db2*"
-          - "com.microsoft.sqlserver*"
-          - "org.postgresql*"
-          - "con.ongres.scram*"
-          - "com.fasterxml.jackson.core*"
-          - "com.mysql*"
-          - "org.mariadb.jdbc*"
-    ignore:
-      # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
-      - dependency-name: "org.glassfish.expressly*"
-        update-types: ["version-update:semver-major"]
-      # Only patches for Hibernate ORM and Vert.x
-      - dependency-name: "org.hibernate*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "io.vertx*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-
-  # Dockerfiles in tooling/docker/, and database services we use for examples (MySQL and PostgreSQL)
-  - package-ecosystem: "docker"
-    directory: "/tooling/docker"
-    target-branch: "main"
-    schedule:
-      interval: "weekly"
-    allow:
-      - dependency-type: "all"
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 4.1
@@ -163,7 +113,7 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/tooling/docker"
-    target-branch: "3.1"
+    target-branch: "4.1"
     schedule:
       interval: "weekly"
     allow:
@@ -269,7 +219,7 @@ updates:
   # Dockerfiles in tooling/docker/, and database services we use for examples (MySQL and PostgreSQL)
   - package-ecosystem: "docker"
     directory: "/tooling/docker"
-    target-branch: "main"
+    target-branch: "2.4"
     schedule:
       interval: "weekly"
     allow:
