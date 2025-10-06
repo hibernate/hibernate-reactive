@@ -18,7 +18,7 @@ com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.c
 com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.2.0" }
 com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.2.0.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.4.0" }
-com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.1" }
+com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.2" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.4" }
 io-vertx-vertx-db2-client = { group = "io.vertx", name = "vertx-db2-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-junit5 = { group = "io.vertx", name = "vertx-junit5", version.ref = "vertxSqlClientVersion" }
