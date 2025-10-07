@@ -131,50 +131,57 @@ asciidoctor {
 	enabled = false
 }
 
-def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumentation', AsciidoctorTask ) {
-	description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
-	sourceDir = file( 'src/main/asciidoc/reference' )
+def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumentation", AsciidoctorTask ) {
+	description = "Renders the Reference Documentation in HTML format using Asciidoctor."
+	notCompatibleWithConfigurationCache( "AsciidoctorGradlePlugin does not support configuration cache yet" )
+
+	// use of provider to obtain info and cache the value
+	def versionFamily = providers.provider { project.projectVersion.family }
+	def fullVersion = providers.provider { project.version.toString() }
+	def asciidocReference = layout.projectDirectory.dir("src/main/asciidoc/reference")
+	def unpackedThemeAsciidoc = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc")
+	def docInfoHibernate = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc/docinfo/hibernate")
+
 	asciidoctorj {
-		version '3.0.0'
-		docExtensions(project(':local-build-asciidoctor-extensions'))
+		version = "3.0.0"
+		docExtensions( project( ":local-build-asciidoctor-extensions" ) )
 	}
 
 	sources {
-		include 'index.adoc'
+		include( "index.adoc" )
 	}
 
 	resources {
-		from( sourceDir ) {
-			include 'images/**'
+		from( asciidocReference ) {
+			include( "images/**" )
 		}
-		from(rootProject.layout.buildDirectory.dir("unpacked-theme").get()
-				.dir("hibernate-asciidoctor-theme").dir("asciidoc")) {
-			include 'css/**'
-			include 'images/**'
-			include 'script/**'
+		from( unpackedThemeAsciidoc ) {
+			include( "css/**", "images/**", "script/**" )
 		}
 	}
 
-	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
-	options logDocuments: true
+	outputDir = layout.buildDirectory.dir( "asciidoc/reference/html_single" )
 
-	attributes icons: 'font',
-			'source-highlighter': 'rouge',
-			majorMinorVersion: project.projectVersion.family,
-			fullVersion: project.version.toString(),
+	options( logDocuments: true )
+
+	attributes(
+			icons: "font",
+			"source-highlighter": "rouge",
+			majorMinorVersion: versionFamily,
+			fullVersion: fullVersion,
 			stylesdir: "css",
-			'iconfont-remote': false,
-			'iconfont-name': 'font-awesome/css/solid',
-			docinfo: 'shared,private',
-			docinfodir: rootProject.layout.buildDirectory.dir("unpacked-theme").get()
-					.dir("hibernate-asciidoctor-theme").dir("asciidoc").dir("docinfo").dir('hibernate').asFile.absolutePath,
-			'html-meta-project-key': 'reactive',
-			'html-outdated-content-project-key': 'reactive',
-			'html-meta-description': 'Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation',
-			'html-meta-keywords': 'hibernate, reactive, hibernate reactive, database, db, vert.x',
-			'html-meta-version-family': project.projectVersion.family
+			"iconfont-remote": false,
+			"iconfont-name": "font-awesome/css/solid",
+			docinfo: "shared,private",
+			docinfodir: docInfoHibernate,
+			"html.meta.project-key": "reactive",
+			"html.outdated-content.project-key": "reactive",
+			"html-meta-description": "Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation",
+			"html-meta-keywords": "hibernate, reactive, hibernate reactive, database, db, vert.x",
+			"html-meta-version-family": versionFamily,
+	)
 
-	dependsOn 'unpackTheme'
+	dependsOn( tasks.named( "unpackTheme" ) )
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
