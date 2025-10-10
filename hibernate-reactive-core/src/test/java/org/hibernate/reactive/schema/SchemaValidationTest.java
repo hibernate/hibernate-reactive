@@ -118,7 +118,7 @@ public class SchemaValidationTest extends BaseReactiveTest {
 	@MethodSource("settings")
 	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testValidationFails(String strategy, String type, VertxTestContext context) {
-		final String errorMessage = "Schema-validation: missing table [" + Extra.TABLE_NAME + "]";
+		final String errorMessage = "Schema validation: missing table [" + Extra.TABLE_NAME + "]";
 		test(
 				context, setupFactory( strategy, type )
 						.thenCompose( v -> {

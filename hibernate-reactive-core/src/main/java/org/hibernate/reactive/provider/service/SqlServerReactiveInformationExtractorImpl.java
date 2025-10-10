@@ -163,6 +163,15 @@ public class SqlServerReactiveInformationExtractorImpl extends AbstractReactiveI
 	}
 
 	@Override
+	protected <T> T processPrimaryKeysResultSet(
+			String catalogFilter,
+			String schemaFilter,
+			String tableName,
+			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	protected <T> T processIndexInfoResultSet(
 			String catalog,
 			String schema,
