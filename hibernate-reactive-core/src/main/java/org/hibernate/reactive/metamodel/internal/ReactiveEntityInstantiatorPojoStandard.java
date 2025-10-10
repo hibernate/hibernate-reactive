@@ -7,8 +7,8 @@ package org.hibernate.reactive.metamodel.internal;
 
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.internal.EntityInstantiatorPojoStandard;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.bythecode.enhance.spi.internal.ReactiveLazyAttributeLoadingInterceptor;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.descriptor.java.JavaType;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -19,10 +19,10 @@ import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttrib
 public class ReactiveEntityInstantiatorPojoStandard extends EntityInstantiatorPojoStandard {
 
 	public ReactiveEntityInstantiatorPojoStandard(
-			EntityMetamodel entityMetamodel,
+			EntityPersister persister,
 			PersistentClass persistentClass,
 			JavaType<?> javaType) {
-		super( entityMetamodel, persistentClass, javaType );
+		super( persister, persistentClass, javaType );
 	}
 
 	@Override

@@ -22,6 +22,9 @@ import org.hibernate.LockOptions;
 import org.hibernate.MappingException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.ObjectNotFoundException;
+import org.hibernate.OrderingMode;
+import org.hibernate.RemovalsMode;
+import org.hibernate.SessionCheckMode;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
@@ -1476,10 +1479,9 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		private GraphSemantic graphSemantic;
 
 		private Integer batchSize;
-		private boolean sessionCheckingEnabled;
-		private boolean returnOfDeletedEntitiesEnabled;
-		private boolean orderedReturnEnabled = true;
-		private boolean readOnly;
+		private SessionCheckMode sessionCheckMode = SessionCheckMode.DISABLED;
+		private RemovalsMode removalsMode = RemovalsMode.REPLACE;
+		protected OrderingMode orderingMode = OrderingMode.ORDERED;
 
 		public ReactiveMultiIdentifierLoadAccessImpl(EntityPersister entityPersister) {
 			this.entityPersister = (ReactiveEntityPersister) entityPersister;
@@ -1526,8 +1528,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		@Override
-		public boolean isSessionCheckingEnabled() {
-			return sessionCheckingEnabled;
+		public SessionCheckMode getSessionCheckMode() {
+			return sessionCheckMode;
 		}
 
 		@Override
@@ -1536,27 +1538,27 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		public ReactiveMultiIdentifierLoadAccessImpl<T> enableSessionCheck(boolean enabled) {
-			this.sessionCheckingEnabled = enabled;
+			this.sessionCheckMode = enabled ? SessionCheckMode.ENABLED : SessionCheckMode.DISABLED;
 			return this;
 		}
 
 		@Override
-		public boolean isReturnOfDeletedEntitiesEnabled() {
-			return returnOfDeletedEntitiesEnabled;
+		public RemovalsMode getRemovalsMode() {
+			return removalsMode;
+		}
+
+		@Override
+		public OrderingMode getOrderingMode() {
+			return orderingMode;
 		}
 
 		public ReactiveMultiIdentifierLoadAccessImpl<T> enableReturnOfDeletedEntities(boolean enabled) {
-			this.returnOfDeletedEntitiesEnabled = enabled;
+			this.removalsMode = enabled ? RemovalsMode.INCLUDE : RemovalsMode.REPLACE;
 			return this;
 		}
 
-		@Override
-		public boolean isOrderReturnEnabled() {
-			return orderedReturnEnabled;
-		}
-
 		public ReactiveMultiIdentifierLoadAccessImpl<T> enableOrderedReturn(boolean enabled) {
-			this.orderedReturnEnabled = enabled;
+			this.orderingMode = enabled ? OrderingMode.ORDERED : OrderingMode.UNORDERED;
 			return this;
 		}
 
