@@ -195,4 +195,27 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 		}
 		return super.dataTypeCode( typeName );
 	}
+
+	@Override
+	protected <T> T processPrimaryKeysResultSet(
+			String catalogFilter,
+			String schemaFilter,
+			String tableName,
+			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+		final StringBuilder sb = new StringBuilder()
+				.append( "SELECT NULL AS table_cat, " )
+				.append( "c.owner AS table_schem, " )
+				.append( "c.table_name, " )
+				.append( "c.column_name, " )
+				.append( "c.position AS key_seq, " )
+				.append( "c.constraint_name AS pk_name " )
+				.append( "FROM all_cons_columns c, all_constraints k " )
+				.append( "WHERE k.constraint_type = 'P' AND k.table_name = :1 AND k.owner like :2 escape '/' ")
+				.append( "AND k.constraint_name = c.constraint_name  AND k.table_name = c.table_name AND k.owner = c.owner ORDER BY column_name");
+
+		List<Object> parameterValues = new ArrayList<>(2);
+		parameterValues.add( tableName );
+		parameterValues.add( schemaFilter == null ? "%" : schemaFilter );
+		return getExtractionContext().getQueryResults( sb.toString(), parameterValues.toArray(), processor );
+	}
 }

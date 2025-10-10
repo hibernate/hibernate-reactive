@@ -11,7 +11,6 @@ import org.hibernate.metamodel.internal.EntityRepresentationStrategyPojoStandard
 import org.hibernate.metamodel.spi.EntityInstantiator;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 /**
  * Extends {@link EntityRepresentationStrategyPojoStandard}
@@ -27,21 +26,18 @@ public class ReactiveEntityRepresentationStrategyPojoStandard extends EntityRepr
 	}
 
 	@Override
-	protected EntityInstantiator determineInstantiator(
-			PersistentClass bootDescriptor,
-			EntityMetamodel entityMetamodel) {
+	protected EntityInstantiator determineInstantiator(PersistentClass bootDescriptor, EntityPersister persister) {
 		final ReflectionOptimizer reflectionOptimizer = getReflectionOptimizer();
 		if ( reflectionOptimizer != null && reflectionOptimizer.getInstantiationOptimizer() != null ) {
 			return new ReactiveEntityInstantiatorPojoOptimized(
-					entityMetamodel,
+					persister,
 					bootDescriptor,
 					getMappedJavaType(),
 					reflectionOptimizer.getInstantiationOptimizer()
 			);
 		}
 		else {
-			return new ReactiveEntityInstantiatorPojoStandard( entityMetamodel, bootDescriptor, getMappedJavaType() );
+			return new ReactiveEntityInstantiatorPojoStandard( persister, bootDescriptor, getMappedJavaType() );
 		}
 	}
-
 }

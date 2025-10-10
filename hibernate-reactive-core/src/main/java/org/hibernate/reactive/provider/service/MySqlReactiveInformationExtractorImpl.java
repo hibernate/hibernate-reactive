@@ -65,6 +65,15 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 	}
 
 	@Override
+	protected <T> T processPrimaryKeysResultSet(
+			String catalogFilter,
+			String schemaFilter,
+			String tableName,
+			ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	protected <T> T processCatalogsResultSet(ExtractionContext.ResultSetProcessor<T> processor) throws SQLException {
 		// MySQL does not implement information_schema.information_schema_catalog_name
 		// so the superclass method won't work.
@@ -193,4 +202,5 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 
 		return getExtractionContext().getQueryResults( sb.toString(), parameters.toArray(), processor );
 	}
+
 }
