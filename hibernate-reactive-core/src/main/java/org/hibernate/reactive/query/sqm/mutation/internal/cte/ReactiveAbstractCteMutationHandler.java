@@ -13,7 +13,7 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
+import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import java.util.concurrent.CompletionStage;

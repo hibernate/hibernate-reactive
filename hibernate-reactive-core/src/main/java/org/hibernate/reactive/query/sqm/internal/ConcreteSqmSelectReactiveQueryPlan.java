@@ -27,9 +27,9 @@ import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.tree.expression.Expression;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.TupleMetadata;
 import org.hibernate.sql.results.spi.RowTransformer;
 
@@ -53,7 +53,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	private final SqmSelectStatement<?> sqm;
 	private final DomainParameterXref domainParameterXref;
 
-	private volatile CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> cacheableSqmInterpretation;
+	private volatile CacheableSqmInterpretation<SelectStatement, JdbcSelect> cacheableSqmInterpretation;
 
 	public ConcreteSqmSelectReactiveQueryPlan(
 			SqmSelectStatement<?> sqm,
@@ -76,11 +76,11 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			String hql,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext executionContext,
-			CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
+			CacheableSqmInterpretation<SelectStatement, JdbcSelect> sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings,
 			RowTransformer<R> rowTransformer) {
 		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
-		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.jdbcOperation();
+		final JdbcSelect jdbcSelect = sqmInterpretation.jdbcOperation();
 
 		return CompletionStages
 				.supplyStage( () -> {
@@ -123,12 +123,12 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 			String hql,
 			DomainParameterXref domainParameterXref,
 			DomainQueryExecutionContext executionContext,
-			CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
+			CacheableSqmInterpretation<SelectStatement, JdbcSelect> sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings,
 			RowTransformer<R> rowTransformer,
 			ReactiveResultsConsumer<Object, R> resultsConsumer) {
 		final ReactiveSharedSessionContractImplementor session = (ReactiveSharedSessionContractImplementor) executionContext.getSession();
-		final JdbcOperationQuerySelect jdbcSelect = sqmInterpretation.jdbcOperation();
+		final JdbcSelect jdbcSelect = sqmInterpretation.jdbcOperation();
 		return CompletionStages
 				.supplyStage( () -> {
 					final var subSelectFetchKeyHandler = SubselectFetch.createRegistrationHandler(
@@ -161,7 +161,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	}
 
 	private static int resultCountEstimate(
-			CacheableSqmInterpretation<SelectStatement,JdbcOperationQuerySelect> sqmInterpretation,
+			CacheableSqmInterpretation<SelectStatement,JdbcSelect> sqmInterpretation,
 			JdbcParameterBindings jdbcParameterBindings) {
 		final Expression fetchExpression = sqmInterpretation.statement().getQueryPart()
 				.getFetchClauseExpression();
@@ -199,7 +199,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		//		to protect access.  However, synchronized is much simpler here.  We will verify
 		// 		during throughput testing whether this is an issue and consider changes then
 
-		CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> localCopy = cacheableSqmInterpretation;
+		CacheableSqmInterpretation<SelectStatement, JdbcSelect> localCopy = cacheableSqmInterpretation;
 		JdbcParameterBindings jdbcParameterBindings = null;
 
 		if ( localCopy == null ) {
@@ -240,7 +240,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 		CompletionStage<T> interpret(
 				X context,
 				DomainQueryExecutionContext executionContext,
-				CacheableSqmInterpretation<SelectStatement, JdbcOperationQuerySelect> sqmInterpretation,
+				CacheableSqmInterpretation<SelectStatement, JdbcSelect> sqmInterpretation,
 				JdbcParameterBindings jdbcParameterBindings);
 	}
 
