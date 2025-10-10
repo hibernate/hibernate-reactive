@@ -35,8 +35,8 @@ import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.StandardStatementCreator;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.spi.JdbcSelectExecutor;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
@@ -66,7 +66,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	public <R> CompletionStage<List<R>> list(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -75,7 +75,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	public <R> CompletionStage<List<R>> list(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -96,7 +96,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	 * @since 2.4 (and ORM 6.6)
 	 */
 	public  <R> CompletionStage<List<R>> list(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -119,7 +119,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	 * @since 2.4 (and Hibernate ORM 6.6)
 	 */
 	public  <T, R> CompletionStage<T> executeQuery(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -140,7 +140,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 	@Override
 	public <T, R> CompletionStage<T> executeQuery(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> rowTransformer,
@@ -172,7 +172,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 	}
 
 	private <T, R> CompletionStage<T> doExecuteQuery(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			RowTransformer<R> transformer,
@@ -281,7 +281,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 	public CompletionStage<ReactiveValuesResultSet> resolveJdbcValuesSource(
 			String queryIdentifier,
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			boolean canBeCached,
 			ExecutionContext executionContext,
 			ReactiveDeferredResultSetAccess resultSetAccess) {
@@ -368,7 +368,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 								null,
 								queryIdentifier,
 								queryOptions,
-								resultSetAccess.usesFollowOnLocking(),
+								false,
 								jdbcValuesMapping,
 								null,
 								executionContext
@@ -383,7 +383,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 								queryResultsCacheKey,
 								queryIdentifier,
 								queryOptions,
-								resultSetAccess.usesFollowOnLocking(),
+								false,
 								jdbcValuesMapping,
 								capturingMetadata.resolveMetadataForCache(),
 								executionContext
@@ -404,7 +404,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					queryResultsCacheKey,
 					queryIdentifier,
 					queryOptions,
-					resultSetAccess.usesFollowOnLocking(),
+					false,
 					jdbcValuesMapping,
 					capturingMetadata.resolveMetadataForCache(),
 					executionContext
@@ -535,7 +535,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
-		public <T> void end(JdbcOperationQuerySelect jdbcSelect, T result) {
+		public <T> void end(JdbcSelect jdbcSelect, T result) {
 			if ( enabled ) {
 				final long endTime = System.nanoTime();
 				final long milliseconds = TimeUnit.MILLISECONDS

@@ -8,8 +8,8 @@ package org.hibernate.reactive.metamodel.internal;
 import org.hibernate.bytecode.spi.ReflectionOptimizer;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metamodel.internal.EntityInstantiatorPojoOptimized;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.bythecode.enhance.spi.internal.ReactiveLazyAttributeLoadingInterceptor;
-import org.hibernate.tuple.entity.EntityMetamodel;
 import org.hibernate.type.descriptor.java.JavaType;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -20,11 +20,11 @@ import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttrib
 public class ReactiveEntityInstantiatorPojoOptimized extends EntityInstantiatorPojoOptimized {
 
 	public ReactiveEntityInstantiatorPojoOptimized(
-			EntityMetamodel entityMetamodel,
+			EntityPersister persister,
 			PersistentClass persistentClass,
 			JavaType<?> javaType,
 			ReflectionOptimizer.InstantiationOptimizer instantiationOptimizer) {
-		super( entityMetamodel, persistentClass, javaType, instantiationOptimizer );
+		super( persister, persistentClass, javaType, instantiationOptimizer );
 	}
 
 	@Override

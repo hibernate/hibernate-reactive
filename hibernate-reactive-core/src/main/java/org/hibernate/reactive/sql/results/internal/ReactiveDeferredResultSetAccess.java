@@ -29,8 +29,8 @@ import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.exec.spi.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.spi.JdbcSelectExecutor;
 import org.hibernate.sql.results.jdbc.internal.DeferredResultSetAccess;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
@@ -54,7 +54,7 @@ public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess imp
 	private ResultSet resultSet;
 
 	public ReactiveDeferredResultSetAccess(
-			JdbcOperationQuerySelect jdbcSelect,
+			JdbcSelect jdbcSelect,
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext,
 			JdbcSelectExecutor.StatementCreator statementCreator,
