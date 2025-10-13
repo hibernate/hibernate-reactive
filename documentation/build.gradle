@@ -147,6 +147,7 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 		docExtensions( project( ":local-build-asciidoctor-extensions" ) )
 	}
 
+	sourceDir( asciidocReference )
 	sources {
 		include( "index.adoc" )
 	}
@@ -167,18 +168,18 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 	attributes(
 			icons: "font",
 			"source-highlighter": "rouge",
-			majorMinorVersion: versionFamily,
-			fullVersion: fullVersion,
+			majorMinorVersion: versionFamily.get(),
+			fullVersion: fullVersion.get(),
 			stylesdir: "css",
 			"iconfont-remote": false,
 			"iconfont-name": "font-awesome/css/solid",
 			docinfo: "shared,private",
-			docinfodir: docInfoHibernate,
+			docinfodir: docInfoHibernate.get(),
 			"html.meta.project-key": "reactive",
 			"html.outdated-content.project-key": "reactive",
 			"html-meta-description": "Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation",
 			"html-meta-keywords": "hibernate, reactive, hibernate reactive, database, db, vert.x",
-			"html-meta-version-family": versionFamily,
+			"html-meta-version-family": versionFamily.get(),
 	)
 
 	dependsOn( tasks.named( "unpackTheme" ) )
