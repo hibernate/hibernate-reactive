@@ -16,7 +16,7 @@ vertxWebClientVersion = "5.0.4"
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
 com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.2.0" }
-com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.2.0.jre11" }
+com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.2.1.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.4.0" }
 com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.2" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "3.0.0" }
