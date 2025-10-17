@@ -74,6 +74,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public boolean isTransactionInProgress() {
+		return connection.transaction() != null;
+	}
+
+	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
 		translateNulls( paramValues );
 		return update( sql, Tuple.wrap( paramValues ) );
