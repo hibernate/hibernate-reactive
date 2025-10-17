@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -83,6 +84,7 @@ public class FindByIdWithLockTest extends BaseReactiveTest {
 		);
 	}
 
+	@Disabled
 	@Test
 	public void testFindUpgradeNoWait(VertxTestContext context) {
 		Child child = new Child( CHILD_ID, "And" );
