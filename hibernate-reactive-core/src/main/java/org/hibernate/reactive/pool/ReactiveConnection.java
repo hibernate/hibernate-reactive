@@ -30,6 +30,8 @@ import io.vertx.sqlclient.spi.DatabaseMetadata;
 @Incubating
 public interface ReactiveConnection {
 
+	boolean isTransactionInProgress();
+
 	@FunctionalInterface
 	interface Expectation {
 		void verifyOutcome(int rowCount, int batchPosition, String sql);
