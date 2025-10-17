@@ -53,6 +53,11 @@ public class BatchingConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public boolean isTransactionInProgress() {
+		return delegate.isTransactionInProgress();
+	}
+
+	@Override
 	public ReactiveConnection withBatchSize(int batchSize) {
 		if ( batchSize <= 1 ) {
 			return delegate;
