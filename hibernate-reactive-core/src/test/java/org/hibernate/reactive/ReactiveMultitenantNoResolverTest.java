@@ -69,27 +69,28 @@ public class ReactiveMultitenantNoResolverTest extends BaseReactiveTest {
 	@Test
 	public void reactivePersistFindDelete(VertxTestContext context) {
 		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
-		test(
-				context,
-				getSessionFactory().openSession( DEFAULT.name() )
-						.thenCompose( session -> session
-							.persist( guineaPig )
-							.thenCompose( v -> session.flush() )
-							.thenAccept( v -> session.detach( guineaPig ) )
-							.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
-							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-							.thenAccept( actualPig -> {
-								assertThatPigsAreEqual( guineaPig, actualPig );
-								assertTrue( session.contains( actualPig ) );
-								assertFalse( session.contains( guineaPig ) );
-								assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
-								session.detach( actualPig );
-								assertFalse( session.contains( actualPig ) );
-							} )
-							.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
-							.thenCompose( session::remove )
-							.thenCompose( v -> session.flush() )
-							.thenCompose( v -> session.close() ) )
+		test( context, getSessionFactory()
+				.openSession( DEFAULT.name() )
+				.thenCompose( session -> session
+						.withTransaction( t -> session
+								.persist( guineaPig )
+								.thenCompose( v -> session.flush() )
+								.thenAccept( v -> session.detach( guineaPig ) )
+								.thenAccept( v -> assertFalse( session.contains( guineaPig ) ) )
+								.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+								.thenAccept( actualPig -> {
+									assertThatPigsAreEqual( guineaPig, actualPig );
+									assertTrue( session.contains( actualPig ) );
+									assertFalse( session.contains( guineaPig ) );
+									assertEquals( LockMode.READ, session.getLockMode( actualPig ) );
+									session.detach( actualPig );
+									assertFalse( session.contains( actualPig ) );
+								} )
+								.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+								.thenCompose( session::remove )
+						)
+						.thenCompose( v -> session.close() )
+				)
 		);
 	}
 
