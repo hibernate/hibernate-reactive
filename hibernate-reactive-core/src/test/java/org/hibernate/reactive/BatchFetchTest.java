@@ -38,12 +38,9 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class BatchFetchTest extends BaseReactiveTest {
 
 	@Override
@@ -70,43 +67,40 @@ public class BatchFetchTest extends BaseReactiveTest {
 
 		test( context, getSessionFactory()
 				.withTransaction( s -> s.persist( basik ) )
-				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createSelectionQuery( "from Node n order by id", Node.class )
+				.thenCompose( v -> getSessionFactory().withSession( s -> s
+						.createSelectionQuery( "from Node n order by id", Node.class )
 						.getResultList()
 						.thenCompose( list -> {
-							assertEquals( list.size(), 2 );
+							assertThat( list ).hasSize( 2 );
 							Node n1 = list.get( 0 );
 							Node n2 = list.get( 1 );
-							assertFalse( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' should not be initialize" );
-							assertFalse( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' should not be initialize" );
+							assertThat( Hibernate.isInitialized( n1.getElements() ) ).as( "'n1.elements' should not be initialized" ).isFalse();
+							assertThat( Hibernate.isInitialized( n2.getElements() ) ).as( "'n2.elements' should not be initialized" ).isFalse();
 							return s.fetch( n1.getElements() )
 									.thenAccept( elements -> {
-										assertTrue( Hibernate.isInitialized( elements ), "'elements' after fetch should not be initialize" );
-										assertTrue( Hibernate.isInitialized( n1.getElements() ), "'n1.elements' after fetch should be initialize" );
-										assertTrue( Hibernate.isInitialized( n2.getElements() ), "'n2.elements' after fetch should be initialize" );
+										assertThat( Hibernate.isInitialized( elements ) ).as( "'elements' after fetch should not be initialize" ).isTrue();
+										assertThat( Hibernate.isInitialized( n1.getElements() ) ).as( "'n1.elements' after fetch should be initialize" ).isTrue();
+										assertThat( Hibernate.isInitialized( n2.getElements() ) ).as( "'n2.elements' after fetch should be initialize" ).isTrue();
 									} );
 						} )
-				)
-				.thenCompose( v -> openSession() )
-				.thenCompose( s -> s.createSelectionQuery( "from Element e order by id", Element.class )
+				) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s
+						.createSelectionQuery( "from Element e order by id", Element.class )
 						.getResultList()
 						.thenCompose( list -> {
-							assertEquals( list.size(), 5 );
-							list.forEach( element -> assertFalse( Hibernate.isInitialized( element.node ) ) );
-							list.forEach( element -> assertEquals( s.getLockMode( element.node ), LockMode.NONE ) );
+							assertThat( list ).hasSize( 5 );
+							list.forEach( element -> assertThat( Hibernate.isInitialized( element.node ) ).isFalse() );
+							list.forEach( element -> assertThat( s.getLockMode( element.node ) ).isEqualTo( LockMode.NONE ) );
 							return s.fetch( list.get( 0 ).node )
 									.thenAccept( node -> {
-										assertTrue( Hibernate.isInitialized( node ) );
+										assertThat( Hibernate.isInitialized( node ) ).isTrue();
 										//TODO: I would like to assert that they're all initialized
 										//      but apparently it doesn't set the proxies to init'd
 										//      so check the LockMode as a workaround
-										list.forEach( element -> assertEquals(
-												s.getLockMode( element.node ),
-												LockMode.READ
-										) );
+										list.forEach( element -> assertThat( s.getLockMode( element.node ) ).isEqualTo( LockMode.READ ) );
 									} );
 						} )
-				)
+				) )
 		);
 	}
 
@@ -125,11 +119,11 @@ public class BatchFetchTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Element.class, basik.elements.get( 1 ).id, basik.elements.get( 2 ).id, basik.elements.get( 0 ).id ) )
 				.thenAccept( elements -> {
-					assertFalse( elements.isEmpty() );
-					assertEquals( 3, elements.size() );
-					assertEquals( basik.elements.get( 1 ).id, elements.get( 0 ).id );
-					assertEquals( basik.elements.get( 2 ).id, elements.get( 1 ).id );
-					assertEquals( basik.elements.get( 0 ).id, elements.get( 2 ).id );
+					assertThat( elements ).isNotEmpty();
+					assertThat( elements ).hasSize( 3 );
+					assertThat( elements.get( 0 ).id ).isEqualTo( basik.elements.get( 1 ).id );
+					assertThat( elements.get( 1 ).id ).isEqualTo( basik.elements.get( 2 ).id );
+					assertThat( elements.get( 2 ).id ).isEqualTo( basik.elements.get( 0 ).id );
 				} )
 		);
 	}
@@ -150,12 +144,12 @@ public class BatchFetchTest extends BaseReactiveTest {
 								.createSelectionQuery( "from Node n order by id", Node.class )
 								.getResultList()
 								.thenCompose( list -> {
-									assertEquals( list.size(), 1 );
+									assertThat( list ).hasSize( 1 );
 									Node n1 = list.get( 0 );
-									assertFalse( Hibernate.isInitialized( n1.elements ) );
+									assertThat( Hibernate.isInitialized( n1.elements ) ).isFalse();
 									return s.fetch( n1.elements ).thenAccept( elements -> {
-										assertTrue( Hibernate.isInitialized( elements ) );
-										assertTrue( Hibernate.isInitialized( n1.elements ) );
+										assertThat( Hibernate.isInitialized( elements ) ).isTrue();
+										assertThat( Hibernate.isInitialized( n1.elements ) ).isTrue();
 									} );
 								} )
 						)
@@ -177,7 +171,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 			this.node = node;
 		}
 
-		Element() {
+		public Element() {
 		}
 
 		public Node getNode() {
@@ -227,7 +221,7 @@ public class BatchFetchTest extends BaseReactiveTest {
 			this.string = string;
 		}
 
-		Node() {
+		public Node() {
 		}
 
 		@PrePersist

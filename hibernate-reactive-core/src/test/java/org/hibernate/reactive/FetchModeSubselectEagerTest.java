@@ -22,9 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
@@ -40,13 +38,20 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
+import static jakarta.persistence.CascadeType.MERGE;
+import static jakarta.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.CascadeType.REFRESH;
+import static jakarta.persistence.CascadeType.REMOVE;
+import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.annotations.FetchMode.SUBSELECT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 	@Override
@@ -71,13 +76,11 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 	@Test
 	public void testEagerCollectionFetch(VertxTestContext context) {
-
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
 		basik.elements.add( new Element( basik ) );
 		basik.elements.add( new Element( basik ) );
-
 		test(
 				context,
 				openSession()
@@ -85,7 +88,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Node.class, basik.getId() ) )
 						.thenAccept( node -> {
-							assertTrue( Hibernate.isInitialized( node.elements ) );
+							assertThat( Hibernate.isInitialized( node.elements ) ).isTrue();
 							assertEquals( 3, node.elements.size() );
 							for ( Element element : node.elements ) {
 								assertSame( element.node, node );
@@ -96,7 +99,6 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 
 	@Test
 	public void testEagerParentFetch(VertxTestContext context) {
-
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
@@ -110,9 +112,9 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Element.class, basik.elements.get( 0 ).id ) )
 						.thenAccept( element -> {
-							assertTrue( Hibernate.isInitialized( element.node ) );
-							assertTrue( Hibernate.isInitialized( element.node.elements ) );
-							assertEquals( 3, element.node.elements.size() );
+							assertThat( Hibernate.isInitialized( element.node ) ).isTrue();
+							assertThat( Hibernate.isInitialized( element.node.elements ) ).isTrue();
+							assertThat( element.node.elements ).hasSize( 3 );
 						} )
 		);
 	}
@@ -120,7 +122,6 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	@Test
 	@Disabled("NullPointerException: see https://hibernate.atlassian.net/browse/HHH-19874")
 	public void testEagerFetchQuery(VertxTestContext context) {
-
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
 		basik.elements.add( new Element( basik ) );
@@ -132,21 +133,26 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 				openSession()
 						.thenCompose( s -> s.persist( basik ).thenCompose( v -> s.flush() ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createSelectionQuery( "from Node order by id", Node.class ).getResultList() )
+						.thenCompose( s -> s.createSelectionQuery( "from Node order by id", Node.class )
+								.getResultList() )
 						.thenAccept( list -> {
-							assertEquals( list.size(), 2 );
-							assertTrue( Hibernate.isInitialized( list.get( 0 ).elements ) );
-							assertEquals( list.get( 0 ).elements.size(), 3 );
-							assertEquals( list.get( 1 ).elements.size(), 0 );
+							assertThat( list ).hasSize( 2 );
+							assertThat( Hibernate.isInitialized( list.get( 0 ).elements ) ).isTrue();
+							assertThat( list.get( 0 ).elements ).hasSize( 3 );
+							assertThat( list.get( 1 ).elements ).isEmpty();
 						} )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createSelectionQuery(
-								"select distinct n, e from Node n join n.elements e order by n.id", Object[].class ).getResultList() )
+						.thenCompose( s -> s
+								.createSelectionQuery(
+										"select distinct n, e from Node n join n.elements e order by n.id",
+										Object[].class
+								)
+								.getResultList() )
 						.thenAccept( list -> {
-							assertEquals( list.size(), 3 );
+							assertThat( list ).hasSize( 3 );
 							Object[] tup = list.get( 0 );
 							assertTrue( Hibernate.isInitialized( ( (Node) tup[0] ).elements ) );
-							assertEquals( ( (Node) tup[0] ).elements.size(), 3 );
+							assertThat( ( (Node) tup[0] ).elements ).hasSize( 3 );
 						} )
 		);
 	}
@@ -181,22 +187,11 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 		Integer version;
 		String string;
 
-		@ManyToOne(fetch = FetchType.LAZY,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REFRESH,
-						CascadeType.MERGE,
-						CascadeType.REMOVE
-				})
+		@ManyToOne(fetch = LAZY, cascade = { PERSIST, REFRESH, MERGE, REMOVE })
 		Node parent;
 
-		@OneToMany(fetch = FetchType.EAGER,
-				cascade = {
-						CascadeType.PERSIST,
-						CascadeType.REMOVE
-				},
-				mappedBy = "node")
-		@Fetch(FetchMode.SUBSELECT)
+		@OneToMany(fetch = EAGER, cascade = { PERSIST, REMOVE }, mappedBy = "node")
+		@Fetch(SUBSELECT)
 		List<Element> elements = new ArrayList<>();
 
 		@Transient
