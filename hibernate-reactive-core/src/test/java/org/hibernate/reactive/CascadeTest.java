@@ -12,6 +12,7 @@ import java.util.Objects;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -49,6 +50,7 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Disabled("It also fails in Hibernate ORM, see https://hibernate.atlassian.net/browse/HHH-19868")
 	public void testQuery(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
