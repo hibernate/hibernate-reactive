@@ -17,6 +17,7 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -117,6 +118,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Disabled("NullPointerException: see https://hibernate.atlassian.net/browse/HHH-19874")
 	public void testEagerFetchQuery(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
