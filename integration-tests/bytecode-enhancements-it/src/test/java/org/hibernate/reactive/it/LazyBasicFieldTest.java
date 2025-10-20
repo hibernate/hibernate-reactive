@@ -98,12 +98,14 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 								.find( Crew.class, emily.getId() )
 								.call( crew -> session.fetch( crew, Crew_.role )
 										.invoke( role -> assertThat( role ).isEqualTo( emily.getRole() ) ) )
-								.invoke( () -> sqlTracker.clear() )
-								.call( crew -> session.fetch( crew, Crew_.role )
+								.invoke( sqlTracker::clear )
+								.call( crew -> session
+										.fetch( crew, Crew_.role )
 										.invoke( role -> {
 											// No select query expected, the previous fetch must have initialized the role attribute
-											assertThat(sqlTracker.getLoggedQueries()).hasSize( 0 );
-											assertThat( role ).isEqualTo( emily.getRole() );} )
+											assertThat( sqlTracker.getLoggedQueries() ).hasSize( 0 );
+											assertThat( role ).isEqualTo( emily.getRole() );
+										} )
 								) ) )
 		);
 	}
@@ -116,11 +118,17 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 		emily.setRole( "Passenger" );
 		emily.setFate( "Unknown" );
 
-		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
-					  .withTransaction( session -> session.persist( emily ) )
-					  .call( () -> getMutinySessionFactory().withSession( session -> session.find( Crew.class, emily.getId() )
-							  .invoke( Crew::getRole ) ) )
-			  ).invoke( exception -> assertThat( exception.getMessage() ).contains( "Reactive sessions do not support transparent lazy fetching" ) )
+		test( context, assertThrown( LazyInitializationException.class,
+						getMutinySessionFactory().withTransaction( session -> session.persist( emily ) )
+								.chain( () -> getMutinySessionFactory().withSession( session -> session
+										.find( Crew.class, emily.getId() )
+										// getRole() must throw a LazyInitializationException because we are not using
+										// Mutiny.fetch to load a lazy field
+										.map( Crew::getRole ) ) )
+			  ).invoke( exception -> assertThat( exception )
+					  .as( "Expected LazyInitializationException not thrown" )
+					  .hasMessageContaining( "Reactive sessions do not support transparent lazy fetching" )
+			  )
 		);
 	}
 
@@ -132,14 +140,21 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 		emily.setRole( "Passenger" );
 		emily.setFate( "Unknown" );
 
-		test( context, assertThrown( LazyInitializationException.class, getMutinySessionFactory()
-					  .withTransaction( session -> session.persist( emily ) )
-					  .chain( () -> getMutinySessionFactory().withSession( session -> {
-						  Crew crew = session.getReference( Crew.class, emily.getId() );
-						  String role = crew.getRole();
-						  return session.flush();
-					  } ) )
-			  ).invoke( exception -> assertThat( exception.getMessage() ).contains( "Reactive sessions do not support transparent lazy fetching" ) )
+		test(
+				context, assertThrown(
+						LazyInitializationException.class, getMutinySessionFactory()
+								.withTransaction( session -> session.persist( emily ) )
+								.chain( () -> getMutinySessionFactory().withSession( session -> {
+									Crew crew = session.getReference( Crew.class, emily.getId() );
+									// getRole() must throw a LazyInitializationException because we are not using
+									// Mutiny.fetch to load a lazy field
+									String role = crew.getRole();
+									return Uni.createFrom()
+											.failure( new AssertionError( "Expected LazyInitializationException not thrown" ) );
+								} ) )
+				).invoke( exception -> assertThat( exception )
+						.as( "Expected LazyInitializationException not thrown" )
+						.hasMessageContaining( "Reactive sessions do not support transparent lazy fetching" ) )
 		);
 	}
 
