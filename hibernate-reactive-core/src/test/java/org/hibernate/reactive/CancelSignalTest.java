@@ -5,16 +5,19 @@
  */
 package org.hibernate.reactive;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.IntStream;
+
+
 
 import org.junit.jupiter.api.Test;
 
@@ -27,73 +30,76 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import static java.util.Arrays.stream;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.stream.Stream.concat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class CancelSignalTest extends BaseReactiveTest {
 	private static final Logger LOG = Logger.getLogger( CancelSignalTest.class );
+
+	private static final int EXECUTION_SIZE = 10;
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( GuineaPig.class );
 	}
 
+	@Override
+	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
+		// We don't need to delete anything
+		return voidFuture();
+	}
+
 	@Test
 	public void cleanupConnectionWhenCancelSignal(VertxTestContext context) {
 		// larger than 'sql pool size' to check entering the 'pool waiting queue'
-		int executeSize = 10;
 		CountDownLatch firstSessionWaiter = new CountDownLatch( 1 );
 		Queue<Cancellable> cancellableQueue = new ConcurrentLinkedQueue<>();
 
-		ExecutorService withSessionExecutor = Executors.newFixedThreadPool( executeSize );
-		// Create some jobs that are going to be cancelled asynchronously
-		CompletableFuture[] withSessionFutures = IntStream
-				.range( 0, executeSize )
-				.mapToObj( i -> runAsync(
-						() -> {
-							CountDownLatch countDownLatch = new CountDownLatch( 1 );
-							Cancellable cancellable = getMutinySessionFactory()
-									.withSession( s -> {
-										LOG.debug( "start withSession: " + i );
-										sleep( 100 );
-										firstSessionWaiter.countDown();
-										return s.find( GuineaPig.class, 1 );
-									} )
-									.onTermination().invoke( () -> {
-										countDownLatch.countDown();
-										LOG.debug( "future " + i + " terminated" );
-									} )
-									.subscribe().with( item -> LOG.debug( "end withSession: "  + i  ) );
-							cancellableQueue.add( cancellable );
-							await( countDownLatch );
-						},
-						withSessionExecutor
-				) )
-				.toArray( CompletableFuture[]::new );
+		final List<CompletableFuture<?>> allFutures = new ArrayList<>();
 
-		// Create jobs that are going to cancel the previous ones
-		ExecutorService cancelExecutor = Executors.newFixedThreadPool( executeSize );
-		CompletableFuture[] cancelFutures = IntStream
-				.range( 0, executeSize )
-				.mapToObj( i -> runAsync(
-						() -> {
-							await( firstSessionWaiter );
-							cancellableQueue.poll().cancel();
-							sleep( 500 );
-						},
-						cancelExecutor
-				) )
-				.toArray( CompletableFuture[]::new );
+		ExecutorService withSessionExecutor = Executors.newFixedThreadPool( EXECUTION_SIZE );
+		for ( int j = 0; j < EXECUTION_SIZE; j++ ) {
+			final int i = j;
+			allFutures.add( runAsync( () -> {
+						  CountDownLatch countDownLatch = new CountDownLatch( 1 );
+						  Cancellable cancellable = getMutinySessionFactory()
+								  .withSession( s -> {
+									  LOG.info( "start withSession: " + i );
+									  sleep( 100 );
+									  firstSessionWaiter.countDown();
+									  return s.find( GuineaPig.class, 1 );
+								  } )
+								  .onCancellation().invoke( () -> {
+									  LOG.info( "future " + i + " cancelled" );
+									  countDownLatch.countDown();
+								  } )
+								  .subscribe()
+								  // We cancelled the job, it shouldn't really finish
+								  .with( item -> LOG.info( "end withSession: "  + i  ) );
+						  cancellableQueue.add( cancellable );
+						  await( countDownLatch );
+					  },
+					  withSessionExecutor
+			) );
+		}
 
-		CompletableFuture<Void> allFutures = allOf( concat( stream( withSessionFutures ), stream( cancelFutures ) )
-						.toArray( CompletableFuture[]::new )
+		ExecutorService cancelExecutor = Executors.newFixedThreadPool( EXECUTION_SIZE );
+		for ( int i = 0; i < EXECUTION_SIZE; i++ ) {
+			allFutures.add( runAsync( () -> {
+						  await( firstSessionWaiter );
+						  cancellableQueue.poll().cancel();
+						  sleep( 500 );
+					  },
+					  cancelExecutor
+			) );
+		}
+
+		test(
+				context, allOf( allFutures.toArray( new CompletableFuture<?>[0] ) )
+						.thenAccept( x -> assertThat( sqlPendingMetric() ).isEqualTo( 0.0 ) )
 		);
-
-		// Test that there shouldn't be any pending process
-		test( context, allFutures.thenAccept( x -> assertThat( sqlPendingMetric() ).isEqualTo( 0.0 ) ) );
 	}
 
 	private static double sqlPendingMetric() {
