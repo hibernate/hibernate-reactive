@@ -6,6 +6,7 @@
 package org.hibernate.reactive.persister.entity.impl;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
@@ -13,6 +14,7 @@ import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
 import org.hibernate.engine.spi.CascadeStyle;
@@ -42,6 +44,7 @@ import org.hibernate.persister.entity.mutation.DeleteCoordinator;
 import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
@@ -54,6 +57,7 @@ import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
+import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -77,6 +81,17 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
 		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
+	}
+
+	@Override
+	protected BytecodeEnhancementMetadata getBytecodeEnhancementMetadataPojo(
+			PersistentClass persistentClass,
+			RuntimeModelCreationContext creationContext,
+			Set<String> idAttributeNames,
+			CompositeType nonAggregatedCidMapper,
+			boolean collectionsInDefaultFetchGroupEnabled) {
+			return ReactiveBytecodeEnhancementMetadataPojoImplAdapter
+				.from( persistentClass, idAttributeNames, nonAggregatedCidMapper, collectionsInDefaultFetchGroupEnabled, creationContext.getMetadata() );
 	}
 
 	@Override
