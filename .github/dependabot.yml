@@ -110,6 +110,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "io.vertx*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "io.smallrye.reactive*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: "docker"
     directory: "/tooling/docker"
@@ -161,6 +163,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "io.vertx*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "io.smallrye.reactive*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: "docker"
     directory: "/tooling/docker"
@@ -215,6 +219,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "io.vertx*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "io.smallrye.reactive*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   # Dockerfiles in tooling/docker/, and database services we use for examples (MySQL and PostgreSQL)
   - package-ecosystem: "docker"
