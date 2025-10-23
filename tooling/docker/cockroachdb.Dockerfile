@@ -1,3 +1,3 @@
 # CockroachDB
 # See https://hub.docker.com/r/cockroachdb/cockroach
-FROM docker.io/cockroachdb/cockroach:v25.3.2
+FROM docker.io/cockroachdb/cockroach:v25.3.3
