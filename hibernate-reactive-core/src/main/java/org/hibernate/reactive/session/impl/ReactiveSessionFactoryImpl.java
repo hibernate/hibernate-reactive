@@ -13,8 +13,10 @@ import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.reactive.boot.spi.ReactiveMetadataImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.sql.exec.internal.ReactiveJdbcSelectWithActions;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionFactoryImpl;
+import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
 
 /**
  * A Hibernate {@link org.hibernate.SessionFactory} that can be
@@ -42,4 +44,9 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 		}
 		return super.unwrap( type );
 	}
+
+	public JdbcSelectWithActionsBuilder getJdbcSelectWithActionsBuilder(){
+		return new ReactiveJdbcSelectWithActions.Builder();
+	}
+
 }
