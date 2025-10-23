@@ -5,6 +5,7 @@
  */
 package org.hibernate.reactive;
 
+import jakarta.persistence.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +13,6 @@ import java.util.Objects;
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -50,7 +50,6 @@ public class CascadeTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@Disabled("It also fails in Hibernate ORM, see https://hibernate.atlassian.net/browse/HHH-19868")
 	public void testQuery(VertxTestContext context) {
 		Node basik = new Node( "Child" );
 		basik.parent = new Node( "Parent" );
@@ -66,13 +65,13 @@ public class CascadeTest extends BaseReactiveTest {
 						.thenCompose( s -> s.createQuery( "select distinct n from Node n left join fetch n.elements", Node.class ).getResultList() )
 						.thenAccept( list -> assertThat( list ).hasSize( 2 ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "select distinct n, e from Node n join n.elements e", Node.class ).getResultList() )
+						.thenCompose( s -> s.createQuery( "select distinct n, e from Node n join n.elements e", Tuple.class ).getResultList() )
 						.thenAccept( list -> assertThat( list ).hasSize( 3 ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "select distinct n.id, e.id from Node n join n.elements e", Node.class ).getResultList() )
+						.thenCompose( s -> s.createQuery( "select distinct n.id, e.id from Node n join n.elements e", Tuple.class ).getResultList() )
 						.thenAccept( list -> assertThat( list ).hasSize( 3 ) )
 						.thenCompose( v -> openSession() )
-						.thenCompose( s -> s.createQuery( "select max(e.id), min(e.id), sum(e.id) from Node n join n.elements e group by n.id order by n.id", Node.class ).getResultList() )
+						.thenCompose( s -> s.createQuery( "select max(e.id), min(e.id), sum(e.id) from Node n join n.elements e group by n.id order by n.id", Tuple.class ).getResultList() )
 						.thenAccept( list -> assertThat( list ).hasSize( 1 ) )
 		);
 	}
