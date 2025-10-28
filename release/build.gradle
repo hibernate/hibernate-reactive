@@ -1,28 +1,13 @@
 import java.nio.charset.StandardCharsets
 
-ext {
-    // Select which repository to use for publishing the documentation
-    // Example:
-    // ./gradlew uploadDocumentation \
-    //           -PdocPublishRepoUri="git@github.com:DavideD/hibernate.org.git" \
-    //           -PdocPublishBranch="staging"
-    if ( !project.hasProperty('docPublishRepoUri') ) {
-        docPublishRepoUri = 'git@github.com:hibernate/hibernate.org.git'
-    }
-    if ( !project.hasProperty('docPublishBranch') ) {
-        docPublishBranch = 'staging'
-    }
-}
-
 description = 'Release module'
 // (Optional) before uploading the documentation, you can check
 // the generated website under release/build/hibernate.org with:
 // ./gradlew gitPublishCopy
 
-// To publish the documentation:
-//  1. Add the relevant SSH key to your SSH agent.
-//  2. Execute this:
-//     ./gradlew uploadDocumentation -PdocPublishBranch=production
+// The generated documentation are copied to the
+// rootProject.layout.buildDirectory.dir("staging-deploy/documentation") by the updateDocumentationTask
+// while the publishing is delegated to the https://github.com/hibernate/hibernate-release-scripts
 
 // To tag a version and trigger a release on CI (which will include publishing to Bintray and publishing documentation):
 //  ./gradlew ciRelease -PreleaseVersion=x.y.z.Final -PdevelopmentVersion=x.y.z-SNAPSHOT -PgitRemote=origin -PgitBranch=main
@@ -32,9 +17,6 @@ final Directory documentationDir = project(":documentation").layout.buildDirecto
 
 // Relative path on the static website where the documentation is located
 final String docWebsiteRelativePath = "reactive/documentation/${projectVersion.family}"
-
-// The location of the docs when the website has been cloned
-final Directory docWebsiteReactiveFolder = project.layout.buildDirectory.dir( "docs-website/${docWebsiteRelativePath}" ).get()
 
 def releaseChecksTask = tasks.register( "releaseChecks" ) {
     description 'Checks and preparation for release'
@@ -98,30 +80,6 @@ def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
 }
 assemble.dependsOn assembleDocumentationTask
 
-/**
-* Clone the website
-*/
-def removeDocsWebsiteTask = tasks.register( 'removeDocsWebsite', Delete ) {
-    delete project.layout.buildDirectory.dir( "docs-website" )
-}
-
-def cloneDocsWebsiteTask = tasks.register( 'cloneDocsWebsite', Exec ) {
-    dependsOn removeDocsWebsiteTask
-    // Assure that the buildDir exists. Otherwise this task will fail.
-    dependsOn compileJava
-    workingDir project.layout.buildDirectory
-    commandLine 'git', 'clone', docPublishRepoUri, '-b', docPublishBranch, '--sparse', '--depth', '1', 'docs-website'
-}
-
-def sparseCheckoutDocumentationTask = tasks.register( 'sparseCheckoutDocumentation', Exec ) {
-    dependsOn cloneDocsWebsiteTask
-    workingDir project.layout.buildDirectory.dir( "docs-website" )
-    commandLine 'git', 'sparse-checkout', 'set', docWebsiteRelativePath
-}
-
-/**
-* Update the docs on the cloned website
-*/
 def changeToReleaseVersionTask = tasks.register( 'changeToReleaseVersion' ) {
     description 'Updates `gradle/version.properties` file to the specified release-version'
     group 'Release'
@@ -136,7 +94,7 @@ def changeToReleaseVersionTask = tasks.register( 'changeToReleaseVersion' ) {
 
 def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
     description "Update the documentation on the cloned static website"
-    dependsOn assembleDocumentationTask, sparseCheckoutDocumentationTask
+    dependsOn assembleDocumentationTask
     mustRunAfter changeToReleaseVersion
 
     // copy documentation outputs into target/documentation:
@@ -144,49 +102,17 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
     // * it is also used as a base to build a staged directory for documentation upload
 
     doLast {
-        // delete the folders in case some files have been removed
-        delete docWebsiteReactiveFolder.dir("javadocs"), docWebsiteReactiveFolder.dir("reference")
-
         // Aggregated JavaDoc
-        copy {
-            from documentationDir.dir("javadocs")
-            into docWebsiteReactiveFolder.dir("javadocs")
-        }
+		copy {
+			from documentationDir.dir("javadocs")
+			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/javadocs")
+		}
 
         // Reference Documentation
-        copy {
-            from documentationDir.dir("asciidoc/reference/html_single")
-            into docWebsiteReactiveFolder.dir("reference/html_single")
-        }
-    }
-}
-
-def stageDocChangesTask = tasks.register( 'stageDocChanges', Exec ) {
-    dependsOn updateDocumentationTask
-    workingDir project.layout.buildDirectory.dir( "docs-website" )
-    commandLine 'git', 'add', '-A', '.'
-}
-
-def commitDocChangesTask = tasks.register( 'commitDocChanges', Exec ) {
-    dependsOn stageDocChangesTask
-    workingDir project.layout.buildDirectory.dir( "docs-website" )
-    commandLine 'git', 'commit', '-m', "[HR] Hibernate Reactive documentation for ${projectVersion}"
-}
-
-def pushDocChangesTask = tasks.register( 'pushDocChanges', Exec ) {
-    description "Push documentation changes on the remote repository"
-    dependsOn commitDocChangesTask
-    workingDir project.layout.buildDirectory.dir( "docs-website" )
-    commandLine 'git', 'push', '--atomic', 'origin', docPublishBranch
-}
-
-def uploadDocumentationTask = tasks.register( 'uploadDocumentation' ) {
-    description "Upload documentation on the website"
-    group "Release"
-    dependsOn pushDocChangesTask
-
-    doLast {
-        logger.lifecycle "Documentation published on '${docPublishRepoUri}' branch '${docPublishBranch}'"
+		copy {
+			from documentationDir.dir("asciidoc/reference/html_single")
+			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/reference/html_single")
+		}
     }
 }
 
@@ -235,7 +161,7 @@ void updateVersionFile(var version) {
 }
 
 def publishReleaseArtifactsTask = tasks.register( 'publishReleaseArtifacts' ) {
-    dependsOn uploadDocumentationTask
+    dependsOn updateDocumentationTask
 
     mustRunAfter gitPreparationForReleaseTask
 }
