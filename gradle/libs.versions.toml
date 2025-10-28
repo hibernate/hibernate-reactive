@@ -19,7 +19,7 @@ com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.2.0" }
 com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.2.1.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.4.0" }
 com-ongres-scram-client = { group = "com.ongres.scram", name = "client", version = "2.1" }
-io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.4" }
+io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.5" }
 io-vertx-vertx-db2-client = { group = "io.vertx", name = "vertx-db2-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-junit5 = { group = "io.vertx", name = "vertx-junit5", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-micrometer-metrics = { group = "io.vertx", name = "vertx-micrometer-metrics", version.ref = "vertxSqlClientVersion" }
