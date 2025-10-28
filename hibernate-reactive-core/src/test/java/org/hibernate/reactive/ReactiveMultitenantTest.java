@@ -10,8 +10,9 @@ import java.util.Objects;
 import org.hibernate.LockMode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.stage.Stage;
 
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +95,27 @@ public class ReactiveMultitenantTest extends BaseReactiveTest {
 						.createNativeQuery( "select current_database()" )
 						.getSingleResult()
 						.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_2.getDbName() ) ) )
+		);
+	}
+
+	@Test
+	public void testTenantSelectionWithProxy(VertxTestContext context) {
+		TENANT_RESOLVER.setTenantIdentifier( TENANT_1 );
+		Stage.Session t1Session = getSessionFactory().createSession();
+		test(
+				context, t1Session
+						.createNativeQuery( "select current_database()" )
+						.getSingleResult()
+						.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_1.getDbName() ) )
+						.thenCompose( v -> t1Session.close() )
+						.thenAccept( v -> TENANT_RESOLVER.setTenantIdentifier( TENANT_2 ) )
+						.thenApply( v -> getSessionFactory().createSession() )
+						.thenCompose( t2Session -> t2Session
+								.createNativeQuery( "select current_database()" )
+								.getSingleResult()
+								.thenAccept( result -> assertThat( result ).isEqualTo( TENANT_2.getDbName() ) )
+								.thenCompose( v -> t2Session.close() )
+						)
 		);
 	}
 

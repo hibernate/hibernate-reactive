@@ -13,7 +13,13 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.impl.MutinyStatelessSessionImpl;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
+import org.hibernate.reactive.stage.impl.StageSessionImpl;
+import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -53,6 +59,104 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						.thenCompose( pig -> session.close()
 								.thenApply( v -> pig == null ? null : pig.getName() ) )
 				);
+	}
+
+	@Test
+	public void reactivePersistFindRemoveWithSessionProxy(VertxTestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
+		Stage.Session session = getSessionFactory().createSession();
+		assertConnectionIsLazy( ( (StageSessionImpl) session ).getReactiveConnection() );
+		session.setBatchSize( 55 );
+
+		test( context, session
+				.persist( guineaPig )
+				.thenCompose( v -> session.flush() )
+				.thenAccept( v -> session.detach( guineaPig ) )
+				.thenAccept( v -> assertThat( session.contains( guineaPig ) ).isFalse() )
+				.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+				.thenAccept( actualPig -> {
+					assertThatPigsAreEqual( guineaPig, actualPig );
+					assertThat( session.contains( actualPig ) ).isTrue();
+					assertThat( session.contains( guineaPig ) ).isFalse();
+					assertThat( session.getLockMode( actualPig ) ).isEqualTo( LockMode.READ );
+					assertThat( session.getBatchSize() ).isEqualTo( 55 );
+					session.detach( actualPig );
+					assertThat( session.contains( actualPig ) ).isFalse();
+				} )
+				.thenCompose( v -> session.find( GuineaPig.class, guineaPig.getId() ) )
+				.thenCompose( session::remove )
+				.thenCompose( v -> session.flush() )
+				.thenCompose( v -> session.close() )
+		);
+	}
+
+	@Test
+	public void reactiveInsertGetDeleteWithStatelessSessionProxy(VertxTestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
+		Stage.StatelessSession session = getSessionFactory().createStatelessSession();
+		assertConnectionIsLazy( ( (StageStatelessSessionImpl) session ).getReactiveConnection(), true );
+		test( context, session
+				.insert( guineaPig )
+				.thenCompose( v -> session.get( GuineaPig.class, guineaPig.getId() ) )
+				.thenAccept( actualPig -> assertThatPigsAreEqual( guineaPig, actualPig ) )
+				.thenCompose( v -> session.get( GuineaPig.class, guineaPig.getId() ) )
+				.thenCompose( session::delete )
+				.thenCompose( v -> session.close() )
+		);
+	}
+
+	@Test
+	public void reactivePersistFindRemoveWithSessionProxyAndMutiny(VertxTestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
+		Mutiny.Session session = getMutinySessionFactory().createSession();
+		assertConnectionIsLazy( ( (MutinySessionImpl) session ).getReactiveConnection() );
+		session.setBatchSize( 55 );
+		test( context, session
+				.persist( guineaPig )
+				.call( session::flush )
+				.chain( () -> {
+					session.detach( guineaPig );
+					assertThat( session.contains( guineaPig ) ).isFalse();
+					return session.find( GuineaPig.class, guineaPig.getId() );
+				} )
+				.chain( actualPig -> {
+					assertThatPigsAreEqual( guineaPig, actualPig );
+					assertThat( session.contains( actualPig ) ).isTrue();
+					assertThat( session.contains( guineaPig ) ).isFalse();
+					assertThat( session.getLockMode( actualPig ) ).isEqualTo( LockMode.READ );
+					assertThat( session.getBatchSize() ).isEqualTo( 55 );
+					session.detach( actualPig );
+					assertThat( session.contains( actualPig ) ).isFalse();
+					return session.find( GuineaPig.class, guineaPig.getId() );
+				} )
+				.chain( session::remove )
+				.call( session::flush )
+				.eventually( session::close )
+		);
+	}
+
+	protected void assertConnectionIsLazy(ReactiveConnection connection, boolean stateless) {
+		assertConnectionIsLazy( connection );
+	}
+
+	protected void assertConnectionIsLazy(ReactiveConnection connection) {
+		assertThat( connection.getClass().getName() )
+				.isEqualTo( org.hibernate.reactive.pool.impl.SqlClientPool.class.getName() + "$ProxyConnection" );
+	}
+
+	@Test
+	public void reactiveInsertGetDeleteWithStatelessSessionProxyAndMutiny(VertxTestContext context) {
+		final GuineaPig guineaPig = new GuineaPig( 5, "Aloi" );
+		Mutiny.StatelessSession session = getMutinySessionFactory().createStatelessSession();
+		assertConnectionIsLazy( ( (MutinyStatelessSessionImpl) session ).getReactiveConnection(), true );
+		test( context, session
+				.insert( guineaPig )
+				.chain( () -> session.get( GuineaPig.class, guineaPig.getId() ) )
+				.invoke( actualPig -> assertThatPigsAreEqual( guineaPig, actualPig ) )
+				.chain( () -> session.get( GuineaPig.class, guineaPig.getId() ) )
+				.call( session::delete )
+				.eventually( session::close )
+		);
 	}
 
 	@Test
