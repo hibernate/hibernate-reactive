@@ -1,7 +1,7 @@
 [versions]
 assertjVersion = "3.27.6"
-hibernateOrmVersion = "7.1.4.Final"
-hibernateOrmGradlePluginVersion = "7.1.4.Final"
+hibernateOrmVersion = "7.1.5.Final"
+hibernateOrmGradlePluginVersion = "7.1.5.Final"
 jacksonDatabindVersion = "2.20.0"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
 jbossLoggingVersion = "3.6.1.Final"
