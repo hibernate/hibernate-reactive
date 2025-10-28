@@ -1980,6 +1980,55 @@ public interface Stage {
 	interface SessionFactory extends AutoCloseable {
 
 		/**
+		 * Obtain a new {@link Session reactive session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		@Incubating
+		Session createSession();
+
+		/**
+		 * Obtain a new {@link Session reactive session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		@Incubating
+		Session createSession(String tenantId);
+
+		/**
+		 * Obtain a new {@link Session reactive session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		@Incubating
+		StatelessSession createStatelessSession();
+
+		/**
+		 * Obtain a new {@link StatelessSession reactive stateless session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link StatelessSession} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 * @param tenantId the id of the tenant
+		 */
+		@Incubating
+		StatelessSession createStatelessSession(String tenantId);
+
+		/**
 		 * Obtain a new {@linkplain Session reactive session} {@link CompletionStage}, the main
 		 * interaction point between the user's program and Hibernate
 		 * Reactive.

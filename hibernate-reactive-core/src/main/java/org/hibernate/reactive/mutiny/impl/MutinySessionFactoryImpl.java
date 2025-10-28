@@ -28,6 +28,8 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
 import org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl;
 import org.hibernate.service.ServiceRegistry;
@@ -86,6 +88,32 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	@Override
 	public Context getContext() {
 		return context;
+	}
+
+	@Override
+	public Mutiny.Session createSession() {
+		return createSession( getTenantIdentifier( options() ) );
+	}
+
+	@Override
+	public Mutiny.Session createSession(String tenantId) {
+		final SessionCreationOptions options = options();
+		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		ReactiveSession sessionImpl = new ReactiveSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
+		return new MutinySessionImpl( sessionImpl, this );
+	}
+
+	@Override
+	public Mutiny.StatelessSession createStatelessSession() {
+		return createStatelessSession( getTenantIdentifier( options() ) );
+	}
+
+	@Override
+	public Mutiny.StatelessSession createStatelessSession(String tenantId) {
+		final SessionCreationOptions options = options();
+		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
+		ReactiveStatelessSession sessionImpl = new ReactiveStatelessSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
+		return new MutinyStatelessSessionImpl( sessionImpl, this );
 	}
 
 	@Override
