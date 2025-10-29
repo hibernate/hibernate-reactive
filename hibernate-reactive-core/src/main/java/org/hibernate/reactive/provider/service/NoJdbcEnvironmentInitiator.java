@@ -10,6 +10,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.DatabaseConnectionInfo;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
+import org.hibernate.engine.jdbc.env.JdbcMetadataOnBoot;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -79,6 +80,7 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 
 	@Override
 	protected JdbcEnvironmentImpl getJdbcEnvironmentUsingJdbcMetadata(
+			JdbcMetadataOnBoot jdbcMetadataAccess,
 			Map<String, Object> configurationValues,
 			ServiceRegistryImplementor registry,
 			DialectFactory dialectFactory,
