@@ -43,6 +43,19 @@ public class EmbeddedIdTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testStatelessInsert(VertxTestContext context) {
+		LocationId nottingham = new LocationId( "UK", "Nottingham" );
+		Delivery mushyPeas = new Delivery( nottingham, "Mushy Peas with mint sauce" );
+		test( context, getMutinySessionFactory()
+				.withStatelessTransaction( s -> s.insert( mushyPeas ) )
+				.chain( () -> getMutinySessionFactory()
+						.withTransaction( s -> s.find( Delivery.class, nottingham ) )
+				)
+				.invoke( result -> assertThat( result ).isEqualTo( mushyPeas ) )
+		);
+	}
+
+	@Test
 	public void testFindSingleId(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( s -> s.find( Delivery.class, verbania ) )
 				.invoke( result -> assertThat( result ).isEqualTo( pizza ) )
