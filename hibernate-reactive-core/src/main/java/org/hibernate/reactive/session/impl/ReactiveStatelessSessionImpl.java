@@ -441,7 +441,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	private CompletionStage<?> generateIdForInsert(Object entity, Generator generator, ReactiveEntityPersister persister) {
 		if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
-			return reactiveGenerator.generate( (ReactiveConnectionSupplier) this, this )
+			return reactiveGenerator.generate( (ReactiveConnectionSupplier) this, entity )
 					.thenApply( id -> castToIdentifierType( id, persister ) );
 		}
 
