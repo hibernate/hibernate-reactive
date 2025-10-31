@@ -37,12 +37,25 @@ import java.util.concurrent.CompletionStage;
  */
 @Incubating
 public interface ReactiveConnectionPool extends Service {
+	/**
+	 * Obtain a lazily-initializing reactive connection. The
+	 * actual connection might be made when the returned
+	 * instance if {@link ReactiveConnection} is first used.
+	 */
+	ReactiveConnection getProxyConnection();
 
 	/**
 	 * Obtain a reactive connection, returning the connection
-	 * via a {@link CompletionStage}.
+	 * via a {@link CompletionStage} and overriding the default
+	 * {@link SqlExceptionHelper} for the pool.
 	 */
-	CompletionStage<ReactiveConnection> getConnection();
+	ReactiveConnection getProxyConnection(SqlExceptionHelper sqlExceptionHelper);
+
+	/**
+	 * Obtain a reactive connection for the given tenant id,
+	 * returning the connection via a {@link CompletionStage}.
+	 */
+	ReactiveConnection getProxyConnection(String tenantId);
 
 	/**
 	 * Obtain a reactive connection, returning the connection
@@ -56,6 +69,12 @@ public interface ReactiveConnectionPool extends Service {
 	 * returning the connection via a {@link CompletionStage}.
 	 */
 	CompletionStage<ReactiveConnection> getConnection(String tenantId);
+
+	/**
+	 * Obtain a reactive connection, returning the connection
+	 * via a {@link CompletionStage}.
+	 */
+	CompletionStage<ReactiveConnection> getConnection();
 
 	/**
 	 * Obtain a reactive connection for the given tenant id,

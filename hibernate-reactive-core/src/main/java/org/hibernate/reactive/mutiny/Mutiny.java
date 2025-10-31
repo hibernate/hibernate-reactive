@@ -5,6 +5,11 @@
  */
 package org.hibernate.reactive.mutiny;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.hibernate.Cache;
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -44,10 +49,6 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.Metamodel;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
@@ -1970,6 +1971,59 @@ public interface Mutiny {
 	 * </pre>
 	 */
 	interface SessionFactory extends AutoCloseable {
+
+		/**
+		 * Obtain a new {@link Session reactive session}, the main
+		 * interaction point between the user's program and Hibernate
+		 * Reactive.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		@Incubating
+		Session createSession();
+
+		/**
+		 * Obtain a new {@link Session reactive session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link Session} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 * @param tenantId the id of the tenant
+		 */
+		@Incubating
+		Session createSession(String tenantId);
+
+		/**
+		 * Obtain a new {@link StatelessSession reactive stateless session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link StatelessSession} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 */
+		@Incubating
+		StatelessSession createStatelessSession();
+
+		/**
+		 * Obtain a new {@link StatelessSession reactive stateless session}.
+		 * <p>
+		 * The underlying database connection is obtained lazily
+		 * when the returned {@link StatelessSession} needs to access the
+		 * database.
+		 * <p>
+		 * The client must close the session using {@link Session#close()}.
+		 *
+		 * @param tenantId the id of the tenant
+		 */
+		@Incubating
+		StatelessSession createStatelessSession(String tenantId);
 
 		/**
 		 * Obtain a new {@link Session reactive session} {@link Uni}, the main

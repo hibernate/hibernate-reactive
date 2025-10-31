@@ -5,13 +5,13 @@
  */
 package org.hibernate.reactive;
 
-
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.mutiny.impl.MutinyStatelessSessionImpl;
 import org.hibernate.reactive.pool.BatchingConnection;
+import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.SqlClientConnection;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
@@ -30,7 +30,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class BatchingConnectionTest extends ReactiveSessionTest {
 
 	private static SqlStatementTracker sqlTracker;
@@ -63,6 +62,27 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	protected void assertConnectionIsLazy(ReactiveConnection connection) {
+		assertConnectionIsLazy( connection, false );
+	}
+
+	@Override
+	protected void assertConnectionIsLazy(ReactiveConnection connection, boolean stateless) {
+		final ReactiveConnection actualConnection;
+		if ( !stateless ) {
+			// Only the stateful session creates a batching connection
+			assertThat( connection ).isInstanceOf( BatchingConnection.class );
+			// A little hack, withBatchSize returns the underlying connection when the parameter is less than 1
+			actualConnection = connection.withBatchSize( -1 );
+		}
+		else {
+			actualConnection = connection;
+		}
+		assertThat( actualConnection.getClass().getName() )
+				.isEqualTo( org.hibernate.reactive.pool.impl.SqlClientPool.class.getName() + "$ProxyConnection" );
 	}
 
 	@Test
