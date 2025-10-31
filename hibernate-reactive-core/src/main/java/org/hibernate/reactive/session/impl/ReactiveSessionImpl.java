@@ -1728,7 +1728,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public CompletionStage<Void> reactiveClose() {
-		super.close();
+		try {
+			super.close();
+			return closeConnection();
+		}
+		catch (RuntimeException e) {
+			return closeConnection()
+					.handle( CompletionStages::handle )
+					.thenCompose( closeConnectionHandler -> {
+						if ( closeConnectionHandler.hasFailed() ) {
+							LOG.errorClosingConnection( closeConnectionHandler.getThrowable() );
+						}
+						return failedFuture( e );
+					} );
+		}
+	}
+
+	private CompletionStage<Void> closeConnection() {
 		return reactiveConnection != null
 				? reactiveConnection.close()
 				: voidFuture();
