@@ -162,10 +162,12 @@ public class MultithreadedInsertionTest {
 					.whenComplete( (o, throwable) -> {
 						endLatch.reached();
 						if ( throwable != null ) {
+							prettyOut( throwable.getMessage() );
 							startPromise.fail( throwable );
 						}
 						else {
 							if ( !initialThreadName.equals( Thread.currentThread().getName() ) ) {
+								prettyOut( "Thread switch detected. Expecting " + initialThreadName + ", actual " + Thread.currentThread().getName() );
 								startPromise.fail( "Thread switch detected!" );
 							}
 							else {
