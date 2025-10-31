@@ -135,6 +135,7 @@ import static org.hibernate.reactive.common.InternalStateAssertions.assertUseOnE
 import static org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister.forceInitialize;
 import static org.hibernate.reactive.session.impl.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.returnNullorRethrow;
@@ -963,7 +964,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 
 		if ( getPersistenceContextInternal().getCascadeLevel() > 0 ) {
-			return CompletionStages.failedFuture( new ObjectDeletedException(
+			return failedFuture( new ObjectDeletedException(
 					"deleted object would be re-saved by cascade (remove deleted object from associations)",
 					entry.getId(),
 					entry.getPersister().getEntityName()
@@ -1616,7 +1617,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public CompletionStage<Void> reactiveClose() {
-		super.close();
+		try {
+			super.close();
+			return closeConnection();
+		}
+		catch (RuntimeException e) {	
+			return closeConnection()
+					.handle( CompletionStages::handle )
+					.thenCompose( closeConnectionHandler -> {
+						if ( closeConnectionHandler.hasFailed() ) {
+							LOG.errorClosingConnection( closeConnectionHandler.getThrowable() );
+						}
+						return failedFuture( e );
+					} );
+		}
+	}
+
+	private CompletionStage<Void> closeConnection() {
 		return reactiveConnection != null
 				? reactiveConnection.close()
 				: voidFuture();
