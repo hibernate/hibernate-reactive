@@ -172,10 +172,12 @@ public class MultithreadedInsertionWithLazyConnectionTest {
 					.whenComplete( (o, throwable) -> {
 						endLatch.reached();
 						if ( throwable != null ) {
+							prettyOut( throwable.getMessage() );
 							startPromise.fail( throwable );
 						}
 						else {
 							if ( !initialThreadName.equals( Thread.currentThread().getName() ) ) {
+								prettyOut( "Thread switch detected. Expecting " + initialThreadName + ", actual " + Thread.currentThread().getName() );
 								startPromise.fail( "Thread switch detected!" );
 							}
 							else {
@@ -209,10 +211,10 @@ public class MultithreadedInsertionWithLazyConnectionTest {
 	}
 
 	/**
-	 * Trivial entity using a Sequence for Id generation
+	 * Trivial entity using default id generation
 	 */
 	@Entity
-	@Table(name="Entity")
+	@Table(name = "Entity")
 	private static class EntityWithGeneratedId {
 		@Id
 		@GeneratedValue
