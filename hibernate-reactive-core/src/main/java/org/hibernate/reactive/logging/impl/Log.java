@@ -273,6 +273,10 @@ public interface Log extends BasicLogger {
 	@Message(id = 85, value = "Reactive sessions do not support transparent lazy fetching - use Stage.fetch() or Mutiny.fetch() (property '%1$S' of entity '%2$s' was not loaded)")
 	LazyInitializationException lazyFieldInitializationException(String fieldName, String entityName);
 
+	@LogMessage(level = ERROR)
+	@Message(id = 86, value = "Error closing reactive connection")
+	void errorClosingConnection(@Cause Throwable throwable);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
@@ -331,5 +335,4 @@ public interface Log extends BasicLogger {
 			" This is probably due to an operation failing fast due to the transaction being marked for rollback.",
 			id = 520)
 	void jdbcExceptionThrownWithTransactionRolledBack(@Cause JDBCException e);
-
 }
