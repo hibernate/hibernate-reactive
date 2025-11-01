@@ -118,7 +118,7 @@ jobs:
       - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
         run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}
@@ -168,7 +168,7 @@ jobs:
       - name: Build and Test with ${{ matrix.db }}
         run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}
@@ -294,7 +294,7 @@ jobs:
               -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
               ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}
