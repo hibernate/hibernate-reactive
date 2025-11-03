@@ -208,6 +208,66 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testHqlUpdate(VertxTestContext context) {
+		final Integer id = 1;
+		final String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+						.createMutationQuery( "insert into SpellBook (id, title, forbidden) values (:id, :title, :forbidden)" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.executeUpdate() )
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createMutationQuery(
+								"update SpellBook set id = :id, title = :newTitle, forbidden = :newForbidden where forbidden = :forbidden and title = :title" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.setParameter( "newTitle", "new title" )
+						.setParameter( "newForbidden", false )
+						.executeUpdate() )
+				)
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
+						.setParameter( "id", id )
+						.getSingleResult()
+						.invoke( spellBook -> {
+									 assertThat( spellBook.getTitle() ).isEqualTo( "new title" );
+									 assertThat( spellBook.forbidden ).isFalse();
+								 }
+						)
+				) )
+		);
+	}
+
+	@Test
+	public void testHqlDelete(VertxTestContext context) {
+		final Integer id = 1;
+		final String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+						.createMutationQuery( "insert into SpellBook (id, title, forbidden) values (:id, :title, :forbidden)" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.executeUpdate() )
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createMutationQuery(
+								"delete from SpellBook where id = :id and forbidden = :forbidden and title = :title" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.executeUpdate() )
+				)
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
+						.setParameter( "id", id )
+						.getSingleResultOrNull()
+						.invoke( Assertions::assertNull ) )
+				)
+		);
+	}
+
 	@Entity(name="SpellBook")
 	@Table(name = "SpellBookJS")
 	@DiscriminatorValue("S")
