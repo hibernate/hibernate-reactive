@@ -10,13 +10,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -27,6 +21,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
@@ -84,7 +82,6 @@ public class FindByIdWithLockTest extends BaseReactiveTest {
 		);
 	}
 
-	@Disabled
 	@Test
 	public void testFindUpgradeNoWait(VertxTestContext context) {
 		Child child = new Child( CHILD_ID, "And" );
@@ -97,30 +94,51 @@ public class FindByIdWithLockTest extends BaseReactiveTest {
 								.invoke( c -> {
 											 assertThat( c ).isNotNull();
 											 assertThat( c.getId() ).isEqualTo( CHILD_ID );
-											 String selectQuery = sqlTracker.getLoggedQueries().get( 0 );
-											 assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
-											 assertThat( selectQuery )
-													 .matches( this::noWaitLockingPredicate, "SQL query with nowait lock for " + dbType().name() );
+
+											 assertThatExecutedQueriesContainLock();
 										 }
 								) ) )
 		);
 	}
 
-	/**
-	 * @return true if the query contains the expected nowait keyword for the selected database
- 	 */
-	private boolean noWaitLockingPredicate(String selectQuery) {
-		return switch ( dbType() ) {
-			case POSTGRESQL -> selectQuery.endsWith( "for no key update of c1_0 nowait" );
-			case COCKROACHDB -> selectQuery.endsWith( "for update of c1_0 nowait" );
-			case SQLSERVER -> selectQuery.contains( "with (updlock,holdlock,rowlock,nowait)" );
-			case ORACLE -> selectQuery.contains( "for update of c1_0.id nowait" );
+	private void assertThatExecutedQueriesContainLock() {
+		switch ( dbType() ) {
+			case SQLSERVER -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+				assertThat( sqlTracker.getLoggedQueries()
+									.get( 0 ) ).contains( "with (updlock,holdlock,rowlock,nowait)" );
+			}
 			// DB2 does not support nowait
-			case DB2 -> selectQuery.contains( "for read only with rs use and keep update locks" );
-			case MARIA -> selectQuery.contains( "for update nowait" );
-			case MYSQL -> selectQuery.contains( "for update of c1_0 nowait" );
+			case DB2 -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+				assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains(
+						"for read only with rs use and keep update locks" );
+			}
+			case ORACLE -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+				assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "for update of c1_0.id nowait" );
+			}
+			case MARIA -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+				assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "for update nowait" );
+			}
+			case MYSQL -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+				assertThat( sqlTracker.getLoggedQueries().get( 0 ) ).contains( "for update of c1_0 nowait" );
+			}
+			// For PostgresSql and CockroachDb LockStrategy.FOLLOW_ON is applied
+			// (dialects do not support outer join for update, see org.hibernate.sql.ast.spiAbstractSqlAst#determineLockingStrategy(QuerySpec,Locking.FollowOn))
+			// so 2 queries are executed, the first one select the entity and contains the join the second one does not contain the join but contains the lock clause.
+			case POSTGRESQL -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 2 );
+				assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).endsWith( "for no key update of tbl nowait" );
+			}
+			case COCKROACHDB -> {
+				assertThat( sqlTracker.getLoggedQueries() ).hasSize( 2 );
+				assertThat( sqlTracker.getLoggedQueries().get( 1 ) ).endsWith( "for update of tbl nowait" );
+			}
 			default -> throw new IllegalArgumentException( "Database not recognized: " + dbType().name() );
-		};
+		}
 	}
 
 	@Entity(name = "Parent")
