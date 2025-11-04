@@ -22,6 +22,9 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
@@ -220,10 +223,15 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					};
 
 					final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState =
-							new JdbcValuesSourceProcessingStateStandardImpl( executionContext, processingOptions );
+							new JdbcValuesSourceProcessingStateStandardImpl(
+									jdbcSelect.getLoadedValuesCollector(),
+									processingOptions,
+									executionContext
+							);
 
+					final SharedSessionContractImplementor session = executionContext.getSession();
 					final ReactiveRowReader<R> rowReader = ReactiveResultsHelper.createRowReader(
-							executionContext.getSession().getSessionFactory(),
+							session.getSessionFactory(),
 							rowTransformer,
 							domainResultType,
 							jdbcValues
@@ -237,21 +245,34 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					);
 
 					rowReader.startLoading( rowProcessingState );
-
-					return resultsConsumer
-							.consume(
-									jdbcValues,
-									executionContext.getSession(),
-									processingOptions,
-									valuesProcessingState,
-									rowProcessingState,
-									rowReader
-							)
-							.thenApply( result -> {
-								statistics.end( jdbcSelect, result );
-								return result;
-							} );
-				} );
+					ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
+					if ( jdbcSelect instanceof ReactiveJdbcSelect reactiveJdbcSelect ) {
+						return reactiveJdbcSelect.reactivePerformPreActions( reactiveConnection, executionContext )
+								.thenCompose( unused -> resultsConsumer
+										.consume(
+												jdbcValues,
+												session,
+												processingOptions,
+												valuesProcessingState,
+												rowProcessingState,
+												rowReader
+										) )
+								.thenCompose( result -> reactiveJdbcSelect
+										.reactivePerformPostActions( true, reactiveConnection, executionContext )
+										.thenApply( v -> {
+											statistics.end( jdbcSelect, result );
+											return result;
+										} )
+								);
+					}
+					else {
+						return resultsConsumer.consume( jdbcValues, session, processingOptions, valuesProcessingState, rowProcessingState, rowReader )
+								.thenApply( result -> {
+									statistics.end( jdbcSelect, result );
+									return result;
+								} );
+					}
+		});
 	}
 
 	private static <R> RowTransformer<R> rowTransformer(
