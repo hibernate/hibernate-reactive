@@ -5,8 +5,6 @@
  */
 package org.hibernate.reactive;
 
-import org.hibernate.reactive.annotations.DisabledFor;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +28,6 @@ import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -189,7 +186,6 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 	}
 
 	@Test
-	@DisabledFor(value = POSTGRESQL, reason = "https://github.com/hibernate/hibernate-reactive/issues/2412")
 	public void testHqlInsertWithTransaction(VertxTestContext context) {
 		final Integer id = 1;
 		final String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
