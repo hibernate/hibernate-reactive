@@ -98,14 +98,12 @@ public class ReactiveTableBasedDeleteHandler extends TableBasedDeleteHandler imp
 
 	private CompletionStage<Void> deleteRows(JdbcParameterBindings jdbcParameterBindings, StandardReactiveJdbcMutationExecutor jdbcMutationExecutor, SqmJdbcExecutionContextAdapter executionContext, int[] rows) {
 		if ( getEntityDescriptor() instanceof UnionSubclassEntityPersister ) {
-			return CompletionStages
-					.loop( getDeletes(), delete -> reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
+			return loop( getDeletes(), delete -> reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
 						.thenApply( tot -> rows[0] += tot )
 					);
 		}
 		else {
-			return CompletionStages
-					.loop( getDeletes(), delete -> reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
+			return loop( getDeletes(), delete -> reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
 						.thenApply( tot -> rows[0] = tot )
 					);
 		}
@@ -128,8 +126,10 @@ public class ReactiveTableBasedDeleteHandler extends TableBasedDeleteHandler imp
 			);
 		}
 		return loop( getCollectionTableDeletes(), delete ->
-						reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
-		).thenApply( v -> rows );
+				reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
+		).thenCompose( v -> loop( getDeletes(), delete ->
+				reactiveExecute( jdbcParameterBindings, delete, jdbcMutationExecutor, executionContext )
+		) ).thenApply( v -> rows );
 	}
 
 	private static CompletionStage<Integer> reactiveExecute(
