@@ -212,6 +212,29 @@ public class JoinedSubclassInheritanceTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testHqlDelete(VertxTestContext context) {
+		final Integer id = 1;
+		final String title = "Spell Book: A Comprehensive Guide to Magic Spells and Incantations";
+		SpellBook spellBook = new SpellBook( id, title, true, new Date() );
+		test( context, getMutinySessionFactory().withTransaction( session -> session.persist( spellBook ) )
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createMutationQuery(
+								"delete from SpellBook where id = :id and forbidden = :forbidden and title = :title" )
+						.setParameter( "id", id )
+						.setParameter( "title", title )
+						.setParameter( "forbidden", true )
+						.executeUpdate() )
+				)
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session
+						.createSelectionQuery( "from SpellBook g where g.id = :id ", SpellBook.class )
+						.setParameter( "id", id )
+						.getSingleResultOrNull()
+						.invoke( Assertions::assertNull ) )
+				)
+		);
+	}
+
 	@Entity(name="SpellBook")
 	@Table(name = "SpellBookJS")
 	@DiscriminatorValue("S")
