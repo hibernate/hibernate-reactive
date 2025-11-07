@@ -185,12 +185,45 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 
 	@Override
 	protected int dataTypeCode(String typeName) {
-		// ORACLE only supports "float" sql type for double precision
-		// so return code for double for both double and float column types
-		if ( typeName.equalsIgnoreCase( "float" ) ||
-				typeName.toLowerCase().startsWith( "double" ) ) {
+		if ( typeName.equalsIgnoreCase( "float" )
+				|| typeName.toLowerCase().startsWith( "double" )
+				|| typeName.equalsIgnoreCase( "binary_double" ) ) {
 			return Types.DOUBLE;
 		}
-		return super.dataTypeCode( typeName );
+		if ( typeName.equalsIgnoreCase( "timestamp" ) ) {
+			return Types.TIMESTAMP;
+		}
+		if ( typeName.equalsIgnoreCase( "timestamp with time zone" )
+				|| typeName.equalsIgnoreCase( "timestamp with local time zone" ) ) {
+			return Types.TIMESTAMP_WITH_TIMEZONE;
+		}
+		if ( typeName.equalsIgnoreCase( "clob" ) ) {
+			return Types.CLOB;
+		}
+		if ( typeName.equalsIgnoreCase( "blob" ) ) {
+			return Types.BLOB;
+		}
+		if ( typeName.equalsIgnoreCase( "raw" ) ) {
+			return Types.VARBINARY;
+		}
+		if ( typeName.equalsIgnoreCase( "long raw" ) ) {
+			return Types.LONGVARBINARY;
+		}
+		if ( typeName.equalsIgnoreCase( "ref cursor" ) ) {
+			return Types.REF_CURSOR;
+		}
+		if ( typeName.equalsIgnoreCase( "number" ) ) {
+			return Types.NUMERIC;
+		}
+		if ( typeName.equalsIgnoreCase( "date" ) ) {
+			return Types.DATE;
+		}
+		if ( typeName.equalsIgnoreCase( "nvarchar2" ) ) {
+			return Types.NVARCHAR;
+		}
+		if ( typeName.equalsIgnoreCase( "varchar2" ) ) {
+			return Types.VARCHAR;
+		}
+		return 0;
 	}
 }
