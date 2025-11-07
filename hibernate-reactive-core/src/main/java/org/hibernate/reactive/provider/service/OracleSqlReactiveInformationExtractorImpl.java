@@ -187,13 +187,23 @@ public class OracleSqlReactiveInformationExtractorImpl extends AbstractReactiveI
 
 	@Override
 	protected int dataTypeCode(String typeName) {
-		// ORACLE only supports "float" sql type for double precision
-		// so return code for double for both double and float column types
-		if ( typeName.equalsIgnoreCase( "float" ) ||
-				typeName.toLowerCase().startsWith( "double" ) ) {
-			return Types.DOUBLE;
-		}
-		return super.dataTypeCode( typeName );
+		return switch ( typeName.toLowerCase() ) {
+			// ORACLE only supports "float" sql type for double precision
+			// so return code for double for both double and float column types
+			case "float", "double", "binary_double" -> Types.DOUBLE;
+			case "timestamp" -> Types.TIMESTAMP;
+			case "timestamp with time zone", "timestamp with local time zone" -> Types.TIMESTAMP_WITH_TIMEZONE;
+			case "clob" -> Types.CLOB;
+			case "blob" -> Types.BLOB;
+			case "raw" -> Types.VARBINARY;
+			case "long raw" -> Types.LONGVARBINARY;
+			case "ref cursor" -> Types.REF_CURSOR;
+			case "number" -> Types.NUMERIC;
+			case "date" -> Types.DATE;
+			case "nvarchar2" -> Types.NVARCHAR;
+			case "varchar2" -> Types.VARCHAR;
+			default -> 0;
+		};
 	}
 
 	@Override
