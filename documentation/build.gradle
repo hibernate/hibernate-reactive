@@ -182,6 +182,9 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 			"html-meta-version-family": versionFamily.get(),
 	)
 
+	// See https://docs.asciidoctor.org/gradle-plugin/latest/common-task-configuration/#choosing-an-execution-mode-for-asciidoctorj
+	executionMode = org.ysb33r.grolifant.api.core.jvm.ExecutionMode.JAVA_EXEC
+
 	dependsOn( tasks.named( "unpackTheme" ) )
 }
 
