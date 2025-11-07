@@ -6,11 +6,15 @@
 package org.hibernate.reactive.schema;
 
 
+import java.net.URL;
+
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.provider.Settings;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -26,6 +31,7 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.GROUPED;
 import static org.hibernate.tool.schema.JdbcMetadaAccessStrategy.INDIVIDUALLY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,6 +80,11 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		Configuration createConf = constructConfiguration( "create" );
 		createConf.addAnnotatedClass( BasicTypesTestEntity.class );
 
+		final URL importFileURL = Thread.currentThread()
+				.getContextClassLoader()
+				.getResource( "oracle-SchemaValidationTest.sql" );
+		createConf.setProperty( AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, importFileURL.getFile() );
+
 		// Make sure that the extra table is not in the db
 		Configuration dropConf = constructConfiguration( "drop" );
 		dropConf.addAnnotatedClass( Extra.class );
@@ -90,6 +101,18 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 	public void after(VertxTestContext context) {
 		super.after( context );
 		closeFactory( context );
+	}
+
+	@Test
+	@Timeout(value = 10, timeUnit = MINUTES)
+	@EnabledFor( ORACLE )
+	public void testOracleColumnTypeValidation(VertxTestContext context) {
+		Configuration validateConf = constructConfiguration( "validate" );
+		validateConf.addAnnotatedClass( Fruit.class );
+
+		StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
+				.applySettings( validateConf.getProperties() );
+		test( context, setupSessionFactory( validateConf ) );
 	}
 
 	// When we have created the table, the validation should pass
@@ -138,5 +161,44 @@ public abstract class SchemaValidationTestBase extends BaseReactiveTest {
 		private Integer id;
 
 		private String description;
+	}
+
+	@Entity(name = "Fruit")
+	public static class Fruit {
+
+		@Id
+		@GeneratedValue
+		private Integer id;
+
+		@Column(name = "something_name", nullable = false, updatable = false)
+		private String name;
+
+		public Fruit() {
+		}
+
+		public Fruit(String name) {
+			this.name = name;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return "Fruit{" + id + "," + name + '}';
+		}
 	}
 }
