@@ -154,6 +154,7 @@ public class ReactiveTableLock extends TableLock {
 	}
 
 	protected static class ReactiveToOneResultHandler extends ToOneResultHandler implements ReactiveResulHandler {
+		public static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 		public ReactiveToOneResultHandler(Integer statePosition, ToOneAttributeMapping toOne) {
 			super( statePosition, toOne );
@@ -166,8 +167,7 @@ public class ReactiveTableLock extends TableLock {
 				ReactiveSessionImpl session) {
 			if ( stateValue == null ) {
 				if ( !toOne.isNullable() ) {
-					throw new IllegalStateException( "Retrieved key was null, but to-one is not nullable : " + toOne.getNavigableRole()
-							.getFullPath() );
+					throw LOG.notNullableToOneAssociationMissingKey( toOne.getNavigableRole().getFullPath() );
 				}
 				applyLoadedState( entityDetails, statePosition, null );
 				applyModelState( entityDetails, statePosition, null );

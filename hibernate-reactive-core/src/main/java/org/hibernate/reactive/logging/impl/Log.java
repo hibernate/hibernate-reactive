@@ -277,6 +277,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 86, value = "Error closing reactive connection")
 	void errorClosingConnection(@Cause Throwable throwable);
 
+	@Message(id = 87, value = "Retrieved key was null, but to-one is not nullable : %s")
+	IllegalStateException notNullableToOneAssociationMissingKey(String toOneNavigablePath);
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
