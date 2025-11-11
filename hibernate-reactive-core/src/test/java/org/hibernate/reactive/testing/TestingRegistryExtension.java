@@ -136,6 +136,11 @@ public class TestingRegistryExtension implements BeforeEachCallback, AfterEachCa
 		}
 
 		@Override
+		public boolean isActive() {
+			return true;
+		}
+
+		@Override
 		public void registerChild(ServiceRegistryImplementor child) {
 		}
 
