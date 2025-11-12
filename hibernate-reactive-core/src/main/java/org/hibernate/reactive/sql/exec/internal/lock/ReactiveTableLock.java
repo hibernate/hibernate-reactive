@@ -22,6 +22,7 @@ import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
+import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.lock.EntityDetails;
 import org.hibernate.sql.exec.internal.lock.TableLock;
 import org.hibernate.sql.results.graph.DomainResult;
@@ -94,11 +95,12 @@ public class ReactiveTableLock extends TableLock {
 		final var jdbcServices = sessionFactory.getJdbcServices();
 		final var selectStatement = new SelectStatement( querySpec, domainResults );
 
+		final JdbcOperationQuerySelect jdbcSelect = jdbcServices.getDialect().getSqlAstTranslatorFactory()
+				.buildSelectTranslator( sessionFactory, selectStatement )
+				.translate( jdbcParameterBindings, lockingQueryOptions );
 		return StandardReactiveSelectExecutor.INSTANCE
 				.list(
-						jdbcServices.getDialect().getSqlAstTranslatorFactory()
-								.buildSelectTranslator( sessionFactory, selectStatement )
-								.translate( jdbcParameterBindings, lockingQueryOptions ),
+						jdbcSelect,
 						jdbcParameterBindings,
 						// IMPORTANT: we need a "clean" ExecutionContext to not further apply locking
 						new BaseExecutionContext( session ),
@@ -107,7 +109,7 @@ public class ReactiveTableLock extends TableLock {
 						ReactiveListResultsConsumer.UniqueSemantic.ALLOW
 				).thenCompose( results -> {
 					if ( isEmpty( results ) ) {
-						throw new AssertionFailure( "Expecting results" );
+						throw new AssertionFailure( "Expecting results from table locking query : '" + jdbcSelect.getSqlString() + "', but none were returned" );
 					}
 					return CompletionStages.loop( results, row -> {
 						final var entityDetails = entityDetailsMap.get( row[0] );
