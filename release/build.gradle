@@ -15,9 +15,6 @@ description = 'Release module'
 // The folder containing the rendered documentation
 final Directory documentationDir = project(":documentation").layout.buildDirectory.get()
 
-// Relative path on the static website where the documentation is located
-final String docWebsiteRelativePath = "reactive/documentation/${projectVersion.family}"
-
 /**
  * Assembles all documentation into the {buildDir}/documentation directory.
  */
