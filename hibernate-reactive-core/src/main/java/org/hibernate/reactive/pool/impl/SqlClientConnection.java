@@ -18,12 +18,14 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.DatabaseException;
@@ -59,14 +61,22 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final Pool pool;
 	private final SqlConnection connection;
+	// The context associated to the connection. We expect the connection to be executed in this context.
+	private final ContextInternal connectionContext;
 	private Transaction transaction;
 
-	SqlClientConnection(SqlConnection connection, Pool pool, SqlStatementLogger sqlStatementLogger, SqlExceptionHelper sqlExceptionHelper) {
+	SqlClientConnection(
+			SqlConnection connection,
+			Pool pool,
+			SqlStatementLogger sqlStatementLogger,
+			SqlExceptionHelper sqlExceptionHelper,
+			ContextInternal connectionContext) {
+		this.connectionContext = connectionContext;
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
 		this.sqlExceptionHelper = sqlExceptionHelper;
-		LOG.tracef( "Connection created: %s", connection );
+		LOG.tracef( "Connection created for %1$s associated to context %2$s: ", connection, connectionContext );
 	}
 
 	public DatabaseMetadata getDatabaseMetadata() {
@@ -277,6 +287,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private void feedback(String sql) {
+		InternalStateAssertions.assertCurrentContextMatches( this, connectionContext );
 		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		// DDL already gets formatted by the client, so don't reformat it
 		FormatStyle formatStyle = sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )

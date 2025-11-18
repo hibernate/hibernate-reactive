@@ -5,6 +5,8 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -18,10 +20,13 @@ import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import io.vertx.core.Future;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.sqlclient.DatabaseException;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
@@ -30,7 +35,8 @@ import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -123,12 +129,16 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return completionStage( pool.getConnection().map( this::newConnection ), ReactiveConnection::close );
+		return completeFuture(
+				pool.getConnection().map( this::newConnection ),
+				ReactiveConnection::close
+		);
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
-		return completionStage(
-				pool.getConnection().map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
+		return completeFuture(
+				pool.getConnection()
+						.map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
 				ReactiveConnection::close
 		);
 	}
@@ -189,8 +199,8 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	/**
 	 * @param onCancellation invoke when converted {@link java.util.concurrent.CompletionStage} cancellation.
 	 */
-	private <T> CompletionStage<T> completionStage(Future<T> future, Consumer<T> onCancellation) {
-		CompletableFuture<T> completableFuture = new CompletableFuture<>();
+	private <T> CompletionStage<T> completeFuture(Future<T> future, Consumer<T> onCancellation) {
+		final CompletableFuture<T> completableFuture = new CompletableFuture<>();
 		future.onComplete( ar -> {
 			if ( ar.succeeded() ) {
 				if ( completableFuture.isCancelled() ) {
@@ -210,13 +220,35 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private SqlClientConnection newConnection(SqlConnection connection, SqlExceptionHelper sqlExceptionHelper) {
-		return new SqlClientConnection( connection, getPool(), getSqlStatementLogger(), sqlExceptionHelper );
+		return new SqlClientConnection(
+				connection,
+				getPool(),
+				getSqlStatementLogger(),
+				sqlExceptionHelper,
+				ContextInternal.current()
+		);
 	}
 
 	private static class ProxyConnection implements ReactiveConnection {
+
+		private static final Log LOG = LoggerFactory.make( Log.class, lookup() );
+
+		private static final VarHandle OPENED_HANDLE;
+
+		static {
+			try {
+				MethodHandles.Lookup lookup = lookup();
+				OPENED_HANDLE = lookup.findVarHandle( ProxyConnection.class, "opened", boolean.class );
+			}
+			catch (ReflectiveOperationException e) {
+				throw new ExceptionInInitializerError( e );
+			}
+		}
+
 		private final Supplier<CompletionStage<ReactiveConnection>> connectionSupplier;
-		private Integer batchSize;
-		private ReactiveConnection connection;
+		private final CompletableFuture<ReactiveConnection> connectionFuture = new CompletableFuture<>();
+		private volatile boolean opened = false;
+		private volatile boolean closed = false;
 
 		public ProxyConnection(Supplier<CompletionStage<ReactiveConnection>> connectionSupplier) {
 			this.connectionSupplier = connectionSupplier;
@@ -225,29 +257,41 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		/**
 		 * @return the existing {@link ReactiveConnection}, or open a new one
 		 */
-		CompletionStage<ReactiveConnection> connection() {
-			if ( connection == null ) {
-				return connectionSupplier.get()
-						.thenApply( conn -> {
-							if ( batchSize != null ) {
-								conn.withBatchSize( batchSize );
-							}
-							connection = conn;
-							return connection;
-						} );
+		private CompletionStage<ReactiveConnection> connection() {
+			if ( closed ) {
+				return failedFuture( LOG.connectionIsClosed() );
 			}
-			return completedFuture( connection );
+			if ( opened ) {
+				return connectionFuture;
+			}
+			if ( OPENED_HANDLE.compareAndSet( this, false, true ) ) {
+				connectionSupplier.get().whenComplete( (connection, throwable) -> {
+					if ( throwable != null ) {
+						connectionFuture.completeExceptionally( throwable );
+					}
+					else {
+						connectionFuture.complete( connection );
+					}
+				} );
+			}
+			return connectionFuture;
 		}
 
 		@Override
 		public boolean isTransactionInProgress() {
-			return connection != null && connection.isTransactionInProgress();
+			ReactiveConnection reactiveConnection = connectionFuture.getNow( null );
+			return reactiveConnection != null && reactiveConnection.isTransactionInProgress();
 		}
 
 		@Override
 		public DatabaseMetadata getDatabaseMetadata() {
-			Objects.requireNonNull( connection, "Database metadata not available until the connection is opened" );
-			return connection.getDatabaseMetadata();
+			if ( closed ) {
+				throw LOG.connectionIsClosed();
+			}
+
+			return Objects
+					.requireNonNull( connectionFuture.getNow( null ), "Database metadata not available until a connection has been created" )
+					.getDatabaseMetadata();
 		}
 
 		@Override
@@ -340,15 +384,22 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 			return connection().thenCompose( ReactiveConnection::rollbackTransaction );
 		}
 
-		@Override
 		public ReactiveConnection withBatchSize(int batchSize) {
-			if ( connection == null ) {
-				this.batchSize = batchSize;
+			if ( closed ) {
+				throw LOG.connectionIsClosed();
+			}
+
+			if ( connectionFuture.isDone() ) {
+				// connection exists, we can let callers use the delegate and forget about the proxy.
+				return connectionFuture.getNow( null ).withBatchSize( batchSize );
 			}
 			else {
-				connection = connection.withBatchSize( batchSize );
+				return new ProxyConnection( () -> opened
+						// Connection has been requested but not created yet
+						? connectionFuture.thenApply( c -> c.withBatchSize( batchSize ) )
+						// Connection has not been requested
+						: connectionSupplier.get().thenApply( c -> c.withBatchSize( batchSize ) ) );
 			}
-			return this;
 		}
 
 		@Override
@@ -358,8 +409,9 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 
 		@Override
 		public CompletionStage<Void> close() {
-			return connection != null
-					? connection.close().thenAccept( v -> connection = null )
+			closed = true;
+			return opened
+					? connectionFuture.thenCompose( ReactiveConnection::close )
 					: voidFuture();
 		}
 	}
