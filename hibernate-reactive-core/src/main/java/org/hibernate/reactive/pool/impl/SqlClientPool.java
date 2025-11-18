@@ -125,16 +125,18 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
+		final Exception creationTrace = new Exception();
 		return completeFuture(
-				pool.getConnection().map( this::newConnection ),
+				pool.getConnection().map( connection -> newConnection( connection, creationTrace ) ),
 				ReactiveConnection::close
 		);
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
+		final Exception creationTrace = new Exception();
 		return completeFuture(
 				pool.getConnection()
-						.map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
+						.map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper, creationTrace ) ),
 				ReactiveConnection::close
 		);
 	}
@@ -211,17 +213,18 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		return completableFuture;
 	}
 
-	private SqlClientConnection newConnection(SqlConnection connection) {
-		return newConnection( connection, getSqlExceptionHelper() );
+	private SqlClientConnection newConnection(SqlConnection connection, Exception creationTrace) {
+		return newConnection( connection, getSqlExceptionHelper(), creationTrace );
 	}
 
-	private SqlClientConnection newConnection(SqlConnection connection, SqlExceptionHelper sqlExceptionHelper) {
+	private SqlClientConnection newConnection(SqlConnection connection, SqlExceptionHelper sqlExceptionHelper, Exception creationTrace) {
 		return new SqlClientConnection(
 				connection,
 				getPool(),
 				getSqlStatementLogger(),
 				sqlExceptionHelper,
-				ContextInternal.current()
+				ContextInternal.current(),
+				creationTrace
 		);
 	}
 

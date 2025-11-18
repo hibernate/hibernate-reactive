@@ -58,6 +58,7 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	private final SqlStatementLogger sqlStatementLogger;
 	private final SqlExceptionHelper sqlExceptionHelper;
+	private final Exception creationTrace;
 
 	private final Pool pool;
 	private final SqlConnection connection;
@@ -70,12 +71,15 @@ public class SqlClientConnection implements ReactiveConnection {
 			Pool pool,
 			SqlStatementLogger sqlStatementLogger,
 			SqlExceptionHelper sqlExceptionHelper,
-			ContextInternal connectionContext) {
+			ContextInternal connectionContext,
+			// Helps to figure out where and when the connection was created
+			Exception creationTrace) {
 		this.connectionContext = connectionContext;
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
 		this.sqlExceptionHelper = sqlExceptionHelper;
+		this.creationTrace = creationTrace;
 		LOG.tracef( "Connection created for %1$s associated to context %2$s: ", connection, connectionContext );
 	}
 
@@ -348,7 +352,7 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private void feedback(String sql) {
-		InternalStateAssertions.assertCurrentContextMatches( this, connectionContext );
+		InternalStateAssertions.assertCurrentContextMatches( this, connectionContext, creationTrace );
 		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		// DDL already gets formatted by the client, so don't reformat it
 		FormatStyle formatStyle = sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )

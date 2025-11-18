@@ -54,12 +54,12 @@ public final class InternalStateAssertions {
 		}
 	}
 
-	public static void assertCurrentContextMatches(Object object, ContextInternal expectedContext) {
+	public static void assertCurrentContextMatches(Object object, ContextInternal expectedContext, Exception creationTrace) {
 		if ( ENFORCE ) {
 			final ContextInternal currentContext = ContextInternal.current();
 			Objects.requireNonNull( currentContext, "Current context cannot be null" );
 			if ( !currentContext.equals( expectedContext ) ) {
-				throw LOG.unexpectedContextDetected( object, expectedContext, currentContext );
+				throw LOG.unexpectedContextDetected( object, expectedContext, currentContext, creationTrace );
 			}
 		}
 	}

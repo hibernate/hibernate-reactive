@@ -274,8 +274,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 86, value = "Error closing reactive connection")
 	void errorClosingConnection(@Cause Throwable throwable);
 
+	// createStack will help in tracking which method created the object
 	@Message(id = 88, value = "Expected to use the object %1$s on context %2$s but was %3$s")
-	HibernateException unexpectedContextDetected(Object obj, ContextInternal expectedContext, ContextInternal currentContext);
+	HibernateException unexpectedContextDetected(Object obj, ContextInternal expectedContext, ContextInternal currentContext, @Cause Exception createStack);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
