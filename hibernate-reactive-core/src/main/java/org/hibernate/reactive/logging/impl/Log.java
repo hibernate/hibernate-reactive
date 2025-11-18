@@ -280,6 +280,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 88, value = "Expected to use the object %1$s on context %2$s but was %3$s")
 	HibernateException unexpectedContextDetected(Object obj, ContextInternal expectedContext, ContextInternal currentContext);
 
+	@Message(id = 89, value = "Connection is closed")
+	IllegalStateException connectionIsClosed();
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
