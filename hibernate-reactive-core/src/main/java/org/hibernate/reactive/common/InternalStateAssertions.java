@@ -7,11 +7,13 @@ package org.hibernate.reactive.common;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
 import io.vertx.core.Context;
+import io.vertx.core.impl.ContextInternal;
 
 /**
  * Commonly used assertions to verify that the operations
@@ -52,4 +54,13 @@ public final class InternalStateAssertions {
 		}
 	}
 
+	public static void assertCurrentContextMatches(Object object, ContextInternal expectedContext) {
+		if ( ENFORCE ) {
+			final ContextInternal currentContext = ContextInternal.current();
+			Objects.requireNonNull( currentContext, "Current context cannot be null" );
+			if ( !currentContext.equals( expectedContext ) ) {
+				throw LOG.unexpectedContextDetected( object, expectedContext, currentContext );
+			}
+		}
+	}
 }
