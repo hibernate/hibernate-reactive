@@ -14,11 +14,13 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.pool.CombinerExecutor;
 import io.vertx.core.internal.pool.Executor;
 import io.vertx.core.internal.pool.Task;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 
 /**
  * A {@link ReactiveIdentifierGenerator} which uses the database to allocate
@@ -93,39 +95,34 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 		}
 
 		final CompletableFuture<Long> resultForThisEventLoop = new CompletableFuture<>();
-		final CompletableFuture<Long> result = new CompletableFuture<>();
-		final Context context = Vertx.currentContext();
-		executor.submit( new GenerateIdAction( connectionSupplier, result ) );
-		result.whenComplete( (id, t) -> {
-			final Context newContext = Vertx.currentContext();
-			//Need to be careful in resuming processing on the same context as the original
-			//request, potentially having to switch back if we're no longer executing on the same:
-			if ( newContext != context ) {
-				if ( t != null ) {
-					context.runOnContext( v -> resultForThisEventLoop.completeExceptionally( t ) );
+		// We use supplyStage so that, no matter if there's an exception, we always return something that will complete
+		return supplyStage( () -> {
+			final CompletableFuture<Long> result = new CompletableFuture<>();
+			final Context context = Vertx.currentContext();
+			executor.submit( new GenerateIdAction( connectionSupplier, result ) );
+			result.whenComplete( (id, t) -> {
+				final Context newContext = Vertx.currentContext();
+				//Need to be careful in resuming processing on the same context as the original
+				//request, potentially having to switch back if we're no longer executing on the same:
+				if ( newContext != context ) {
+					context.runOnContext( v -> complete( resultForThisEventLoop, id, t ) );
 				}
 				else {
-					context.runOnContext( v -> resultForThisEventLoop.complete( id ) );
+					complete( resultForThisEventLoop, id, t );
 				}
-			}
-			else {
-				if ( t != null ) {
-					resultForThisEventLoop.completeExceptionally( t );
-				}
-				else {
-					resultForThisEventLoop.complete( id );
-				}
-			}
+			} );
+			return resultForThisEventLoop;
 		} );
-		return resultForThisEventLoop;
 	}
 
 	private final class GenerateIdAction implements Executor.Action<GeneratorState> {
 
 		private final ReactiveConnectionSupplier connectionSupplier;
 		private final CompletableFuture<Long> result;
+		private final ContextInternal creationContext;
 
 		public GenerateIdAction(ReactiveConnectionSupplier connectionSupplier, CompletableFuture<Long> result) {
+			this.creationContext = ContextInternal.current();
 			this.connectionSupplier = Objects.requireNonNull( connectionSupplier );
 			this.result = Objects.requireNonNull( result );
 		}
@@ -137,9 +134,16 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 				// We don't need to update or initialize the hi
 				// value in the table, so just increment the lo
 				// value and return the next id in the block
-				completedFuture( local ).whenComplete( this::acceptAsReturnValue );
+				result.complete( local );
 			}
 			else {
+				creationContext.runOnContext( this::generateNewHiValue );
+			}
+			return null;
+		}
+
+		private void generateNewHiValue(Void v) {
+			try {
 				nextHiValue( connectionSupplier )
 						.whenComplete( (newlyGeneratedHi, throwable) -> {
 							if ( throwable != null ) {
@@ -155,17 +159,19 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 							}
 						} );
 			}
-			return null;
-		}
-
-		private void acceptAsReturnValue(final Long aLong, final Throwable throwable) {
-			if ( throwable != null ) {
-				result.completeExceptionally( throwable );
-			}
-			else {
-				result.complete( aLong );
+			catch ( Throwable e ) {
+				// nextHivalue() could throw an exception before returning a completion stage
+				result.completeExceptionally( e );
 			}
 		}
 	}
 
+	private static <T> void complete(CompletableFuture<T> future, final T result, final Throwable throwable) {
+		if ( throwable != null ) {
+			future.completeExceptionally( throwable );
+		}
+		else {
+			future.complete( result );
+		}
+	}
 }
