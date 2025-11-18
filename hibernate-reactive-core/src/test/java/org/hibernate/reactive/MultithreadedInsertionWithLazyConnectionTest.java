@@ -197,8 +197,13 @@ public class MultithreadedInsertionWithLazyConnectionTest {
 			final EntityWithGeneratedId entity = new EntityWithGeneratedId();
 			entity.name = beforeOperationThread + "__" + localVerticleOperationSequence;
 
+			// We are not using transactions on purpose here, because this approach will cause a context switch
+			// and an assertion error if things aren't handled correctly. See Hibernate Reactive issue #2768:
+			// https://github.com/hibernate/hibernate-reactive/issues/2768
 			return s
-					.withTransaction( t -> s.persist( entity ) )
+					.persist( entity )
+					.thenCompose( v -> s.flush() )
+					.thenAccept( v -> s.clear() )
 					.thenCompose( v -> beforeOperationThread != Thread.currentThread()
 							? failedFuture( new IllegalStateException( "Detected an unexpected switch of carrier threads!" ) )
 							: voidFuture() );
