@@ -6,11 +6,8 @@
 package org.hibernate.reactive.logging.impl;
 
 
-
 import java.sql.SQLException;
 import java.sql.SQLWarning;
-
-import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
@@ -25,6 +22,9 @@ import org.jboss.logging.annotations.FormatWith;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+
+import io.vertx.core.internal.ContextInternal;
+import jakarta.persistence.PersistenceException;
 
 import static org.jboss.logging.Logger.Level.DEBUG;
 import static org.jboss.logging.Logger.Level.ERROR;
@@ -273,6 +273,9 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = ERROR)
 	@Message(id = 86, value = "Error closing reactive connection")
 	void errorClosingConnection(@Cause Throwable throwable);
+
+	@Message(id = 88, value = "Expected to use the object %1$s on context %2$s but was %3$s")
+	HibernateException unexpectedContextDetected(Object obj, ContextInternal expectedContext, ContextInternal currentContext);
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
