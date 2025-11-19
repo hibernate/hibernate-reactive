@@ -73,7 +73,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 				: !source.contains( event.getObject() );
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in refresh()
-			throw new IllegalArgumentException( "unmanaged instance passed to refresh()" );
+			throw new IllegalArgumentException( "Unmanaged instance passed to refresh()" );
 		}
 
 

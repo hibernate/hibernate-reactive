@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -725,11 +724,11 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 				.thenCompose( v -> selectNameFromId( 5 ) )
 				.thenAccept( result -> assertThat( result ).isNotNull() )
 				.thenCompose( v -> openSession() )
-				.thenCompose( session -> assertThrown( HibernateException.class, session.remove( new GuineaPig( 5, "Aloi" ) ) )
-				)
+				.thenCompose( session -> assertThrown( IllegalArgumentException.class, session
+						.remove( new GuineaPig( 5, "Aloi" ) ) ) )
 				.thenAccept( t -> assertThat( t )
-						.hasCauseInstanceOf( IllegalArgumentException.class )
-						.hasMessageContaining( "unmanaged instance" )
+						.isInstanceOf( IllegalArgumentException.class )
+						.hasMessageContaining( "Unmanaged instance" )
 				)
 		);
 	}
