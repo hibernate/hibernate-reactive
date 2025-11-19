@@ -195,7 +195,7 @@ public class DefaultReactiveDeleteEventListener
 				: !source.contains( objectEvent );
 		if ( detached ) {
 			// Hibernate Reactive doesn't support detached instances in remove()
-			throw new IllegalArgumentException( "unmanaged instance passed to remove()" );
+			throw new IllegalArgumentException( "Unmanaged instance passed to remove()" );
 		}
 
 		//Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );

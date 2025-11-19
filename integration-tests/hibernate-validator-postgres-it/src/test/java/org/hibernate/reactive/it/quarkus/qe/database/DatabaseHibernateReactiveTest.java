@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
-import org.hibernate.HibernateException;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,14 +42,13 @@ public class DatabaseHibernateReactiveTest extends BaseReactiveIT {
 
 	@Test
 	public void nameIsTooLong(VertxTestContext context) {
-		test( context, assertThrown( HibernateException.class, getMutinySessionFactory()
+		test( context, assertThrown( ConstraintViolationException.class, getMutinySessionFactory()
 				.withTransaction( s -> {
 					Author author = new Author();
 					author.setName( "A very long long long long name ... " );
 					return s.persist( author );
 				} ) )
-				.invoke( he -> assertThat( he.getCause() )
-						.isInstanceOf( ConstraintViolationException.class )
+				.invoke( he -> assertThat( he )
 						.hasMessageContaining( "size must be between" )
 				)
 		);
@@ -58,14 +56,13 @@ public class DatabaseHibernateReactiveTest extends BaseReactiveIT {
 
 	@Test
 	public void nameIsNull(VertxTestContext context) {
-		test( context, assertThrown( HibernateException.class, getMutinySessionFactory()
+		test( context, assertThrown( ConstraintViolationException.class, getMutinySessionFactory()
 				.withTransaction( s -> {
 					Author author = new Author();
 					author.setName( null );
 					return s.persist( author );
 				} ) )
-				.invoke( he -> assertThat( he.getCause() )
-						.isInstanceOf( ConstraintViolationException.class )
+				.invoke( he -> assertThat( he )
 						.hasMessageContaining( "must not be null" )
 				)
 		);
