@@ -306,7 +306,7 @@ public class MutinySessionTest extends BaseReactiveTest {
 								session.remove( new GuineaPig( 5, "Aloi" ) )
 						) )
 						.invoke( e -> assertThat( e )
-								.hasMessageContaining( "unmanaged instance passed to remove" )
+								.hasMessageContaining( "Unmanaged instance passed to remove" )
 						)
 		);
 	}
