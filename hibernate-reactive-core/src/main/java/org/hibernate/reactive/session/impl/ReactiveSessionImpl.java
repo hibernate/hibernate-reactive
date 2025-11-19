@@ -37,7 +37,6 @@ import org.hibernate.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.engine.spi.ExceptionConverter;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
@@ -166,9 +165,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
-
-	//Lazily initialized
-	private transient ExceptionConverter exceptionConverter;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options, ReactiveConnection connection) {
 		super( delegate, options );
@@ -1126,14 +1122,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 					}
 					return returnNullorRethrow( e );
 				} );
-	}
-
-	@Override
-	public ExceptionConverter getExceptionConverter() {
-		if ( exceptionConverter == null ) {
-			exceptionConverter = new ReactiveExceptionConverter( this );
-		}
-		return exceptionConverter;
 	}
 
 	@Override

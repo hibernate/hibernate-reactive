@@ -9,7 +9,6 @@ import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.reactive.boot.spi.ReactiveMetadataImplementor;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
@@ -25,11 +24,6 @@ public class ReactiveSessionFactoryImpl extends SessionFactoryImpl {
 
 	public ReactiveSessionFactoryImpl(MetadataImplementor bootMetamodel, SessionFactoryOptions options, BootstrapContext bootstrapContext) {
 		super( new ReactiveMetadataImplementor( bootMetamodel ), options, bootstrapContext );
-	}
-
-	@Override
-	public QueryEngine getQueryEngine() {
-		return super.getQueryEngine();
 	}
 
 	@Override

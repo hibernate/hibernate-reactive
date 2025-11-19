@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -301,13 +300,10 @@ public class MutinySessionTest extends BaseReactiveTest {
 						.chain( () -> selectNameFromId( 5 ) )
 						.invoke( name -> assertThat( name ).isNotNull() )
 						.chain( this::openMutinySession )
-						.chain( session -> assertThrown(
-								HibernateException.class,
-								session.remove( new GuineaPig( 5, "Aloi" ) )
-						) )
+						.chain( session -> assertThrown( IllegalArgumentException.class, session
+								.remove( new GuineaPig( 5, "Aloi" ) ) ) )
 						.invoke( e -> assertThat( e )
-								.hasMessageContaining( "unmanaged instance passed to remove" )
-						)
+								.hasMessageContaining( "Unmanaged instance passed to remove" ) )
 		);
 	}
 
