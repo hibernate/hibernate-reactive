@@ -132,7 +132,7 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 		protected LockOptions lockOptions;
 		protected QuerySpec lockingTarget;
 		protected LockingClauseStrategy lockingClauseStrategy;
-		boolean isFollonOnLockStrategy;
+		boolean isFollowOnLockStrategy;
 
 		@Override
 		public Builder setPrimaryAction(JdbcSelect primaryAction) {
@@ -179,8 +179,8 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 		}
 
 		@Override
-		public Builder setIsFollowOnLockStrategy(boolean isFollonOnLockStrategy) {
-			this.isFollonOnLockStrategy = isFollonOnLockStrategy;
+		public Builder setIsFollowOnLockStrategy(boolean isFollowOnLockStrategy) {
+			this.isFollowOnLockStrategy = isFollowOnLockStrategy;
 			return this;
 		}
 
@@ -194,7 +194,7 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 						)
 				);
 			}
-			if ( isFollonOnLockStrategy ) {
+			if ( isFollowOnLockStrategy ) {
 				ReactiveFollowOnLockingAction.apply( lockOptions, lockingTarget, lockingClauseStrategy, this );
 			}
 
