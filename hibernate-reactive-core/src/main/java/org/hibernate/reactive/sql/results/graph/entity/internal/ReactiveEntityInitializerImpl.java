@@ -23,7 +23,6 @@ import org.hibernate.engine.spi.Status;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.proxy.map.MapProxy;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
@@ -45,7 +44,6 @@ import org.hibernate.type.Type;
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
-import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSecondLevelCache;
 import static org.hibernate.metamodel.mapping.ForeignKeyDescriptor.Nature.TARGET;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
@@ -143,11 +141,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 	protected void resolveEntityKey(EntityInitializerData original, Object id) {
 		ReactiveEntityInitializerData data = (ReactiveEntityInitializerData) original;
 		if ( data.getConcreteDescriptor() == null ) {
-			data.setConcreteDescriptor( determineConcreteEntityDescriptor(
-					data.getRowProcessingState(),
-					getDiscriminatorAssembler(),
-					getEntityDescriptor()
-			) );
+			data.setConcreteDescriptor( determineConcreteEntityDescriptor( data.getRowProcessingState(), discriminatorAssembler(), getEntityDescriptor() ) );
 			assert data.getConcreteDescriptor() != null;
 		}
 		data.setEntityKey( new EntityKey( id, data.getConcreteDescriptor() ) );
@@ -186,9 +180,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		else if ( lazyInitializer.isUninitialized() ) {
 			data.setState( State.RESOLVED );
 			// Read the discriminator from the result set if necessary
-			EntityPersister persister = getDiscriminatorAssembler() == null
+			EntityPersister persister = discriminatorAssembler() == null
 					? getEntityDescriptor()
-					: determineConcreteEntityDescriptor( rowProcessingState, getDiscriminatorAssembler(), getEntityDescriptor() );
+					: determineConcreteEntityDescriptor( rowProcessingState, discriminatorAssembler(), getEntityDescriptor() );
 			data.setConcreteDescriptor( persister );
 			assert data.getConcreteDescriptor() != null;
 			resolveEntityKey( data, lazyInitializer.getIdentifier() );
@@ -592,34 +586,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		}
 	}
 
-	// FIXME: I could change the scope of this method in ORM
-	private boolean isProxyInstance(Object proxy) {
-		return proxy != null
-				&& ( proxy instanceof MapProxy || getEntityDescriptor().getJavaType().getJavaTypeClass().isInstance( proxy ) );
-	}
-
-	// FIXME: I could change the scope of this method in ORM
-	private Object resolveInstanceFromCache(ReactiveEntityInitializerData data) {
-		return loadFromSecondLevelCache(
-				data.getRowProcessingState().getSession().asEventSource(),
-				null,
-				data.getLockMode(),
-				getEntityDescriptor(),
-				data.getEntityKey()
-		);
-	}
-
-	// FIXME: I could change the scope of this method in ORM
-	private boolean matchesOptionalInstance(
-			ReactiveEntityInitializerData data,
-			JdbcValuesSourceProcessingOptions processingOptions) {
-		final Object optionalEntityInstance = processingOptions.getEffectiveOptionalObject();
-		final Object requestedEntityId = processingOptions.getEffectiveOptionalId();
-		return requestedEntityId != null
-				&& optionalEntityInstance != null
-				&& requestedEntityId.equals( data.getEntityKey().getIdentifier() );
-	}
-
 	private boolean isExistingEntityInitialized(Object existingEntity) {
 		return Hibernate.isInitialized( existingEntity );
 	}
@@ -779,7 +745,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							else {
 								data.setConcreteDescriptor( determineConcreteEntityDescriptor(
 										rowProcessingState,
-										getDiscriminatorAssembler(),
+										discriminatorAssembler(),
 										getEntityDescriptor()
 								) );
 								assert data.getConcreteDescriptor() != null;
