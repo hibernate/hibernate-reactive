@@ -8,11 +8,9 @@ package org.hibernate.reactive.sql.exec.internal.lock;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Locking;
-import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.TableDetails;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -32,10 +30,8 @@ import jakarta.persistence.Timeout;
 import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import static java.util.Collections.emptyMap;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
@@ -98,10 +94,7 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 
 		// collect registrations by entity type
 		final var entitySegments = segmentLoadedValues();
-		final Map<EntityMappingType, Map<PluralAttributeMapping, List<CollectionKey>>> collectionSegments =
-				lockScope == Locking.Scope.INCLUDE_FETCHES
-						? segmentLoadedCollections()
-						: emptyMap();
+		final var collectionSegments = segmentLoadedCollections();
 
 		// for each entity-type, prepare a locking select statement per table.
 		// this is based on the attributes for "state array" ordering purposes -
