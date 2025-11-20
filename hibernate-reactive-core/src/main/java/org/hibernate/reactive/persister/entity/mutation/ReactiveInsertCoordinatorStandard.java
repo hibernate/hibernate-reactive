@@ -415,9 +415,8 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 					final BasicEntityIdentifierMapping identifierMapping = (BasicEntityIdentifierMapping) entityPersister().getIdentifierMapping();
 					final String[] columnValues = generator.getReferencedColumnValues( dialect );
 					tableMapping.getKeyMapping().forEachKeyColumn( (i, column) -> tableInsertBuilder.addKeyColumn(
-							column.getColumnName(),
 							columnValues[i],
-							identifierMapping.getJdbcMapping()
+							identifierMapping
 					) );
 				}
 			}
