@@ -128,9 +128,15 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 		final RowProcessingState rowProcessingState = data.getRowProcessingState();
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
 		final EntityKey entityKey = new EntityKey( data.getEntityIdentifier(), concreteDescriptor );
-
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+		return initialiaze( data, persistenceContext.getEntityHolder( entityKey ), (ReactiveQueryProducer) session, persistenceContext );
+	}
+
+	private CompletionStage<Void> initialiaze(
+			ReactiveEntitySelectFetchInitializerData data,
+			EntityHolder holder,
+			ReactiveQueryProducer session,
+			PersistenceContext persistenceContext) {
 		if ( holder != null ) {
 			data.setInstance( persistenceContext.proxyFor( holder, concreteDescriptor ) );
 			if ( holder.getEntityInitializer() == null ) {
@@ -154,7 +160,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 		data.setState( State.INITIALIZED );
 		final String entityName = concreteDescriptor.getEntityName();
 
-		return ( (ReactiveQueryProducer) session ).reactiveInternalLoad(
+		return session.reactiveInternalLoad(
 						entityName,
 						data.getEntityIdentifier(),
 						true,
@@ -176,10 +182,10 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 								throw new FetchNotFoundException( entityName, data.getEntityIdentifier() );
 							}
 						}
-						rowProcessingState.getSession().getPersistenceContextInternal().claimEntityHolderIfPossible(
+						persistenceContext.claimEntityHolderIfPossible(
 								new EntityKey( data.getEntityIdentifier(), concreteDescriptor ),
 								null,
-								rowProcessingState.getJdbcValuesSourceProcessingState(),
+								data.getRowProcessingState().getJdbcValuesSourceProcessingState(),
 								this
 						);
 					}
