@@ -100,109 +100,124 @@ public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchIni
 		final RowProcessingState rowProcessingState = data.getRowProcessingState();
 		data.setEntityIdentifier( getIdentifierAssembler().assemble( rowProcessingState ) );
 
-		CompletionStage<Void> stage = voidFuture();
 		if ( data.getEntityIdentifier() == null ) {
 			data.setInstance( null );
 			data.setState( State.MISSING );
+			return voidFuture();
+		}
+
+		final EntityPersister entityPersister = referencedModelPart.getEntityMappingType().getEntityPersister();
+		final EntityPersister concreteDescriptor;
+		if ( getDiscriminatorAssembler() != null ) {
+			concreteDescriptor = determineConcreteEntityDescriptor(
+					rowProcessingState,
+					getDiscriminatorAssembler(),
+					entityPersister
+			);
+			if ( concreteDescriptor == null ) {
+				// If we find no discriminator it means there's no entity in the target table
+				if ( !referencedModelPart.isOptional() ) {
+					throw new FetchNotFoundException( entityPersister.getEntityName(), data.getEntityIdentifier() );
+				}
+				data.setInstance( null );
+				data.setState( State.MISSING );
+				return voidFuture();
+			}
 		}
 		else {
-			final SharedSessionContractImplementor session = rowProcessingState.getSession();
+			concreteDescriptor = entityPersister;
+		}
 
-			final EntityPersister entityPersister = referencedModelPart.getEntityMappingType().getEntityPersister();
-			final EntityPersister concreteDescriptor;
-			if ( getDiscriminatorAssembler() != null ) {
-				concreteDescriptor = determineConcreteEntityDescriptor( rowProcessingState, getDiscriminatorAssembler(), entityPersister );
-				if ( concreteDescriptor == null ) {
-					// If we find no discriminator it means there's no entity in the target table
-					if ( !referencedModelPart.isOptional() ) {
-						throw new FetchNotFoundException( entityPersister.getEntityName(), data.getEntityIdentifier() );
-					}
-					data.setInstance( null );
-					data.setState( State.MISSING );
-					return voidFuture();
-				}
-			}
-			else {
-				concreteDescriptor = entityPersister;
-			}
+		return initialize( data, null, concreteDescriptor );
+	}
 
-			final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-			if ( isSelectByUniqueKey() ) {
-				final String uniqueKeyPropertyName = referencedModelPart.getReferencedPropertyName();
-				final Type uniqueKeyPropertyType = uniqueKeyPropertyName == null
-						? concreteDescriptor.getIdentifierType()
-						: session.getFactory().getRuntimeMetamodels().getReferencedPropertyType( concreteDescriptor.getEntityName(), uniqueKeyPropertyName );
-				final EntityUniqueKey euk = new EntityUniqueKey(
-						concreteDescriptor.getEntityName(),
-						uniqueKeyPropertyName,
-						data.getEntityIdentifier(),
-						uniqueKeyPropertyType,
-						session.getFactory()
-				);
-				data.setInstance( persistenceContext.getEntity( euk ) );
-				if ( data.getInstance() == null ) {
-					// For unique-key mappings, we always use bytecode-laziness if possible,
-					// because we can't generate a proxy based on the unique key yet
-					if ( referencedModelPart.isLazy() ) {
-						data.setInstance( LazyPropertyInitializer.UNFETCHED_PROPERTY );
-					}
-					else {
-						stage = stage
-								.thenCompose( v -> ( (ReactiveEntityPersister) concreteDescriptor )
-										.reactiveLoadByUniqueKey(
-												uniqueKeyPropertyName,
-												data.getEntityIdentifier(),
-												session
-										) )
-								.thenAccept( data::setInstance )
-								.thenAccept( v -> {
-									// If the entity was not in the Persistence Context, but was found now,
-									// add it to the Persistence Context
-									if ( data.getInstance() != null ) {
-										persistenceContext.addEntity( euk, data.getInstance() );
-									}
-								} );
-					}
-				}
-				stage = stage.thenAccept( v -> {
-					if ( data.getInstance() != null ) {
-						data.setInstance( persistenceContext.proxyFor( data.getInstance() ) );
-					}
-				} );
-			}
-			else {
-				final EntityKey entityKey = new EntityKey( data.getEntityIdentifier(), concreteDescriptor );
-				final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
-				if ( holder != null && holder.getEntity() != null ) {
-					data.setInstance( persistenceContext.proxyFor( holder, concreteDescriptor ) );
-				}
-				// For primary key based mappings we only use bytecode-laziness if the attribute is optional,
-				// because the non-optionality implies that it is safe to have a proxy
-				else if ( referencedModelPart.isOptional() && referencedModelPart.isLazy() ) {
+	private CompletionStage<Void> initialize(
+			ReactiveEntityDelayedFetchInitializerData data,
+			EntityKey entityKey,
+			EntityPersister concreteDescriptor) {
+		final RowProcessingState rowProcessingState = data.getRowProcessingState();
+		final SharedSessionContractImplementor session = rowProcessingState.getSession();
+		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
+		if ( isSelectByUniqueKey() ) {
+			final String uniqueKeyPropertyName = referencedModelPart.getReferencedPropertyName();
+			final Type uniqueKeyPropertyType = uniqueKeyPropertyName == null
+					? concreteDescriptor.getIdentifierType()
+					: session.getFactory()
+							.getRuntimeMetamodels()
+							.getReferencedPropertyType( concreteDescriptor.getEntityName(), uniqueKeyPropertyName );
+			final EntityUniqueKey euk = new EntityUniqueKey(
+					concreteDescriptor.getEntityName(),
+					uniqueKeyPropertyName,
+					data.getEntityIdentifier(),
+					uniqueKeyPropertyType,
+					session.getFactory()
+			);
+			data.setInstance( persistenceContext.getEntity( euk ) );
+			CompletionStage<Void> stage = voidFuture();
+			if ( data.getInstance() == null ) {
+				// For unique-key mappings, we always use bytecode-laziness if possible,
+				// because we can't generate a proxy based on the unique key yet
+				if ( referencedModelPart.isLazy() ) {
 					data.setInstance( LazyPropertyInitializer.UNFETCHED_PROPERTY );
 				}
 				else {
-					stage = stage.thenCompose( v -> ReactiveQueryExecutorLookup
-							.extract( session )
-							.reactiveInternalLoad(
-									concreteDescriptor.getEntityName(),
-									data.getEntityIdentifier(),
-									false,
-									false
-							)
+					stage = stage
+							.thenCompose( v -> ( (ReactiveEntityPersister) concreteDescriptor )
+									.reactiveLoadByUniqueKey(
+											uniqueKeyPropertyName,
+											data.getEntityIdentifier(),
+											session
+									) )
 							.thenAccept( data::setInstance )
-					);
+							.thenAccept( v -> {
+								// If the entity was not in the Persistence Context, but was found now,
+								// add it to the Persistence Context
+								if ( data.getInstance() != null ) {
+									persistenceContext.addEntity( euk, data.getInstance() );
+								}
+							} );
 				}
-				stage = stage
-						.thenAccept( v -> {
-							final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( data.getInstance() );
-							if ( lazyInitializer != null ) {
-								lazyInitializer.setUnwrap( referencedModelPart.isUnwrapProxy() && concreteDescriptor.isInstrumented() );
-							}
-						} );
 			}
+			return stage.thenAccept( v -> {
+				if ( data.getInstance() != null ) {
+					data.setInstance( persistenceContext.proxyFor( data.getInstance() ) );
+				}
+			} );
 		}
-		return stage;
+		else {
+			CompletionStage<Void> stage = voidFuture();
+			final EntityKey ek = entityKey == null
+					? new EntityKey( data.getEntityIdentifier(), concreteDescriptor )
+					: entityKey;
+			final EntityHolder holder = persistenceContext.getEntityHolder( ek );
+			if ( holder != null && holder.getEntity() != null ) {
+				data.setInstance( persistenceContext.proxyFor( holder, concreteDescriptor ) );
+			}
+			// For primary key based mappings we only use bytecode-laziness if the attribute is optional,
+			// because the non-optionality implies that it is safe to have a proxy
+			else if ( referencedModelPart.isOptional() && referencedModelPart.isLazy() ) {
+				data.setInstance( LazyPropertyInitializer.UNFETCHED_PROPERTY );
+			}
+			else {
+				stage = stage.thenCompose( v -> ReactiveQueryExecutorLookup
+						.extract( session )
+						.reactiveInternalLoad(
+								concreteDescriptor.getEntityName(),
+								data.getEntityIdentifier(),
+								false,
+								false
+						)
+						.thenAccept( data::setInstance )
+				);
+			}
+			return stage
+					.thenAccept( v -> {
+						final LazyInitializer lazyInitializer = HibernateProxy.extractLazyInitializer( data.getInstance() );
+						if ( lazyInitializer != null ) {
+							lazyInitializer.setUnwrap( referencedModelPart.isUnwrapProxy() && concreteDescriptor.isInstrumented() );
+						}
+					} );
+		}
 	}
 
 	@Override

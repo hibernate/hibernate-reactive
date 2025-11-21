@@ -51,6 +51,7 @@ import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.impl.CompletionStages.trueFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -329,14 +330,26 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 	@Override
 	public CompletionStage<Void> reactiveInitializeInstance(EntityInitializerData data) {
-		if ( data.getState() != State.RESOLVED ) {
-			return voidFuture();
+		if ( data.getState() == State.RESOLVED ) {
+			if ( !skipInitialization( data ) ) {
+				assert consistentInstance( data );
+				return reactiveInitializeEntityInstance( (ReactiveEntityInitializerData) data );
+			}
+			else {
+				if ( data.getRowProcessingState().needsResolveState() ) {
+					// A sub-initializer might have taken responsibility for this entity,
+					// but we still need to resolve the state to correctly populate a query cache
+					resolveState( data );
+				}
+				final ReactiveEntityInitializerData reactiveData = (ReactiveEntityInitializerData) data;
+				if ( getEntityDescriptor().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
+						&& reactiveData.getEntityHolder().getEntityInitializer() != this
+						&& reactiveData.getEntityHolder().isInitialized() ) {
+					updateInitializedEntityInstance( data );
+				}
+			}
+			data.setState( State.INITIALIZED );
 		}
-		if ( !skipInitialization( data ) ) {
-			assert consistentInstance( data );
-			return reactiveInitializeEntityInstance( (ReactiveEntityInitializerData) data );
-		}
-		data.setState( State.INITIALIZED );
 		return voidFuture();
 	}
 
@@ -348,7 +361,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 		return reactiveExtractConcreteTypeStateValues( data )
 				.thenAccept( resolvedEntityState -> {
-
+					rowProcessingState.getJdbcValuesSourceProcessingState().registerLoadingEntityHolder( data.getEntityHolder() );
 					preLoad( data, resolvedEntityState );
 
 					if ( isPersistentAttributeInterceptable( data.getEntityInstanceForNotify() ) ) {
@@ -372,10 +385,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					final Object version = getVersionAssembler() != null ? getVersionAssembler().assemble( rowProcessingState ) : null;
 					final Object rowId = getRowIdAssembler() != null ? getRowIdAssembler().assemble( rowProcessingState ) : null;
 
-					// from the perspective of Hibernate, an entity is read locked as soon as it is read
-					// so regardless of the requested lock mode, we upgrade to at least the read level
-					final LockMode lockModeToAcquire = data.getLockMode() == LockMode.NONE ? LockMode.READ : data.getLockMode();
-
 					final EntityEntry entityEntry = persistenceContext.addEntry(
 							data.getEntityInstanceForNotify(),
 							Status.LOADING,
@@ -383,7 +392,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							rowId,
 							data.getEntityKey().getIdentifier(),
 							version,
-							lockModeToAcquire,
+							lockModeToAcquire( data ),
 							true,
 							data.getConcreteDescriptor(),
 							false
@@ -404,14 +413,13 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							statistics.loadEntity( data.getConcreteDescriptor().getEntityName() );
 						}
 					}
-					updateCaches(
-							data,
-							session,
-							session.getPersistenceContextInternal(),
-							resolvedEntityState,
-							version
-					);
+					updateCaches( data, session, session.getPersistenceContextInternal(), resolvedEntityState, version );
 				} );
+	}
+
+	// Hibernate ORM has a similar method, but it checks if we are in a transaction first
+	private static LockMode lockModeToAcquire(ReactiveEntityInitializerData data) {
+		return data.getLockMode() == LockMode.NONE ? LockMode.READ : data.getLockMode();
 	}
 
 	protected CompletionStage<Object[]> reactiveExtractConcreteTypeStateValues(ReactiveEntityInitializerData data) {
@@ -447,7 +455,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			else {
 				data.setInstance( proxy );
 				if ( Hibernate.isInitialized( data.getInstance() ) ) {
-					data.setState( State.INITIALIZED );
+					if ( data.getEntityHolder().isInitialized() ) {
+						data.setState( State.INITIALIZED );
+					}
 					data.setEntityInstanceForNotify( Hibernate.unproxy( data.getInstance() ) );
 				}
 				else {
@@ -755,7 +765,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			return trueFuture();
 		}
 		else {
-			//noinspection unchecked
 			final Initializer<InitializerData> initializer = (Initializer<InitializerData>) getIdentifierAssembler().getInitializer();
 			if ( initializer != null ) {
 				final InitializerData subData = initializer.getData( rowProcessingState );
@@ -807,8 +816,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			BiFunction<ReactiveInitializer<?>, RowProcessingState, CompletionStage<Void>> consumer,
 			InitializerData data) {
 		final RowProcessingState rowProcessingState = data.getRowProcessingState();
-		return voidFuture()
-				.thenCompose( v -> {
+		return supplyStage( () -> {
 					if ( getKeyAssembler() != null ) {
 						final Initializer<?> initializer = getKeyAssembler().getInitializer();
 						if ( initializer != null ) {

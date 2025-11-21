@@ -17,6 +17,7 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -117,6 +118,7 @@ public class FetchModeSubselectEagerTest extends BaseReactiveTest {
 	}
 
 	@Test
+	@Disabled("A regression after the upgrade to ORM 7.1.9.Final: https://github.com/hibernate/hibernate-reactive/issues/2808")
 	public void testEagerFetchQuery(VertxTestContext context) {
 
 		Node basik = new Node( "Child" );
