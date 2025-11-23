@@ -1621,7 +1621,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			super.close();
 			return closeConnection();
 		}
-		catch (RuntimeException e) {	
+		catch (RuntimeException e) {
 			return closeConnection()
 					.handle( CompletionStages::handle )
 					.thenCompose( closeConnectionHandler -> {
