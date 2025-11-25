@@ -57,9 +57,9 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 
 		links = [
 				'https://docs.oracle.com/en/java/javase/11/docs/api/',
-				'http://docs.jboss.org/hibernate/beanvalidation/spec/2.0/api/',
+				'http://docs.hibernate.org/beanvalidation/spec/2.0/api/',
 				'https://jakarta.ee/specifications/platform/8/apidocs/',
-				"https://docs.jboss.org/hibernate/orm/" + ormMinorVersion + "/javadocs/"
+				"https://docs.hibernate.org/orm/" + ormMinorVersion + "/javadocs/"
 		]
 
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
