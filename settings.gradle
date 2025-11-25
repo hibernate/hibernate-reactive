@@ -13,6 +13,7 @@ pluginManagement {
 
 rootProject.name = 'hibernate-reactive'
 
+// When updating the baseline, make sure to update the JDK version in the javadoc link
 gradle.ext.baselineJavaVersion = JavaLanguageVersion.of( 11 )
 
 // Gradle does bytecode transformation on tests.

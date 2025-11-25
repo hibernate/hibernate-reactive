@@ -57,8 +57,8 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 
 		links = [
 				'https://docs.oracle.com/en/java/javase/11/docs/api/',
-				'http://docs.hibernate.org/beanvalidation/spec/2.0/api/',
-				'https://jakarta.ee/specifications/platform/8/apidocs/',
+				'https://jakarta.ee/specifications/bean-validation/3.0/apidocs/',
+				'https://jakarta.ee/specifications/platform/10/apidocs/',
 				"https://docs.hibernate.org/orm/" + ormMinorVersion + "/javadocs/"
 		]
 
