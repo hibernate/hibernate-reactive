@@ -1,6 +1,7 @@
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
 import java.time.Year
+import java.util.regex.Matcher
 
 plugins {
 	id "org.asciidoctor.jvm.convert"
@@ -141,6 +142,14 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 	def asciidocReference = layout.projectDirectory.dir("src/main/asciidoc/reference")
 	def unpackedThemeAsciidoc = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc")
 	def docInfoHibernate = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc/docinfo/hibernate")
+	def ormMinorVersion = libs.versions.hibernateOrmVersion.map { v ->
+		def matcher = v =~ /\d+\.\d+/
+		if (matcher.find()) {
+			return matcher.group()
+		} else {
+			throw new IllegalArgumentException("Cannot parse the version of Hibernate ORM from '" + v + "' string.")
+		}
+	}
 
 	asciidoctorj {
 		version = "3.0.0"
@@ -170,6 +179,7 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 			"source-highlighter": "rouge",
 			majorMinorVersion: versionFamily.get(),
 			fullVersion: fullVersion.get(),
+			ormMinorVersion: ormMinorVersion.get(),
 			stylesdir: "css",
 			"iconfont-remote": false,
 			"iconfont-name": "font-awesome/css/solid",
