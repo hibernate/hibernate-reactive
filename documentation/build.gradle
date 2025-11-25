@@ -85,9 +85,9 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		def ormMinorVersion = matcher.find() ? matcher.group() : "5.6";
 
 		links = [
-				'https://docs.oracle.com/en/java/javase/11/docs/api/',
-				'http://docs.hibernate.org/beanvalidation/spec/2.0/api/',
-				'https://jakarta.ee/specifications/platform/8/apidocs/',
+				'https://docs.oracle.com/en/java/javase/17/docs/api/',
+				'https://jakarta.ee/specifications/bean-validation/3.1/apidocs/',
+				'https://jakarta.ee/specifications/platform/11/apidocs/',
 				"https://docs.hibernate.org/orm/" + ormMinorVersion + "/javadocs/"
 		]
 
