@@ -117,12 +117,22 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
 	options logDocuments: true
 
+	def ormMinorVersion = libs.versions.hibernateOrmVersion.map { v ->
+		def matcher = v =~ /\d+\.\d+/
+		if (matcher.find()) {
+			return matcher.group()
+		} else {
+			throw new IllegalArgumentException("Cannot parse the version of Hibernate ORM from '" + v + "' string.")
+		}
+	}
+
 	attributes icons: 'font',
 			   'source-highlighter': 'rouge',
 			   experimental: true,
 			   linkcss: true,
 			   majorMinorVersion: project.projectVersion.family,
 			   fullVersion: project.version.toString(),
+			   ormMinorVersion: ormMinorVersion.get(),
 			   docinfo: 'private'
 }
 
