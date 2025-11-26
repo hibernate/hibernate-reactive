@@ -8,11 +8,13 @@ package org.hibernate.reactive;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.mutiny.impl.MutinyStatelessSessionImpl;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.impl.SqlClientConnection;
+import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
 import org.hibernate.reactive.testing.SqlStatementTracker;
@@ -83,6 +85,56 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 		}
 		assertThat( actualConnection.getClass().getName() )
 				.isEqualTo( org.hibernate.reactive.pool.impl.SqlClientPool.class.getName() + "$ProxyConnection" );
+	}
+
+	@Test
+	public void testBatchingWithPersistAllAndProxyConnection(VertxTestContext context) {
+		Stage.Session session = getSessionFactory().createSession();
+		test( context, session
+				.persist(
+						new GuineaPig( 11, "One" ),
+						new GuineaPig( 22, "Two" ),
+						new GuineaPig( 33, "Three" )
+				)
+				// Auto-flush
+				.thenCompose( v -> session
+						.createSelectionQuery( "select name from GuineaPig", String.class )
+						.getResultList()
+						.thenAccept( names -> {
+							assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+							// Parameters are different for different dbs, so we cannot do an exact match
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+									.startsWith( "insert into pig (name,version,id) values " );
+							sqlTracker.clear();
+						} )
+				)
+		);
+	}
+
+	@Test
+	public void testBatchingWithPersistAllAndProxyConnectionAndMutiny(VertxTestContext context) {
+		Mutiny.Session session = getMutinySessionFactory().createSession();
+		test( context, session
+				.persistAll(
+						new GuineaPig( 11, "One" ),
+						new GuineaPig( 22, "Two" ),
+						new GuineaPig( 33, "Three" )
+				)
+				// Auto-flush
+				.chain( v -> session
+						.createSelectionQuery( "select name from GuineaPig", String.class )
+						.getResultList()
+						.invoke( names -> {
+							assertThat( names ).containsExactlyInAnyOrder( "One", "Two", "Three" );
+							assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+							// Parameters are different for different dbs, so we cannot do an exact match
+							assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
+									.startsWith( "insert into pig (name,version,id) values " );
+							sqlTracker.clear();
+						} )
+				)
+		);
 	}
 
 	@Test
