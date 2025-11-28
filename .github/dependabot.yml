@@ -58,6 +58,9 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "io.vertx*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Spotless 8 doesn't work with JDK 11
+      - dependency-name: "com.diffplug.spotless*"
+        update-types: ["version-update:semver-major"]
 
   # Dockerfiles in tooling/docker/, and database services we use for examples (MySQL and PostgreSQL)
   - package-ecosystem: "docker"
