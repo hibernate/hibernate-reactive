@@ -83,7 +83,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
@@ -132,7 +132,7 @@ jobs:
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB', 'Db2', 'Oracle' ]
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
@@ -196,7 +196,7 @@ jobs:
           - { name: "26-ea", java_version_numeric: 26, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
