@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
 /**
  * Integration with Hibernate ORM, via the service architecture, along
  * with APIs for starting and configuring Hibernate Reactive.
