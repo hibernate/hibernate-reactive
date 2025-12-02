@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
 /**
  * Hibernate Reactive is an adaptation of Hibernate ORM to the
  * world of reactive programming, and replaces JDBC for database
