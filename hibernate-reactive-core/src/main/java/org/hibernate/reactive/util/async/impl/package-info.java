@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
 /**
  * The classes in this package come from the IBM Java async util
  * library (com.ibm.asyncutil:0.1.0):
