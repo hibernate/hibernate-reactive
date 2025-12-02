@@ -27,6 +27,10 @@ subprojects {
             trimTrailingWhitespace()
             endWithNewline()
         }
+        format 'javaMisc', {
+            target 'src/**/package-info.java', 'src/**/module-info.java'
+            licenseHeaderFile rootProject.file( 'spotless.license.java' ), '/\\*\\*'
+        }
     }
 
     tasks.compileJava.dependsOn(spotlessApply)
