@@ -89,7 +89,7 @@ jobs:
       - name: Get year/month for cache key
         id: get-date
         run: |
-          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
       - name: Cache Gradle downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -138,7 +138,7 @@ jobs:
       - name: Get year/month for cache key
         id: get-date
         run: |
-          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
       - name: Cache Gradle downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -202,7 +202,7 @@ jobs:
       - name: Get year/month for cache key
         id: get-date
         run: |
-          echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
+          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Generate cache key
@@ -263,7 +263,7 @@ jobs:
           check-latest: true
       - name: Export path to JDK ${{ matrix.java.name }}
         id: testjdk-exportpath
-        run: echo "::set-output name=path::${JAVA_HOME}"
+        run: echo "path=${JAVA_HOME}" >> $GITHUB_OUTPUT
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
@@ -280,7 +280,7 @@ jobs:
           check-latest: true
       - name: Export path to JDK 11
         id: mainjdk-exportpath
-        run: echo "::set-output name=path::${JAVA_HOME}"
+        run: echo "path=${JAVA_HOME}" >> $GITHUB_OUTPUT
       - name: Display exact version of JDK ${{ matrix.java.name }}
         run: |
           ${{ steps.testjdk-exportpath.outputs.path }}/bin/java -version
