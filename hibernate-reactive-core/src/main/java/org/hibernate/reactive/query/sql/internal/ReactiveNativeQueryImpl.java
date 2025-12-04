@@ -42,6 +42,7 @@ import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
+import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.type.BasicTypeReference;
 
@@ -52,8 +53,11 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.metamodel.Type;
 import jakarta.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.metamodel.Type;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 
 public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		implements ReactiveNativeQueryImplementor<R> {
@@ -123,11 +127,44 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				this::getNull,
 				this::getNull,
 				this::getQueryString,
-				this::beforeQuery,
+				this::reactiveBeforeQuery,
 				this::afterQuery,
 				AbstractSelectionQuery::uniqueElement,
 				null
 		);
+	}
+
+	protected CompletionStage<Void> reactiveBeforeQuery() {
+		getQueryParameterBindings().validate();
+
+		final var session = getSession();
+		session.prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().getLockMode() ) );
+		return reactivePrepareForExecution()
+				.thenAccept( v -> {
+					prepareSessionFlushMode( session );
+					prepareSessionCacheMode( session );
+				} );
+	}
+
+	protected CompletionStage<Void> reactivePrepareForExecution() {
+		final var spaces = getSynchronizedQuerySpaces();
+		if ( spaces == null || spaces.isEmpty() ) {
+			// We need to flush. The query itself is not required to execute in a
+			// transaction; if there is no transaction, the flush would throw a
+			// TransactionRequiredException which would potentially break existing
+			// apps, so we only do the flush if a transaction is in progress.
+			if ( shouldFlush() ) {
+				return ( (ReactiveSession) getSession() )
+						.reactiveFlush()
+						.thenAccept( v -> resetCallback() );
+			}
+			// Reset the callback before every execution
+			resetCallback();
+		}
+		// Otherwise, the application specified query spaces via the Hibernate
+		// SynchronizeableQuery and so the query will already perform a partial
+		// flush according to the defined query spaces - no need for a full flush.
+		return voidFuture();
 	}
 
 	private CompletionStage<List<R>> doReactiveList() {
