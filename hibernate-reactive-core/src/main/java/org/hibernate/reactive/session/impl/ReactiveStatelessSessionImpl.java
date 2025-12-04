@@ -132,9 +132,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private final ReactiveConnection reactiveConnection;
 	private final ReactiveStatelessSessionImpl batchingHelperSession;
 	private final PersistenceContext persistenceContext;
+	private final boolean connectionProvided;
 
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
 		super( factory, options );
+		connectionProvided = options.getConnection() != null;
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( super.getPersistenceContext() );
 		batchingHelperSession = new ReactiveStatelessSessionImpl( factory, options, reactiveConnection, persistenceContext );
@@ -150,6 +152,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			ReactiveConnection connection,
 			PersistenceContext persistenceContext) {
 		super( factory, options );
+		connectionProvided = options.getConnection() != null;
 		this.persistenceContext = persistenceContext;
 		// StatelessSession should not allow JDBC batching, because that would change
 		// its "immediate synchronous execution" model into something more like transactional
@@ -1017,6 +1020,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 //					"Query requires transaction be in progress, but no transaction is known to be in progress"
 //			);
 //		}
+	}
+
+	@Override
+	public boolean isTransactionInProgress() {
+		return connectionProvided || ( isOpenOrWaitingForAutoClose()
+				&& reactiveConnection.isTransactionInProgress() );
 	}
 
 	@Override
