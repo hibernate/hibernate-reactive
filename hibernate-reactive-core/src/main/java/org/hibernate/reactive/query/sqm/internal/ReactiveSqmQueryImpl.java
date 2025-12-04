@@ -72,6 +72,9 @@ import jakarta.persistence.Parameter;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.Type;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+
 /**
  * A reactive {@link SqmQueryImpl}
  */
@@ -124,10 +127,20 @@ public class ReactiveSqmQueryImpl<R> extends SqmQueryImpl<R> implements Reactive
 				this::getDomainParameterXref,
 				this::getResultType,
 				this::getQueryString,
-				this::beforeQuery,
+				this::reactiveBeforeQuery,
 				this::afterQuery,
 				AbstractSelectionQuery::uniqueElement
 			);
+	}
+
+	private CompletionStage<Void> reactiveBeforeQuery() {
+		try {
+			beforeQuery();
+			return voidFuture();
+		}
+		catch (Throwable e) {
+			return failedFuture( e );
+		}
 	}
 
 	@Override

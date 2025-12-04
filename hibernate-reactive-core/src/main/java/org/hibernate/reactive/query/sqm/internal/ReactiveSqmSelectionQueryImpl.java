@@ -47,6 +47,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOptions;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * A reactive {@link SqmSelectionQueryImpl}
@@ -83,15 +85,24 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 				this::getDomainParameterXref,
 				this::getResultType,
 				this::getQueryString,
-				this::beforeQuery,
+				this::reactiveBeforeQuery,
 				this::afterQuery,
 				AbstractSelectionQuery::uniqueElement
 		);
 	}
 
+	private CompletionStage<Void> reactiveBeforeQuery() {
+		try {
+			beforeQuery();
+			return voidFuture();
+		}
+		catch (Throwable e) {
+			return failedFuture( e );
+		}
+	}
+
 	private CompletionStage<List<R>> doReactiveList() {
-		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions()
-																	.findGreatestLockMode() ) );
+		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
 
 		final SqmSelectStatement<?> sqmStatement = getSqmStatement();
 		final boolean containsCollectionFetches = sqmStatement.containsCollectionFetches();
