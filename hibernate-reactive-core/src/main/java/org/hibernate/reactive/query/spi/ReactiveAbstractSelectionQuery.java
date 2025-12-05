@@ -50,7 +50,7 @@ import static java.util.Collections.emptySet;
  * Emulate {@link org.hibernate.query.spi.AbstractSelectionQuery}.
  * <p>
  *     Hibernate Reactive implementations already extend another class,
- *     they cannot extends {@link org.hibernate.query.spi.AbstractSelectionQuery too}.
+ *     they cannot extend {@link org.hibernate.query.spi.AbstractSelectionQuery too}.
  *     This approach allows us to avoid duplicating code.
  * </p>
  * @param <R>
@@ -74,7 +74,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private Set<String> fetchProfiles;
 
-	private final Runnable beforeQuery;
+	private final Supplier<CompletionStage<Void>> beforeQuery;
 
 	private final Consumer<Boolean> afterQuery;
 	private final Function<List<R>, R> uniqueElement;
@@ -93,7 +93,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			Supplier<DomainParameterXref> getDomainParameterXref,
 			Supplier<Class<?>> getResultType,
 			Supplier<String> getQueryString,
-			Runnable beforeQuery,
+			Supplier<CompletionStage<Void>> beforeQuery,
 			Consumer<Boolean> afterQuery,
 			Function<List<R>, R> uniqueElement) {
 		this(
@@ -121,7 +121,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			Supplier<DomainParameterXref> getDomainParameterXref,
 			Supplier<Class<?>> getResultType,
 			Supplier<String> getQueryString,
-			Runnable beforeQuery,
+			Supplier<CompletionStage<Void>> beforeQuery,
 			Consumer<Boolean> afterQuery,
 			Function<List<R>, R> uniqueElement,
 			InterpretationsKeySource interpretationsKeySource) {
@@ -200,8 +200,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	public CompletionStage<List<R>> reactiveList() {
 		final Set<String> profiles = applyProfiles();
-		beforeQuery.run();
-		return doReactiveList()
+		return beforeQuery.get()
+				.thenCompose( v -> doReactiveList() )
 				.handle( (list, error) -> {
 					handleException( error );
 					return list;
