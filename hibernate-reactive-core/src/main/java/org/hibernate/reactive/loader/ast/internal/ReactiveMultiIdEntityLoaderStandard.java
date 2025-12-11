@@ -105,7 +105,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		final boolean coerce = isIdCoercionEnabled();
 		return loop( 0, ids.length, i -> {
 			final Object id = coerce
-					? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i], session )
+					? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( ids[i] )
 					: ids[i];
 
 			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
@@ -313,7 +313,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 			final boolean coerce = isIdCoercionEnabled();
 			for ( Object o : ids ) {
 				final Object id = coerce
-						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( o, session )
+						? getEntityDescriptor().getIdentifierMapping().getJavaType().coerce( o )
 						: o;
 
 				final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );

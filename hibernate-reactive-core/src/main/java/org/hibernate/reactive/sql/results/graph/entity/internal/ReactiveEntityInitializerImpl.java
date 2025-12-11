@@ -140,7 +140,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 	protected void resolveEntityKey(EntityInitializerData original, Object id) {
 		ReactiveEntityInitializerData data = (ReactiveEntityInitializerData) original;
 		if ( data.getConcreteDescriptor() == null ) {
-			data.setConcreteDescriptor( determineConcreteEntityDescriptor( data.getRowProcessingState(), discriminatorAssembler(), getEntityDescriptor() ) );
+			data.setConcreteDescriptor( determineConcreteEntityDescriptor( data.getRowProcessingState(), getDiscriminatorAssembler(), getEntityDescriptor() ) );
 			assert data.getConcreteDescriptor() != null;
 		}
 		data.setEntityKey( new EntityKey( id, data.getConcreteDescriptor() ) );
@@ -179,9 +179,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		else if ( lazyInitializer.isUninitialized() ) {
 			data.setState( State.RESOLVED );
 			// Read the discriminator from the result set if necessary
-			EntityPersister persister = discriminatorAssembler() == null
+			EntityPersister persister = getDiscriminatorAssembler() == null
 					? getEntityDescriptor()
-					: determineConcreteEntityDescriptor( rowProcessingState, discriminatorAssembler(), getEntityDescriptor() );
+					: determineConcreteEntityDescriptor( rowProcessingState, getDiscriminatorAssembler(), getEntityDescriptor() );
 			data.setConcreteDescriptor( persister );
 			assert data.getConcreteDescriptor() != null;
 			resolveEntityKey( data, lazyInitializer.getIdentifier() );
@@ -744,7 +744,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							else {
 								data.setConcreteDescriptor( determineConcreteEntityDescriptor(
 										rowProcessingState,
-										discriminatorAssembler(),
+										getDiscriminatorAssembler(),
 										getEntityDescriptor()
 								) );
 								assert data.getConcreteDescriptor() != null;
