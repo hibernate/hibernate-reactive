@@ -13,6 +13,7 @@ import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLaziness
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.internal.Versioning;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
@@ -42,10 +43,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
+import static org.hibernate.engine.internal.ManagedTypeHelper.asManagedEntity;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asSelfDirtinessTracker;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isSelfDirtinessTracker;
+import static org.hibernate.engine.internal.ManagedTypeHelper.processIfManagedEntity;
 import static org.hibernate.engine.internal.ManagedTypeHelper.processIfSelfDirtinessTracker;
 import static org.hibernate.engine.internal.Versioning.getVersion;
 import static org.hibernate.engine.internal.Versioning.incrementVersion;
@@ -223,6 +226,8 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 			else {
 				final Object entity = event.getEntity();
 				processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
+				processIfManagedEntity( entity, DefaultReactiveFlushEntityEventListener::useTracker );
+
 				final EventSource source = event.getSession();
 				source.getFactory()
 						.getCustomEntityDirtinessStrategy()
@@ -233,6 +238,10 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		else {
 			return hasDirtyCollections( event );
 		}
+	}
+
+	private static void useTracker(final ManagedEntity entity) {
+		entity.$$_hibernate_setUseTracker( true );
 	}
 
 	private boolean scheduleUpdate(final FlushEntityEvent event) {
@@ -555,7 +564,7 @@ public class DefaultReactiveFlushEntityEventListener implements FlushEntityEvent
 		}
 		else {
 			final Object entity = event.getEntity();
-			return isSelfDirtinessTracker( entity )
+			return isSelfDirtinessTracker( entity ) && asManagedEntity( entity ).$$_hibernate_useTracker()
 					? getDirtyPropertiesFromSelfDirtinessTracker( asSelfDirtinessTracker( entity ), event )
 					: getDirtyPropertiesFromCustomEntityDirtinessStrategy( event );
 		}
