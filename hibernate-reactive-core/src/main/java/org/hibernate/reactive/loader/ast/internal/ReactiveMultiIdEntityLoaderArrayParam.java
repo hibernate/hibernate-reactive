@@ -100,7 +100,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 
 		return loop( 0, ids.length, i -> {
 			final Object id = coerce
-					? getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i], session )
+					? getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i] )
 					: ids[i];
 
 			final EntityKey entityKey = new EntityKey( id, getLoadable().getEntityPersister() );
@@ -319,7 +319,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 		for ( int i = 0; i < ids.length; i++ ) {
 			final Object id;
 			if ( coerce ) {
-				id = getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i], session );
+				id = getLoadable().getIdentifierMapping().getJavaType().coerce( ids[i] );
 			}
 			else {
 				id = ids[i];
