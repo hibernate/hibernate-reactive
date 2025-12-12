@@ -91,6 +91,14 @@ jobs:
         run: |
           echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
+      - name: Sanitize the branch name
+        # We want to include the branch in artifact names to keep them unique.
+        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
+        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
+        shell: bash
+        id: current-branch-suffix
+        run: |
+         echo "value=$(echo ${{ inputs.branch }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Cache Gradle downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         id: cache-gradle
@@ -121,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
-          name: reports-examples-${{ matrix.db }}
+          name: reports-examples-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
 
   test_dbs:
@@ -140,6 +148,14 @@ jobs:
         run: |
           echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
+      - name: Sanitize the branch name
+        # We want to include the branch in artifact names to keep them unique.
+        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
+        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
+        shell: bash
+        id: current-branch-suffix
+        run: |
+         echo "value=$(echo ${{ inputs.branch }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Cache Gradle downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         id: cache-gradle
@@ -171,7 +187,7 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
-          name: reports-db-${{ matrix.db }}
+          name: reports-db-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
 
   test_jdks:
@@ -204,7 +220,14 @@ jobs:
         run: |
           echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
         shell: bash
-
+      - name: Sanitize the branch name
+        # We want to include the branch in artifact names to keep them unique.
+        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
+        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
+        shell: bash
+        id: current-branch-suffix
+        run: |
+          echo "value=$(echo ${{ inputs.branch }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Generate cache key
         id: cache-key
         run: |
@@ -295,5 +318,5 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: failure()
         with:
-          name: reports-java${{ matrix.java.name }}
+          name: reports-java${{ matrix.java.name }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
