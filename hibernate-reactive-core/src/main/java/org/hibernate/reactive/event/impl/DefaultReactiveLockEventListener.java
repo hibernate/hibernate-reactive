@@ -6,14 +6,13 @@ package org.hibernate.reactive.event.impl;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.DetachedObjectException;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.ObjectDeletedException;
-import org.hibernate.TransientObjectException;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.SoftLock;
-import org.hibernate.engine.internal.CascadePoint;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -24,9 +23,6 @@ import org.hibernate.event.spi.LockEvent;
 import org.hibernate.event.spi.LockEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
-import org.hibernate.reactive.engine.impl.Cascade;
-import org.hibernate.reactive.engine.impl.CascadingActions;
-import org.hibernate.reactive.engine.impl.ForeignKeys;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
 import org.hibernate.reactive.event.ReactiveLockEventListener;
@@ -38,8 +34,6 @@ import org.hibernate.reactive.session.ReactiveSession;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class DefaultReactiveLockEventListener extends DefaultLockEventListener implements LockEventListener, ReactiveLockEventListener {
@@ -53,15 +47,17 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 
 	@Override
 	public CompletionStage<Void> reactiveOnLock(LockEvent event) throws HibernateException {
-		if ( event.getObject() == null ) {
+		final Object instance = event.getObject();
+		if ( instance == null ) {
 			throw new NullPointerException( "attempted to lock null" );
 		}
 
-		if ( event.getLockMode() == LockMode.WRITE ) {
+		final var lockMode = event.getLockMode();
+		if ( lockMode == LockMode.WRITE ) {
 			throw LOG.invalidLockModeForLock();
 		}
 
-		if ( event.getLockMode() == LockMode.UPGRADE_SKIPLOCKED ) {
+		if ( lockMode == LockMode.UPGRADE_SKIPLOCKED ) {
 			LOG.explicitSkipLockedLockCombo();
 		}
 
@@ -80,7 +76,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 		//TODO: if object was an uninitialized proxy, this is inefficient,
 		//      resulting in two SQL selects
 
-		return ( (ReactiveQueryProducer) source ).reactiveFetch( event.getObject(), true )
+		return ( (ReactiveQueryProducer) source ).reactiveFetch( instance, true )
 				.thenCompose( entity -> reactiveOnLock( event, entity ) );
 	}
 
@@ -88,46 +84,12 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 		final SessionImplementor source = event.getSession();
 		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
 		final EntityEntry entry = persistenceContext.getEntry( entity );
-		return lockEntry( event, entity, entry, source )
-				.thenCompose( e -> upgradeLock( entity, e, event.getLockOptions(), event.getSession() ) );
-	}
-
-	private CompletionStage<EntityEntry> lockEntry(
-			LockEvent event,
-			Object entity,
-			EntityEntry entry,
-			SessionImplementor source) {
-		if ( entry == null ) {
-			final EntityPersister persister = source.getEntityPersister( event.getEntityName(), entity );
-			final Object id = persister.getIdentifier( entity, source );
-			return ForeignKeys
-					.isNotTransient( event.getEntityName(), entity, Boolean.FALSE, source )
-					.thenCompose( trans -> {
-									  if ( !trans ) {
-										  return failedFuture( new TransientObjectException(
-												  "Cannot lock unsaved transient instance of entity '" + persister.getEntityName() + "'"
-										  ) );
-									  }
-
-									  final EntityEntry e = reassociate( event, entity, id, persister );
-									  return cascadeOnLock( event, persister, entity )
-											  .thenApply( v -> e );
-								  }
-					);
+		if ( entry == null && event.getObject() == entity ) {
+			throw new DetachedObjectException( "Given entity is not associated with the persistence context" );
 		}
-		return completedFuture( entry );
+		return upgradeLock( entity, entry, event.getLockOptions(), event.getSession() );
 	}
 
-	private CompletionStage<Void> cascadeOnLock(LockEvent event, EntityPersister persister, Object entity) {
-		return Cascade.cascade(
-				CascadingActions.LOCK,
-				CascadePoint.AFTER_LOCK,
-				event.getSession(),
-				persister,
-				entity,
-				event.getLockOptions()
-		);
-	}
 
 	/**
 	 * Performs a pessimistic lock upgrade on a given entity, if needed.
