@@ -25,9 +25,9 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 
 import static org.hibernate.loader.ast.internal.MultiKeyLoadLogging.MULTI_KEY_LOAD_LOGGER;
 
@@ -43,7 +43,7 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 	private JdbcMapping arrayJdbcMapping;
 	private JdbcParameter jdbcParameter;
 	private SelectStatement sqlAst;
-	private JdbcOperationQuerySelect jdbcSelectOperation;
+	private JdbcSelect jdbcSelectOperation;
 
 	public ReactiveEntityBatchLoaderArrayParam(
 			int domainBatchSize,

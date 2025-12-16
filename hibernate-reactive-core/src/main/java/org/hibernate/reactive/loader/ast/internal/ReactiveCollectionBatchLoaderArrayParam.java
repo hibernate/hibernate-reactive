@@ -26,7 +26,7 @@ import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
@@ -46,7 +46,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 	private final JdbcMapping arrayJdbcMapping;
 	private final JdbcParameter jdbcParameter;
 	private final SelectStatement sqlSelect;
-	private final JdbcOperationQuerySelect jdbcSelectOperation;
+	private final JdbcSelect jdbcSelectOperation;
 
 	public ReactiveCollectionBatchLoaderArrayParam(
 			int domainBatchSize,

@@ -13,8 +13,8 @@ import org.hibernate.query.sqm.mutation.internal.cte.CteDeleteHandler;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.sql.ast.tree.cte.CteTable;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 
 /**
  * @see org.hibernate.query.sqm.mutation.internal.cte.CteDeleteHandler
@@ -33,7 +33,7 @@ public class ReactiveCteDeleteHandler extends CteDeleteHandler implements Reacti
 	}
 
 	@Override
-	public JdbcOperationQuerySelect getSelect() {
+	public JdbcSelect getSelect() {
 		return super.getSelect();
 	}
 

@@ -21,7 +21,7 @@ import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
@@ -36,7 +36,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 	private final int sqlBatchSize;
 	private final JdbcParametersList jdbcParameters;
 	private final SelectStatement sqlAst;
-	private final JdbcOperationQuerySelect jdbcSelect;
+	private final JdbcSelect jdbcSelect;
 
 	private ReactiveCollectionLoaderSingleKey singleKeyLoader;
 
