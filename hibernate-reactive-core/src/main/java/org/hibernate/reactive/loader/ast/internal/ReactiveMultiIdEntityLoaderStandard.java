@@ -38,10 +38,10 @@ import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static org.hibernate.event.spi.LoadEventListener.GET;
@@ -244,7 +244,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 
 		// we should have used all the JdbcParameter references (created bindings for all)
 		assert offset == jdbcParameters.size();
-		final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory
+		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
 				.buildSelectTranslator( getSessionFactory(), sqlAst )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
