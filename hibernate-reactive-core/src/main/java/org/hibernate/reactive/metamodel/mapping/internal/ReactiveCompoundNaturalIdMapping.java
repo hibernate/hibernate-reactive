@@ -13,6 +13,7 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.CompoundNaturalIdMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.models.spi.ClassDetails;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCompoundNaturalIdLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
@@ -21,10 +22,12 @@ public class ReactiveCompoundNaturalIdMapping extends CompoundNaturalIdMapping {
 
     private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-    public ReactiveCompoundNaturalIdMapping(EntityMappingType declaringType,
-                                            List<SingularAttributeMapping> attributes,
-                                            MappingModelCreationProcess creationProcess ) {
-        super( declaringType, attributes, creationProcess );
+    public ReactiveCompoundNaturalIdMapping(
+            EntityMappingType declaringType,
+            ClassDetails naturalIdClass,
+            List<SingularAttributeMapping> attributes,
+            MappingModelCreationProcess creationProcess) {
+        super( declaringType, naturalIdClass, attributes, creationProcess );
     }
 
     @Override
