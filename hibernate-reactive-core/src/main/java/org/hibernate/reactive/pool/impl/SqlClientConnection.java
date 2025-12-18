@@ -36,11 +36,12 @@ import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.SqlConnection;
 import io.vertx.sqlclient.SqlResult;
-import io.vertx.sqlclient.Transaction;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
@@ -62,7 +63,10 @@ public class SqlClientConnection implements ReactiveConnection {
 	private final SqlConnection connection;
 	// The context associated to the connection. We expect the connection to be executed in this context.
 	private final ContextInternal connectionContext;
-	private Transaction transaction;
+
+	// The close operation could be called multiple times if an error occurs,
+	// if we execute it every time, we will have several useless messages in the log
+	private boolean closed = false;
 
 	SqlClientConnection(
 			SqlConnection connection,
@@ -362,52 +366,88 @@ public class SqlClientConnection implements ReactiveConnection {
 
 	@Override
 	public CompletionStage<Void> beginTransaction() {
-		if ( transaction != null ) {
-			throw new IllegalStateException( "Can't begin a new transaction as an active transaction is already associated to this connection" );
+		if ( isTransactionInProgress() ) {
+			return failedFuture( LOG.liveTransactionDetectedOnBeginTransaction() );
 		}
 		return connection.begin()
 				.onSuccess( tx -> LOG.tracef( "Transaction started: %s", tx ) )
-				.onFailure( v -> LOG.errorf( "Failed to start a transaction: %s", transaction ) )
+				.onFailure( throwable -> LOG.errorf( "Failed to start a transaction: %s", throwable.getMessage() ) )
 				.toCompletionStage()
-				.thenAccept( this::setTransaction );
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Override
 	public CompletionStage<Void> commitTransaction() {
-		return transaction.commit()
-				.onSuccess( v -> LOG.tracef( "Transaction committed: %s", transaction ) )
-				.onFailure( v -> LOG.errorf( "Failed to commit transaction: %s", transaction ) )
-				.toCompletionStage()
-				.whenComplete( this::clearTransaction );
+		return connection.transaction()
+				.commit()
+				.onSuccess( v -> LOG.tracef( "Transaction committed: %s", connection.transaction() ) )
+				.onFailure( throwable -> LOG.errorf( "Failed to commit transaction: %s", throwable.getMessage() ) )
+				.toCompletionStage();
 	}
 
 	@Override
 	public CompletionStage<Void> rollbackTransaction() {
-		return transaction.rollback()
-				.onFailure( v -> LOG.errorf( "Failed to rollback transaction: %s", transaction ) )
-				.onSuccess( v -> LOG.tracef( "Transaction rolled back: %s", transaction ) )
-				.toCompletionStage()
-				.whenComplete( this::clearTransaction );
+		if ( isTransactionInProgress() ) {
+			return connection.transaction()
+					.rollback()
+					.onFailure( throwable -> LOG.errorf( "Failed to rollback transaction: %s", throwable.getMessage() ) )
+					.onSuccess( v -> LOG.tracef( "Transaction rolled back: %s", connection.transaction() ) )
+					.toCompletionStage();
+		}
+		LOG.trace( "No transaction found to roll back" );
+		return voidFuture();
 	}
 
 	@Override
 	public CompletionStage<Void> close() {
-		if ( transaction != null ) {
-			throw new IllegalStateException( "Connection being closed with a live transaction associated to it" );
+		// We can probably skip the validation if the connection is already closed...but, you never know
+		return validateNoTransactionInProgressOnClose()
+				.handle( CompletionStages::handle )
+				.thenCompose( validationHandler -> supplyStage( () -> closed
+						? voidFuture().thenAccept( v -> LOG.trace( "Connection already closed" ) )
+						: connection.close().toCompletionStage() )
+						.handle( CompletionStages::handle )
+						.thenCompose( closeConnectionHandler -> {
+							if ( closeConnectionHandler.hasFailed() ) {
+								if ( validationHandler.hasFailed() ) {
+									// Error closing the connection, include the validation error
+									closeConnectionHandler.getThrowable()
+											.addSuppressed( validationHandler.getThrowable() );
+								}
+								// Return a failed CompletionStage
+								return closeConnectionHandler.getResultAsCompletionStage();
+							}
+							if ( !closed ) {
+								closed = true;
+								LOG.tracef( "Connection closed: %s", connection );
+							}
+							else {
+								LOG.tracef( "Connection was already closed: %s", connection );
+							}
+							// Connection closed, return the result of the validation
+							return validationHandler.getResultAsCompletionStage();
+						} )
+				);
+	}
+
+	/**
+	 * If there's a transaction open, roll back it and return a failed CompletionStage.
+	 * The validation error is related to closing the connection.
+	 */
+	private CompletionStage<Void> validateNoTransactionInProgressOnClose() {
+		if ( isTransactionInProgress() ) {
+			return supplyStage( this::rollbackTransaction )
+					.handle( CompletionStages::handle )
+					.thenCompose( rollbackHandler -> {
+						final Throwable validationError = LOG.liveTransactionDetectedOnClose();
+						if ( rollbackHandler.hasFailed() ) {
+							// Include the error that happened during rollback
+							validationError.addSuppressed( rollbackHandler.getThrowable() );
+						}
+						return failedFuture( validationError );
+					} );
 		}
-		return connection.close()
-				.onSuccess( event -> LOG.tracef( "Connection closed: %s", connection ) )
-				.onFailure( v -> LOG.errorf( "Failed to close a connection: %s", connection ) )
-				.toCompletionStage();
-	}
-
-	private void setTransaction(Transaction tx) {
-		transaction = tx;
-	}
-
-	private void clearTransaction(Void v, Throwable x) {
-		LOG.tracef( "Clearing current transaction instance from connection: %s", transaction );
-		transaction = null;
+		return voidFuture();
 	}
 
 	private static class RowSetResult implements Result {
@@ -460,5 +500,4 @@ public class SqlClientConnection implements ReactiveConnection {
 			}
 		}
 	}
-
 }
