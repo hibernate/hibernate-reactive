@@ -282,6 +282,12 @@ public interface Log extends BasicLogger {
 	@Message(id = 89, value = "Connection is closed")
 	IllegalStateException connectionIsClosed();
 
+	@Message(id = 90, value = "Live transaction detected while closing the connection: it will be roll backed")
+	IllegalStateException liveTransactionDetectedOnClose();
+
+	@Message(id = 91, value = "Can't begin a new transaction as an active transaction is already associated to this connection")
+	IllegalStateException liveTransactionDetectedOnBeginTransaction();
+
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
 	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
