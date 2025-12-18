@@ -5,11 +5,8 @@
 package org.hibernate.reactive.logging.impl;
 
 
-
 import java.sql.SQLException;
 import java.sql.SQLWarning;
-
-import jakarta.persistence.PersistenceException;
 
 import org.hibernate.HibernateException;
 import org.hibernate.JDBCException;
@@ -24,6 +21,8 @@ import org.jboss.logging.annotations.FormatWith;
 import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
+
+import jakarta.persistence.PersistenceException;
 
 import static org.jboss.logging.Logger.Level.DEBUG;
 import static org.jboss.logging.Logger.Level.ERROR;
@@ -275,6 +274,12 @@ public interface Log extends BasicLogger {
 	@LogMessage(level = ERROR)
 	@Message(id = 86, value = "Error closing reactive connection")
 	void errorClosingConnection(@Cause Throwable throwable);
+
+	@Message(id = 90, value = "Live transaction detected while closing the connection: it will be roll backed")
+	IllegalStateException liveTransactionDetectedOnClose();
+
+	@Message(id = 91, value = "Can't begin a new transaction as an active transaction is already associated to this connection")
+	IllegalStateException liveTransactionDetectedOnBeginTransaction();
 
 	// Same method that exists in CoreMessageLogger
 	@LogMessage(level = WARN)
