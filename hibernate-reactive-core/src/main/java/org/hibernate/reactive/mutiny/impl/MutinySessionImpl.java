@@ -488,7 +488,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	private class Transaction<T> implements Mutiny.Transaction {
-		boolean rollback;
+		boolean markedForRollback;
 
 		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
 			currentTransaction = this;
@@ -504,13 +504,16 @@ public class MutinySessionImpl implements Mutiny.Session {
 			return Uni.createFrom()
 					.deferred( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception
-					.call( this::flush ).call( this::beforeCompletion )
+					.call( this::flush )
+					.call( this::beforeCompletion )
 					// in the case of an exception or cancellation
 					// we need to roll back the transaction
-					.onFailure().call( this::rollback ).onCancellation().call( this::rollback )
+					.onFailure().call( this::rollback )
+					.onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
-					.call( () -> rollback ? rollback() : commit() ).call( this::afterCompletion );
+					.call( () -> markedForRollback ? rollback() : commit() )
+					.call( this::afterCompletion );
 		}
 
 		Uni<Void> flush() {
@@ -534,17 +537,17 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		private Uni<Void> afterCompletion() {
-			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion( !rollback ) );
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion( !markedForRollback ) );
 		}
 
 		@Override
 		public void markForRollback() {
-			rollback = true;
+			markedForRollback = true;
 		}
 
 		@Override
 		public boolean isMarkedForRollback() {
-			return rollback;
+			return markedForRollback;
 		}
 	}
 
