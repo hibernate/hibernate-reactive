@@ -17,7 +17,6 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.adaptor.impl.JdbcNull;
 import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
-import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
@@ -290,7 +289,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	private void feedback(String sql) {
-		InternalStateAssertions.assertCurrentContextMatches( this, connectionContext );
+		// Disable assertions for now. See https://github.com/hibernate/hibernate-reactive/issues/2932
+		// InternalStateAssertions.assertCurrentContextMatches( this, connectionContext );
 		Objects.requireNonNull( sql, "SQL query cannot be null" );
 		// DDL already gets formatted by the client, so don't reformat it
 		FormatStyle formatStyle = sqlStatementLogger.isFormat() && !sql.contains( System.lineSeparator() )
