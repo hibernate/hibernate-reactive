@@ -55,8 +55,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.applyToAll;
  */
 public class MutinySessionImpl implements Mutiny.Session {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
 	private final ReactiveSession delegate;
 	private final MutinySessionFactoryImpl factory;
 
