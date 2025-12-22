@@ -15,8 +15,6 @@ import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.Identifier;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
@@ -40,7 +38,6 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -263,8 +260,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> persistAll(Object... entity) {
-		return uni( () -> applyToAll( delegate::reactivePersist, entity ) );
+	public Uni<Void> persistAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactivePersist, entities ) );
+	}
+
+	@Override
+	public Uni<Void> persistMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactivePersist, entities.toArray() ) );
 	}
 
 	@Override
@@ -273,8 +275,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> removeAll(Object... entity) {
-		return uni( () -> applyToAll( delegate::reactiveRemove, entity ) );
+	public Uni<Void> removeAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactiveRemove, entities ) );
+	}
+
+	@Override
+	public Uni<Void> removeMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactiveRemove, entities.toArray() ) );
 	}
 
 	@Override
@@ -283,8 +290,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public final Uni<Void> mergeAll(Object... entity) {
-		return uni( () -> applyToAll( delegate::reactiveMerge, entity ) );
+	public final Uni<Void> mergeAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactiveMerge, entities ) );
+	}
+
+	@Override
+	public Uni<Void> mergeMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactiveMerge, entities.toArray() ) );
 	}
 
 	@Override
@@ -308,8 +320,13 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public Uni<Void> refreshAll(Object... entity) {
-		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entity ) );
+	public Uni<Void> refreshAll(Object... entities) {
+		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities ) );
+	}
+
+	@Override
+	public Uni<Void> refreshMultiple(List<?> entities) {
+		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities.toArray() ) );
 	}
 
 	@Override
