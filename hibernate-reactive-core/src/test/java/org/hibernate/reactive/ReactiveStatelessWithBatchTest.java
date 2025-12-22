@@ -128,7 +128,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	@EnabledFor(POSTGRESQL)
 	public void testStageMergeUpsertAll(VertxTestContext context) {
 		test( context, getSessionFactory()
-				.withStatelessTransaction( s -> s.upsertAll( PIGS ) )
+				.withStatelessTransaction( s -> s.upsert( PIGS ) )
 				.thenRun( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
 				.thenCompose( v -> assertExpectedResult( PIGS ) )
 		);
@@ -138,7 +138,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	@EnabledFor(POSTGRESQL)
 	public void testStageMergeUpsertAllWithBatchSize(VertxTestContext context) {
 		test( context, getSessionFactory()
-				.withStatelessTransaction( s -> s.upsertAll( 10, PIGS ) )
+				.withStatelessTransaction( s -> s.upsert( 10, PIGS ) )
 				.thenRun(() -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
 				.thenCompose( v -> assertExpectedResult( PIGS ) )
 		);
