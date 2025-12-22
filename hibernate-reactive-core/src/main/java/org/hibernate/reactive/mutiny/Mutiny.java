@@ -998,6 +998,13 @@ public interface Mutiny {
 		Uni<Void> persistAll(Object... entities);
 
 		/**
+		 * Persist multiple transient entity instances at once.
+		 *
+		 * @see #persist(Object)
+		 */
+		Uni<Void> persistMultiple(List<?> entities);
+
+		/**
 		 * Asynchronously remove a persistent instance from the datastore. The
 		 * argument may be an instance associated with the receiving session or
 		 * a transient instance with an identifier associated with existing
@@ -1025,6 +1032,13 @@ public interface Mutiny {
 		Uni<Void> removeAll(Object... entities);
 
 		/**
+		 * Remove multiple entity instances at once.
+		 *
+		 * @see #remove(Object)
+		 */
+		Uni<Void> removeMultiple(List<?> entities);
+
+		/**
 		 * Copy the state of the given object onto the persistent instance with
 		 * the same identifier. If there is no such persistent instance currently
 		 * associated with the session, it will be loaded. Return the persistent
@@ -1049,6 +1063,13 @@ public interface Mutiny {
 		 * @see #merge(Object)
 		 */
 		Uni<Void> mergeAll(Object... entities);
+
+		/**
+		 * Merge multiple entity instances at once.
+		 *
+		 * @see #merge(Object)
+		 */
+		Uni<Void> mergeMultiple(List<?> entities);
 
 		/**
 		 * Re-read the state of the given instance from the underlying database.
@@ -1099,6 +1120,13 @@ public interface Mutiny {
 		 * @see #refresh(Object)
 		 */
 		Uni<Void> refreshAll(Object... entities);
+
+		/**
+		 * Refresh multiple entity instances at once.
+		 *
+		 * @see #refresh(Object)
+		 */
+		Uni<Void> refreshMultiple(List<?> entities);
 
 		/**
 		 * Obtain the specified lock level upon the given object. For example,
