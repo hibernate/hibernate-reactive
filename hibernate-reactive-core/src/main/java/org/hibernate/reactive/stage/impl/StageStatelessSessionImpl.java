@@ -154,13 +154,23 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public CompletionStage<Void> upsertAll(Object... entities) {
+	public CompletionStage<Void> upsert(Object... entities) {
 		return delegate.reactiveUpsertAll( entities.length, entities );
 	}
 
 	@Override
-	public CompletionStage<Void> upsertAll(int batchSize, Object... entities) {
+	public CompletionStage<Void> upsert(int batchSize, Object... entities) {
 		return delegate.reactiveUpsertAll( batchSize, entities );
+	}
+
+	@Override @Deprecated(forRemoval = true)
+	public CompletionStage<Void> upsertAll(Object... entities) {
+		return upsert( entities );
+	}
+
+	@Override @Deprecated(forRemoval = true)
+	public CompletionStage<Void> upsertAll(int batchSize, Object... entities) {
+		return upsert( batchSize, entities );
 	}
 
 	@Override

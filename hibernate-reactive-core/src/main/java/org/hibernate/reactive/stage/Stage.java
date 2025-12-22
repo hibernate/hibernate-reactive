@@ -1815,7 +1815,7 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#upsert(Object)
 		 */
 		@Incubating
-		CompletionStage<Void> upsertAll(Object... entities);
+		CompletionStage<Void> upsert(Object... entities);
 
 		/**
 		 * Use a SQL {@code merge into} statement to perform
@@ -1827,6 +1827,34 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#upsert(Object)
 		 */
 		@Incubating
+		CompletionStage<Void> upsert(int batchSize, Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the size of the given array
+		 * as batch size.
+		 *
+		 * @param entities the entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 *
+		 * @deprecated Use {@link #upsert(Object...)} instead
+		 */
+		@Incubating @Deprecated(forRemoval = true)
+		CompletionStage<Void> upsertAll(Object... entities);
+
+		/**
+		 * Use a SQL {@code merge into} statement to perform
+		 * an upsert on multiple rows using the specified batch size.
+		 *
+		 * @param batchSize the batch size
+		 * @param entities the list of entities to upsert
+		 *
+		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 *
+		 * @deprecated Use {@link #upsert(int, Object...)} instead
+		 */
+		@Incubating @Deprecated(forRemoval = true)
 		CompletionStage<Void> upsertAll(int batchSize, Object... entities);
 
 		/**
