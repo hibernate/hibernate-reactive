@@ -360,4 +360,24 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
     public boolean isOpen() {
         return delegate().isOpen();
     }
+
+    @Override
+    public Uni<Void> persistMultiple(List<?> entities) {
+        return delegate().persistMultiple(entities);
+    }
+
+    @Override
+    public Uni<Void> removeMultiple(List<?> entities) {
+        return delegate().removeMultiple(entities);
+    }
+
+    @Override
+    public Uni<Void> mergeMultiple(List<?> entities) {
+        return delegate().mergeMultiple(entities);
+    }
+
+    @Override
+    public Uni<Void> refreshMultiple(List<?> entities) {
+        return delegate().refreshMultiple(entities);
+    }
 }
