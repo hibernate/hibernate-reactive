@@ -1813,8 +1813,10 @@ public interface Stage {
 		 * @param entities the entities to upsert
 		 *
 		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 *
+		 * @deprecated Use {@link #upsertMultiple(List)} instead
 		 */
-		@Incubating
+		@Incubating @Deprecated(forRemoval = true)
 		CompletionStage<Void> upsertAll(Object... entities);
 
 		/**
@@ -1825,8 +1827,10 @@ public interface Stage {
 		 * @param entities the list of entities to upsert
 		 *
 		 * @see org.hibernate.StatelessSession#upsert(Object)
+		 *
+		 * @deprecated Use {@link #upsertMultiple(List)} instead
 		 */
-		@Incubating
+		@Incubating @Deprecated(forRemoval = true)
 		CompletionStage<Void> upsertAll(int batchSize, Object... entities);
 
 		/**
