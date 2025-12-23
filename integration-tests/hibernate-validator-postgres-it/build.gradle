@@ -27,7 +27,7 @@ dependencies {
     runtimeOnly(libs.io.vertx.vertx.pg.client)
 
     // Allow authentication to PostgreSQL using SCRAM:
-    runtimeOnly(libs.com.ongres.scram.client)
+    runtimeOnly(libs.com.ongres.scram.scram.client)
 
     // logging
     runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
