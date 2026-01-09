@@ -1001,6 +1001,8 @@ public interface Mutiny {
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
+		 *
+		 * @since 4.3
 		 */
 		Uni<Void> persistMultiple(List<?> entities);
 
@@ -1035,6 +1037,8 @@ public interface Mutiny {
 		 * Remove multiple entity instances at once.
 		 *
 		 * @see #remove(Object)
+		 *
+		 * @since 4.3
 		 */
 		Uni<Void> removeMultiple(List<?> entities);
 
@@ -1068,6 +1072,8 @@ public interface Mutiny {
 		 * Merge multiple entity instances at once.
 		 *
 		 * @see #merge(Object)
+		 *
+		 * @since 4.3
 		 */
 		Uni<Void> mergeMultiple(List<?> entities);
 
@@ -1125,6 +1131,8 @@ public interface Mutiny {
 		 * Refresh multiple entity instances at once.
 		 *
 		 * @see #refresh(Object)
+		 *
+		 * @since 4.3
 		 */
 		Uni<Void> refreshMultiple(List<?> entities);
 
