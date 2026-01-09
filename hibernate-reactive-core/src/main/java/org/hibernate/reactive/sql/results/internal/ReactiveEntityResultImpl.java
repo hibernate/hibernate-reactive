@@ -48,7 +48,7 @@ public class ReactiveEntityResultImpl extends EntityResultImpl {
 	}
 
 	@Override
-	public Initializer<?> createInitializer(InitializerParent<?> parent, AssemblerCreationState creationState) {
+	public Initializer<?> createInitializer(InitializerParent parent, AssemblerCreationState creationState) {
 		return new ReactiveEntityInitializerImpl(
 				this,
 				getSourceAlias(),
