@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -16,27 +18,29 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
-
 import org.junit.jupiter.api.Test;
-
-import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.Metrics;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
+/**
+ * This test is supposed to check that when the uni is canceled there are no open connection left.
+ * But, it seems more complicated than necessary, and it causes several errors on the log because the session ends up
+ * in different threads. We need to update it in the future.
+ */
+@Timeout(value = 10, timeUnit = MINUTES)
 public class CancelSignalTest extends BaseReactiveTest {
-	private static final Logger LOG = Logger.getLogger( CancelSignalTest.class );
-
+	private static final String CANCELED = "Canceled!";
 	private static final int EXECUTION_SIZE = 10;
 
 	@Override
@@ -46,18 +50,18 @@ public class CancelSignalTest extends BaseReactiveTest {
 
 	@Override
 	public CompletionStage<Void> deleteEntities(Class<?>... entities) {
-		// We don't need to delete anything
+		// We don't need to delete anything, keep the log cleaner
 		return voidFuture();
 	}
 
 	@Test
 	public void cleanupConnectionWhenCancelSignal(VertxTestContext context) {
 		// larger than 'sql pool size' to check entering the 'pool waiting queue'
-		CountDownLatch firstSessionWaiter = new CountDownLatch( 1 );
-		Queue<Cancellable> cancellableQueue = new ConcurrentLinkedQueue<>();
-
+		final CountDownLatch firstSessionWaiter = new CountDownLatch( 1 );
+		final Queue<Cancellable> cancellableQueue = new ConcurrentLinkedQueue<>();
 		final List<CompletableFuture<?>> allFutures = new ArrayList<>();
 
+		final String[] results = new String[EXECUTION_SIZE];
 		ExecutorService withSessionExecutor = Executors.newFixedThreadPool( EXECUTION_SIZE );
 		for ( int j = 0; j < EXECUTION_SIZE; j++ ) {
 			final int i = j;
@@ -65,18 +69,20 @@ public class CancelSignalTest extends BaseReactiveTest {
 						  CountDownLatch countDownLatch = new CountDownLatch( 1 );
 						  Cancellable cancellable = getMutinySessionFactory()
 								  .withSession( s -> {
-									  LOG.info( "start withSession: " + i );
-									  sleep( 100 );
 									  firstSessionWaiter.countDown();
-									  return s.find( GuineaPig.class, 1 );
+									  return s.find( GuineaPig.class, 1 )
+											  .invoke( () -> assertThat( sqlPendingMetric() ).isEqualTo( 1.0 ) )
+											  .onItem().delayIt().by( Duration.of( 500, ChronoUnit.MILLIS ) );
 								  } )
-								  .onCancellation().invoke( () -> {
-									  LOG.info( "future " + i + " cancelled" );
-									  countDownLatch.countDown();
-								  } )
+								  // Keep track that the cancellation occurred
+								  .onCancellation().invoke( () -> results[i] = CANCELED )
+								  // CountDownLatch should be called in any case
+								  .onTermination().invoke( countDownLatch::countDown )
 								  .subscribe()
-								  // We cancelled the job, it shouldn't really finish
-								  .with( item -> LOG.info( "end withSession: "  + i  ) );
+								  // We are canceling the job, it shouldn't reach this point
+								  .with( ignore -> context
+										  .failNow( "withSession operation has not been canceled" )
+								  );
 						  cancellableQueue.add( cancellable );
 						  await( countDownLatch );
 					  },
@@ -97,7 +103,12 @@ public class CancelSignalTest extends BaseReactiveTest {
 
 		test(
 				context, allOf( allFutures.toArray( new CompletableFuture<?>[0] ) )
-						.thenAccept( x -> assertThat( sqlPendingMetric() ).isEqualTo( 0.0 ) )
+						.thenAccept( x -> {
+							assertThat( results )
+									.as( "Some jobs have not been canceled" )
+									.containsOnly( CANCELED );
+							assertThat( sqlPendingMetric() ).isEqualTo( 0.0 );
+						} )
 		);
 	}
 
@@ -126,8 +137,7 @@ public class CancelSignalTest extends BaseReactiveTest {
 		}
 	}
 
-	@Entity(name = "GuineaPig")
-	@Table(name = "Pig")
+	@Entity
 	public static class GuineaPig {
 		@Id
 		private Integer id;
