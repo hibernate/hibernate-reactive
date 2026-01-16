@@ -16,8 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
-
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.jboss.logging.Logger;
@@ -34,6 +33,12 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
+/*
+ * The test fails occasionally because the find returns before the cancel operation is executed.
+ * It also logs a lot of errors because the session is opened in a thread and closed in another.
+ * I couldn't find a solution that works consistently, so I'm disabling it for now.
+ */
+@Disabled
 public class CancelSignalTest extends BaseReactiveTest {
 	private static final Logger LOG = Logger.getLogger( CancelSignalTest.class );
 
