@@ -2,7 +2,7 @@
 assertjVersion = "3.27.6"
 hibernateOrmVersion = "7.2.1.Final"
 hibernateOrmGradlePluginVersion = "7.2.1.Final"
-jacksonDatabindVersion = "2.20.1"
+jacksonDatabindVersion = "2.21.0"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
 jbossLoggingVersion = "3.6.1.Final"
 junitVersion = "6.0.2"
@@ -46,7 +46,7 @@ org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "jun
 org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
 org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "6.0.2" }
 org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.7" }
-org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.8" }
+org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.9" }
 org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
 org-testcontainers-db2 = { group = "org.testcontainers", name = "db2", version.ref = "testcontainersVersion" }
 org-testcontainers-mariadb = { group = "org.testcontainers", name = "mariadb", version.ref = "testcontainersVersion" }
