@@ -21,9 +21,9 @@ import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.lock.EntityDetails;
 import org.hibernate.sql.exec.internal.lock.TableLock;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 
 import java.lang.invoke.MethodHandles;
@@ -94,7 +94,7 @@ public class ReactiveTableLock extends TableLock {
 		final var jdbcServices = sessionFactory.getJdbcServices();
 		final var selectStatement = new SelectStatement( querySpec, domainResults );
 
-		final JdbcOperationQuerySelect jdbcSelect = jdbcServices.getDialect().getSqlAstTranslatorFactory()
+		final JdbcSelect jdbcSelect = jdbcServices.getDialect().getSqlAstTranslatorFactory()
 				.buildSelectTranslator( sessionFactory, selectStatement )
 				.translate( jdbcParameterBindings, lockingQueryOptions );
 		return StandardReactiveSelectExecutor.INSTANCE
