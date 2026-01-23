@@ -38,11 +38,11 @@ import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.FetchParent;
@@ -171,7 +171,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
         );
         assert offset == jdbcParameters.size();
 
-        final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator(
+        final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator(
                         sessionFactory,
                         sqlSelect
                 )
@@ -268,7 +268,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
         );
 
         final QueryOptions queryOptions = new SimpleQueryOptions( lockOptions, false );
-        final JdbcOperationQuerySelect jdbcSelect = sqlAstTranslatorFactory
+        final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
                 .buildSelectTranslator( sessionFactory, sqlSelect )
                 .translate( jdbcParamBindings, queryOptions );
 

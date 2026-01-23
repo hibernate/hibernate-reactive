@@ -12,8 +12,8 @@ import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplemento
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 
 import java.util.concurrent.CompletionStage;
 
@@ -48,5 +48,5 @@ public interface ReactiveAbstractCteMutationHandler extends ReactiveAbstractMuta
 				);
 	}
 
-	JdbcOperationQuerySelect getSelect();
+	JdbcSelect getSelect();
 }

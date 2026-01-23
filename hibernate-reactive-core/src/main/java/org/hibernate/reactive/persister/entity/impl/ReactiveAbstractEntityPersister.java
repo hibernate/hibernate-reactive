@@ -604,7 +604,11 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 			throw new MappingException( "Expected multiple natural-id attributes, but found only one: " + getEntityName() );
 		}
 
-		return new ReactiveCompoundNaturalIdMapping( this, collectedAttrMappings, creationProcess );
+		return new ReactiveCompoundNaturalIdMapping(
+				this,
+				bootEntityDescriptor.getRootClass().getNaturalIdClass(),
+				collectedAttrMappings,
+				creationProcess );
 	}
 
 	@Override
