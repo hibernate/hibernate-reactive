@@ -57,11 +57,6 @@ public class BatchingConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public ReactiveTransactionCoordinator getTransactionCoordinator() {
-		return delegate.getTransactionCoordinator();
-	}
-
-	@Override
 	public ReactiveConnection withBatchSize(int batchSize) {
 		if ( batchSize <= 1 ) {
 			return delegate;

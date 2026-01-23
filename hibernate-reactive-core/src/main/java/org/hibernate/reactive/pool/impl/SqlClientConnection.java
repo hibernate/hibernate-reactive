@@ -106,11 +106,6 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
-	public ReactiveTransactionCoordinator getTransactionCoordinator() {
-		return transactionCoordinator;
-	}
-
-	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
 		translateNulls( paramValues );
 		return update( sql, Tuple.wrap( paramValues ) );

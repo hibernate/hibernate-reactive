@@ -31,18 +31,6 @@ public interface ReactiveConnection {
 
 	boolean isTransactionInProgress();
 
-	/**
-	 * Returns the transaction coordinator that manages transaction lifecycle
-	 * for this connection.
-	 * <p>
-	 * The transaction coordinator determines whether transactions are managed
-	 * by Hibernate Reactive itself (resource-local mode) or by an external
-	 * framework (managed mode).
-	 *
-	 * @return the transaction coordinator for this connection
-	 */
-	ReactiveTransactionCoordinator getTransactionCoordinator();
-
 	@FunctionalInterface
 	interface Expectation {
 		void verifyOutcome(int rowCount, int batchPosition, String sql);

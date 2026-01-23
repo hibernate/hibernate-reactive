@@ -300,13 +300,6 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		}
 
 		@Override
-		public ReactiveTransactionCoordinator getTransactionCoordinator() {
-			return Objects
-					.requireNonNull( connectionFuture.getNow( null ), "Transaction coordinator not available until a connection has been created" )
-					.getTransactionCoordinator();
-		}
-
-		@Override
 		public DatabaseMetadata getDatabaseMetadata() {
 			if ( closed ) {
 				throw LOG.connectionIsClosed();
