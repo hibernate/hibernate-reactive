@@ -21,6 +21,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
 import io.vertx.core.internal.ContextInternal;
@@ -67,17 +68,30 @@ public class SqlClientConnection implements ReactiveConnection {
 	// if we execute it every time, we will have several useless messages in the log
 	private boolean closed = false;
 
+	private final ReactiveTransactionCoordinator transactionCoordinator;
+
 	SqlClientConnection(
 			SqlConnection connection,
 			Pool pool,
 			SqlStatementLogger sqlStatementLogger,
 			SqlExceptionHelper sqlExceptionHelper,
 			ContextInternal connectionContext) {
+		this( connection, pool, sqlStatementLogger, sqlExceptionHelper, connectionContext, ResourceLocalTransactionCoordinator.INSTANCE );
+	}
+
+	SqlClientConnection(
+			SqlConnection connection,
+			Pool pool,
+			SqlStatementLogger sqlStatementLogger,
+			SqlExceptionHelper sqlExceptionHelper,
+			ContextInternal connectionContext,
+			ReactiveTransactionCoordinator transactionCoordinator) {
 		this.connectionContext = connectionContext;
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
 		this.connection = connection;
 		this.sqlExceptionHelper = sqlExceptionHelper;
+		this.transactionCoordinator = transactionCoordinator;
 		LOG.tracef( "Connection created for %1$s associated to context %2$s: ", connection, connectionContext );
 	}
 
@@ -89,6 +103,11 @@ public class SqlClientConnection implements ReactiveConnection {
 	@Override
 	public boolean isTransactionInProgress() {
 		return connection.transaction() != null;
+	}
+
+	@Override
+	public ReactiveTransactionCoordinator getTransactionCoordinator() {
+		return transactionCoordinator;
 	}
 
 	@Override
@@ -431,11 +450,22 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	/**
-	 * If there's a transaction open, roll back it and return a failed CompletionStage.
+	 * If there's a transaction open and it's not externally managed,
+	 * roll back it and return a failed CompletionStage.
 	 * The validation error is related to closing the connection.
+	 * <p>
+	 * When transactions are externally managed, Hibernate Reactive does not
+	 * roll back the transaction, as the external coordinator is responsible
+	 * for transaction lifecycle management.
 	 */
 	private CompletionStage<Void> validateNoTransactionInProgressOnClose() {
 		if ( isTransactionInProgress() ) {
+			// Skip validation and rollback for externally-managed transactions
+			if ( transactionCoordinator.isExternallyManaged() ) {
+				LOG.tracef( "Transaction is externally managed, skipping rollback on close: %s", connection.transaction() );
+				return voidFuture();
+			}
+			// For resource-local transactions, validate and rollback
 			return supplyStage( this::rollbackTransaction )
 					.handle( CompletionStages::handle )
 					.thenCompose( rollbackHandler -> {

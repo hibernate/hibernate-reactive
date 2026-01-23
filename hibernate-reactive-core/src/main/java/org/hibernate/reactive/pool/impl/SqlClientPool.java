@@ -23,6 +23,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
 
 import io.vertx.core.Future;
 import io.vertx.core.internal.ContextInternal;
@@ -88,6 +89,21 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	 */
 	protected Pool getTenantPool(String tenantId) {
 		throw new UnsupportedOperationException( "multitenancy not supported by built-in SqlClientPool" );
+	}
+
+	/**
+	 * Get the {@link ReactiveTransactionCoordinator} for connections created by this pool.
+	 * <p>
+	 * This method can be overridden by subclasses to provide custom transaction coordination,
+	 * such as externally-managed transactions in frameworks like Quarkus.
+	 * <p>
+	 * The default implementation returns {@link ResourceLocalTransactionCoordinator#INSTANCE},
+	 * which manages transactions within Hibernate Reactive.
+	 *
+	 * @return the transaction coordinator for connections from this pool
+	 */
+	protected ReactiveTransactionCoordinator getTransactionCoordinator() {
+		return ResourceLocalTransactionCoordinator.INSTANCE;
 	}
 
 	@Override
@@ -224,7 +240,8 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 				getPool(),
 				getSqlStatementLogger(),
 				sqlExceptionHelper,
-				ContextInternal.current()
+				ContextInternal.current(),
+				getTransactionCoordinator()
 		);
 	}
 
@@ -280,6 +297,13 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		public boolean isTransactionInProgress() {
 			ReactiveConnection reactiveConnection = connectionFuture.getNow( null );
 			return reactiveConnection != null && reactiveConnection.isTransactionInProgress();
+		}
+
+		@Override
+		public ReactiveTransactionCoordinator getTransactionCoordinator() {
+			return Objects
+					.requireNonNull( connectionFuture.getNow( null ), "Transaction coordinator not available until a connection has been created" )
+					.getTransactionCoordinator();
 		}
 
 		@Override
