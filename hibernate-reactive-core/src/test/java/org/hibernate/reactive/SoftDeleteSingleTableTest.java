@@ -35,13 +35,13 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
-/*
+/**
  * Tests validity of @SoftDelete annotation value options
- * as well as verifying logged 'create table' and 'update' queries for each database
+ * as well as verifying logged 'create table' and 'update' queries for each database.
  *
- * @see org.hibernate.orm.test.softdelete.SimpleSoftDeleteTests
+ * Tests single-table entity mappings (entities without inheritance).
  */
-public class SoftDeleteTest extends BaseReactiveTest {
+public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 
 	private static SqlStatementTracker sqlTracker;
 
