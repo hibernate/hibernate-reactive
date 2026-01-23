@@ -328,7 +328,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final Loop loop = new Loop();
 		forEachOwnedCollection(
 				entity, id, persister, (descriptor, collection) -> {
-					firePreRecreate( collection, descriptor, entityName, entity );
+					firePreRecreate( descriptor, collection, id, entityName, entity );
 					final DiagnosticEvent event = eventMonitor.beginCollectionRecreateEvent();
 					loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
 							.reactiveRecreate( collection, id, this ) )
@@ -340,7 +340,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 								if ( statistics.isStatisticsEnabled() ) {
 									statistics.recreateCollection( descriptor.getRole() );
 								}
-								firePostRecreate( collection, id, entityName, descriptor );
+								firePostRecreate( descriptor, collection, id, entityName, entity );
 							} )
 					);
 				}
@@ -492,7 +492,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			forEachOwnedCollection(
 					entity, id, persister,
 					(descriptor, collection) -> {
-						firePreRemove( collection, id, entityName, entity );
+						firePreRemove( descriptor, collection, id, entityName, entity );
 						final EventMonitor eventMonitor = getEventMonitor();
 						final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
 						loop.then( () -> supplyStage( () -> ( (ReactiveCollectionPersister) descriptor )
@@ -501,7 +501,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 										.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
 								)
 								.thenAccept( v -> {
-									firePostRemove( collection, id, entityName, entity );
+									firePostRemove( descriptor, collection, id, entityName, entity );
 									final StatisticsImplementor statistics = getFactory().getStatistics();
 									if ( statistics.isStatisticsEnabled() ) {
 										statistics.removeCollection( descriptor.getRole() );
@@ -579,7 +579,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			forEachOwnedCollection(
 					entity, id, persister,
 					(descriptor, collection) -> {
-						firePreUpdate( collection, id, entityName, entity );
+						firePreUpdate( descriptor, collection, id, entityName, entity );
 						final EventMonitor eventMonitor = getEventMonitor();
 						final DiagnosticEvent event = eventMonitor.beginCollectionRemoveEvent();
 						ReactiveCollectionPersister reactivePersister = (ReactiveCollectionPersister) persister;
@@ -590,7 +590,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 										.completeCollectionRemoveEvent( event, id, descriptor.getRole(), throwable != null, this )
 								)
 								.thenAccept( v -> {
-									firePostUpdate( collection, id, entityName, entity);
+									firePostUpdate( descriptor, collection, id, entityName, entity);
 									final StatisticsImplementor statistics = getFactory().getStatistics();
 									if ( statistics.isStatisticsEnabled() ) {
 										statistics.updateCollection( descriptor.getRole() );
