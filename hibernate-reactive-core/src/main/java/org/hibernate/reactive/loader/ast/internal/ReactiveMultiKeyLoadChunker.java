@@ -11,11 +11,11 @@ import org.hibernate.metamodel.mapping.Bindable;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
+import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -53,7 +53,7 @@ public class ReactiveMultiKeyLoadChunker<K> {
 
 	private final JdbcParametersList jdbcParameters;
 	private final SelectStatement sqlAst;
-	private final JdbcOperationQuerySelect jdbcSelect;
+	private final JdbcSelect jdbcSelect;
 
 	public ReactiveMultiKeyLoadChunker(
 			int chunkSize,
@@ -61,7 +61,7 @@ public class ReactiveMultiKeyLoadChunker<K> {
 			Bindable bindable,
 			JdbcParametersList jdbcParameters,
 			SelectStatement sqlAst,
-			JdbcOperationQuerySelect jdbcSelect) {
+			JdbcSelect jdbcSelect) {
 		this.chunkSize = chunkSize;
 		this.keyColumnCount = keyColumnCount;
 		this.bindable = bindable;

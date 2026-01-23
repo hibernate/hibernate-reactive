@@ -8,10 +8,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.DetachedObjectException;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.PersistentObjectException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.cache.spi.access.EntityDataAccess;
@@ -110,21 +110,7 @@ public class DefaultReactiveRefreshEventListener
 		final EntityPersister persister;
 		final Object id;
 		if ( entry == null ) {
-			//refresh() does not pass an entityName
-			persister = source.getEntityPersister( event.getEntityName(), entity );
-			id = persister.getIdentifier( entity, event.getSession() );
-			if ( LOG.isTraceEnabled() ) {
-				LOG.tracev(
-						"Refreshing transient {0}",
-						infoString( persister, id, source.getFactory() )
-				);
-			}
-			if ( persistenceContext.getEntry( source.generateEntityKey( id, persister ) ) != null ) {
-				throw new PersistentObjectException(
-						"attempted to refresh transient instance when persistent instance was already associated with the session: "
-								+ infoString( persister, id, source.getFactory() )
-				);
-			}
+			throw new DetachedObjectException( "Given entity is not associated with the persistence context" );
 		}
 		else {
 			if ( LOG.isTraceEnabled() ) {
