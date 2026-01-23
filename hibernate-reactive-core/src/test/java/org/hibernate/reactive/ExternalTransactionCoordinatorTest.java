@@ -48,24 +48,28 @@ public class ExternalTransactionCoordinatorTest extends BaseReactiveTest {
 				// Get connection directly from the pool (simulating external transaction manager)
 				factoryManager.getReactiveConnectionPool()
 						.getConnection()
-						.thenCompose( connection -> connection
-								// External manager begins transaction
-								.beginTransaction()
-								// Open session using this externally-managed connection
-								.thenCompose( v -> getMutinySessionFactory()
-										.openSession()
-										.chain( session -> session
-												.persist( beneath )
-												.call( session::flush )
-												// Close session (should NOT throw exception, should NOT rollback)
-												.call( session::close )
-										).subscribeAsCompletionStage()
-								)
-								// External manager commits after session is closed
-								.thenCompose( v -> connection.commitTransaction() )
-								// External manager closes connection
-								.thenCompose( v -> connection.close() )
-						)
+						.thenCompose( connection -> {
+							assertThat( connection.getTransactionCoordinator().isExternallyManaged() )
+									.as( "Should use externally-managed coordinator" )
+									.isTrue();
+
+							// External manager begins transaction
+							return connection.beginTransaction()
+									// Open session using this externally-managed connection
+									.thenCompose( v -> getMutinySessionFactory()
+											.openSession()
+											.chain( session -> session
+													.persist( beneath )
+													.call( session::flush )
+													// Close session (should NOT throw exception, should NOT rollback)
+													.call( session::close )
+											).subscribeAsCompletionStage()
+									)
+									// External manager commits after session is closed
+									.thenCompose( v -> connection.commitTransaction() )
+									// External manager closes connection
+									.thenCompose( v -> connection.close() );
+						} )
 						.thenCompose( v -> getSessionFactory()
 								.withTransaction( s -> s.find( Comic.class, beneath.isbn ) )
 						)
