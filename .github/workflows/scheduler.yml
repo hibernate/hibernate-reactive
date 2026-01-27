@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ 'wip/2.4', 'wip/3.1', 'wip/3.2', 'wip/4.1', 'wip/4.2', 'wip/4.3' ]
+        branch: [ 'wip/2.4', 'wip/3.1', 'wip/3.2', 'wip/3.3', 'wip/4.1', 'wip/4.2', 'wip/4.3' ]
     uses: ./.github/workflows/build.yml
     with:
       branch: ${{ matrix.branch }}
