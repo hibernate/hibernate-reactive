@@ -1,6 +1,7 @@
 plugins{
 	id 'java-library'
 	id 'com.diffplug.spotless'
+    id 'jacoco'
 }
 
 group = rootProject.group
@@ -50,10 +51,16 @@ tasks.withType( JavaCompile ).configureEach {
 	options.encoding = 'UTF-8'
 }
 
+def coverageReportSuffix = hasProperty('db') ? property('db') : 'default'
+
 // Configure test tasks for all subprojects
 tasks.withType( Test ).configureEach {
 	// Set the project root for finding Docker files - available to all modules
 	systemProperty 'hibernate.reactive.project.root', rootProject.projectDir.absolutePath
+
+    jacoco {
+        destinationFile = layout.buildDirectory.file("jacoco/report-${coverageReportSuffix}-${java.util.UUID.randomUUID().toString()}.exec").get().asFile
+    }
 }
 
 if ( !gradle.ext.javaToolchainEnabled ) {

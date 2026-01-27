@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: failure()
         with:
-          name: reports-examples-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
+          name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
 
   test_dbs:
@@ -189,6 +189,14 @@ jobs:
         with:
           name: reports-db-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: build-coverage-data-db-${{ matrix.db }}
+          path: |
+            ./**/build/jacoco/*.exec
+            ./**/build/classes/
+            ./**/build/generated/
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
@@ -231,7 +239,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-orm' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-reactive' && 'fork' || github.base_ref || github.ref_name }}"
           CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
           CURRENT_DAY=$(/bin/date -u "+%d")
           ROOT_CACHE_KEY="buildtool-cache"
@@ -320,3 +328,45 @@ jobs:
         with:
           name: reports-java${{ matrix.java.name }}-${{steps.current-branch-suffix.outputs.value}}
           path: './**/build/reports/'
+
+  prepare-sonar-bundle:
+    name: Prepare bundle for Sonar Analysis
+    needs:
+      - run_examples
+      - test_dbs
+      - test_jdks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #5.0.0
+      - name: Set up JDK 17
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # 5.0.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@0bdd871935719febd78681f197cd39af5b6e16a6 # v4.2.2
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
+        with:
+          pattern: build-coverage-data*
+          path: .
+          merge-multiple: 'true'
+        # Don't fail the build if there are no matching artifacts
+        continue-on-error: true
+
+      - name: Merge Jacoco Reports
+        run: ./gradlew mergeCodeCoverageReport copyDependenciesSonar
+
+      - name: Store build info for Sonar scanning
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: build-results-data
+          path: |
+            ./**/build/jacoco/*.exec
+            ./**/build/classes/
+            ./**/build/generated/
+            ./**/build/reports/
+            ./**/build/sonar-dependencies/
