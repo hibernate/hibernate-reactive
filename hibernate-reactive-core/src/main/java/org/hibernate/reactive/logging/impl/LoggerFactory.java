@@ -16,10 +16,10 @@ public final class LoggerFactory {
 
 	public static <T> T make(Class<T> logClass, MethodHandles.Lookup creationContext) {
 		final String className = creationContext.lookupClass().getName();
-		return Logger.getMessageLogger( logClass, className );
+		return Logger.getMessageLogger( creationContext, logClass, className );
 	}
 
-	public static <T> T make(Class<T> logClass, LogCategory category) {
-		return Logger.getMessageLogger( logClass, category.getName() );
+	public static <T> T make(Class<T> logClass, LogCategory category, MethodHandles.Lookup creationContext) {
+		return Logger.getMessageLogger( creationContext, logClass, category.getName() );
 	}
 }
