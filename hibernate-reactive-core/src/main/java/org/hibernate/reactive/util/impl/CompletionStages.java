@@ -21,13 +21,14 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LogCategory;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 
+import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.util.async.impl.AsyncIterator.fromIterator;
 import static org.hibernate.reactive.util.async.impl.AsyncIterator.range;
 import static org.hibernate.reactive.util.async.impl.AsyncTrampoline.asyncWhile;
 
 public class  CompletionStages {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ) );
+	private static final Log LOG = LoggerFactory.make( Log.class, new LogCategory( "org.hibernate.reactive.errors" ), lookup() );
 
 	// singleton instances:
 	private static final CompletionStage<Void> VOID = completedFuture( null );
