@@ -367,6 +367,11 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	}
 
 	@Override
+	public void addUninitializedCollection(CollectionPersister persister, PersistentCollection<?> collection, Object id, boolean readOnly) {
+		delegate.addUninitializedCollection( persister, collection, id, readOnly );
+	}
+
+	@Override
 	public void addUninitializedDetachedCollection(CollectionPersister persister, PersistentCollection<?> collection) {
 		delegate.addUninitializedDetachedCollection( persister, collection );
 	}
@@ -384,6 +389,11 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	@Override
 	public void replaceCollection(CollectionPersister persister, PersistentCollection<?> oldCollection, PersistentCollection<?> collection) {
 		delegate.replaceCollection( persister, oldCollection, collection );
+	}
+
+	@Override
+	public CollectionEntry addInitializedCollection(CollectionPersister persister, PersistentCollection<?> collection, Object id, boolean readOnly) {
+		return delegate.addInitializedCollection( persister, collection, id, readOnly );
 	}
 
 	@Override
