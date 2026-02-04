@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
+import org.hibernate.reactive.pool.impl.ResourceLocalTransactionCoordinator;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.impl.StageSessionImpl;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -21,12 +23,36 @@ import jakarta.persistence.Id;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 public class NoLiveTransactionValidationErrorTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Comic.class );
+	}
+
+	/**
+	 * @see ExternalTransactionCoordinatorTest for when the transaction lifecycle is externally managed
+	 */
+	@Test
+	public void defaultConnectionUsesResourceLocalCoordinator(VertxTestContext context) {
+		test( context, getSessionFactory()
+				.withSession( session -> {
+					ReactiveConnection connection = ( (StageSessionImpl) session ).getReactiveConnection();
+
+					ReactiveTransactionCoordinator coordinator = connection.getTransactionCoordinator();
+					assertThat( coordinator )
+							.as( "Default connection should use ResourceLocalTransactionCoordinator" )
+							.isSameAs( ResourceLocalTransactionCoordinator.INSTANCE );
+
+					assertThat( coordinator.isExternallyManaged() )
+							.as( "Default transactions should not be externally managed" )
+							.isFalse();
+
+					return voidFuture();
+				} )
+		);
 	}
 
 	@Test
