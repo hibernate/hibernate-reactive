@@ -23,6 +23,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
 
 import io.vertx.core.Future;
 import io.vertx.core.impl.ContextInternal;
@@ -90,21 +91,37 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		throw new UnsupportedOperationException( "multitenancy not supported by built-in SqlClientPool" );
 	}
 
+	/**
+	 * Get the {@link ReactiveTransactionCoordinator} for connections created by this pool.
+	 * <p>
+	 * This method can be overridden by subclasses to provide custom transaction coordination,
+	 * such as externally-managed transactions in frameworks like Quarkus.
+	 * <p>
+	 * The default implementation returns {@link ResourceLocalTransactionCoordinator#INSTANCE},
+	 * which manages transactions within Hibernate Reactive.
+	 *
+	 * @return the transaction coordinator for connections from this pool
+	 */
+	@Override
+	public ReactiveTransactionCoordinator getTransactionCoordinator() {
+		return ResourceLocalTransactionCoordinator.INSTANCE;
+	}
+
 	@Override
 	public ReactiveConnection getProxyConnection() {
-		return new ProxyConnection( this::getConnection );
+		return new ProxyConnection( this::getConnection, getTransactionCoordinator() );
 	}
 
 	@Override
 	public ReactiveConnection getProxyConnection(String tenantId) {
 		return tenantId == null
-				? new ProxyConnection( this::getConnection )
-				: new ProxyConnection( () -> getConnection( tenantId ) );
+				? getProxyConnection()
+				: new ProxyConnection( () -> getConnection( tenantId ), getTransactionCoordinator() );
 	}
 
 	@Override
 	public ReactiveConnection getProxyConnection(SqlExceptionHelper sqlExceptionHelper) {
-		return new ProxyConnection( () -> getConnection( sqlExceptionHelper ) );
+		return new ProxyConnection( () -> getConnection( sqlExceptionHelper ), getTransactionCoordinator() );
 	}
 
 	@Override
@@ -224,7 +241,8 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 				getPool(),
 				getSqlStatementLogger(),
 				sqlExceptionHelper,
-				ContextInternal.current()
+				ContextInternal.current(),
+				getTransactionCoordinator()
 		);
 	}
 
@@ -245,12 +263,14 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		}
 
 		private final Supplier<CompletionStage<ReactiveConnection>> connectionSupplier;
+		private final ReactiveTransactionCoordinator transactionCoordinator;
 		private final CompletableFuture<ReactiveConnection> connectionFuture = new CompletableFuture<>();
 		private volatile boolean opened = false;
 		private volatile boolean closed = false;
 
-		public ProxyConnection(Supplier<CompletionStage<ReactiveConnection>> connectionSupplier) {
+		public ProxyConnection(Supplier<CompletionStage<ReactiveConnection>> connectionSupplier, ReactiveTransactionCoordinator transactionCoordinator) {
 			this.connectionSupplier = connectionSupplier;
+			this.transactionCoordinator = transactionCoordinator;
 		}
 
 		/**
@@ -280,6 +300,11 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		public boolean isTransactionInProgress() {
 			ReactiveConnection reactiveConnection = connectionFuture.getNow( null );
 			return reactiveConnection != null && reactiveConnection.isTransactionInProgress();
+		}
+
+		@Override
+		public ReactiveTransactionCoordinator getTransactionCoordinator() {
+			return transactionCoordinator;
 		}
 
 		@Override
@@ -397,7 +422,8 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 						// Connection has been requested but not created yet
 						? connectionFuture.thenApply( c -> c.withBatchSize( batchSize ) )
 						// Connection has not been requested
-						: connectionSupplier.get().thenApply( c -> c.withBatchSize( batchSize ) ) );
+						: connectionSupplier.get()
+						.thenApply( c -> c.withBatchSize( batchSize ) ), transactionCoordinator );
 			}
 		}
 
