@@ -8,14 +8,20 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.ContextualConnectionPool;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
+import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.impl.ExternalTransactionCoordinator;
 import org.hibernate.reactive.pool.impl.ExternallyManagedConnection;
+
+import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +53,7 @@ public class ExternalTransactionCoordinatorTest extends BaseReactiveTest {
 	@Test
 	public void validationOnSessionClose(VertxTestContext context) {
 		final Comic beneath = new Comic( "979-8887241081", "Beneath The Trees Where Nobody Sees" );
-		ContextualConnectionPool pool = (ContextualConnectionPool) factoryManager.getReactiveConnectionPool();
+		TestContextualConnectionPool pool = (TestContextualConnectionPool) factoryManager.getReactiveConnectionPool();
 
 		test(
 				context,
@@ -91,7 +97,7 @@ public class ExternalTransactionCoordinatorTest extends BaseReactiveTest {
 	@Test
 	public void validationOnProxySessionClose(VertxTestContext context) {
 		final Comic beneath = new Comic( "979-8887241081", "Beneath The Trees Where Nobody Sees" );
-		ContextualConnectionPool pool = (ContextualConnectionPool) factoryManager.getReactiveConnectionPool();
+		TestContextualConnectionPool pool = (TestContextualConnectionPool) factoryManager.getReactiveConnectionPool();
 		// External transaction manager gets connection and begins transaction
 		ExternallyManagedConnection externalConnection = (ExternallyManagedConnection) pool.getProxyConnection();
 		test(
@@ -144,12 +150,68 @@ public class ExternalTransactionCoordinatorTest extends BaseReactiveTest {
 	static class TestExternalConnectionPoolInitiator implements org.hibernate.boot.registry.StandardServiceInitiator<ReactiveConnectionPool> {
 		@Override
 		public ReactiveConnectionPool initiateService(Map configurationValues, org.hibernate.service.spi.ServiceRegistryImplementor registry) {
-			return new ContextualConnectionPool();
+			return new TestContextualConnectionPool();
 		}
 
 		@Override
 		public Class<ReactiveConnectionPool> getServiceInitiated() {
 			return ReactiveConnectionPool.class;
+		}
+	}
+
+	/**
+	 * A pool that returns an {@link ExternalTransactionCoordinator}, just for testing.
+	 */
+	static class TestContextualConnectionPool extends DefaultSqlClientPool {
+
+		private ExternallyManagedConnection currentConnection;
+		private final ExternalTransactionCoordinator coordinator;
+
+		TestContextualConnectionPool() {
+			this.coordinator = new ExternalTransactionCoordinator( this::getCurrentConnection );
+		}
+
+		@Override
+		public ReactiveTransactionCoordinator getTransactionCoordinator() {
+			return coordinator;
+		}
+
+		private CompletionStage<ReactiveConnection> getCurrentConnection() {
+			return currentConnection != null ? completedFuture( currentConnection ) : null;
+		}
+
+		CompletionStage<Void> closeConnection() {
+			ExternallyManagedConnection connection = currentConnection;
+			currentConnection = null;
+			return connection != null ? connection.closeUnderlyingConnection() : voidFuture();
+		}
+
+		@Override
+		public CompletionStage<Void> getCloseFuture() {
+			return closeConnection()
+					.thenCompose( v -> super.getCloseFuture() );
+		}
+
+		@Override
+		public CompletionStage<ReactiveConnection> getConnection() {
+			if ( currentConnection != null ) {
+				return completedFuture( currentConnection );
+			}
+			return super.getConnection()
+					.thenApply( connection -> {
+						currentConnection = ExternallyManagedConnection.wrap( connection, coordinator );
+						return currentConnection;
+					} );
+		}
+
+		@Override
+		public ReactiveConnection getProxyConnection() {
+			if ( currentConnection != null ) {
+				return currentConnection;
+			}
+			ReactiveConnection proxyConnection = super.getProxyConnection();
+			currentConnection = ExternallyManagedConnection.wrap( proxyConnection, coordinator );
+			return currentConnection;
 		}
 	}
 
