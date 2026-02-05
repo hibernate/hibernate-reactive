@@ -93,4 +93,16 @@ public interface ReactiveConnectionPool extends Service {
 	 * instance from this getter.
 	 */
 	CompletionStage<Void> getCloseFuture();
+
+	/**
+	 * Returns the transaction coordinator that manages transaction lifecycle
+	 * for connections from this pool.
+	 * <p>
+	 * The transaction coordinator determines whether transactions are managed
+	 * by Hibernate Reactive itself (resource-local mode) or by an external
+	 * framework (managed mode).
+	 *
+	 * @return the transaction coordinator for this pool
+	 */
+	ReactiveTransactionCoordinator getTransactionCoordinator();
 }
