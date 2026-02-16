@@ -98,7 +98,7 @@ publishing {
     }
 }
 
-def releasePrepareTask = tasks.register("releasePrepare") {
+tasks.register("releasePrepare") {
 	description "Prepares all the artifacts and documentation for a JReleaser release."
 	group "Release"
 
