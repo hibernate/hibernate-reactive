@@ -451,12 +451,13 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	private static CompletionStage<Stage.Session> enableFilter(
 			CompletionStage<Stage.Session> stageSession,
 			String filterName,
+			// An array of [paramName, paramValue, paramName, paramValue, ...]
 			Object... parameters) {
 		return stageSession.thenApply( session -> {
 			org.hibernate.Filter filter = session.enableFilter( filterName );
-			for ( int j = 0; j < parameters.length; j++ ) {
-				String paramName = (String) parameters[j++];
-				Object paramValue = parameters[j++];
+			for ( int j = 0; j < parameters.length; j += 2 ) {
+				String paramName = (String) parameters[j];
+				Object paramValue = parameters[j + 1];
 				filter.setParameter( paramName, paramValue );
 			}
 			return session;
@@ -466,12 +467,13 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	private static Uni<Mutiny.Session> enableFilter(
 			Uni<Mutiny.Session> uniSession,
 			String filterName,
+			// An array of [paramName, paramValue, paramName, paramValue, ...]
 			Object... parameters) {
 		return uniSession.map( session -> {
 			org.hibernate.Filter filter = session.enableFilter( filterName );
-			for ( int j = 0; j < parameters.length; j++ ) {
-				String paramName = (String) parameters[j++];
-				Object paramValue = parameters[j++];
+			for ( int j = 0; j < parameters.length; j += 2 ) {
+				String paramName = (String) parameters[j];
+				Object paramValue = parameters[j+1];
 				filter.setParameter( paramName, paramValue );
 			}
 			return session;
