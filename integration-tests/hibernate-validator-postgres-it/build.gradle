@@ -18,7 +18,7 @@ plugins {
 
 test {
     def db = project.properties['db']
-    enabled = db == null || db.equals( 'PostgreSQL' )
+    enabled = db == null || db == 'PostgreSQL'
 }
 
 description = 'Quarkus QE integration tests'
