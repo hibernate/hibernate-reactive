@@ -357,6 +357,7 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
         return delegate().setFlushMode(flushModeType);
     }
 
+    @Override
     public boolean isOpen() {
         return delegate().isOpen();
     }
