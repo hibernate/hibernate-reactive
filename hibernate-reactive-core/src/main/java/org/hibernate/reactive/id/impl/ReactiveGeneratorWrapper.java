@@ -37,8 +37,8 @@ public class ReactiveGeneratorWrapper
 
 	@Override
 	public void initialize(SqlStringGenerationContext context) {
-		if ( reactiveGenerator instanceof IdentifierGenerator ) {
-			( (IdentifierGenerator) reactiveGenerator ).initialize( context );
+		if ( reactiveGenerator != null ) {
+			reactiveGenerator.initialize( context );
 		}
 		if ( generator != null ) {
 			generator.initialize( context );
@@ -61,8 +61,8 @@ public class ReactiveGeneratorWrapper
 		if ( generator != null ) {
 			generator.registerExportables( database );
 		}
-		if ( reactiveGenerator instanceof ExportableProducer ) {
-			( (ExportableProducer) reactiveGenerator ).registerExportables( database );
+		if ( reactiveGenerator != null ) {
+			reactiveGenerator.registerExportables( database );
 		}
 	}
 }
