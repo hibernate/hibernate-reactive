@@ -49,6 +49,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
@@ -67,6 +71,10 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 4.2
@@ -103,6 +111,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -120,6 +132,10 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 4.1
@@ -156,6 +172,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -173,6 +193,10 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 3.3
@@ -209,6 +233,11 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
+
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -226,6 +255,10 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 3.2
@@ -262,6 +295,11 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
+
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -279,11 +317,15 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
-#################################################################################
-# Duplicate the package-ecosystems for main because we want to target branch 3.1
-# and dependabot doesn't support YAML aliases and anchors at the moment
-#################################################################################
+  #################################################################################
+  # Duplicate the package-ecosystems for main because we want to target branch 3.1
+  # and dependabot doesn't support YAML aliases and anchors at the moment
+  #################################################################################
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "3.1"
@@ -315,6 +357,11 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - docker
+          - testing
+
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -332,6 +379,10 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 2.4
@@ -369,6 +420,11 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+        labels:
+          - dependencies
+          - java
+          - testing
+
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
@@ -392,3 +448,7 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
+    labels:
+      - dependencies
+      - docker
+      - testing
