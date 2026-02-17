@@ -36,7 +36,7 @@ public class IdentityGeneratorDynamicInsertTest extends BaseReactiveTest {
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
 	 * queries will be used for each datastore to get the id
 	 */
-	public static class EnableUseGetGeneratedKeys extends IdentityGeneratorDynamicInsertTest {
+	public static class EnableUseGetGeneratedKeysTest extends IdentityGeneratorDynamicInsertTest {
 
 		@Override
 		protected Configuration constructConfiguration() {

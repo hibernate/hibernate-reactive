@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class IndividuEachySchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
+	public static class IndividuallySchemaUpdateCockroachTestBaseTest extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -54,7 +54,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class GroupedSchemaUpdateCockroachTestBase extends SchemaUpdateCockroachDBTestBase {
+	public static class GroupedSchemaUpdateCockroachTestBaseTest extends SchemaUpdateCockroachDBTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
