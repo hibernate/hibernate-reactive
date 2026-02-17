@@ -20,7 +20,6 @@ import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.dialect.temptable.TemporaryTableSessionUidColumn;
 import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -184,9 +183,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext) {
 		final TemporaryTableSessionUidColumn sessionUidColumn = temporaryTable.getSessionUidColumn();
 		final SharedSessionContractImplementor session = executionContext.getSession();
-		final JdbcCoordinator jdbcCoordinator = session.getJdbcCoordinator();
-		PreparedStatement preparedStatement = null;
-		preparedStatement = jdbcCoordinator.getStatementPreparer().prepareStatement( sqlSelect );
 		Object[] parameters = new Object[1];
 		if ( sessionUidColumn != null ) {
 			parameters[0] = UUID.fromString( sessionUidAccess.apply( session ) );
