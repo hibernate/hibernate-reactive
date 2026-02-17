@@ -411,19 +411,21 @@ public class CascadeComplicatedTest extends BaseReactiveTest {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if ( this == obj ) {
 				return true;
-			if (obj == null)
+			}
+			if ( obj == null ) {
 				return false;
-			if (!(obj instanceof AbstractEntity ))
+			}
+			if ( !( obj instanceof AbstractEntity other ) ) {
 				return false;
-			final AbstractEntity other = (AbstractEntity) obj;
-			if (getUuid() == null) {
-				if (other.getUuid() != null)
-					return false;
-			} else if (!getUuid().equals(other.getUuid()))
-				return false;
-			return true;
+			}
+			if ( getUuid() == null ) {
+				return other.getUuid() == null;
+			}
+			else {
+				return getUuid().equals( other.getUuid() );
+			}
 		}
 	}
 
