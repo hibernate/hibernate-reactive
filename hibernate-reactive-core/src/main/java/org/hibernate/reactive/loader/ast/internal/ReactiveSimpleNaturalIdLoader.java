@@ -43,7 +43,6 @@ public class ReactiveSimpleNaturalIdLoader<T> extends SimpleNaturalIdLoader<Comp
 				);
 			}
 		};
-		;
 	}
 
 	/**
