@@ -38,7 +38,7 @@ public class IdentityGeneratorWithColumnTransformerTest extends BaseReactiveTest
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
 	 * queries will be used for each datastore to get the id
 	 */
-	public static class EnableUseGetGeneratedKeys extends IdentityGeneratorWithColumnTransformerTest {
+	public static class EnableUseGetGeneratedKeysTest extends IdentityGeneratorWithColumnTransformerTest {
 
 		@Override
 		protected Configuration constructConfiguration() {
