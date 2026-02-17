@@ -144,24 +144,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public GeneratedValuesMutationDelegate getInsertDelegate() {
-		GeneratedValuesMutationDelegate insertDelegate = super.getInsertDelegate();
-		if ( insertDelegate == null ) {
-			return null;
-		}
-		return insertDelegate ;
-	}
-
-	@Override
-	public GeneratedValuesMutationDelegate getUpdateDelegate() {
-		GeneratedValuesMutationDelegate updateDelegate = super.getUpdateDelegate();
-		if ( updateDelegate == null ) {
-			return null;
-		}
-		return updateDelegate;
-	}
-
-	@Override
 	public <T> DomainResult<T> createDomainResult(
 			NavigablePath navigablePath,
 			TableGroup tableGroup,
