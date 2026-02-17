@@ -12,10 +12,10 @@ public class ISBNConverter implements AttributeConverter<Long, String> {
 
 	private static final int ISBN_MAX_LENGTH = 13;
 
-	@Override
 	/**
 	 * Canonical ISBN format: 978-3-16-148410-0, can be prefixed with zeroes if there is less than 13 digits
 	 */
+	@Override
 	public String convertToDatabaseColumn(Long number) {
 		String s = number.toString();
 		StringBuilder result = new StringBuilder( s );
