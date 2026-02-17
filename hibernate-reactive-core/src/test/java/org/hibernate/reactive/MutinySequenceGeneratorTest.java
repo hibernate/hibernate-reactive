@@ -19,8 +19,7 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -41,10 +40,10 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 				.call( () -> getMutinySessionFactory().withSession(
 						s2 -> s2.find( SequenceId.class, b.getId() )
 								.map( bb -> {
-									assertNotNull( bb );
-									assertEquals( bb.id, 5 );
-									assertEquals( bb.string, b.string );
-									assertEquals( bb.version, 0 );
+									assertThat( bb ).isNotNull();
+									assertThat( bb.id ).isEqualTo( 5 );
+									assertThat( bb.string ).isEqualTo( b.string );
+									assertThat( bb.version ).isEqualTo( 0 );
 
 									bb.string = "Goodbye";
 									return null;
@@ -52,15 +51,15 @@ public class MutinySequenceGeneratorTest extends BaseReactiveTest {
 								.call( s2::flush )
 								.chain( () -> s2.find( SequenceId.class, b.getId() ) )
 								.map( bt -> {
-									assertEquals( bt.version, 1 );
+									assertThat( bt.version ).isEqualTo( 1 );
 									return null;
 								} )
 				) )
 				.call( () -> getMutinySessionFactory().withSession(
 						s3 -> s3.find( SequenceId.class, b.getId() )
 								.map( bb -> {
-									assertEquals( bb.version, 1 );
-									assertEquals( bb.string, "Goodbye" );
+									assertThat( bb.version ).isEqualTo( 1 );
+									assertThat( bb.string ).isEqualTo( "Goodbye" );
 									return null;
 								} )
 				) )

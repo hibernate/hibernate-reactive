@@ -24,7 +24,7 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test importing a SQL script which is using the multi-line format
@@ -60,7 +60,7 @@ public class MultilineImportsTest extends BaseReactiveTest {
 				context,
 				getSessionFactory()
 						.withSession( MultilineImportsTest::runQuery )
-						.thenAccept( list -> assertEquals( list.size(), 1) )
+						.thenAccept( list -> assertThat( list ).hasSize( 1 ) )
 		);
 	}
 

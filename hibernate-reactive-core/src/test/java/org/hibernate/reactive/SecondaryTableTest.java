@@ -28,10 +28,7 @@ import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -58,10 +55,10 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 						.thenAccept( auth -> {
-							assertNotNull( auth );
-							assertEquals( author, auth );
-							assertEquals( book.getTitle(), auth.getBook().getTitle() );
-							assertFalse( book.isForbidden() );
+							assertThat( auth ).isNotNull();
+							assertThat( auth ).isEqualTo( author );
+							assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
+							assertThat( book.isForbidden() ).isFalse();
 						} )
 		);
 	}
@@ -80,10 +77,10 @@ public class SecondaryTableTest extends BaseReactiveTest {
 								.thenCompose( v -> s.find( Author.class, author.getId() ) )
 						)
 						.thenAccept( auth -> {
-							assertNotNull( auth );
-							assertEquals( author, auth );
-							assertEquals( book.getTitle(), auth.getBook().getTitle() );
-							assertTrue( book.isForbidden() );
+							assertThat( auth ).isNotNull();
+							assertThat( auth ).isEqualTo( author );
+							assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
+							assertThat( book.isForbidden() ).isTrue();
 						} )
 		);
 	}
@@ -104,9 +101,9 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 6 ) )
 						.thenAccept( book -> {
-							assertNotNull( book );
-							assertFalse( book.isForbidden() );
-							assertEquals( book.getTitle(), "The Boy, The Mole, The Fox and The Horse" );
+							assertThat( book ).isNotNull();
+							assertThat( book.isForbidden() ).isFalse();
+							assertThat( book.getTitle() ).isEqualTo( "The Boy, The Mole, The Fox and The Horse" );
 						} )
 		);
 	}
@@ -126,9 +123,9 @@ public class SecondaryTableTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, 6 ) )
 						.thenAccept( book -> {
-							assertNotNull( book );
-							assertTrue( book.isForbidden() );
-							assertEquals( book.getTitle(), "Necronomicon" );
+							assertThat( book ).isNotNull();
+							assertThat( book.isForbidden() ).isTrue();
+							assertThat( book.getTitle() ).isEqualTo( "Necronomicon" );
 						} )
 		);
 	}

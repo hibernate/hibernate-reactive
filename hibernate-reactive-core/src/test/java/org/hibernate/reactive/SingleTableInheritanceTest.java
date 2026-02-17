@@ -25,10 +25,7 @@ import jakarta.persistence.TemporalType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -56,12 +53,11 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 						)
 						.thenCompose( v -> openSession() )
 						.thenCompose( s -> s.find( Book.class, book3.getId(), book1.getId(), book2.getId() ) )
-						.thenAccept( list -> {
-							assertEquals( 3, list.size() );
-							assertEquals( book3.getTitle(), list.get( 0 ).getTitle() );
-							assertEquals( book1.getTitle(), list.get( 1 ).getTitle() );
-							assertEquals( book2.getTitle(), list.get( 2 ).getTitle() );
-						} )
+						.thenAccept( list -> assertThat( list )
+							.hasSize( 3 )
+							.extracting( Book::getTitle )
+							.containsExactly( book3.getTitle(), book1.getTitle(), book2.getTitle() )
+						)
 		);
 	}
 
@@ -78,9 +74,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s2 -> s2.find( Author.class, author.getId() ) )
 				.thenAccept( auth -> {
-					assertNotNull( auth );
-					assertEquals( author, auth );
-					assertEquals( book.getTitle(), auth.getBook().getTitle() );
+					assertThat( auth ).isNotNull();
+					assertThat( auth ).isEqualTo( author );
+					assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
 				} )
 		);
 	}
@@ -97,9 +93,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 						.thenCompose( v -> s.find( Author.class, author.getId() ) )
 				)
 				.thenAccept( auth -> {
-					assertNotNull( auth );
-					assertEquals( author, auth );
-					assertEquals( book.getTitle(), auth.getBook().getTitle() );
+					assertThat( auth ).isNotNull();
+					assertThat( auth ).isEqualTo( author );
+					assertThat( auth.getBook().getTitle() ).isEqualTo( book.getTitle() );
 				} )
 		);
 	}
@@ -118,9 +114,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
 				.thenAccept( book -> {
-					assertNotNull( book );
-					assertFalse( book instanceof SpellBook );
-					assertEquals( book.getTitle(), "The Boy, The Mole, The Fox and The Horse" );
+					assertThat( book ).isNotNull();
+					assertThat( book ).isNotInstanceOf( SpellBook.class );
+					assertThat( book.getTitle() ).isEqualTo( "The Boy, The Mole, The Fox and The Horse" );
 				} )
 		);
 	}
@@ -138,9 +134,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
 				.thenAccept( book -> {
-					assertNotNull( book );
-					assertTrue( book instanceof SpellBook );
-					assertEquals( book.getTitle(), "Necronomicon" );
+					assertThat( book ).isNotNull();
+					assertThat( book ).isInstanceOf( SpellBook.class );
+					assertThat( book.getTitle() ).isEqualTo( "Necronomicon" );
 				} )
 		);
 	}
@@ -158,9 +154,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
 				.thenAccept( book -> {
-					assertNotNull( book );
-					assertTrue( book instanceof SpellBook );
-					assertEquals( book.getTitle(), "Necronomicon II" );
+					assertThat( book ).isNotNull();
+					assertThat( book ).isInstanceOf( SpellBook.class );
+					assertThat( book.getTitle() ).isEqualTo( "Necronomicon II" );
 				} )
 				.thenCompose( v -> openSession() ).thenCompose( s -> s
 						.createMutationQuery( "delete Book where title='Necronomicon II'" )
@@ -185,9 +181,9 @@ public class SingleTableInheritanceTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.find( Book.class, 6 ) )
 				.thenAccept( book -> {
-					assertNotNull( book );
-					assertTrue( book instanceof SpellBook );
-					assertEquals( book.getTitle(), "Necronomicon II" );
+					assertThat( book ).isNotNull();
+					assertThat( book ).isInstanceOf( SpellBook.class );
+					assertThat( book.getTitle() ).isEqualTo( "Necronomicon II" );
 				} )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s -> s.createMutationQuery( "delete Book where title=:tit" )

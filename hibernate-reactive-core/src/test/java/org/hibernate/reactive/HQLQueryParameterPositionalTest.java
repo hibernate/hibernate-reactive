@@ -20,8 +20,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests queries using positional parameters like "?1, ?2, ...",
@@ -57,7 +56,7 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 				.thenCompose( v -> s.createSelectionQuery( "from Flour where id = ?1", Flour.class )
 						.setParameter( 1, semolina.getId() )
 						.getSingleResult() )
-				.thenAccept( found -> assertEquals( semolina, found ) )
+				.thenAccept( found -> assertThat( found ).isEqualTo( semolina ) )
 		) );
 	}
 
@@ -66,9 +65,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<String> qr = s.createSelectionQuery( "SELECT 'Prova' FROM Flour WHERE id = ?1", String.class )
 						  .setParameter( 1, rye.getId() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( found -> assertEquals( "Prova", found ) )
+			  } ).thenAccept( found -> assertThat( found ).isEqualTo( "Prova" ) )
 		);
 	}
 
@@ -77,11 +76,11 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "SELECT 'Prova', f.id FROM Flour f WHERE f.id = ?1", Object[].class )
 						  .setParameter( 1, rye.getId() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
 			  } ).thenAccept( found -> {
-				  assertEquals( "Prova", found[0]);
-				  assertEquals( rye.getId(), found[1] );
+				  assertThat( found[0] ).isEqualTo( "Prova" );
+				  assertThat( found[1] ).isEqualTo( rye.getId() );
 			  } )
 		);
 	}
@@ -90,9 +89,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnId(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE id = ?1", Flour.class ).setParameter( 1, 1);
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( spelt, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( spelt ) )
 		);
 	}
 
@@ -100,9 +99,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 	public void testSingleResultQueryOnName(VertxTestContext context) {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = ?1", Flour.class ).setParameter( 1, "Almond" );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
@@ -112,9 +111,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = ?1 and description = ?2", Flour.class )
 						  .setParameter( 1, almond.getName() )
 						  .setParameter( 2, almond.getDescription() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
@@ -124,9 +123,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = ?2 and description = ?1", Flour.class )
 						  .setParameter( 2, almond.getName() )
 						  .setParameter( 1, almond.getDescription() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
@@ -135,9 +134,9 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Flour> qr = s.createSelectionQuery( "FROM Flour WHERE name = ?1 or cast(?1 as string) is null", Flour.class )
 						  .setParameter( 1, almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
-			  } ).thenAccept( flour -> assertEquals( almond, flour ) )
+			  } ).thenAccept( flour -> assertThat( flour ).isEqualTo( almond ) )
 		);
 	}
 
@@ -146,13 +145,13 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "select '?', '?1', f FROM Flour f WHERE f.name = ?1", Object[].class )
 						  .setParameter( 1, almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
 			  } ).thenAccept( result -> {
-				  assertEquals( 3, result.length );
-				  assertEquals( "?", result[0] );
-				  assertEquals( "?1", result[1] );
-				  assertEquals( almond, result[2] );
+				  assertThat( result ).hasSize( 3 );
+				  assertThat( result[0] ).isEqualTo( "?" );
+				  assertThat( result[1] ).isEqualTo( "?1" );
+				  assertThat( result[2] ).isEqualTo( almond );
 			  } )
 		);
 	}
@@ -162,13 +161,13 @@ public class HQLQueryParameterPositionalTest extends BaseReactiveTest {
 		test( context, getSessionFactory().withSession( s -> {
 				  Stage.SelectionQuery<Object[]> qr = s.createSelectionQuery( "select '''?', '''?1''', f FROM Flour f WHERE f.name = ?1", Object[].class )
 						  .setParameter( 1, almond.getName() );
-				  assertNotNull( qr );
+				  assertThat( qr ).isNotNull();
 				  return qr.getSingleResult();
 			  } ).thenAccept( result -> {
-				  assertEquals( 3, result.length );
-				  assertEquals( "'?", result[0] );
-				  assertEquals( "'?1'", result[1] );
-				  assertEquals( almond, result[2] );
+				  assertThat( result ).hasSize( 3 );
+				  assertThat( result[0] ).isEqualTo( "'?" );
+				  assertThat( result[1] ).isEqualTo( "'?1'" );
+				  assertThat( result[2] ).isEqualTo( almond );
 			  } )
 		);
 	}

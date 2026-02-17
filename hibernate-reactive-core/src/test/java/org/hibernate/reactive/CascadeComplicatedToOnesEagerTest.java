@@ -30,9 +30,7 @@ import jakarta.persistence.OneToMany;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This test uses a complicated model that requires Hibernate to delay
@@ -220,69 +218,69 @@ public class CascadeComplicatedToOnesEagerTest extends BaseReactiveTest {
 	private CompletionStage<Object> check(CompletionStage<Stage.Session> sessionStage, VertxTestContext context) {
 		return  sessionStage.thenCompose(sCheck -> sCheck.find(B.class, bId)
 				.thenApply(bCheck -> {
-					assertEquals(b, bCheck);
-					assertTrue(Hibernate.isInitialized(bCheck.c));
-					assertEquals(c, bCheck.c);
-					assertTrue(Hibernate.isInitialized(bCheck.d));
-					assertEquals(d, bCheck.d);
-					assertTrue(bCheck.c == bCheck.d.c);
-					assertEquals(e, bCheck.d.e);
-					assertFalse(Hibernate.isInitialized(bCheck.gCollection));
+					assertThat(bCheck).isEqualTo(b);
+					assertThat(Hibernate.isInitialized(bCheck.c)).isTrue();
+					assertThat(bCheck.c).isEqualTo(c);
+					assertThat(Hibernate.isInitialized(bCheck.d)).isTrue();
+					assertThat(bCheck.d).isEqualTo(d);
+					assertThat(bCheck.c).isSameAs(bCheck.d.c);
+					assertThat(bCheck.d.e).isEqualTo(e);
+					assertThat(Hibernate.isInitialized(bCheck.gCollection)).isFalse();
 					return bCheck;
 				})
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.gCollection)
 						.thenApply(gCollectionCheck -> {
 								final G gElement = gCollectionCheck.iterator().next();
-								assertEquals(g, gElement);
-								assertTrue(bCheck.d.e.f.g == gElement);
-								assertTrue(bCheck == gElement.b);
+								assertThat(gElement).isEqualTo(g);
+								assertThat(bCheck.d.e.f.g).isSameAs(gElement);
+								assertThat(bCheck).isSameAs(gElement.b);
 								return bCheck;
 							}
 						)
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.c.bCollection)
 						.thenApply(bCollectionCheck -> {
-							assertTrue(bCheck == bCollectionCheck.iterator().next());
+							assertThat(bCheck).isSameAs(bCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.c.dCollection)
 						.thenApply(dCollectionCheck -> {
-							assertTrue(bCheck.d == dCollectionCheck.iterator().next());
+							assertThat(bCheck.d).isSameAs(dCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.bCollection)
 						.thenApply(bCollectionCheck -> {
-							assertTrue(bCheck == bCollectionCheck.iterator().next());
+							assertThat(bCheck).isSameAs(bCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.fCollection)
 						.thenApply(fCollectionCheck -> {
 							final F fElement = fCollectionCheck.iterator().next();
-							assertEquals(f, fElement);
-							assertTrue(bCheck.d.e.f == fElement);
-							assertTrue(bCheck.d == fElement.d);
+							assertThat(fElement).isEqualTo(f);
+							assertThat(bCheck.d.e.f).isSameAs(fElement);
+							assertThat(bCheck.d).isSameAs(fElement.d);
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.dCollection)
 						.thenApply(dCollectionCheck -> {
-							assertTrue(bCheck.d == dCollectionCheck.iterator().next());
+							assertThat(bCheck.d).isSameAs(dCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.f.eCollection)
 						.thenApply(eCollectionCheck -> {
-							assertTrue(bCheck.d.e == eCollectionCheck.iterator().next());
+							assertThat(bCheck.d.e).isSameAs(eCollectionCheck.iterator().next());
 							return bCheck;
 						})
 				)
 				.thenCompose(bCheck -> sCheck.fetch(bCheck.d.e.f.g.fCollection)
 						.thenApply(fCollectionCheck -> {
 							final F fElement = fCollectionCheck.iterator().next();
-							assertTrue(bCheck.d.e.f == fElement);
+							assertThat(bCheck.d.e.f).isSameAs(fElement);
 							return bCheck;
 						})
 				)

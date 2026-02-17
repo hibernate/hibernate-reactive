@@ -39,9 +39,7 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -82,10 +80,10 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find( Node.class, basik.getId() ))
 						.thenAccept( node -> {
-							assertTrue( Hibernate.isInitialized( node.getElements() ) );
-							assertEquals( 3, node.getElements().size() );
+							assertThat( Hibernate.isInitialized( node.getElements() ) ).isTrue();
+							assertThat( node.getElements() ).hasSize( 3 );
 							for ( Element element : node.getElements() ) {
-								assertSame( element.getNode(), node );
+								assertThat( element.getNode() ).isSameAs( node );
 							}
 						} )
 		);
@@ -106,9 +104,9 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.find( Element.class, basik.getElements().get(0).getId() ))
 						.thenAccept( element -> {
-							assertTrue( Hibernate.isInitialized( element.getNode() ) );
-							assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
-							assertEquals( 3, element.getNode().getElements().size() );
+							assertThat( Hibernate.isInitialized( element.getNode() ) ).isTrue();
+							assertThat( Hibernate.isInitialized( element.getNode().getElements() ) ).isTrue();
+							assertThat( element.getNode().getElements() ).hasSize( 3 );
 						} )
 		);
 	}
@@ -129,9 +127,9 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose(s -> s.createSelectionQuery( "from Element", Element.class ).getResultList())
 						.thenAccept( elements -> {
 							for (Element element: elements) {
-								assertTrue( Hibernate.isInitialized( element.getNode() ) );
-								assertTrue( Hibernate.isInitialized( element.getNode().getElements() ) );
-								assertEquals( 3, element.getNode().getElements().size() );
+								assertThat( Hibernate.isInitialized( element.getNode() ) ).isTrue();
+								assertThat( Hibernate.isInitialized( element.getNode().getElements() ) ).isTrue();
+								assertThat( element.getNode().getElements() ).hasSize( 3 );
 							}
 						} )
 		);
@@ -152,18 +150,18 @@ public class EagerTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createSelectionQuery("from Node order by id", Node.class).getResultList())
 						.thenAccept(list -> {
-							assertEquals(list.size(), 2);
-							assertTrue( Hibernate.isInitialized( list.get(0).getElements() ) );
-							assertEquals(list.get(0).getElements().size(), 3);
-							assertEquals(list.get(1).getElements().size(), 0);
+							assertThat( list ).hasSize( 2 );
+							assertThat( Hibernate.isInitialized( list.get(0).getElements() ) ).isTrue();
+							assertThat( list.get(0).getElements() ).hasSize( 3 );
+							assertThat( list.get(1).getElements() ).hasSize( 0 );
 						})
 						.thenCompose( v -> openSession() )
 						.thenCompose(s -> s.createSelectionQuery("select distinct n, e from Node n join n.elements e order by n.id", Object[].class).getResultList())
 						.thenAccept(list -> {
-							assertEquals(list.size(), 3);
+							assertThat( list ).hasSize( 3 );
 							Object[] tup = list.get(0);
-							assertTrue( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) );
-							assertEquals(((Node) tup[0]).getElements().size(), 3);
+							assertThat( Hibernate.isInitialized( ((Node) tup[0]).getElements() ) ).isTrue();
+							assertThat( ((Node) tup[0]).getElements() ).hasSize( 3 );
 						})
 		);
 	}
