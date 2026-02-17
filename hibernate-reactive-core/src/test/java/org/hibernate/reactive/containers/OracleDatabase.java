@@ -101,7 +101,6 @@ class OracleDatabase implements TestableDatabase {
 			// I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
 			// and keeps things simple.
 			.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) );
-	;
 
 	private static void logContainerOutput(String line) {
 		System.out.print( line );
@@ -140,7 +139,7 @@ class OracleDatabase implements TestableDatabase {
 		if ( database != null && !database.isBlank() ) {
 			url += "/" + database;
 		}
-		if ( paramsBuilder.length() > 0 ) {
+		if ( !paramsBuilder.isEmpty() ) {
 			url += jdbcStartQuery() + paramsBuilder.substring( 1 );
 		}
 		return url;
@@ -180,7 +179,7 @@ class OracleDatabase implements TestableDatabase {
 
 	private static String getCredentials() {
 		if ( oracle.getUsername() == null
-				|| oracle.getUsername().trim().length() == 0 ) {
+				|| oracle.getUsername().trim().isEmpty() ) {
 			return "";
 		}
 		return oracle.getUsername() + "/" + oracle.getPassword();
