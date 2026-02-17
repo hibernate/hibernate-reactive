@@ -52,10 +52,7 @@ public class ReactiveCockroachConnectionLockTimeoutStrategyImpl
 
 	private static Timeout getTimeout(ReactiveConnection.Result resultSet) {
 		int millis = Integer.parseInt( (String) resultSet.next()[0] );
-		return switch ( millis ) {
-			case 0 -> WAIT_FOREVER;
-			default -> Timeout.milliseconds( millis );
-		};
+		return millis == 0 ? WAIT_FOREVER : Timeout.milliseconds( millis );
 	}
 
 	@Override
