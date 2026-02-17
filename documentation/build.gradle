@@ -1,7 +1,7 @@
-import org.asciidoctor.gradle.jvm.AsciidoctorTask
-
 import java.time.Year
-import java.util.regex.Matcher
+
+import org.asciidoctor.gradle.jvm.AsciidoctorTask
+import org.ysb33r.grolifant.api.core.jvm.ExecutionMode
 
 plugins {
 	id "org.asciidoctor.jvm.convert"
@@ -193,7 +193,7 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 	)
 
 	// See https://docs.asciidoctor.org/gradle-plugin/latest/common-task-configuration/#choosing-an-execution-mode-for-asciidoctorj
-	executionMode = org.ysb33r.grolifant.api.core.jvm.ExecutionMode.JAVA_EXEC
+	executionMode = ExecutionMode.JAVA_EXEC
 
 	dependsOn( tasks.named( "unpackTheme" ) )
 }
