@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -35,8 +35,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 						.setParameter( "n", pig.name )
 						.getResultList() )
 				.invoke( list -> {
-					assertFalse( list.isEmpty() );
-					assertEquals( 1, list.size() );
+					assertThat( list ).hasSize( 1 );
 					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
 				.chain( v -> ss.get( GuineaPig.class, pig.id ) )
@@ -46,13 +45,13 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 					return ss.update( p );
 				} )
 				.chain( v -> ss.refresh( pig ) )
-				.invoke( v -> assertEquals( pig.name, "X" ) )
+				.invoke( v -> assertThat( pig.name ).isEqualTo( "X" ) )
 				.chain( v -> ss.createMutationQuery( "update GuineaPig set name='Y'" ).executeUpdate() )
 				.chain( v -> ss.refresh( pig ) )
-				.invoke( v -> assertEquals( pig.name, "Y" ) )
+				.invoke( v -> assertThat( pig.name ).isEqualTo( "Y" ) )
 				.chain( v -> ss.delete( pig ) )
 				.chain( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
-				.invoke( list -> assertTrue( list.isEmpty() ) ) )
+				.invoke( list -> assertThat( list ).isEmpty() ) )
 		);
 	}
 
@@ -65,8 +64,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 						.setParameter( "n", pig.name )
 						.getResultList() )
 				.invoke( list -> {
-					assertFalse( list.isEmpty() );
-					assertEquals( 1, list.size() );
+					assertThat( list ).hasSize( 1 );
 					assertThatPigsAreEqual( pig, list.get( 0 ) );
 				} )
 				.chain( v -> ss.get( GuineaPig.class, pig.id ) )
@@ -76,13 +74,13 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 					return ss.update( p );
 				} )
 				.chain( v -> ss.refresh( pig ) )
-				.invoke( v -> assertEquals( pig.name, "X" ) )
+				.invoke( v -> assertThat( pig.name ).isEqualTo( "X" ) )
 				.chain( v -> ss.createNamedQuery( "updatebyname" ).executeUpdate() )
 				.chain( v -> ss.refresh( pig ) )
-				.invoke( v -> assertEquals( pig.name, "Y" ) )
+				.invoke( v -> assertThat( pig.name ).isEqualTo( "Y" ) )
 				.chain( v -> ss.delete( pig ) )
 				.chain( v -> ss.createNamedQuery( "findall" ).getResultList() )
-				.invoke( list -> assertTrue( list.isEmpty() ) ) )
+				.invoke( list -> assertThat( list ).isEmpty() ) )
 		);
 	}
 
@@ -96,8 +94,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 								.setParameter( "n", pig.name )
 								.getResultList() )
 						.invoke( list -> {
-							assertFalse( list.isEmpty() );
-							assertEquals( 1, list.size() );
+							assertThat( list ).hasSize( 1 );
 							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
 						.chain( v -> ss.get( GuineaPig.class, pig.id ) )
@@ -107,15 +104,15 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 							return ss.update( p );
 						} )
 						.chain( v -> ss.refresh( pig ) )
-						.invoke( v -> assertEquals( pig.name, "X" ) )
+						.invoke( v -> assertThat( pig.name ).isEqualTo( "X" ) )
 						.chain( v -> ss.createNativeQuery( "update Piggy set name='Y'" )
 								.executeUpdate() )
-						.invoke( rows -> assertEquals( 1, rows ) )
+						.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
 						.chain( v -> ss.refresh( pig ) )
-						.invoke( v -> assertEquals( pig.name, "Y" ) )
+						.invoke( v -> assertThat( pig.name ).isEqualTo( "Y" ) )
 						.chain( v -> ss.delete( pig ) )
 						.chain( v -> ss.createNativeQuery( "select id from Piggy" ).getResultList() )
-						.invoke( list -> assertTrue( list.isEmpty() ) )
+						.invoke( list -> assertThat( list ).isEmpty() )
 						.chain( v -> ss.close() ) )
 		);
 	}
@@ -129,7 +126,7 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 				.chain( ss -> ss.insertMultiple( List.of(a, b, c) )
 						.chain( v -> ss.get( GuineaPig.class, a.id, c.id ) )
 						.invoke( list -> {
-							assertEquals( 2, list.size() );
+							assertThat( list ).hasSize( 2 );
 							assertThatPigsAreEqual( a, list.get( 0 ) );
 							assertThatPigsAreEqual( c, list.get( 1 ) );
 						})
@@ -165,14 +162,13 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 								.setParameter( "n", pig.name )
 								.getResultList() )
 						.invoke( list -> {
-							assertFalse( list.isEmpty() );
-							assertEquals( 1, list.size() );
+							assertThat( list ).hasSize( 1 );
 							assertThatPigsAreEqual( pig, list.get( 0 ) );
 						} )
 						.chain( v -> ss.createQuery( update ).executeUpdate() )
-						.invoke( rows -> assertEquals( 1, rows ) )
+						.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
 						.chain( v -> ss.createQuery( delete ).executeUpdate() )
-						.invoke( rows -> assertEquals( 1, rows ) )
+						.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
 						.chain( v -> ss.close() ) )
 		);
 	}
@@ -183,13 +179,13 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 				session -> session.withTransaction( transaction -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class )
 						.getResultList()
 						.chain( list -> {
-							assertNotNull( session.currentTransaction() );
-							assertFalse( session.currentTransaction().isMarkedForRollback() );
+							assertThat( session.currentTransaction() ).isNotNull();
+							assertThat( session.currentTransaction().isMarkedForRollback() ).isFalse();
 							session.currentTransaction().markForRollback();
-							assertTrue( session.currentTransaction().isMarkedForRollback() );
-							assertTrue( transaction.isMarkedForRollback() );
+							assertThat( session.currentTransaction().isMarkedForRollback() ).isTrue();
+							assertThat( transaction.isMarkedForRollback() ).isTrue();
 							return session.withTransaction( t -> {
-								assertTrue( t.isMarkedForRollback() );
+								assertThat( t.isMarkedForRollback() ).isTrue();
 								return session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 							} );
 						} ) )
@@ -201,16 +197,16 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory().withStatelessSession(
 				session -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList()
 						.chain( list -> getMutinySessionFactory().withStatelessSession( s -> {
-							assertEquals( session, s );
+							assertThat( s ).isEqualTo( session );
 							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )
 		) );
 	}
 
 	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
-		assertNotNull( actual );
-		assertEquals( expected.getId(), actual.getId() );
-		assertEquals( expected.getName(), actual.getName() );
+		assertThat( actual ).isNotNull();
+		assertThat( actual.getId() ).isEqualTo( expected.getId() );
+		assertThat( actual.getName() ).isEqualTo( expected.getName() );
 	}
 
 	@NamedQuery(name = "findbyname", query = "from GuineaPig where name=:n")
