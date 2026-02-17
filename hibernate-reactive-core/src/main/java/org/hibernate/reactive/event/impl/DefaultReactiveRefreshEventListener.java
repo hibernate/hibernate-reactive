@@ -133,13 +133,11 @@ public class DefaultReactiveRefreshEventListener
 		// cascade the refresh prior to refreshing this entity
 		return cascadeRefresh( source, persister, entity, refreshedAlready )
 				.thenCompose( v -> {
-					if ( entry != null ) {
-						persistenceContext.removeEntityHolder( entry.getEntityKey() );
-						if ( persister.hasCollections() ) {
-							new EvictVisitor( source, object ).process( object, persister );
-						}
-						persistenceContext.removeEntry( object );
+					persistenceContext.removeEntityHolder( entry.getEntityKey() );
+					if ( persister.hasCollections() ) {
+						new EvictVisitor( source, object ).process( object, persister );
 					}
+					persistenceContext.removeEntry( object );
 
 					evictEntity( entity, persister, id, source );
 					evictCachedCollections( persister, id, source );
