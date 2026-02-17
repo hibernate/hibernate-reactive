@@ -9,9 +9,9 @@ junitVersion = "6.0.3"
 junitPlatformVersion = "1.13.4"
 log4jVersion = "2.25.3"
 testcontainersVersion = "1.21.4"
-vertxSqlClientVersion = "4.5.24"
-vertxWebVersion= "4.5.24"
-vertxWebClientVersion = "4.5.24"
+vertxSqlClientVersion = "4.5.25"
+vertxWebVersion= "4.5.25"
+vertxWebClientVersion = "4.5.25"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
