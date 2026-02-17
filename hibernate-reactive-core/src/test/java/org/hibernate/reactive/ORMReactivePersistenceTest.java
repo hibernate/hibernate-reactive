@@ -33,12 +33,11 @@ import static org.hibernate.reactive.provider.Settings.DIALECT;
 import static org.hibernate.reactive.provider.Settings.DRIVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Timeout(value = 10, timeUnit = MINUTES)
-
 /**
  * This test class verifies that data can be persisted and queried on the same database
  * using both JPA/hibernate and reactive session factories.
  */
+@Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 @DisabledFor(value = COCKROACHDB, reason = "We need to change the URL schema we normally use for testing")
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
