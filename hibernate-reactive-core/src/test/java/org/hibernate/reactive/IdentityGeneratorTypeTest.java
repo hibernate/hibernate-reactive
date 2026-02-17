@@ -46,7 +46,7 @@ public class IdentityGeneratorTypeTest extends BaseReactiveTest {
 	 * When {@link AvailableSettings#USE_GET_GENERATED_KEYS} is enabled, different
 	 * queries will be used for each datastore to get the id
 	 */
-	public static class EnableUseGetGeneratedKeys extends IdentityGeneratorTypeTest {
+	public static class EnableUseGetGeneratedKeysTest extends IdentityGeneratorTypeTest {
 
 		@Override
 		protected Configuration constructConfiguration() {

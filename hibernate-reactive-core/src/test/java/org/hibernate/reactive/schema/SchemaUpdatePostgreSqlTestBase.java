@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class IndividuallySchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
+	public static class IndividuallySchemaUpdatePostgreSqlTest extends SchemaUpdatePostgreSqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -54,7 +54,7 @@ public abstract class SchemaUpdatePostgreSqlTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class GroupedSchemaUpdatePostgreSqlTestBase extends SchemaUpdatePostgreSqlTestBase {
+	public static class GroupedSchemaUpdatePostgreSqlTest extends SchemaUpdatePostgreSqlTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
