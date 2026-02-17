@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class IndividuallySchemaUpdateOracleTestBase extends SchemaUpdateOracleTestBase {
+	public static class IndividuallySchemaUpdateOracleTest extends SchemaUpdateOracleTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
@@ -53,7 +53,7 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 	}
 
 	@Timeout(value = 10, timeUnit = MINUTES)
-	public static class GroupedSchemaUpdateOracleTestBase extends SchemaUpdateOracleTestBase {
+	public static class GroupedSchemaUpdateOracleTest extends SchemaUpdateOracleTestBase {
 
 		@Override
 		protected Configuration constructConfiguration(String hbm2DdlOption) {
