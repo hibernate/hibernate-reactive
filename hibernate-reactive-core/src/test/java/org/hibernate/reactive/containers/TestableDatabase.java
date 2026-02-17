@@ -48,7 +48,7 @@ public interface TestableDatabase {
 		if ( database != null ) {
 			url += database;
 		}
-		if ( paramsBuilder.length() > 0 ) {
+		if ( !paramsBuilder.isEmpty() ) {
 			url += jdbcStartQuery() + paramsBuilder.substring( 1 );
 		}
 		return url;

@@ -145,7 +145,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 		if ( port > -1 ) {
 			url += ":" + port;
 		}
-		if ( paramsBuilder.length() > 0 ) {
+		if ( !paramsBuilder.isEmpty() ) {
 			url += jdbcStartQuery() + paramsBuilder.substring( 1 );
 		}
 		if ( database != null ) {
