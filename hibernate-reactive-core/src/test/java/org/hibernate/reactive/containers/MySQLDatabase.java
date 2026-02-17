@@ -77,7 +77,7 @@ class MySQLDatabase implements TestableDatabase {
 		expectedDBTypeForClass.put( Boolean[].class, "varbinary" );
 		expectedDBTypeForClass.put( BigDecimal[].class, "json" );
 		expectedDBTypeForClass.put( BigInteger[].class, "json" );
-	}};
+	}}
 
 	/**
 	 * Holds configuration for the MySQL database container. If the build is run with <code>-Pdocker</code> then

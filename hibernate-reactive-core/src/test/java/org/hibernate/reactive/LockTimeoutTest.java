@@ -131,7 +131,6 @@ public class LockTimeoutTest extends BaseReactiveTest {
 			case DB2 -> assertThat( loggedQueries ).hasSize( 1 );
 			default -> throw new IllegalArgumentException( "Database not recognized: " + dbType().name() );
 		}
-		;
 	}
 
 	@Entity(name = "Parent")

@@ -53,7 +53,7 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		options.encoding = 'UTF-8'
 
 		def matcher = libs.versions.hibernateOrmVersion =~ /\d+\.\d+/
-		def ormMinorVersion = matcher.find() ? matcher.group() : "5.6";
+		def ormMinorVersion = matcher.find() ? matcher.group() : "5.6"
 
 		links = [
 				'https://docs.oracle.com/en/java/javase/17/docs/api/',
