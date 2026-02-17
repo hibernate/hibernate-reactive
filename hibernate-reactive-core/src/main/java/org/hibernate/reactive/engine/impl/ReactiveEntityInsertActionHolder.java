@@ -79,4 +79,18 @@ public final class ReactiveEntityInsertActionHolder implements Executable, React
 	public int compareTo(final ComparableExecutable o) {
 		return delegate.compareTo( o );
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if ( o == null || getClass() != o.getClass() ) {
+			return false;
+		}
+		ReactiveEntityInsertActionHolder that = (ReactiveEntityInsertActionHolder) o;
+		return Objects.equals( delegate, that.delegate );
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode( delegate );
+	}
 }
