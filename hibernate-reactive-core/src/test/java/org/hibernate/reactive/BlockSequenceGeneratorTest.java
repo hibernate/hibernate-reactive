@@ -20,8 +20,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -51,35 +50,35 @@ public class BlockSequenceGeneratorTest extends BaseReactiveTest {
 				.thenCompose( v -> openSession()
 						.thenCompose( s2 -> s2.find( TableId.class, b.getId() )
 								.thenAccept( bb -> {
-									assertNotNull( bb );
-									assertEquals( bb.id, 10 );
-									assertEquals( bb.string, b.string );
-									assertEquals( bb.version, 0 );
+									assertThat( bb ).isNotNull();
+									assertThat( bb.id ).isEqualTo( 10 );
+									assertThat( bb.string ).isEqualTo( b.string );
+									assertThat( bb.version ).isEqualTo( 0 );
 									bb.string = "Goodbye";
 								} )
 								.thenCompose( vv -> s2.flush() )
 								.thenCompose( vv -> s2.find( TableId.class, b.getId() ) )
-								.thenAccept( bt -> assertEquals( bt.version, 1 ) )
+								.thenAccept( bt -> assertThat( bt.version ).isEqualTo( 1 ) )
 						) )
 				.thenCompose( v -> openSession()
 						.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) ) )
 				.thenAccept( bb -> {
-					assertEquals( bb.version, 1 );
-					assertEquals( bb.string, "Goodbye" );
+					assertThat( bb.version ).isEqualTo( 1 );
+					assertThat( bb.string ).isEqualTo( "Goodbye" );
 				} )
 				.thenCompose( v -> openSession()
 						.thenCompose( s4 -> s4.find( TableId.class, c.getId() )
 								.thenAccept( cc -> {
-									assertNotNull( cc );
-									assertEquals( cc.id, 11 );
-									assertEquals( cc.string, c.string );
-									assertEquals( cc.version, 0 );
+									assertThat( cc ).isNotNull();
+									assertThat( cc.id ).isEqualTo( 11 );
+									assertThat( cc.string ).isEqualTo( c.string );
+									assertThat( cc.version ).isEqualTo( 0 );
 
 									cc.string = "Goodbye";
 								} )
 								.thenCompose( vv -> s4.flush() )
 								.thenCompose( vv -> s4.find( TableId.class, c.getId() ) )
-								.thenAccept( ct -> assertEquals( ct.version, 0 ) )
+								.thenAccept( ct -> assertThat( ct.version ).isEqualTo( 0 ) )
 						) )
 		);
 	}

@@ -4,7 +4,6 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -19,13 +18,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import org.assertj.core.api.Assertions;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Check that the generated id can be of a specific type
@@ -55,13 +51,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
-				.thenAccept( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.thenAccept( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 
@@ -74,13 +67,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
-				.thenAccept( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.thenAccept( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 
@@ -93,13 +83,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.persist( entityA, entityB )
 						.thenCompose( v -> session.flush() ) )
-				.thenAccept( v -> assertNotEquals( entityA.id, entityB.id ) )
+				.thenAccept( v -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
-				.thenAccept( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.thenAccept( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 
@@ -116,13 +103,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
-				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( IntegerEntity.class, entityA.id, entityB.id ) )
-				.invoke( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.invoke( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 
@@ -135,13 +119,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 				.call( session::flush ) )
-				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( LongEntity.class, entityA.id, entityB.id ) )
-				.invoke( list -> {
-					assertEquals( list.size(), 2 );
-					assertTrue( list.containsAll( Arrays.asList( entityA, entityB ) ) );
-				} )
+				.invoke( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 
@@ -154,10 +135,10 @@ public class IdentifierGenerationTypeTest extends BaseReactiveTest {
 				.chain( session -> session
 						.persistAll( entityA, entityB )
 						.call( session::flush ) )
-				.invoke( () -> assertNotEquals( entityA.id, entityB.id ) )
+				.invoke( () -> assertThat( entityA.id ).isNotEqualTo( entityB.id ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session.find( ShortEntity.class, entityA.id, entityB.id ) )
-				.invoke( list -> Assertions.assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
+				.invoke( list -> assertThat( list ).containsExactlyInAnyOrder( entityA, entityB ) )
 		);
 	}
 

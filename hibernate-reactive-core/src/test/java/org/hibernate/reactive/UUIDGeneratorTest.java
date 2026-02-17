@@ -22,8 +22,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class UUIDGeneratorTest extends BaseReactiveTest {
@@ -45,23 +44,23 @@ public class UUIDGeneratorTest extends BaseReactiveTest {
 				.thenCompose( s2 ->
 					s2.find( TableId.class, b.getId() )
 						.thenAccept( bb -> {
-							assertNotNull( bb );
-							assertNotNull( bb.id );
-							assertEquals( bb.string, b.string );
-							assertEquals( bb.version, 0 );
+							assertThat( bb ).isNotNull();
+							assertThat( bb.id ).isNotNull();
+							assertThat( bb.string ).isEqualTo( b.string );
+							assertThat( bb.version ).isEqualTo( 0 );
 
 							bb.string = "Goodbye";
 						})
 						.thenCompose(vv -> s2.flush())
 						.thenCompose(vv -> s2.find( TableId.class, b.getId() ))
 						.thenAccept( bt -> {
-							assertEquals( bt.version, 1 );
+							assertThat( bt.version ).isEqualTo( 1 );
 						}))
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( TableId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					assertEquals(bb.version, 1);
-					assertEquals( bb.string, "Goodbye");
+					assertThat( bb.version ).isEqualTo( 1 );
+					assertThat( bb.string ).isEqualTo( "Goodbye" );
 				})
 		);
 	}
