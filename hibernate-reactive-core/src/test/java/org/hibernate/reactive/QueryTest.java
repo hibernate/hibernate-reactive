@@ -49,10 +49,6 @@ import static org.hibernate.reactive.QueryTest.Author.SQL_NAMED_QUERY;
 import static org.hibernate.reactive.QueryTest.Book.BOOK_TABLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class QueryTest extends BaseReactiveTest {
@@ -149,11 +145,11 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery( query ).getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 3, books.size() );
+							assertThat( books ).hasSize( 3 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
 							} );
 						} )
 						.thenCompose( v -> openSession() )
@@ -202,12 +198,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( t, "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 1, books.size() );
+							assertThat( books ).hasSize( 1 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
-								assertEquals( "Snow Crash", book.title );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
+								assertThat( book.title ).isEqualTo( "Snow Crash" );
 							} );
 						} )
 
@@ -261,12 +257,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "title", "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 1, books.size() );
+							assertThat( books ).hasSize( 1 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
-								assertEquals( "Snow Crash", book.title );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
+								assertThat( book.title ).isEqualTo( "Snow Crash" );
 							} );
 						} )
 
@@ -309,10 +305,10 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( v -> openSession() )
 						.thenCompose( session -> session.createQuery( query ).getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 2, books.size() );
+							assertThat( books ).hasSize( 2 );
 							books.forEach( book -> {
-								assertNotNull( book.get( "t" ) );
-								assertNotNull( book.get( "n" ) );
+								assertThat( book.get( "t" ) );
+								assertThat( book.get( "n" ) );
 							} );
 						} )
 		);
@@ -341,11 +337,11 @@ public class QueryTest extends BaseReactiveTest {
 								Book.class
 						).getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 3, books.size() );
+							assertThat( books ).hasSize( 3 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
 							} );
 						} )
 		);
@@ -376,12 +372,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 1, books.size() );
+							assertThat( books ).hasSize( 1 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
-								assertEquals( "Snow Crash", book.title );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
+								assertThat( book.title ).isEqualTo( "Snow Crash" );
 							} );
 						} )
 
@@ -391,7 +387,7 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> assertEquals( 1, count ) )
+						.thenAccept( count -> assertThat( count ).isEqualTo( 1 ) )
 		);
 	}
 
@@ -456,12 +452,12 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "title", "Snow Crash" )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 1, books.size() );
+							assertThat( books ).hasSize( 1 );
 							books.forEach( book -> {
-								assertNotNull( book.id );
-								assertNotNull( book.title );
-								assertNotNull( book.isbn );
-								assertEquals( "Snow Crash", book.title );
+								assertThat( book.id ).isNotNull();
+								assertThat( book.title ).isNotNull();
+								assertThat( book.isbn ).isNotNull();
+								assertThat( book.title ).isEqualTo( "Snow Crash" );
 							} );
 						} )
 
@@ -471,7 +467,7 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( "newtitle", "XXX" )
 								.setParameter( "title", "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> assertEquals( 1, count ) )
+						.thenAccept( count -> assertThat( count ).isEqualTo( 1 ) )
 		);
 	}
 
@@ -497,12 +493,12 @@ public class QueryTest extends BaseReactiveTest {
 						session.getResultSetMapping( Object[].class, "title,author" )
 				).getResultList() )
 				.thenAccept( books -> {
-					assertEquals( 3, books.size() );
+					assertThat( books ).hasSize( 3 );
 					books.forEach( tuple -> {
-						assertTrue( tuple instanceof Object[] );
-						assertEquals( 2, tuple.length );
-						assertTrue( tuple[0] instanceof String );
-						assertTrue( tuple[1] instanceof String );
+						assertThat( tuple ).isInstanceOf( Object[].class );
+						assertThat( tuple ).hasSize( 2 );
+						assertThat( tuple[0] ).isInstanceOf( String.class );
+						assertThat( tuple[1] ).isInstanceOf( String.class );
 					} );
 				} )
 				.thenCompose( v -> openSession() )
@@ -516,42 +512,42 @@ public class QueryTest extends BaseReactiveTest {
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
-									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertThat( tuple ).hasSize( 3 );
+									assertThat( tuple[0] ).isInstanceOf( String.class );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE )
 								.getResultList()
-								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) )
+								.thenAccept( list -> assertThat( list.get( 0 ) ).isInstanceOf( String.class ) )
 						)
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title from " + BOOK_TABLE, String.class )
 								.getResultList()
-								.thenAccept( list -> assertTrue( list.get( 0 ) instanceof String ) ) )
+								.thenAccept( list -> assertThat( list.get( 0 ) ).isInstanceOf( String.class ) ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = (Object[]) list.get( 0 );
-									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertThat( tuple ).hasSize( 3 );
+									assertThat( tuple[0] ).isInstanceOf( String.class );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Object[].class )
 								.getResultList()
 								.thenAccept( list -> {
 									Object[] tuple = list.get( 0 );
-									assertEquals( 3, tuple.length );
-									assertTrue( tuple[0] instanceof String );
+									assertThat( tuple ).hasSize( 3 );
+									assertThat( tuple[0] ).isInstanceOf( String.class );
 								} ) )
 						.thenCompose( vv -> session
 								.createNativeQuery( "select title, isbn, id from " + BOOK_TABLE, Tuple.class )
 								.getResultList()
 								.thenAccept( list -> {
 									Tuple tuple = list.get( 0 );
-									assertEquals( 3, tuple.toArray().length );
-									assertTrue( tuple.get( 0 ) instanceof String );
-									assertTrue( tuple.get( "isbn" ) instanceof String );
+									assertThat( tuple.toArray() ).hasSize( 3 );
+									assertThat( tuple.get( 0 ) ).isInstanceOf( String.class );
+									assertThat( tuple.get( "isbn" ) ).isInstanceOf( String.class );
 								} ) )
 				)
 		);
@@ -578,12 +574,12 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createNamedQuery( HQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 3, books.size() );
+							assertThat( books ).hasSize( 3 );
 							books.forEach( tuple -> {
-								assertTrue( tuple instanceof Object[] );
-								assertEquals( 2, tuple.length );
-								assertTrue( tuple[0] instanceof String );
-								assertTrue( tuple[1] instanceof String );
+								assertThat( tuple ).isInstanceOf( Object[].class );
+								assertThat( tuple ).hasSize( 2 );
+								assertThat( tuple[0] ).isInstanceOf( String.class );
+								assertThat( tuple[1] ).isInstanceOf( String.class );
 							} );
 						} )
 
@@ -592,7 +588,7 @@ public class QueryTest extends BaseReactiveTest {
 								.setParameter( 1, "XXX" )
 								.setParameter( 2, "Snow Crash" )
 								.executeUpdate() )
-						.thenAccept( count -> assertEquals( 1, count ) )
+						.thenAccept( count -> assertThat( count ).isEqualTo( 1 ) )
 		);
 	}
 
@@ -617,12 +613,12 @@ public class QueryTest extends BaseReactiveTest {
 						.thenCompose( session -> session.createNamedQuery( SQL_NAMED_QUERY, Object[].class )
 								.getResultList() )
 						.thenAccept( books -> {
-							assertEquals( 3, books.size() );
+							assertThat( books ).hasSize( 3 );
 							books.forEach( tuple -> {
-								assertTrue( tuple instanceof Object[] );
-								assertEquals( 2, tuple.length );
-								assertTrue( tuple[0] instanceof String );
-								assertTrue( tuple[1] instanceof String );
+								assertThat( tuple ).isInstanceOf( Object[].class );
+								assertThat( tuple ).hasSize( 2 );
+								assertThat( tuple[0] ).isInstanceOf( String.class );
+								assertThat( tuple[1] ).isInstanceOf( String.class );
 							} );
 						} )
 		);
@@ -660,12 +656,12 @@ public class QueryTest extends BaseReactiveTest {
 		test( context, openSession()
 				.thenCompose( s -> s.createSelectionQuery( "from Book", Book.class ).getSingleResult() )
 				.whenComplete( (r, x) -> {
-					assertNull( r );
-					assertNotNull( x );
+					assertThat( r ).isNull();
+					assertThat( x ).isNotNull();
 
 				} )
 				.handle( (r, x) -> {
-					assertTrue( x.getCause() instanceof NoResultException );
+					assertThat( x.getCause() ).isInstanceOf( NoResultException.class );
 					return null;
 				} )
 		);
@@ -708,7 +704,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.createSelectionQuery( "from Author", Author.class )
 						.getResultCount() ) )
-				.thenAccept( count -> assertEquals( 2L, count ) )
+				.thenAccept( count -> assertThat( count ).isEqualTo( 2L ) )
 		);
 	}
 
@@ -721,13 +717,13 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.createQuery( "from Author", Author.class )
 						.getResultCount() ) )
-				.thenAccept( count -> assertEquals( 2L, count ) )
+				.thenAccept( count -> assertThat( count ).isEqualTo( 2L ) )
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.createQuery( "from Author", Author.class )
 						.setMaxResults( 1 )
 						.setFirstResult( 1 )
 						.getResultCount() ) )
-				.thenAccept( count -> assertEquals( 2L, count ) )
+				.thenAccept( count -> assertThat( count ).isEqualTo( 2L ) )
 		);
 	}
 
@@ -740,7 +736,7 @@ public class QueryTest extends BaseReactiveTest {
 				.thenCompose( v -> getSessionFactory().withSession( s -> s
 						.createSelectionQuery( "from Author", Author.class )
 						.getResultCount() ) )
-				.thenAccept( count -> assertEquals( 2L, count ) )
+				.thenAccept( count -> assertThat( count ).isEqualTo( 2L ) )
 		);
 	}
 
@@ -753,13 +749,13 @@ public class QueryTest extends BaseReactiveTest {
 				.chain( () -> getMutinySessionFactory().withSession( s -> s
 						.createQuery( "from Author", Author.class )
 						.getResultCount() ) )
-				.invoke( count -> assertEquals( 2L, count ) )
+				.invoke( count -> assertThat( count ).isEqualTo( 2L ) )
 				.chain( () -> getMutinySessionFactory().withSession( s -> s
 						.createQuery( "from Author", Author.class )
 						.setMaxResults( 1 )
 						.setFirstResult( 1 )
 						.getResultCount() ) )
-				.invoke( count -> assertEquals( 2L, count ) )
+				.invoke( count -> assertThat( count ).isEqualTo( 2L ) )
 		);
 	}
 

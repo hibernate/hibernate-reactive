@@ -29,8 +29,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COC
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = MYSQL, reason = "See https://github.com/hibernate/hibernate-reactive/issues/1525")
@@ -53,20 +52,20 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 				.thenCompose( s2 -> s2
 						.find( SequenceId.class, b.getId() )
 						.thenAccept( bb -> {
-							assertNotNull( bb );
-							assertEquals( bb.id, 5 );
-							assertEquals( bb.string, b.string );
-							assertEquals( bb.version, 0 );
+							assertThat( bb ).isNotNull();
+							assertThat( bb.id ).isEqualTo( 5 );
+							assertThat( bb.string ).isEqualTo( b.string );
+							assertThat( bb.version ).isEqualTo( 0 );
 							bb.string = "Goodbye";
 						} )
 						.thenCompose( vv -> s2.flush() )
 						.thenCompose( vv -> s2.find( SequenceId.class, b.getId() ) )
-						.thenAccept( bt -> assertEquals( bt.version, 1 ) ) )
+						.thenAccept( bt -> assertThat( bt.version ).isEqualTo( 1 ) ) )
 				.thenCompose( v -> openSession() )
 				.thenCompose( s3 -> s3.find( SequenceId.class, b.getId() ) )
 				.thenAccept( bb -> {
-					assertEquals( bb.version, 1 );
-					assertEquals( bb.string, "Goodbye" );
+					assertThat( bb.version ).isEqualTo( 1 );
+					assertThat( bb.string ).isEqualTo( "Goodbye" );
 				} )
 		);
 	}

@@ -23,10 +23,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -52,19 +49,19 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 				.chain( session -> session
 						.find( Endpoint.class, endpoint.getId() )
 						.invoke( optionalAnEntity -> {
-							assertNotNull( optionalAnEntity );
-							assertNotNull( optionalAnEntity.getWebhook() );
+							assertThat( optionalAnEntity ).isNotNull();
+							assertThat( optionalAnEntity.getWebhook() ).isNotNull();
 							// This is eager because the other table contains the reference
-							assertTrue( Hibernate.isInitialized( optionalAnEntity.getWebhook() ) );
+							assertThat( Hibernate.isInitialized( optionalAnEntity.getWebhook() ) ).isTrue();
 						} ) )
 				.chain( this::openMutinySession )
 				.chain( session -> session
 						.find( EndpointWebhook.class, webhook.getId() )
 						.invoke( optionalAnEntity -> {
-							assertNotNull( optionalAnEntity );
-							assertNotNull( optionalAnEntity.getEndpoint() );
+							assertThat( optionalAnEntity ).isNotNull();
+							assertThat( optionalAnEntity.getEndpoint() ).isNotNull();
 							// This is actually lazy
-							assertFalse( Hibernate.isInitialized( optionalAnEntity.getEndpoint() ) );
+							assertThat( Hibernate.isInitialized( optionalAnEntity.getEndpoint() ) ).isFalse();
 						} ) )
 		);
 	}
@@ -89,10 +86,10 @@ public class LazyOneToOneWithJoinColumnTest extends BaseReactiveTest {
 						.setParameter( "accountId", endpoint.getAccountId() )
 						.getSingleResultOrNull()
 						.invoke( result -> {
-							assertNotNull( result );
-							assertTrue( Hibernate.isInitialized( result.getWebhook() ) );
-							assertEquals( endpoint.getId(), result.getId() );
-							assertEquals( webhook.getId(), result.getWebhook().getId() );
+							assertThat( result ).isNotNull();
+							assertThat( Hibernate.isInitialized( result.getWebhook() ) ).isTrue();
+							assertThat( result.getId() ).isEqualTo( endpoint.getId() );
+							assertThat( result.getWebhook().getId() ).isEqualTo( webhook.getId() );
 						} ) )
 		);
 	}

@@ -24,9 +24,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -102,7 +100,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 						.thenCompose( v -> s.flush() )
 				)
 				.thenCompose( v -> selectNameFromId( 10 ) )
-				.thenAccept( selectRes -> assertEquals( "Tulip", selectRes ) )
+				.thenAccept( selectRes -> assertThat( selectRes ).isEqualTo( "Tulip" ) )
 		);
 	}
 
@@ -120,7 +118,7 @@ public class CompositeIdTest extends BaseReactiveTest {
 				.thenCompose( v -> selectNameFromId( 5 ) )
 				.thenAccept( Assertions::assertNull )
 				.handle( (r, e) -> {
-					assertNotNull( e );
+					assertThat( e ).isNotNull();
 					return r;
 				} )
 		);
@@ -148,23 +146,23 @@ public class CompositeIdTest extends BaseReactiveTest {
 				.thenCompose( session -> session
 						.find( GuineaPig.class, new Pig( 5, "Aloi" ) )
 						.thenAccept( pig -> {
-							assertNotNull( pig );
+							assertThat( pig ).isNotNull();
 							// Checking we are actually changing the name
-							assertNotEquals( pig.getWeight(), NEW_WEIGHT );
+							assertThat( pig.getWeight() ).isNotEqualTo( NEW_WEIGHT );
 							pig.setWeight( NEW_WEIGHT );
 						} )
 						.thenCompose( v -> session.flush() )
 						.thenCompose( v -> session.close() )
 						.thenCompose( v -> selectWeightFromId( 5 ) )
-						.thenAccept( w -> assertEquals( NEW_WEIGHT, w ) ) )
+						.thenAccept( w -> assertThat( w ).isEqualTo( NEW_WEIGHT ) ) )
 		);
 	}
 
 	private void assertThatPigsAreEqual(VertxTestContext context, GuineaPig expected, GuineaPig actual) {
-		assertNotNull( actual );
-		assertEquals( expected.getId(), actual.getId() );
-		assertEquals( expected.getName(), actual.getName() );
-		assertEquals( expected.getWeight(), actual.getWeight() );
+		assertThat( actual ).isNotNull();
+		assertThat( actual.getId() ).isEqualTo( expected.getId() );
+		assertThat( actual.getName() ).isEqualTo( expected.getName() );
+		assertThat( actual.getWeight() ).isEqualTo( expected.getWeight() );
 	}
 
 	static final class Pig implements Serializable {

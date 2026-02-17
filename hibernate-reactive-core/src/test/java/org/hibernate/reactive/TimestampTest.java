@@ -26,9 +26,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class TimestampTest extends BaseReactiveTest {
@@ -45,10 +43,9 @@ public class TimestampTest extends BaseReactiveTest {
 		test( context, getMutinySessionFactory()
 				.withSession( session -> session.persist( record )
 						.chain( session::flush )
-						.invoke( () -> assertEquals(
-								record.created.truncatedTo( ChronoUnit.HOURS ),
+						.invoke( () -> assertThat(
 								record.updated.truncatedTo( ChronoUnit.HOURS )
-						) )
+						).isEqualTo( record.created.truncatedTo( ChronoUnit.HOURS ) ) )
 						.invoke( () -> record.text = "edited text" )
 						.chain( session::flush )
 						.invoke( () -> assertInstants( record ) ) )
@@ -69,10 +66,9 @@ public class TimestampTest extends BaseReactiveTest {
 						.invoke( () -> {
 							history.created = event.history.created;
 							history.updated = event.history.updated;
-							assertEquals(
-									event.history.created.truncatedTo( ChronoUnit.HOURS ),
-									event.history.updated.truncatedTo( ChronoUnit.HOURS )
-							); })
+							assertThat( event.history.updated.truncatedTo( ChronoUnit.HOURS ) )
+									.isEqualTo( event.history.created.truncatedTo( ChronoUnit.HOURS ) );
+						} )
 						.invoke( () -> event.name = "Conference" )
 						.chain( session::flush )
 						.invoke( () -> assertInstants( event, history ) ) )
@@ -83,24 +79,22 @@ public class TimestampTest extends BaseReactiveTest {
 	}
 
 	private static void assertInstants(Record r) {
-		assertNotNull( r.created );
-		assertNotNull( r.updated );
+		assertThat( r.created ).isNotNull();
+		assertThat( r.updated ).isNotNull();
 		// Sometimes, when the test suite is fast enough, they might be the same
-		assertTrue(
-				r.updated.compareTo( r.created ) >= 0,
-				"Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]"
-		);
+		assertThat( r.updated )
+				.as( "Updated instant is before created. Updated[" + r.updated + "], Created[" + r.created + "]" )
+				.isAfterOrEqualTo( r.created );
 	}
 
 	private static void assertInstants(Event e, History h) {
-		assertNotNull( e.history.created );
-		assertNotNull( e.history.updated );
+		assertThat( e.history.created ).isNotNull();
+		assertThat( e.history.updated ).isNotNull();
 		// Sometimes, when the test suite is fast enough, they might be the same:
-		assertTrue(
-				!e.history.updated.isBefore( e.history.created ),
-				"Updated instant is before created. Updated[" + e.history.updated + "], Created[" + e.history.created + "]"
-		);
-		assertEquals( h.created, e.history.created );
+		assertThat( e.history.updated )
+				.as( "Updated instant is before created. Updated[" + e.history.updated + "], Created[" + e.history.created + "]" )
+				.isAfterOrEqualTo( e.history.created );
+		assertThat( e.history.created ).isEqualTo( h.created );
 
 	}
 

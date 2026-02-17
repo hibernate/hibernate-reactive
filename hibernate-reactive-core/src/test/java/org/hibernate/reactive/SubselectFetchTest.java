@@ -37,9 +37,7 @@ import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.Hibernate.isInitialized;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class SubselectFetchTest extends BaseReactiveTest {
@@ -72,15 +70,15 @@ public class SubselectFetchTest extends BaseReactiveTest {
 				.thenCompose( s -> s.createSelectionQuery( "from Node n order by id", Node.class )
 						.getResultList()
 						.thenCompose( list -> {
-							assertEquals( list.size(), 2 );
+							assertThat( list ).hasSize( 2 );
 							Node n1 = list.get( 0 );
 							Node n2 = list.get( 1 );
-							assertFalse( isInitialized( n1.getElements() ), "'n1.elements' should not be initialized" );
-							assertFalse( isInitialized( n2.getElements() ), "'n2.elements' should not be initialized" );
+							assertThat( isInitialized( n1.getElements() ) ).as( "'n1.elements' should not be initialized" ).isFalse();
+							assertThat( isInitialized( n2.getElements() ) ).as( "'n2.elements' should not be initialized" ).isFalse();
 							return s.fetch( n1.getElements() ).thenAccept( elements -> {
-								assertTrue( isInitialized( elements ), "'elements' - after fetch - should be initialized" );
-								assertTrue( isInitialized( n1.getElements() ), "'n1.elements' - after fetch - should be initialized" );
-								assertTrue( isInitialized( n2.getElements() ), "'n2.elements' - after fetch - should be initialized" );
+								assertThat( isInitialized( elements ) ).as( "'elements' - after fetch - should be initialized" ).isTrue();
+								assertThat( isInitialized( n1.getElements() ) ).as( "'n1.elements' - after fetch - should be initialized" ).isTrue();
+								assertThat( isInitialized( n2.getElements() ) ).as( "'n2.elements' - after fetch - should be initialized" ).isTrue();
 							} );
 						} )
 				)
