@@ -48,6 +48,7 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 		);
 	}
 
+	// Entities are annotated with @SoftDelete, we need to execute a native query to actually empty the table
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return getSessionFactory()
@@ -110,7 +111,7 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 						.executeUpdate()
 						.invoke( count -> assertThat( count ).isEqualTo( 1 ) )
 				)
-				// Verify only 2 books remain
+				// Verify only 2 books remain visible via HQL
 				.call( () -> getMutinySessionFactory().withSession( s -> s
 						.createSelectionQuery( "from Book order by id", Book.class )
 						.getResultList()
@@ -118,6 +119,21 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 							assertThat( books ).hasSize( 2 );
 							assertThat( books.get( 0 ).getId() ).isEqualTo( 2 );
 							assertThat( books.get( 1 ).getId() ).isEqualTo( 3 );
+						} )
+				) )
+				// All 3 rows must still exist; the forbidden SpellBook should be marked deleted
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.getResultList()
+						.invoke( rows -> {
+							assertThat( rows ).hasSize( 3 );
+							Object[] firstRow = (Object[]) rows.get( 0 );
+							if ( dbType() == DB2 ) {
+								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
+							}
+							else {
+								assertThat( (boolean) firstRow[2] ).isTrue();
+							}
 						} )
 				) )
 		);
@@ -152,6 +168,21 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 						.getResultList()
 						.invoke( books -> assertThat( books ).hasSize( 2 ) )
 				) )
+				// All 3 rows must still exist in the table; the deleted SpellBook must be marked
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.getResultList()
+						.invoke( rows -> {
+							assertThat( rows ).hasSize( 3 );
+							Object[] firstRow = (Object[]) rows.get( 0 );
+							if ( dbType() == DB2 ) {
+								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
+							}
+							else {
+								assertThat( (boolean) firstRow[2] ).isTrue();
+							}
+						} )
+				) )
 		);
 	}
 
@@ -163,7 +194,7 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 						.createMutationQuery( "delete from Book where id = 1" )
 						.executeUpdate()
 				)
-				// Verify the book is soft deleted
+				// Verify the book is soft deleted (not visible via HQL)
 				.call( () -> getMutinySessionFactory().withSession( s -> s
 						.find( Book.class, 1 )
 						.invoke( book -> assertThat( book ).isNull() )
@@ -172,6 +203,21 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 				.call( () -> getMutinySessionFactory().withSession( s -> s
 						.find( SpellBook.class, 1 )
 						.invoke( book -> assertThat( book ).isNull() )
+				) )
+				// All 3 rows must still exist; the deleted book must be marked in the table
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.getResultList()
+						.invoke( rows -> {
+							assertThat( rows ).hasSize( 3 );
+							Object[] firstRow = (Object[]) rows.get( 0 );
+							if ( dbType() == DB2 ) {
+								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
+							}
+							else {
+								assertThat( (boolean) firstRow[2] ).isTrue();
+							}
+						} )
 				) )
 		);
 	}
