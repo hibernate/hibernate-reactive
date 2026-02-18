@@ -4,11 +4,11 @@
  */
 package org.hibernate.reactive.query.sqm.internal;
 
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.AbstractMultiTableMutationQueryPlan;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.tree.SqmDmlStatement;
+import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
 
@@ -26,7 +26,7 @@ public abstract class ReactiveAbstractMultiTableMutationQueryPlan<S extends SqmD
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext context) {
-		BulkOperationCleanupAction.schedule( context.getSession(), getStatement() );
+		ReactiveBulkOperationCleanupAction.schedule( context.getSession(), getStatement() );
 		final Interpretation interpretation = getInterpretation( context );
 		return ((ReactiveHandler)interpretation.handler()).reactiveExecute( interpretation.jdbcParameterBindings(), context );
 	}
