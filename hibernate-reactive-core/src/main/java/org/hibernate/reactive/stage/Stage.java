@@ -489,7 +489,7 @@ public interface Stage {
 	 *
 	 * @since 3.0
 	 */
-	interface QueryProducer  {
+	sealed interface QueryProducer permits Session, StatelessSession {
 		/**
 		 * Create an instance of {@link SelectionQuery} for the given HQL/JPQL
 		 * query string.
@@ -829,7 +829,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.Session
 	 */
-	interface Session extends QueryProducer, Closeable {
+    non-sealed interface Session extends QueryProducer, Closeable {
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -1554,7 +1554,7 @@ public interface Stage {
 	 *
 	 * @see org.hibernate.StatelessSession
 	 */
-	interface StatelessSession extends QueryProducer, Closeable {
+    non-sealed interface StatelessSession extends QueryProducer, Closeable {
 
 		/**
 		 * Retrieve a row.
