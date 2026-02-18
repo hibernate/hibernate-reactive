@@ -67,6 +67,7 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 		);
 	}
 
+	// Entities are annotated with @SoftDelete, we need to execute a native query to actually empty the table
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return loop(
