@@ -63,7 +63,7 @@ public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( ActiveEntity.class, DeletedEntity.class, ImplicitEntity.class );
+		return List.of( ActiveEntity.class, DeletedEntity.class, ImplicitEntity.class, TimestampEntity.class );
 	}
 
 	@BeforeEach
@@ -75,11 +75,66 @@ public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 		);
 	}
 
-	// We need to actually empty the tables, or the populate db will fail the second time
+	// Entities are annotated with @SoftDelete, we need to execute a native query to actually empty the table
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return loop( annotatedEntities(), aClass -> getSessionFactory()
 				.withTransaction( s -> s.createNativeQuery( "delete from " + aClass.getSimpleName() ).executeUpdate() )
+		);
+	}
+
+	@Test
+	public void testTimestampSoftDelete(VertxTestContext context) {
+		TimestampEntity entity1 = new TimestampEntity( 1, "timestamp first" );
+		TimestampEntity entity2 = new TimestampEntity( 2, "timestamp second" );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persistAll( entity1, entity2 ) )
+				// Initially neither row should have a deletion timestamp
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createNativeQuery( "select id, name, deleted from TimestampEntity order by id" )
+						.getResultList()
+						.invoke( rows -> {
+							assertThat( rows ).hasSize( 2 );
+							for ( Object row : rows ) {
+								Object[] r = (Object[]) row;
+								assertThat( r[2] ).as( "deleted timestamp should be null for active entity" ).isNull();
+							}
+						} )
+				) )
+				// Soft delete the first entity
+				.call( () -> getMutinySessionFactory().withTransaction( s -> s
+						.find( TimestampEntity.class, 1 )
+						.chain( s::remove )
+				) )
+				// The deleted entity must not be visible via HQL
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.find( TimestampEntity.class, 1 )
+						.invoke( found -> assertThat( found ).isNull() )
+				) )
+				// HQL query should return only the non-deleted entity
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createSelectionQuery( "from TimestampEntity order by id", TimestampEntity.class )
+						.getResultList()
+						.invoke( list -> {
+							assertThat( list ).hasSize( 1 );
+							assertThat( list.get( 0 ).getId() ).isEqualTo( 2 );
+						} )
+				) )
+				// Native query must show both rows still in the table
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createNativeQuery( "select id, name, deleted from TimestampEntity order by id" )
+						.getResultList()
+						.invoke( rows -> {
+							assertThat( rows ).hasSize( 2 );
+							Object[] deletedRow = (Object[]) rows.get( 0 );
+							Object[] activeRow = (Object[]) rows.get( 1 );
+							// The first row should have a non-null timestamp (soft deleted)
+							assertThat( deletedRow[2] ).as( "deleted timestamp should be set" ).isNotNull();
+							// The second row should still have null (active)
+							assertThat( activeRow[2] ).as( "active entity should have null deleted timestamp" ).isNull();
+						} )
+				) )
 		);
 	}
 
@@ -323,6 +378,61 @@ public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 		@Override
 		public String toString() {
 			return this.getClass() + ":" + id + ":" + name;
+		}
+	}
+
+	@Entity(name = "TimestampEntity")
+	@Table(name = "TimestampEntity")
+	@SoftDelete(strategy = SoftDeleteType.TIMESTAMP)
+	public static class TimestampEntity {
+		@Id
+		private Integer id;
+		private String name;
+
+		public TimestampEntity() {
+		}
+
+		public TimestampEntity(Integer id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			TimestampEntity that = (TimestampEntity) o;
+			return Objects.equals( id, that.id );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( id );
+		}
+
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + ":" + id + ":" + name;
 		}
 	}
 
