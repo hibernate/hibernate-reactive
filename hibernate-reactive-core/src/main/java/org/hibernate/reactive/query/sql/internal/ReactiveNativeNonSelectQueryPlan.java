@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryParameterBindings;
 import org.hibernate.query.sql.internal.SQLQueryParser;
 import org.hibernate.query.sql.spi.ParameterOccurrence;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
+import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
@@ -49,7 +49,8 @@ public class ReactiveNativeNonSelectQueryPlan implements ReactiveNonSelectQueryP
 		return reactiveSession.reactiveAutoFlushIfRequired( affectedTableNames )
 						.thenCompose( aBoolean -> {
 							SharedSessionContractImplementor session = executionContext.getSession();
-							BulkOperationCleanupAction.schedule( session, affectedTableNames );
+							ReactiveBulkOperationCleanupAction.schedule( session, affectedTableNames );
+
 							final List<JdbcParameterBinder> jdbcParameterBinders;
 							final JdbcParameterBindings jdbcParameterBindings;
 

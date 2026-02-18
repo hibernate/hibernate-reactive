@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -29,6 +28,7 @@ import org.hibernate.query.sqm.sql.SqmTranslation;
 import org.hibernate.query.sqm.sql.SqmTranslator;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
+import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveSqmMutationStrategyHelper;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
@@ -121,7 +121,7 @@ public class ReactiveSimpleDeleteQueryPlan extends SimpleDeleteQueryPlan impleme
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
-		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
+		ReactiveBulkOperationCleanupAction.schedule( executionContext.getSession(), sqmDelete );
 		final SharedSessionContractImplementor session = executionContext.getSession();
 		final SessionFactoryImplementor factory = session.getFactory();
 		SqlAstTranslator<? extends JdbcOperationQueryMutation> sqlAstTranslator = null;
