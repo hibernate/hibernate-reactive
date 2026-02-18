@@ -4,7 +4,6 @@
  */
 package org.hibernate.reactive.query.sqm.internal;
 
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
@@ -13,6 +12,7 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SimpleDeleteQueryPlan;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
+import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
@@ -45,7 +45,7 @@ public class ReactiveSimpleDeleteQueryPlan
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext context) {
-		BulkOperationCleanupAction.schedule( context.getSession(), getStatement() );
+		ReactiveBulkOperationCleanupAction.schedule( context.getSession(), getStatement() );
 		final Interpretation interpretation = getInterpretation( context );
 		final ExecutionContext executionContext = SqmJdbcExecutionContextAdapter.omittingLockingAndPaging( context );
 		return executeReactive( interpretation.interpretation(), interpretation.jdbcParameterBindings(), executionContext );
