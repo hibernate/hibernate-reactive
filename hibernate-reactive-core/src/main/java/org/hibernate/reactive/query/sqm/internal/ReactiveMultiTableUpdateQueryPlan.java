@@ -6,10 +6,10 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 
@@ -32,7 +32,7 @@ public class ReactiveMultiTableUpdateQueryPlan implements ReactiveNonSelectQuery
 
 	@Override
 	public CompletionStage<Integer> executeReactiveUpdate(DomainQueryExecutionContext executionContext) {
-		BulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
+		ReactiveBulkOperationCleanupAction.schedule( executionContext.getSession(), sqmUpdate );
 		return mutationStrategy.reactiveExecuteUpdate( sqmUpdate, domainParameterXref, executionContext );
 	}
 }
