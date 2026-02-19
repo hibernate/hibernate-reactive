@@ -13,7 +13,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
-import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -93,10 +92,9 @@ public class ReactiveGeneratedValuesHelper {
 		final boolean hasFormula = generatedProperties.stream()
 				.anyMatch( ReactiveGeneratedValuesHelper::isFormula );
 
-		boolean supportsInsertReturningRowId = trueIfCockroach( dialect, dialect.supportsInsertReturningRowId() );
 		if ( hasRowId
-				&& supportsInsertReturning( dialect )
-				&& supportsInsertReturningRowId
+				&& dialect.supportsInsertReturning()
+				&& dialect.supportsInsertReturningRowId()
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it
@@ -120,14 +118,6 @@ public class ReactiveGeneratedValuesHelper {
 		return null;
 	}
 
-	/**
-	 * Cockroach supports returning SQL for insert and update statements, but the dialect wrongly returns false.
-	 * @see <a href="https://hibernate.atlassian.net/browse/HHH-19717">HHH-19717</a>
-	 */
-	private static boolean trueIfCockroach(Dialect dialect, boolean predicate) {
-		return predicate || dialect instanceof CockroachDialect;
-	}
-
 	private static boolean isFormula(ModelPart part) {
 		return part instanceof SelectableMapping selectable && selectable.isFormula();
 	}
@@ -138,15 +128,9 @@ public class ReactiveGeneratedValuesHelper {
 	}
 
 	public static boolean supportsReturning(Dialect dialect, EventType timing) {
-		return trueIfCockroach(
-				dialect, timing == EventType.INSERT
-						? dialect.supportsInsertReturning()
-						: dialect.supportsUpdateReturning()
-		);
-	}
-
-	public static boolean supportsInsertReturning(Dialect dialect) {
-		return trueIfCockroach( dialect, dialect.supportsInsertReturning() );
+		return timing == EventType.INSERT
+				? dialect.supportsInsertReturning()
+				: dialect.supportsUpdateReturning();
 	}
 
 	/**
