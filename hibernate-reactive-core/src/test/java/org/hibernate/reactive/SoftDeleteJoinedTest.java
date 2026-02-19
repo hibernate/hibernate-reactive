@@ -23,6 +23,7 @@ import jakarta.persistence.Table;
 
 import org.hibernate.reactive.util.impl.CompletionStages;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
@@ -85,18 +86,13 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 				) )
 				// But it should exist in the native query (soft deleted)
 				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id", Object[].class )
 						.getResultList()
 						.invoke( rows -> {
 							assertThat( rows ).hasSize( 3 );
-							Object[] firstRow = (Object[]) rows.get( 0 );
 							// Check that the first book is marked as deleted
-							if ( dbType() == DB2 ) {
-								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
-							}
-							else {
-								assertThat( (boolean) firstRow[2] ).isTrue();
-							}
+							Object[] firstRow = rows.get( 0 );
+							assertThat( toBoolean( firstRow[2] ) ).isTrue();
 						} )
 				) )
 		);
@@ -123,17 +119,12 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 				) )
 				// All 3 rows must still exist; the forbidden SpellBook should be marked deleted
 				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id", Object[].class )
 						.getResultList()
 						.invoke( rows -> {
 							assertThat( rows ).hasSize( 3 );
-							Object[] firstRow = (Object[]) rows.get( 0 );
-							if ( dbType() == DB2 ) {
-								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
-							}
-							else {
-								assertThat( (boolean) firstRow[2] ).isTrue();
-							}
+							Object[] firstRow = rows.get( 0 );
+							assertThat( toBoolean( firstRow[2] ) ).isTrue();
 						} )
 				) )
 		);
@@ -170,17 +161,12 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 				) )
 				// All 3 rows must still exist in the table; the deleted SpellBook must be marked
 				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id", Object[].class )
 						.getResultList()
 						.invoke( rows -> {
 							assertThat( rows ).hasSize( 3 );
-							Object[] firstRow = (Object[]) rows.get( 0 );
-							if ( dbType() == DB2 ) {
-								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
-							}
-							else {
-								assertThat( (boolean) firstRow[2] ).isTrue();
-							}
+							Object[] firstRow = rows.get( 0 );
+							assertThat( toBoolean( firstRow[2] ) ).isTrue();
 						} )
 				) )
 		);
@@ -206,20 +192,22 @@ public class SoftDeleteJoinedTest extends BaseReactiveTest {
 				) )
 				// All 3 rows must still exist; the deleted book must be marked in the table
 				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from BookJoined order by id" )
+						.createNativeQuery( "select id, title, deleted from BookJoined order by id", Object[].class )
 						.getResultList()
 						.invoke( rows -> {
 							assertThat( rows ).hasSize( 3 );
-							Object[] firstRow = (Object[]) rows.get( 0 );
-							if ( dbType() == DB2 ) {
-								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
-							}
-							else {
-								assertThat( (boolean) firstRow[2] ).isTrue();
-							}
+							Object[] firstRow = rows.get( 0 );
+							assertThat( toBoolean( firstRow[2] ) ).isTrue();
 						} )
 				) )
 		);
+	}
+
+	// Db2 saves a boolean as a number
+	private static boolean toBoolean(Object obj) {
+		return requireNonNull( dbType() ) == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
 	}
 
 	@Entity(name = "Book")
