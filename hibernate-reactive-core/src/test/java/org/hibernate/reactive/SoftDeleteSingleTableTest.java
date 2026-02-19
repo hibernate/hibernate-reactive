@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive;
 
-import java.util.Arrays;
+import java.time.temporal.Temporal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 
 import org.hibernate.annotations.SoftDelete;
 import org.hibernate.annotations.SoftDeleteType;
-import org.hibernate.reactive.testing.SqlStatementTracker;
+import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.type.YesNoConverter;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +25,7 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.Root;
@@ -35,15 +36,14 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
-/*
+/**
  * Tests validity of @SoftDelete annotation value options
- * as well as verifying logged 'create table' and 'update' queries for each database
+ * as well as verifying logged 'create table' and 'update' queries for each database.
  *
- * @see org.hibernate.orm.test.softdelete.SimpleSoftDeleteTests
+ * Tests single-table entity mappings (entities without inheritance).
  */
-public class SoftDeleteTest extends BaseReactiveTest {
-
-	private static SqlStatementTracker sqlTracker;
+@DisabledFor(value = DB2, reason = "Needed to have 6 in buffer but only had 0")
+public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 
 	static final Deletable[] activeEntities = {
 			new ActiveEntity( 1, "active first" ),
@@ -60,10 +60,15 @@ public class SoftDeleteTest extends BaseReactiveTest {
 			new ImplicitEntity( 2, "implicit second" ),
 			new ImplicitEntity( 3, "implicit third" )
 	};
+	static final Deletable[] timestampEntities = {
+			new TimestampEntity( 1, "timestamp first" ),
+			new TimestampEntity( 2, "timestamp second" ),
+			new TimestampEntity( 3, "timestamp third" ),
+	};
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( ActiveEntity.class, DeletedEntity.class, ImplicitEntity.class );
+		return List.of( ActiveEntity.class, DeletedEntity.class, ImplicitEntity.class, TimestampEntity.class );
 	}
 
 	@BeforeEach
@@ -72,14 +77,25 @@ public class SoftDeleteTest extends BaseReactiveTest {
 				.withTransaction( session -> session.persistAll( activeEntities ) )
 				.call( () -> getMutinySessionFactory().withTransaction( session -> session.persistAll( deletedEntities ) ) )
 				.call( () -> getMutinySessionFactory().withTransaction( session -> session.persistAll( implicitEntities ) ) )
+				.call( () -> getMutinySessionFactory().withTransaction( session -> session.persistAll( timestampEntities ) ) )
 		);
 	}
 
-	// We need to actually empty the tables, or the populate db will fail the second time
+	// Entities are annotated with @SoftDelete, we need to execute a native query to actually empty the table
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return loop( annotatedEntities(), aClass -> getSessionFactory()
 				.withTransaction( s -> s.createNativeQuery( "delete from " + aClass.getSimpleName() ).executeUpdate() )
+		);
+	}
+
+	@Test
+	public void testTimestampSoftDelete(VertxTestContext context) {
+		// I'm using Temporal because different databases may return different types
+		testSoftDelete( context, timestamp -> timestamp instanceof Temporal, "deleted", TimestampEntity.class, timestampEntities,
+						() -> getMutinySessionFactory().withTransaction( s -> s
+								.remove( s.getReference( TimestampEntity.class, timestampEntities[0].getId() ) )
+						)
 		);
 	}
 
@@ -103,11 +119,7 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDefaults(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> dbType() == DB2
-				? ( (short) obj ) == 1
-				: (boolean) obj;
-
-		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
+		testSoftDelete( context, SoftDeleteSingleTableTest::deleted, "deleted", ImplicitEntity.class, implicitEntities,
 				() -> getMutinySessionFactory().withTransaction( s -> s
 						.remove( s.getReference( ImplicitEntity.class, implicitEntities[0].getId() ) )
 				)
@@ -116,12 +128,8 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDeletionWithHQLQuery(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> requireNonNull( dbType() ) == DB2
-				? ( (short) obj ) == 1
-				: (boolean) obj;
-
-		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
-				() -> getMutinySessionFactory().withTransaction( s -> s
+		testSoftDelete( context, SoftDeleteSingleTableTest::deleted, "deleted", ImplicitEntity.class, implicitEntities,
+						() -> getMutinySessionFactory().withTransaction( s -> s
 						.createMutationQuery( "delete from ImplicitEntity where name = :name" )
 						.setParameter( "name", implicitEntities[0].getName() )
 						.executeUpdate()
@@ -131,11 +139,7 @@ public class SoftDeleteTest extends BaseReactiveTest {
 
 	@Test
 	public void testDeletionWithCriteria(VertxTestContext context) {
-		Predicate<Object> deleted = obj -> dbType() == DB2
-				? ( (short) obj ) == 1
-				: (boolean) obj;
-
-		testSoftDelete( context, deleted, "deleted", ImplicitEntity.class, implicitEntities,
+		testSoftDelete( context, SoftDeleteSingleTableTest::deleted, "deleted", ImplicitEntity.class, implicitEntities,
 				() -> getMutinySessionFactory().withTransaction( s -> {
 					CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
 					CriteriaDelete<ImplicitEntity> delete = cb.createCriteriaDelete( ImplicitEntity.class );
@@ -146,32 +150,41 @@ public class SoftDeleteTest extends BaseReactiveTest {
 		);
 	}
 
+	// Db2 saves a boolean as a number
+	private static boolean deleted(Object obj) {
+		return requireNonNull( dbType() ) == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
+	}
+
 	private void testSoftDelete(
 			VertxTestContext context,
 			Predicate<Object> deleted,
 			String deletedColumn,
 			Class<?> entityClass,
-			Deletable[] entities, Supplier<Uni<?>> deleteEntity) {
+			Deletable[] entities, Supplier<Uni<?>> deleteFirstEntityFun) {
 		test( context, getMutinySessionFactory()
 				// Check that the soft delete column exists and has the expected initial value
 				.withSession( s -> s
 						// This SQL query should be compatible with all databases
-						.createNativeQuery( "select id, name, " + deletedColumn + " from " + entityClass.getSimpleName() + " order by id" )
+						.createNativeQuery( "select id, name, " + deletedColumn + " from " + entityClass.getSimpleName() + " order by id", Tuple.class )
 						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( entities.length );
-							for ( int i = 0; i < entities.length; i++ ) {
-								Object[] row = (Object[]) rows.get( i );
-								Integer actualId = ( (Number) row[0] ).intValue();
-								assertThat( actualId ).isEqualTo( entities[i].getId() );
-								assertThat( row[1] ).isEqualTo( entities[i].getName() );
-								// Only the first element should be deleted
-								assertThat( deleted.test( row[2] ) ).isFalse();
+						.invoke( tuples -> {
+							assertThat( tuples ).hasSize( entities.length );
+							for ( int i = 0; i < tuples.size(); i++ ) {
+								Tuple tuple = tuples.get( i );
+								// The id from a native query is not always returned as an int (Oracle returns a BigDecimal)
+								int tupleId = tuple.get( "id", Number.class ).intValue();
+								assertThat( tupleId ).isEqualTo( entities[i].getId() );
+								assertThat( tuple.get( "name", String.class ) ).isEqualTo( entities[i].getName() );
+								boolean markedAsDeleted = deleted.test( tuple.get( deletedColumn ) );
+								// No entity should be marked as deleted
+								assertThat( markedAsDeleted ).isFalse();
 							}
 						} )
 				)
 				// Delete an entity
-				.call( deleteEntity )
+				.call( deleteFirstEntityFun )
 				// Test select all
 				.call( () -> getMutinySessionFactory().withTransaction( s -> s
 						.createSelectionQuery( "from " + entityClass.getSimpleName() + " order by id", Object.class )
@@ -186,19 +199,19 @@ public class SoftDeleteTest extends BaseReactiveTest {
 				// Test table content with a native query
 				.call( () -> getMutinySessionFactory().withSession( s -> s
 						// This SQL query should be compatible with all databases
-						.createNativeQuery( "select id, name, " + deletedColumn + " from " + entityClass.getSimpleName() + " order by id" )
+						.createNativeQuery( "select id, name, " + deletedColumn + " from " + entityClass.getSimpleName() + " order by id", Tuple.class )
 						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( entities.length );
-							for ( int i = 0; i < entities.length; i++ ) {
-								Object[] row = (Object[]) rows.get( i );
-								Integer actualId = ( (Number) row[0] ).intValue();
-								assertThat( actualId ).isEqualTo( entities[i].getId() );
-								assertThat( row[1] ).isEqualTo( entities[i].getName() );
-								// Only the first element should have been deleted
-								System.out.println( Arrays.toString( row ) );
-								System.out.println( "Index: " + i + ", Actual: " + deleted.test( row[2] ) + " Expected: " + ( i == 0 ) );
-								assertThat( deleted.test( row[2] ) ).isEqualTo( i == 0 );
+						.invoke( tuples -> {
+							assertThat( tuples ).hasSize( entities.length );
+							for ( int i = 0; i < tuples.size(); i++ ) {
+								Tuple tuple = tuples.get( i );
+								// The id from a native query is not always returned as an int (Oracle returns a BigDecimal)
+								int tupleId = tuple.get( "id", Number.class ).intValue();
+								assertThat( tupleId ).isEqualTo( entities[i].getId() );
+								assertThat( tuple.get( "name", String.class ) ).isEqualTo( entities[i].getName() );
+								boolean markedAsDeleted = deleted.test( tuple.get( deletedColumn ) );
+								// Only the first element should have been marked as deleted
+								assertThat( markedAsDeleted ).isEqualTo( i == 0 );
 							}
 						} )
 				) )
@@ -323,6 +336,61 @@ public class SoftDeleteTest extends BaseReactiveTest {
 		@Override
 		public String toString() {
 			return this.getClass() + ":" + id + ":" + name;
+		}
+	}
+
+	@Entity(name = "TimestampEntity")
+	@Table(name = "TimestampEntity")
+	@SoftDelete(strategy = SoftDeleteType.TIMESTAMP)
+	public static class TimestampEntity implements Deletable {
+		@Id
+		private Integer id;
+		private String name;
+
+		public TimestampEntity() {
+		}
+
+		public TimestampEntity(Integer id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			TimestampEntity that = (TimestampEntity) o;
+			return Objects.equals( id, that.id );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode( id );
+		}
+
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + ":" + id + ":" + name;
 		}
 	}
 
