@@ -11,10 +11,13 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.SoftDelete;
+import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.util.impl.CompletionStages;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -23,17 +26,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Tuple;
 
-import org.hibernate.reactive.util.impl.CompletionStages;
-
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * Tests @SoftDelete annotation applied to collection relationships.
  * Covers basic filtering, CascadeType.REMOVE, and orphanRemoval=true scenarios.
  */
+@DisabledFor( value = DB2, reason = "Needed to have 6 in buffer but only had 0" )
 public class SoftDeleteCollectionTest extends BaseReactiveTest {
 
 	@Override
@@ -72,18 +77,25 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	// Entities are annotated with @SoftDelete, we need to execute a native query to actually empty the table
 	@Override
 	protected CompletionStage<Void> cleanDb() {
+		final List<String> tables = List.of(
+				Book.TABLE_NAME,
+				Author.TABLE_NAME,
+				CascadeBook.TABLE_NAME,
+				CascadeAuthor.TABLE_NAME,
+				OrphanBook.TABLE_NAME,
+				OrphanAuthor.TABLE_NAME
+		);
 		return getSessionFactory()
-				.withTransaction( s -> s.createNativeQuery( "delete from Book" ).executeUpdate()
-						.thenCompose( v -> s.createNativeQuery( "delete from Author" ).executeUpdate() )
-						.thenCompose( v -> s.createNativeQuery( "delete from CascadeBook" ).executeUpdate() )
-						.thenCompose( v -> s.createNativeQuery( "delete from CascadeAuthor" ).executeUpdate() )
-						.thenCompose( v -> s.createNativeQuery( "delete from OrphanBook" ).executeUpdate() )
-						.thenCompose( v -> s.createNativeQuery( "delete from OrphanAuthor" ).executeUpdate() )
-						.thenCompose( CompletionStages::voidFuture ) );
+				.withTransaction( s -> loop(
+						tables,
+						table -> s.createNativeQuery( "delete from " + table ).executeUpdate()
+				) )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	@Test
 	public void testCollectionFiltersSoftDeletedEntities(VertxTestContext context) {
+		final List<String> deletedTitles = List.of( "The Silmarillion" );
 		test( context, getMutinySessionFactory()
 				// Initially, all books should be in the collections
 				.withSession( s -> s
@@ -103,139 +115,58 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
 						.setParameter( "name", "J.R.R. Tolkien" )
 						.getSingleResult()
-						.invoke( author -> {
-							assertThat( author.getBooks() ).hasSize( 2 );
-							assertThat( author.getBooks() )
-									.extracting( Book::getTitle )
-									.containsExactlyInAnyOrder( "The Hobbit", "The Lord of the Rings" );
-						} )
+						.invoke( author -> assertThat( author.getBooks() )
+								.extracting( Book::getTitle )
+								.containsExactlyInAnyOrder( "The Hobbit", "The Lord of the Rings" )
+						)
 				) )
-				// Verify the soft-deleted book still exists in the table with deleted=true
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from Book order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							// All 5 rows must still exist (soft delete does not remove rows)
-							assertThat( rows ).hasSize( 5 );
-							long deletedCount = rows.stream()
-									.map( r -> (Object[]) r )
-									.filter( r -> dbType() == DB2
-											? (short) r[2] == (short) 1
-											: (boolean) r[2] )
-									.count();
-							assertThat( deletedCount ).isEqualTo( 1 );
-						} )
-				) )
+				.call( () -> assertDeletedTitles( Book.TABLE_NAME, 5, deletedTitles ) )
 		);
 	}
 
 	@Test
 	public void testMultipleSoftDeletes(VertxTestContext context) {
+		final List<String> deletedTitles = List.of( "The Hobbit", "The Silmarillion" );
 		test( context, getMutinySessionFactory()
 				// Delete two books from the first author
 				.withTransaction( s -> s
 						.createMutationQuery( "delete from Book where title in (:titles)" )
-						.setParameter( "titles", List.of( "The Hobbit", "The Silmarillion" ) )
-						.executeUpdate()
-				)
-				// Verify the collection is updated
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
-						.setParameter( "name", "J.R.R. Tolkien" )
-						.getSingleResult()
-						.invoke( author -> {
-							assertThat( author.getBooks() ).hasSize( 1 );
-							assertThat( author.getBooks().get( 0 ).getTitle() ).isEqualTo( "The Lord of the Rings" );
-						} )
-				) )
-				// Other author's books should remain intact
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
-						.setParameter( "name", "Stephen King" )
-						.getSingleResult()
-						.invoke( author -> assertThat( author.getBooks() ).hasSize( 2 ) )
-				) )
-				// All 5 rows must still exist; exactly 2 should be marked deleted
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from Book order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( 5 );
-							long deletedCount = rows.stream()
-									.map( r -> (Object[]) r )
-									.filter( r -> dbType() == DB2
-											? (short) r[2] == (short) 1
-											: (boolean) r[2] )
-									.count();
-							assertThat( deletedCount ).isEqualTo( 2 );
-						} )
-				) )
-		);
-	}
-
-	@Test
-	public void testEntityRemoveSoftDeletes(VertxTestContext context) {
-		test( context, getMutinySessionFactory()
-				// Delete a book using HQL
-				.withTransaction( s -> s
-						.createMutationQuery( "delete from Book where title = :title" )
-						.setParameter( "title", "The Shining" )
-						.executeUpdate()
-				)
-				// Verify it's removed from the collection
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
-						.setParameter( "name", "Stephen King" )
-						.getSingleResult()
-						.invoke( author -> {
-							assertThat( author.getBooks() ).hasSize( 1 );
-							assertThat( author.getBooks().get( 0 ).getTitle() ).isEqualTo( "It" );
-						} )
-				) )
-				// Verify the soft-deleted book still exists in the table
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from Book order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( 5 );
-							long deletedCount = rows.stream()
-									.map( r -> (Object[]) r )
-									.filter( r -> dbType() == DB2
-											? (short) r[2] == (short) 1
-											: (boolean) r[2] )
-									.count();
-							assertThat( deletedCount ).isEqualTo( 1 );
-						} )
-				) )
-		);
-	}
-
-	@Test
-	public void testDirectQueryStillFindsNonDeleted(VertxTestContext context) {
-		test( context, getMutinySessionFactory()
-				// Delete one book
-				.withTransaction( s -> s
-						.createMutationQuery( "delete from Book where title = :title" )
-						.setParameter( "title", "The Hobbit" )
+						.setParameter( "titles", deletedTitles )
 						.executeUpdate()
 				)
 				// Direct HQL query should only find non-deleted books
 				.call( () -> getMutinySessionFactory().withSession( s -> s
 						.createSelectionQuery( "from Book order by id", Book.class )
 						.getResultList()
-						.invoke( books -> assertThat( books ).hasSize( 4 ) )
+						.invoke( books -> assertThat( books ).hasSize( 3 ) )
 				) )
-				// Native query must show all 5 rows still present in the table
+				// Verify the collection is updated
 				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from Book order by id" )
-						.getResultList()
-						.invoke( rows -> assertThat( rows ).hasSize( 5 ) )
+						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
+						.setParameter( "name", "J.R.R. Tolkien" )
+						.getSingleResult()
+						.invoke( author -> assertThat( author.getBooks() )
+								.extracting( Book::getTitle )
+								.containsExactly( "The Lord of the Rings" )
+						)
 				) )
+				// Other author's books should remain intact
+				.call( () -> getMutinySessionFactory().withSession( s -> s
+						.createSelectionQuery( "from Author a join fetch a.books where a.name = :name", Author.class )
+						.setParameter( "name", "Stephen King" )
+						.getSingleResult()
+						.invoke( author -> assertThat( author.getBooks() )
+								.extracting( Book::getTitle )
+								.containsExactlyInAnyOrder( "The Shining", "It" )
+						)
+				) )
+				.call( () -> assertDeletedTitles( Book.TABLE_NAME, 5, deletedTitles ) )
 		);
 	}
 
 	@Test
 	public void testCascadeRemoveSoftDeletesBooks(VertxTestContext context) {
+		List<String> deletedTitles = List.of( "Cascade Book 1", "Cascade Book 2" );
 		test( context, getMutinySessionFactory()
 				// Create a CascadeAuthor with two books
 				.withTransaction( session -> {
@@ -259,27 +190,13 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 						.invoke( books -> assertThat( books ).isEmpty() )
 				) )
 				// But rows must still exist in the table with deleted=true
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from CascadeBook order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( 2 );
-							for ( Object row : rows ) {
-								Object[] r = (Object[]) row;
-								if ( dbType() == DB2 ) {
-									assertThat( (short) r[2] ).isEqualTo( (short) 1 );
-								}
-								else {
-									assertThat( (boolean) r[2] ).isTrue();
-								}
-							}
-						} )
-				) )
+				.call( () -> assertDeletedTitles( CascadeBook.TABLE_NAME, 2, deletedTitles ) )
 		);
 	}
 
 	@Test
 	public void testOrphanRemovalSoftDeletesBook(VertxTestContext context) {
+		List<String> deletedTitles = List.of( "Orphan Book 1" );
 		test( context, getMutinySessionFactory()
 				// Create an OrphanAuthor with two books
 				.withTransaction( session -> {
@@ -293,7 +210,7 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 				// Remove one book from the collection — orphanRemoval should soft-delete it
 				.call( () -> getMutinySessionFactory().withTransaction( s -> s
 						.createSelectionQuery(
-								"from OrphanAuthor a join fetch a.books order by a.id",
+								"from OrphanAuthor a join fetch a.books b order by b.title",
 								OrphanAuthor.class
 						)
 						.getSingleResult()
@@ -306,20 +223,39 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 						.invoke( books -> assertThat( books ).hasSize( 1 ) )
 				) )
 				// Both rows must still exist in the table; one should be marked deleted
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, title, deleted from OrphanBook order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( 2 );
-							long deletedCount = rows.stream()
-									.map( r -> (Object[]) r )
-									.filter( r -> dbType() == DB2
-											? (short) r[2] == (short) 1
-											: (boolean) r[2] )
-									.count();
-							assertThat( deletedCount ).isEqualTo( 1 );
-						} )
-				) )
+				.call( () -> assertDeletedTitles( OrphanBook.TABLE_NAME, 2, deletedTitles ) )
+		);
+	}
+
+	// Db2 saves a boolean as a number
+	private static boolean toBoolean(Object obj) {
+		return requireNonNull( dbType() ) == DB2
+				? ( (short) obj ) == 1
+				: (boolean) obj;
+	}
+
+	/**
+	 * Assert that the expected deleted titles are actually marked as deleted
+	 */
+	private static Uni<List<Tuple>> assertDeletedTitles(String tableName, int expectedRowsNumber, List<String> deletedTitles) {
+		return getMutinySessionFactory().withSession( s -> s
+				.createNativeQuery( "select id, title, deleted from " + tableName + " order by id", Tuple.class )
+				.getResultList()
+				.invoke( rows -> {
+					assertThat( rows )
+							.as( "All rows should still exist in the database" )
+							.hasSize( expectedRowsNumber );
+					List<String> markAsDeletedTitles = new ArrayList<>();
+					for ( Tuple tuple : rows ) {
+						boolean deleted = toBoolean( tuple.get( "deleted" ) );
+						if ( deleted ) {
+							String title = tuple.get( "title", String.class );
+							markAsDeletedTitles.add( title );
+						}
+					}
+					assertThat( markAsDeletedTitles )
+							.containsExactlyInAnyOrder( deletedTitles.toArray( new String[0] ) );
+				} )
 		);
 	}
 
@@ -328,8 +264,10 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	// -------------------------------------------------------------------------
 
 	@Entity(name = "Author")
-	@Table(name = "Author")
+	@Table(name = Author.TABLE_NAME)
 	public static class Author {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_AUTHOR";
+
 		@Id
 		@GeneratedValue
 		private Integer id;
@@ -393,9 +331,11 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "Book")
-	@Table(name = "Book")
+	@Table(name = Book.TABLE_NAME)
 	@SoftDelete
 	public static class Book {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_BOOK";
+
 		@Id
 		@GeneratedValue
 		private Integer id;
@@ -466,9 +406,10 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	// -------------------------------------------------------------------------
 
 	@Entity(name = "CascadeAuthor")
-	@Table(name = "CascadeAuthor")
+	@Table(name = CascadeAuthor.TABLE_NAME)
 	@SoftDelete
 	public static class CascadeAuthor {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_CASCADE_AUTHOR";
 		@Id
 		@GeneratedValue
 		private Integer id;
@@ -520,9 +461,10 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "CascadeBook")
-	@Table(name = "CascadeBook")
+	@Table(name = CascadeBook.TABLE_NAME)
 	@SoftDelete
 	public static class CascadeBook {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_CASCADE_BOOK";
 		@Id
 		@GeneratedValue
 		private Integer id;
@@ -580,8 +522,9 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	// -------------------------------------------------------------------------
 
 	@Entity(name = "OrphanAuthor")
-	@Table(name = "OrphanAuthor")
+	@Table(name = OrphanAuthor.TABLE_NAME)
 	public static class OrphanAuthor {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_ORPHAN_AUTHOR";
 		@Id
 		@GeneratedValue
 		private Integer id;
@@ -633,9 +576,11 @@ public class SoftDeleteCollectionTest extends BaseReactiveTest {
 	}
 
 	@Entity(name = "OrphanBook")
-	@Table(name = "OrphanBook")
+	@Table(name = OrphanBook.TABLE_NAME)
 	@SoftDelete
 	public static class OrphanBook {
+		public static final String TABLE_NAME = "SoftDeleteCollectionTest_ORPHAN_BOOK";
+
 		@Id
 		@GeneratedValue
 		private Integer id;

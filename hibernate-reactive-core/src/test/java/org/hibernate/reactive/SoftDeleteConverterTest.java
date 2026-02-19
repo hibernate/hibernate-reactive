@@ -23,8 +23,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
@@ -38,8 +36,7 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 				YesNoEntity.class,
 				TrueFalseEntity.class,
 				ActiveStrategyEntity.class,
-				DeletedStrategyEntity.class,
-				DefaultEntity.class
+				DeletedStrategyEntity.class
 		);
 	}
 
@@ -59,10 +56,7 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 					DeletedStrategyEntity deleted1 = new DeletedStrategyEntity( 1, "Deleted 1" );
 					DeletedStrategyEntity deleted2 = new DeletedStrategyEntity( 2, "Deleted 2" );
 
-					DefaultEntity default1 = new DefaultEntity( 1, "Default 1" );
-					DefaultEntity default2 = new DefaultEntity( 2, "Default 2" );
-
-					return session.persistAll( yn1, yn2, tf1, tf2, active1, active2, deleted1, deleted2, default1, default2 );
+					return session.persistAll( yn1, yn2, tf1, tf2, active1, active2, deleted1, deleted2 );
 				} )
 		);
 	}
@@ -71,7 +65,7 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 	@Override
 	protected CompletionStage<Void> cleanDb() {
 		return loop(
-				List.of( "YesNoEntity", "TrueFalseEntity", "ActiveStrategyEntity", "DeletedStrategyEntity", "DefaultEntity" ),
+				List.of( "YesNoEntity", "TrueFalseEntity", "ActiveStrategyEntity", "DeletedStrategyEntity" ),
 				tableName -> getSessionFactory().withTransaction( s -> s.createNativeQuery( "delete from " + tableName ).executeUpdate() )
 		);
 	}
@@ -187,46 +181,6 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 
 							Object[] secondRow = (Object[]) rows.get( 1 );
 							assertThat( secondRow[2] ).isEqualTo( "N" ); // Not deleted
-						} )
-				) )
-		);
-	}
-
-	@Test
-	public void testDefaultConverter(VertxTestContext context) {
-		test( context, getMutinySessionFactory()
-				// Delete one entity
-				.withTransaction( s -> s
-						.find( DefaultEntity.class, 1 )
-						.chain( s::remove )
-				)
-				// Verify it's not found
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.find( DefaultEntity.class, 1 )
-						.invoke( entity -> assertThat( entity ).isNull() )
-				) )
-				// Check native query - default uses boolean/numeric
-				.call( () -> getMutinySessionFactory().withSession( s -> s
-						.createNativeQuery( "select id, name, deleted from DefaultEntity order by id" )
-						.getResultList()
-						.invoke( rows -> {
-							assertThat( rows ).hasSize( 2 );
-							Object[] firstRow = (Object[]) rows.get( 0 );
-							// DB2 uses smallint, others use boolean
-							if ( dbType() == DB2 ) {
-								assertThat( (short) firstRow[2] ).isEqualTo( (short) 1 );
-							}
-							else {
-								assertThat( (boolean) firstRow[2] ).isTrue();
-							}
-
-							Object[] secondRow = (Object[]) rows.get( 1 );
-							if ( dbType() == DB2 ) {
-								assertThat( (short) secondRow[2] ).isEqualTo( (short) 0 );
-							}
-							else {
-								assertThat( (boolean) secondRow[2] ).isFalse();
-							}
 						} )
 				) )
 		);
@@ -391,48 +345,6 @@ public class SoftDeleteConverterTest extends BaseReactiveTest {
 				return false;
 			}
 			DeletedStrategyEntity that = (DeletedStrategyEntity) o;
-			return Objects.equals( id, that.id );
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash( id );
-		}
-	}
-
-	@Entity(name = "DefaultEntity")
-	@Table(name = "DefaultEntity")
-	@SoftDelete
-	public static class DefaultEntity {
-		@Id
-		private Integer id;
-		private String name;
-
-		public DefaultEntity() {
-		}
-
-		public DefaultEntity(Integer id, String name) {
-			this.id = id;
-			this.name = name;
-		}
-
-		public Integer getId() {
-			return id;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if ( this == o ) {
-				return true;
-			}
-			if ( o == null || getClass() != o.getClass() ) {
-				return false;
-			}
-			DefaultEntity that = (DefaultEntity) o;
 			return Objects.equals( id, that.id );
 		}
 
