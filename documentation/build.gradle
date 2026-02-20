@@ -204,8 +204,8 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
 	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
-	group 'Documentation'
-	description 'Grouping task for performing all documentation building tasks'
+	group = 'Documentation'
+	description = 'Grouping task for performing all documentation building tasks'
 }
 
 assemble.dependsOn assembleDocumentationTask

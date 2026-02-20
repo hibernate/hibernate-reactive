@@ -8,7 +8,7 @@ version = rootProject.version
 
 spotless {
 	//Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
-	enforceCheck false
+	enforceCheck = false
 	java {
 		licenseHeaderFile rootProject.file('spotless.license.java')
 		removeUnusedImports()
