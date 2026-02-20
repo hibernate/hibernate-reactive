@@ -24,13 +24,13 @@ final Directory documentationDir = project(":documentation").layout.buildDirecto
  */
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
     dependsOn ':documentation:assemble'
-    group 'Documentation'
-    description 'Render the documentation'
+    group = 'Documentation'
+    description = 'Render the documentation'
 }
 assemble.dependsOn assembleDocumentationTask
 
 def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
-    description "Update the documentation on the cloned static website"
+    description = "Update the documentation on the cloned static website"
     dependsOn assembleDocumentationTask
 
     // copy documentation outputs into target/documentation:
@@ -53,8 +53,8 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
 }
 
 tasks.register( "releasePrepare" ) {
-    description "Prepares all the artifacts and documentation for a JReleaser release."
-    group "Release"
+    description = "Prepares all the artifacts and documentation for a JReleaser release."
+    group = "Release"
 
 	// Render the Documentation/Javadocs and move them to the staging directory (for JReleaser):
 	dependsOn updateDocumentationTask
