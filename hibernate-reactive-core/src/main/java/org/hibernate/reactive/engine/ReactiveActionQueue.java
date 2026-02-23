@@ -5,13 +5,7 @@
 package org.hibernate.reactive.engine;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -34,9 +28,7 @@ import org.hibernate.engine.spi.ActionQueue;
 import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
+import org.hibernate.engine.spi.TransactionCompletionCallbacks;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.impl.QueuedOperationCollectionAction;
@@ -46,17 +38,11 @@ import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityActionVetoException;
 import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityInsertActionHolder;
 import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
 import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
 import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.type.CollectionType;
-import org.hibernate.type.CompositeType;
-import org.hibernate.type.EntityType;
-import org.hibernate.type.ForeignKeyDirection;
-import org.hibernate.type.Type;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
@@ -80,7 +66,7 @@ public class ReactiveActionQueue {
 	// Object insertions, updates, and deletions have list semantics because
 	// they must happen in the right order to respect referential
 	// integrity
-	private ExecutableList<ReactiveEntityInsertActionHolder> insertions;
+	private ExecutableList<AbstractEntityInsertAction> insertions;
 	private ExecutableList<ReactiveEntityDeleteAction> deletions;
 	private ExecutableList<ReactiveEntityUpdateAction> updates;
 	// Actually the semantics of the next three are really "Bag"
@@ -138,7 +124,7 @@ public class ReactiveActionQueue {
 				if ( instance.insertions == null ) {
 					//Special case of initialization
 					instance.insertions = instance.isOrderInsertsEnabled()
-							? new ExecutableList<>( ReactiveActionQueue.InsertActionSorter.INSTANCE )
+							? new ExecutableList<>( ActionQueue.InsertActionSorter.INSTANCE )
 							: new ExecutableList<>( false );
 				}
 			}
@@ -288,7 +274,7 @@ public class ReactiveActionQueue {
 		else {
 			LOG.trace( "Adding resolved non-early insert action." );
 			OrderedActions.EntityInsertAction.ensureInitialized( this );
-			this.insertions.add( new ReactiveEntityInsertActionHolder( insert ) );
+			this.insertions.add( (AbstractEntityInsertAction) insert );
 			return postResolvedEntityInsertAction( insert );
 		}
 	}
@@ -630,8 +616,8 @@ public class ReactiveActionQueue {
 	 *
 	 * @param list The list of Executable elements to be performed
 	 */
-	private CompletionStage<Void> executeActions(
-			ExecutableList<? extends ReactiveExecutable> list) throws HibernateException {
+	private <E extends ComparableExecutable> CompletionStage<Void> executeActions(ExecutableList<E> list)
+			throws HibernateException {
 		if ( list == null || list.isEmpty() ) {
 			return voidFuture();
 		}
@@ -640,7 +626,7 @@ public class ReactiveActionQueue {
 		//		2) ExecutableList#getQuerySpaces also iterates the Executables to collect query spaces.
 		return loop( 0, list.size(),
 					 index -> {
-						 final ReactiveExecutable e = list.get( index );
+						 final ReactiveExecutable e = (ReactiveExecutable) list.get( index );
 						 return e.reactiveExecute()
 								 .whenComplete( (v2, x1) -> {
 									 if ( e.getBeforeTransactionCompletionProcess() != null ) {
@@ -896,9 +882,10 @@ public class ReactiveActionQueue {
 		}
 
 		public CompletionStage<Void> beforeTransactionCompletion() {
-			while ( !processes.isEmpty() ) {
+			TransactionCompletionCallbacks.BeforeCompletionCallback beforeCompletionCallback;
+			while ( ( beforeCompletionCallback = processes.poll() ) != null ) {
 				try {
-					processes.poll().doBeforeTransactionCompletion( session.getSharedContract() );
+					beforeCompletionCallback.doBeforeTransactionCompletion( session.getSharedContract() );
 				}
 				catch (HibernateException he) {
 					throw he;
@@ -957,327 +944,4 @@ public class ReactiveActionQueue {
 			).whenComplete( (v, e) -> reactiveProcesses.clear() );
 		}
 	}
-
-	/**
-	 * Order the {@link #insertions} queue such that we group inserts against the same entity together (without
-	 * violating constraints). The original order is generated by cascade order, which in turn is based on the
-	 * directionality of foreign-keys. So even though we will be changing the ordering here, we need to make absolutely
-	 * certain that we do not circumvent this FK ordering to the extent of causing constraint violations.
-	 * <p>
-	 * Sorts the insert actions using more hashes.
-	 * </p>
-	 * NOTE: this class is not thread-safe.
-	 *
-	 * @author Jay Erb
-	 */
-	private static class InsertActionSorter implements ExecutableList.Sorter<ReactiveEntityInsertActionHolder> {
-		/**
-		 * Singleton access
-		 */
-		public static final InsertActionSorter INSTANCE = new InsertActionSorter();
-		// the map of batch numbers to EntityInsertAction lists
-		private Map<BatchIdentifier, List<ReactiveEntityInsertActionHolder>> actionBatches;
-
-		public InsertActionSorter() {
-		}
-
-		/**
-		 * Sort the insert actions.
-		 */
-		@Override
-		public void sort(List<ReactiveEntityInsertActionHolder> insertions) {
-			// optimize the hash size to eliminate a rehash.
-			this.actionBatches = new HashMap<>();
-
-			// the mapping of entity names to their latest batch numbers.
-			final List<BatchIdentifier> latestBatches = new ArrayList<>();
-
-			for ( ReactiveEntityInsertActionHolder action : insertions ) {
-				final ReactiveEntityInsertAction actionDelegate = action.getDelegate();
-				BatchIdentifier batchIdentifier = new BatchIdentifier(
-						actionDelegate.getEntityName(),
-						actionDelegate.getSession()
-								.getFactory()
-								.getMappingMetamodel()
-								.getEntityDescriptor( actionDelegate.getEntityName() )
-								.getRootEntityName()
-				);
-
-				int index = latestBatches.indexOf( batchIdentifier );
-
-				if ( index != -1 ) {
-					batchIdentifier = latestBatches.get( index );
-				}
-				else {
-					latestBatches.add( batchIdentifier );
-				}
-				addParentChildEntityNames( actionDelegate, batchIdentifier );
-				addToBatch( batchIdentifier, actionDelegate );
-			}
-			insertions.clear();
-
-			// Examine each entry in the batch list, and build the dependency graph.
-			for ( int i = 0; i < latestBatches.size(); i++ ) {
-				BatchIdentifier batchIdentifier = latestBatches.get( i );
-
-				for ( int j = i - 1; j >= 0; j-- ) {
-					BatchIdentifier prevBatchIdentifier = latestBatches.get( j );
-					if ( prevBatchIdentifier.hasAnyParentEntityNames( batchIdentifier ) ) {
-						prevBatchIdentifier.parent = batchIdentifier;
-					}
-					if ( batchIdentifier.hasAnyChildEntityNames( prevBatchIdentifier ) ) {
-						prevBatchIdentifier.parent = batchIdentifier;
-					}
-				}
-
-				for ( int j = i + 1; j < latestBatches.size(); j++ ) {
-					BatchIdentifier nextBatchIdentifier = latestBatches.get( j );
-
-					if ( nextBatchIdentifier.hasAnyParentEntityNames( batchIdentifier ) ) {
-						nextBatchIdentifier.parent = batchIdentifier;
-						nextBatchIdentifier.getParentEntityNames().add( batchIdentifier.getEntityName() );
-					}
-					if ( batchIdentifier.hasAnyChildEntityNames( nextBatchIdentifier ) ) {
-						nextBatchIdentifier.parent = batchIdentifier;
-						nextBatchIdentifier.getParentEntityNames().add( batchIdentifier.getEntityName() );
-					}
-				}
-			}
-
-			boolean sorted = false;
-
-			long maxIterations = (long) latestBatches.size() * latestBatches.size();
-			long iterations = 0;
-
-			sort:
-			do {
-				// Examine each entry in the batch list, sorting them based on parent/child association
-				// as depicted by the dependency graph.
-				iterations++;
-
-				for ( int i = 0; i < latestBatches.size(); i++ ) {
-					BatchIdentifier batchIdentifier = latestBatches.get( i );
-
-					// Iterate next batches and make sure that children types are after parents.
-					// Since the outer loop looks at each batch entry individually and the prior loop will reorder
-					// entries as well, we need to look and verify if the current batch is a child of the next
-					// batch or if the current batch is seen as a parent or child of the next batch.
-					for ( int j = i + 1; j < latestBatches.size(); j++ ) {
-						BatchIdentifier nextBatchIdentifier = latestBatches.get( j );
-
-						if ( batchIdentifier.hasParent( nextBatchIdentifier )
-								&& !nextBatchIdentifier.hasParent( batchIdentifier ) ) {
-							latestBatches.remove( batchIdentifier );
-							latestBatches.add( j, batchIdentifier );
-
-							continue sort;
-						}
-					}
-				}
-				sorted = true;
-			}
-			while ( !sorted && iterations <= maxIterations );
-
-			if ( iterations > maxIterations ) {
-				LOG.warn( "The batch containing "
-						+ latestBatches.size()
-						+ " statements could not be sorted after "
-						+ maxIterations
-						+ " iterations. "
-						+ "This might indicate a circular entity relationship." );
-			}
-
-			// Now, rebuild the insertions list. There is a batch for each entry in the name list.
-			for ( BatchIdentifier rootIdentifier : latestBatches ) {
-				insertions.addAll( actionBatches.get( rootIdentifier ) );
-			}
-		}
-
-		/**
-		 * Add parent and child entity names so that we know how to rearrange dependencies
-		 *
-		 * @param action The action being sorted
-		 * @param batchIdentifier The batch identifier of the entity affected by the action
-		 */
-		private void addParentChildEntityNames(ReactiveEntityInsertAction action, BatchIdentifier batchIdentifier) {
-			Object[] propertyValues = action.getState();
-			Type[] propertyTypes = action.getPersister().getPropertyTypes();
-			Type identifierType = action.getPersister().getIdentifierType();
-
-			for ( int i = 0; i < propertyValues.length; i++ ) {
-				Object value = propertyValues[i];
-				if (value!=null) {
-					Type type = propertyTypes[i];
-					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, value );
-				}
-			}
-
-			if ( identifierType.isComponentType() ) {
-				CompositeType compositeType = (CompositeType) identifierType;
-				Type[] compositeIdentifierTypes = compositeType.getSubtypes();
-
-				for ( Type type : compositeIdentifierTypes ) {
-					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, type, null );
-				}
-			}
-		}
-
-		private void addParentChildEntityNameByPropertyAndValue(
-				ReactiveEntityInsertAction action,
-				BatchIdentifier batchIdentifier,
-				Type type,
-				Object value) {
-			final MappingMetamodelImplementor mappingMetamodel = action.getSession()
-					.getFactory()
-					.getRuntimeMetamodels()
-					.getMappingMetamodel();
-			if ( type.isEntityType() ) {
-				final EntityType entityType = (EntityType) type;
-				final String entityName = entityType.getName();
-				final String rootEntityName = mappingMetamodel.getEntityDescriptor( entityName ).getRootEntityName();
-
-				if ( entityType.isOneToOne() && entityType.getForeignKeyDirection() == ForeignKeyDirection.TO_PARENT ) {
-					if ( !entityType.isReferenceToPrimaryKey() ) {
-						batchIdentifier.getChildEntityNames().add( entityName );
-					}
-					if ( !rootEntityName.equals( entityName ) ) {
-						batchIdentifier.getChildEntityNames().add( rootEntityName );
-					}
-				}
-				else {
-					if ( !batchIdentifier.getEntityName().equals( entityName ) ) {
-						batchIdentifier.getParentEntityNames().add( entityName );
-					}
-					if ( value != null ) {
-						String valueClass = value.getClass().getName();
-						if ( !valueClass.equals( entityName ) ) {
-							batchIdentifier.getParentEntityNames().add( valueClass );
-						}
-					}
-					if ( !rootEntityName.equals( entityName ) ) {
-						batchIdentifier.getParentEntityNames().add( rootEntityName );
-					}
-				}
-			}
-			else if ( type.isCollectionType() ) {
-				CollectionType collectionType = (CollectionType) type;
-				final SessionFactoryImplementor sessionFactory = action.getSession().getSessionFactory();
-				if ( collectionType.getElementType( sessionFactory ).isEntityType()
-						&& !mappingMetamodel.getCollectionDescriptor( collectionType.getRole() ).isManyToMany() ) {
-					final String entityName = collectionType.getAssociatedEntityName( sessionFactory );
-					final String rootEntityName = mappingMetamodel.getEntityDescriptor( entityName ).getRootEntityName();
-					batchIdentifier.getChildEntityNames().add( entityName );
-					if ( !rootEntityName.equals( entityName ) ) {
-						batchIdentifier.getChildEntityNames().add( rootEntityName );
-					}
-				}
-			}
-			else if ( type.isComponentType() && value != null ) {
-				// Support recursive checks of composite type properties for associations and collections.
-				CompositeType compositeType = (CompositeType) type;
-				final SharedSessionContractImplementor session = action.getSession();
-				Object[] componentValues = compositeType.getPropertyValues( value, session );
-				for ( int j = 0; j < componentValues.length; ++j ) {
-					Type componentValueType = compositeType.getSubtypes()[j];
-					Object componentValue = componentValues[j];
-					addParentChildEntityNameByPropertyAndValue( action, batchIdentifier, componentValueType, componentValue );
-				}
-			}
-		}
-
-		private void addToBatch(BatchIdentifier batchIdentifier, ReactiveEntityInsertAction action) {
-			List<ReactiveEntityInsertActionHolder> actions = actionBatches
-					.computeIfAbsent( batchIdentifier, k -> new LinkedList<>() );
-
-			actions.add( new ReactiveEntityInsertActionHolder( action ) );
-		}
-
-		private static class BatchIdentifier {
-
-			private final String entityName;
-			private final String rootEntityName;
-
-			private Set<String> parentEntityNames = new HashSet<>();
-
-			private Set<String> childEntityNames = new HashSet<>();
-
-			private BatchIdentifier parent;
-
-			BatchIdentifier(String entityName, String rootEntityName) {
-				this.entityName = entityName;
-				this.rootEntityName = rootEntityName;
-			}
-
-			public BatchIdentifier getParent() {
-				return parent;
-			}
-
-			public void setParent(BatchIdentifier parent) {
-				this.parent = parent;
-			}
-
-			@Override
-			public boolean equals(Object o) {
-				if ( this == o ) {
-					return true;
-				}
-				if ( !( o instanceof BatchIdentifier that ) ) {
-					return false;
-				}
-				return Objects.equals( entityName, that.entityName );
-			}
-
-			@Override
-			public int hashCode() {
-				return Objects.hash( entityName );
-			}
-
-			String getEntityName() {
-				return entityName;
-			}
-
-			String getRootEntityName() {
-				return rootEntityName;
-			}
-
-			Set<String> getParentEntityNames() {
-				return parentEntityNames;
-			}
-
-			Set<String> getChildEntityNames() {
-				return childEntityNames;
-			}
-
-			boolean hasAnyParentEntityNames(BatchIdentifier batchIdentifier) {
-				return parentEntityNames.contains( batchIdentifier.getEntityName() ) ||
-						parentEntityNames.contains( batchIdentifier.getRootEntityName() );
-			}
-
-			boolean hasAnyChildEntityNames(BatchIdentifier batchIdentifier) {
-				return childEntityNames.contains( batchIdentifier.getEntityName() );
-			}
-
-			/**
-			 * Check if this {@link BatchIdentifier} has a parent or grandparent
-			 * matching the given {@link BatchIdentifier reference.
-			 * @param batchIdentifier {@link BatchIdentifier} reference
-			 * @return this {@link BatchIdentifier} has a parent matching the given {@link BatchIdentifier reference
-			 */
-			boolean hasParent(BatchIdentifier batchIdentifier) {
-				return parent == batchIdentifier
-						|| parentEntityNames.contains( batchIdentifier.getEntityName() )
-						|| parent != null && parent.hasParent( batchIdentifier, new ArrayList<>() );
-			}
-
-			private boolean hasParent(BatchIdentifier batchIdentifier, List<BatchIdentifier> stack) {
-				if ( !stack.contains( this ) && parent != null ) {
-					stack.add( this );
-					return parent.hasParent( batchIdentifier, stack );
-				}
-				return parent == batchIdentifier || parentEntityNames.contains( batchIdentifier.getEntityName() );
-			}
-		}
-
-	}
-
 }
