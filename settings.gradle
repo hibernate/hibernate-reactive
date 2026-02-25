@@ -11,6 +11,15 @@ pluginManagement {
     includeBuild 'local-build-plugins'
 }
 
+// Conditionally include local hibernate-orm build when path is specified
+// Usage: ./gradlew build -PlocalHibernateOrmPath=../hibernate-orm
+// Or add "localHibernateOrmPath = ../hibernate-orm" to gradle.properties
+def localOrmPath = settings.ext.find("localHibernateOrmPath")
+if ( localOrmPath ) {
+    logger.lifecycle "Using local Hibernate ORM build from: ${localOrmPath}"
+    includeBuild localOrmPath
+}
+
 rootProject.name = 'hibernate-reactive'
 
 // When updating the baseline, make sure to update the JDK version in the javadoc link
