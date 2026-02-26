@@ -9,6 +9,16 @@ buildscript {
 	}
 }
 
+plugins {
+	id "hr-java-library"
+	id "hr-test-containers"
+}
+
+test {
+	def db = project.properties['db']
+	enabled = db == null || db == 'PostgreSQL'
+}
+
 description = 'TechEmpower integration tests'
 
 dependencies {
@@ -30,51 +40,6 @@ dependencies {
 	// Testing
 	testImplementation(libs.org.assertj.assertj.core)
 	testImplementation(libs.io.vertx.vertx.junit5)
-}
-
-// Configuration for the tests
-tasks.withType( Test ).configureEach {
-	defaultCharacterEncoding = "UTF-8"
-	useJUnitPlatform()
-	testLogging {
-		showStandardStreams = project.hasProperty( 'showStandardOutput' )
-		showStackTraces = true
-		exceptionFormat = 'full'
-		displayGranularity = 1
-		events = ['PASSED', 'FAILED', 'SKIPPED']
-	}
-
-	// We need a to use an instance of PostgreSQL with a specific configuration.
-	// So, for this particular integration-test module, we default to true unless docker is disabled.
-	systemProperty 'docker', project.hasProperty('docker')
-	systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
-
-	if ( project.hasProperty( 'includeTests' ) ) {
-		// Example: ./gradlew testAll -PincludeTests=DefaultPortTest
-		filter {
-			includeTestsMatching project.properties['includeTests'] ?: '*' as String
-		}
-	}
-}
-
-// Print a summary of the results of the tests (number of failures, successes and skipped)
-// This is the same as the one in hibernate-reactive-core
-def loggingSummary(db, result, desc) {
-	if ( !desc.parent ) { // will match the outermost suite
-		def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-		def repeatLength = output.length() + 1
-		logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
-	}
-}
-
-test {
-	doFirst {
-		systemProperty 'db', 'PostgreSQL'
-	}
-	// We only want to test this on Postgres
-	afterSuite { desc, result ->
-		loggingSummary( 'PostgreSQL', result, desc )
-	}
 }
 
 def javaMainClass = "org.hibernate.reactive.it.techempower.VertxServer"
