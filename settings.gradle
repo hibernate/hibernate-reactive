@@ -18,20 +18,20 @@ gradle.ext.baselineJavaVersion = JavaLanguageVersion.of( 17 )
 
 // Gradle does bytecode transformation on tests.
 // You can't use bytecode higher than what Gradle supports, even with toolchains.
-def GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 23
+def GRADLE_MAX_SUPPORTED_BYTECODE_VERSION = 25
 
 // This overrides the default version catalog in gradle/libs.versions.toml, which can be
 // useful to monitor compatibility for upcoming versions on CI:
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            // ./gradlew build -PhibernateOrmVersion=7.1.0.Final
+            // ./gradlew build -PhibernateOrmVersion=7.1.1.Final
             def hibernateOrmVersion = settings.ext.find("hibernateOrmVersion") ?: ""
             if ( hibernateOrmVersion != "" ) {
                 version("hibernateOrmVersion", hibernateOrmVersion)
             }
 
-            // ./gradlew build -PhibernateOrmGradlePluginVersion=7.1.0.Final
+            // ./gradlew build -PhibernateOrmGradlePluginVersion=7.1.1.Final
             def hibernateOrmGradlePluginVersion = settings.ext.find("hibernateOrmGradlePluginVersion") ?: ""
             if ( hibernateOrmGradlePluginVersion ) {
                 version("hibernateOrmGradlePluginVersion", hibernateOrmGradlePluginVersion)
@@ -139,6 +139,7 @@ include 'bytecode-enhancements-it'
 include 'verticle-postgres-it'
 include 'techempower-postgres-it'
 include 'hibernate-validator-postgres-it'
+include 'local-build-asciidoctor-extensions'
 
 // Examples
 for ( project in rootProject.children ) {

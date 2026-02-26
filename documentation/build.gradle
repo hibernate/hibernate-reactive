@@ -1,9 +1,19 @@
-import org.asciidoctor.gradle.jvm.AsciidoctorTask
-
 import java.time.Year
+
+import org.asciidoctor.gradle.jvm.AsciidoctorTask
+import org.ysb33r.grolifant.api.core.jvm.ExecutionMode
 
 plugins {
 	id "org.asciidoctor.jvm.convert"
+	id "hr-java-library"
+}
+
+configurations {
+	themezip
+}
+
+dependencies {
+	themezip 'org.hibernate.infra:hibernate-asciidoctor-theme:6.0.4.Final@zip'
 }
 
 ext {
@@ -18,6 +28,23 @@ rootProject.subprojects { subproject ->
 	if ( !this.projectsToSkipWhenAggregatingJavadocs.contains( subproject.name ) ) {
 		this.evaluationDependsOn( subproject.path )
 	}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Prepare the theme for Javadocs/Asciidoc
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tasks.register('unpackTheme', Copy) {
+	def unpackDir = rootProject.layout.buildDirectory.dir("unpacked-theme")
+
+	onlyIf {
+		!unpackDir.get().asFile.exists()
+	}
+	destinationDir = unpackDir.get().asFile
+
+	def zipFile = configurations.themezip.singleFile
+	from zipTree(zipFile)
+
+	dependsOn configurations.themezip
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +76,9 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		windowTitle = 'Hibernate Reactive API documentation'
 		docTitle = "Hibernate Reactive API documentation ($project.version)"
 		bottom = "Copyright &copy; $inceptionYear-$currentYear <a href=\"http://redhat.com\">Red Hat, Inc</a>. All Rights Reserved."
+		// Pick the styles for the JDK that is used to "build" the Javadocs:
+		stylesheetFile = rootProject.layout.buildDirectory.dir("unpacked-theme").get()
+				.dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk21").file("stylesheet.css").asFile
 		use = true
 		options.encoding = 'UTF-8'
 
@@ -89,6 +119,8 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 			classpath += subProject.sourceSets.main.output + subProject.sourceSets.main.compileClasspath
 		}
 	}
+
+	dependsOn 'unpackTheme'
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,23 +132,16 @@ asciidoctor {
 	enabled = false
 }
 
-def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumentation', AsciidoctorTask ) {
-	description = 'Renders the Reference Documentation in HTML format using Asciidoctor.'
-	sourceDir = file( 'src/main/asciidoc/reference' )
-	sources {
-		include 'index.adoc'
-	}
+def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumentation", AsciidoctorTask ) {
+	description = "Renders the Reference Documentation in HTML format using Asciidoctor."
+	notCompatibleWithConfigurationCache( "AsciidoctorGradlePlugin does not support configuration cache yet" )
 
-	resources {
-		from( sourceDir ) {
-			include 'images/**'
-			include 'css/**'
-		}
-	}
-
-	outputDir = project.layout.buildDirectory.dir( "asciidoc/reference/html_single" ).get().asFile
-	options logDocuments: true
-
+	// use of provider to obtain info and cache the value
+	def versionFamily = providers.provider { project.projectVersion.family }
+	def fullVersion = providers.provider { project.version.toString() }
+	def asciidocReference = layout.projectDirectory.dir("src/main/asciidoc/reference")
+	def unpackedThemeAsciidoc = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc")
+	def docInfoHibernate = rootProject.layout.buildDirectory.dir("unpacked-theme/hibernate-asciidoctor-theme/asciidoc/docinfo/hibernate")
 	def ormMinorVersion = libs.versions.hibernateOrmVersion.map { v ->
 		def matcher = v =~ /\d+\.\d+/
 		if (matcher.find()) {
@@ -126,14 +151,51 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 		}
 	}
 
-	attributes icons: 'font',
-			   'source-highlighter': 'rouge',
-			   experimental: true,
-			   linkcss: true,
-			   majorMinorVersion: project.projectVersion.family,
-			   fullVersion: project.version.toString(),
-			   ormMinorVersion: ormMinorVersion.get(),
-			   docinfo: 'private'
+	asciidoctorj {
+		version = "3.0.0"
+		docExtensions( project( ":local-build-asciidoctor-extensions" ) )
+	}
+
+	sourceDir( asciidocReference )
+	sources {
+		include( "index.adoc" )
+	}
+
+	resources {
+		from( asciidocReference ) {
+			include( "images/**" )
+		}
+		from( unpackedThemeAsciidoc ) {
+			include( "css/**", "images/**", "script/**" )
+		}
+	}
+
+	outputDir = layout.buildDirectory.dir( "asciidoc/reference/html_single" )
+
+	options( logDocuments: true )
+
+	attributes(
+			icons: "font",
+			"source-highlighter": "rouge",
+			majorMinorVersion: versionFamily.get(),
+			fullVersion: fullVersion.get(),
+			ormMinorVersion: ormMinorVersion.get(),
+			stylesdir: "css",
+			"iconfont-remote": false,
+			"iconfont-name": "font-awesome/css/solid",
+			docinfo: "shared,private",
+			docinfodir: docInfoHibernate.get(),
+			"html.meta.project-key": "reactive",
+			"html.outdated-content.project-key": "reactive",
+			"html-meta-description": "Hibernate Reactive, reactive API for Hibernate ORM - Reference Documentation",
+			"html-meta-keywords": "hibernate, reactive, hibernate reactive, database, db, vert.x",
+			"html-meta-version-family": versionFamily.get(),
+	)
+
+	// See https://docs.asciidoctor.org/gradle-plugin/latest/common-task-configuration/#choosing-an-execution-mode-for-asciidoctorj
+	executionMode = ExecutionMode.JAVA_EXEC
+
+	dependsOn( tasks.named( "unpackTheme" ) )
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,8 +204,8 @@ def renderReferenceDocumentationTask = tasks.register( 'renderReferenceDocumenta
 
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
 	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
-	group 'Documentation'
-	description 'Grouping task for performing all documentation building tasks'
+	group = 'Documentation'
+	description = 'Grouping task for performing all documentation building tasks'
 }
 
 assemble.dependsOn assembleDocumentationTask

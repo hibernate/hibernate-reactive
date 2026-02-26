@@ -10,6 +10,9 @@ buildscript {
 }
 
 plugins {
+    id "hr-java-library"
+    id "hr-test-containers"
+
     alias(libs.plugins.org.hibernate.orm)
 }
 
@@ -41,74 +44,5 @@ dependencies {
 hibernate {
     enhancement {
         // We want everything enabled for the tests
-    }
-}
-
-// Print a summary of the results of the tests (number of failures, successes and skipped)
-// This is the same as the one in hibernate-reactive-core
-def loggingSummary(db, result, desc) {
-    if ( !desc.parent ) { // will match the outermost suite
-        def output = "${db} results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
-        def repeatLength = output.length() + 1
-        logger.lifecycle '\n' + ('-' * repeatLength) + '\n' + output + '\n' + ('-' * repeatLength)
-    }
-}
-
-// Example:
-// gradle test -Pdb=MySQL
-test {
-    def selectedDb = project.hasProperty( 'db' )
-            ? project.properties['db']
-            : 'PostgreSQL'
-    doFirst {
-        systemProperty 'db', selectedDb
-    }
-    afterSuite { desc, result ->
-        loggingSummary( selectedDb, result, desc )
-    }
-}
-
-// Configuration for the tests
-tasks.withType( Test ).configureEach {
-    defaultCharacterEncoding = "UTF-8"
-    useJUnitPlatform()
-    testLogging {
-        displayGranularity 1
-        showStandardStreams = project.hasProperty('showStandardOutput')
-        showStackTraces = true
-        exceptionFormat = 'full'
-        events 'PASSED', 'FAILED', 'SKIPPED'
-    }
-    systemProperty 'docker', project.hasProperty( 'docker' ) ? 'true' : 'false'
-    systemProperty 'org.hibernate.reactive.common.InternalStateAssertions.ENFORCE', 'true'
-
-    if ( project.hasProperty( 'includeTests' ) ) {
-        // Example: ./gradlew testAll -PincludeTests=DefaultPortTest
-        filter {
-            includeTestsMatching project.properties['includeTests'] ?: '*' as String
-        }
-    }
-}
-
-// Rule to recognize calls to testDb<dbName>
-// and run the tests on the selected db
-// Example:
-// gradle testDbMySQL testDbDB2
-tasks.addRule( "Pattern testDb<id>" ) { String taskName ->
-    if ( taskName.startsWith( "testDb" ) ) {
-        tasks.register( taskName, Test ) {
-            def dbName = taskName.substring( "testDb".length() )
-            description = "Run tests for ${dbName}"
-
-            // We only want to test this on Postgres
-            onlyIf { dbName.toLowerCase().startsWith( 'p' ) }
-            doFirst() {
-                systemProperty 'db', dbName
-            }
-            afterSuite { desc, result ->
-                loggingSummary( dbName, result, desc )
-            }
-
-        }
     }
 }

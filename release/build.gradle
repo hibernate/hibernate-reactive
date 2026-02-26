@@ -1,5 +1,9 @@
 import java.nio.charset.StandardCharsets
 
+plugins {
+    id "hr-java-library"
+}
+
 description = 'Release module'
 // (Optional) before uploading the documentation, you can check
 // the generated website under release/build/hibernate.org with:
@@ -20,8 +24,8 @@ final Directory documentationDir = project(":documentation").layout.buildDirecto
  */
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
     dependsOn ':documentation:assemble'
-    group 'Documentation'
-    description 'Render the documentation'
+    group = 'Documentation'
+    description = 'Render the documentation'
 }
 assemble.dependsOn assembleDocumentationTask
 
@@ -48,9 +52,9 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
     }
 }
 
-def releasePrepareTask = tasks.register( "releasePrepare" ) {
-    description "Prepares all the artifacts and documentation for a JReleaser release."
-    group "Release"
+tasks.register( "releasePrepare" ) {
+    description = "Prepares all the artifacts and documentation for a JReleaser release."
+    group = "Release"
 
 	// Render the Documentation/Javadocs and move them to the staging directory (for JReleaser):
 	dependsOn updateDocumentationTask

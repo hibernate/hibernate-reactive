@@ -1,0 +1,16 @@
+import org.hibernate.reactive.env.PrintResolvedVersionsTask
+
+// Task to print the resolved versions of Hibernate ORM and Vert.x
+tasks.register( "printResolvedVersions", PrintResolvedVersionsTask ) {
+	classpath.from( configurations.compileClasspath )
+	description = "Print the resolved hibernate-orm-core and vert.x versions"
+}
+
+// Make the version printing task run before tests and JavaExec tasks
+tasks.withType( Test ).configureEach {
+	dependsOn( tasks.named( "printResolvedVersions" ) )
+}
+
+tasks.withType( JavaExec ).configureEach {
+	dependsOn( tasks.named( "printResolvedVersions" ) )
+}
