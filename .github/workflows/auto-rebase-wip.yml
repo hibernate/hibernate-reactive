@@ -9,6 +9,9 @@ on:
       - '3.2'
       - '2.4'
 
+permissions:
+  contents: write  # Required to push rebased WIP branches
+
 jobs:
   rebase-wip:
     name: Rebase WIP branch
