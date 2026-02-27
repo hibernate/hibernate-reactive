@@ -9,6 +9,9 @@ on:
       - '3.2'
       - '2.4'
 
+permissions:
+  contents: write  # Required to push rebased WIP branches
+
 jobs:
   rebase-wip:
     name: Rebase WIP branch
@@ -24,7 +27,7 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "Auto-rebase Action
+          git config user.name "Auto-rebase Action"
           git config user.email "autorebase@users.noreply.github.com"
 
       - name: Determine WIP branch name
