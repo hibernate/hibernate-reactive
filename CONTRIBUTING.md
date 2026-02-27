@@ -55,6 +55,27 @@ the linked page, this also includes:
 [IntelliJ IDEA](https://hibernate.org/community/contribute/intellij-idea/)
 or [Eclipse](https://hibernate.org/community/contribute/eclipse-ide/)<sup>(1)</sup>.
 
+## Testing with a local Hibernate ORM build
+
+When working on issues that require changes in both Hibernate ORM and Hibernate Reactive,
+you can use a local Hibernate ORM repository as a dependency without publishing artifacts locally.
+
+To enable this feature, set the `localHibernateOrmPath` property to point to your local Hibernate ORM clone:
+
+```bash
+./gradlew build -PlocalHibernateOrmPath=../hibernate-orm
+```
+
+Alternatively, add this to your `gradle.properties` file:
+
+```properties
+localHibernateOrmPath = ../hibernate-orm
+```
+
+This uses Gradle's composite build feature, which means:
+* Changes in Hibernate ORM are automatically picked up without publishing
+* It works seamlessly in IntelliJ IDEA
+* You can iterate quickly on changes across both projects
 
 ## Create the working (topic) branch
 
