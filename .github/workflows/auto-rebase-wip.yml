@@ -1,0 +1,79 @@
+name: Auto-rebase WIP branches
+
+# We know that if the workflow exists for this branch, the WIP also exists
+on:
+  push:
+    # We don't want to run the workflow on the wip branches
+    branches-ignore:
+      - 'wip/**'
+
+permissions:
+  contents: write  # Required to push rebased WIP branches
+
+jobs:
+  rebase-wip:
+    name: Rebase WIP branch
+    runs-on: ubuntu-latest
+    # Only run on the upstream repository, not on forks
+    if: github.repository == 'hibernate/hibernate-reactive'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0  # Fetch all history for rebasing
+
+      - name: Configure Git
+        run: |
+          git config user.name "Auto-rebase Action"
+          git config user.email "autorebase@users.noreply.github.com"
+
+      - name: Determine WIP branch name
+        id: wip-branch
+        run: |
+          BASE_BRANCH="${{ github.ref_name }}"
+
+          if [ "$BASE_BRANCH" = "main" ]; then
+            WIP_BRANCH="wip/4.3"
+          else
+            WIP_BRANCH="wip/$BASE_BRANCH"
+          fi
+
+          echo "wip_branch=$WIP_BRANCH" >> $GITHUB_OUTPUT
+          echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Fetch and rebase WIP branch
+        env:
+          WIP_BRANCH: ${{ steps.wip-branch.outputs.wip_branch }}
+          BASE_BRANCH: ${{ steps.wip-branch.outputs.base_branch }}
+        run: |
+          # Fetch the WIP branch
+          git fetch origin "$WIP_BRANCH"
+
+          # Check if WIP branch exists
+          if ! git rev-parse --verify "origin/$WIP_BRANCH" > /dev/null 2>&1; then
+            echo "WIP branch $WIP_BRANCH does not exist, skipping rebase"
+            exit 0
+          fi
+
+          # Checkout the WIP branch
+          git checkout -b "$WIP_BRANCH" "origin/$WIP_BRANCH"
+
+          # Attempt rebase
+          if git rebase "origin/$BASE_BRANCH"; then
+            echo "✅ Rebase successful: $WIP_BRANCH rebased onto $BASE_BRANCH"
+            echo "rebase_status=success" >> $GITHUB_ENV
+          else
+            echo "❌ Rebase failed with conflicts"
+            echo "rebase_status=conflict" >> $GITHUB_ENV
+            git rebase --abort
+            exit 1
+          fi
+
+      - name: Push rebased WIP branch
+        if: env.rebase_status == 'success'
+        env:
+          WIP_BRANCH: ${{ steps.wip-branch.outputs.wip_branch }}
+        run: |
+          git push origin "$WIP_BRANCH" --force-with-lease
+          echo "✅ Successfully pushed rebased $WIP_BRANCH"
