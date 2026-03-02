@@ -1,0 +1,776 @@
+[[writing-code]]
+= Writing the Java code
+
+With that out of the way, we're all set to write some Java code!
+
+As is the case in any project that uses Hibernate, your
+persistence-related code comes in two main pieces:
+
+. a representation of your data model in Java, which takes the form
+  of a set of annotated entity classes, and
+. a larger number of functions which interact with Hibernate's APIs
+  to perform the persistence operations associated with your various
+  transactions.
+
+The first part, the data or "domain" model, is usually easier to write,
+but doing a great and very clean job of it will strongly affect your
+success in the second part.
+
+TIP: Take your time with this code, and try to produce a Java model
+that's as close as reasonable to the relational data model. Avoid using
+exotic or advanced mapping features when they're not really needed.
+When in the slightest doubt, map a foreign key relationship using
+`@ManyToOne` with `@OneToMany(mappedBy=...)` in preference to more
+complicated association mappings.
+
+The second part of the code is much trickier to get right. This code must:
+
+- manage transactions and reactive sessions,
+- construct reactive streams by chaining persistence operations invoked
+  on the reactive session,
+- fetch and prepare data needed by the UI, and
+- handle failures.
+
+TIP: Some responsibility for transaction and session management, and for
+recovery from certain kinds of failure, can be best handled in some sort
+of framework code.
+
+== Mapping entity classes
+
+:mapping-annotations: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#annotations
+:bean-validation: https://docs.hibernate.org/stable/validator/reference/en-US/html_single/#chapter-bean-constraints
+
+We won't have much to say about the entity classes here, simply because
+the principles behind mapping entity classes in Hibernate Reactive,
+along with the actual mapping annotations you'll use, are all identical
+to regular Hibernate ORM and other implementations of JPA.
+
+For example:
+
+[source,java]
+----
+@Entity
+@Table(name="authors")
+class Author {
+    @Id @GeneratedValue
+    private Integer id;
+
+    @NotNull @Size(max=100)
+    private String name;
+
+    @OneToMany(mappedBy = "author", cascade = PERSIST)
+    private List<Book> books = new ArrayList<>();
+
+    Author(String name) {
+        this.name = name;
+    }
+
+    Author() {}
+
+    // getters and setters...
+}
+----
+
+You're quite free to mix and match:
+
+- the regular JPA mapping annotations defined in the package
+  `jakarta.persistence. with
+- the advanced mapping annotations in `org.hibernate.annotations`, and even
+- annotations like `@NotNull` and `@Size` defined by Bean Validation.
+
+A full list of object/relational mapping annotations may be found in the
+{mapping-annotations}[documentation for Hibernate ORM]. Most mapping
+annotations are already supported in Hibernate Reactive, though there are
+still a handful of limitations at this time.
+
+=== Common JPA annotations
+
+The most common and useful mapping annotations include these standard JPA
+annotations:
+
+|===
+| Annotation          | Purpose
+
+| `@Entity`           | Declares an entity class (a class with its own
+                        database table an persistent identity)
+| `@MappedSuperclass` | A superclass that declares common persistent
+                        fields of its `@Entity` subclasses
+| `@Embeddable` or
+  `@Embedded`         | Declare an embeddable class (a class without its
+                        own persistent identity or database table)
+| `@Inheritance`      | Defines how inheritance hierarchies should be
+                        mapped to database tables
+| `@Id`               | Specifies that a field of an entity holds the
+                        persistent identity of the entity, and maps to
+                        the primary key of its table
+| `@IdClass`          | Specifies a class representing the composite
+                        primary key of the entity (for entities with
+                        multiple `@Id` fields)
+| `@EmbeddedId`       | Specifies that a field of an entity holds its
+                        composite primary key represented as an
+                        `@Embeddable` class
+| `@GeneratedValue`   | Specifies that an identifier is a system-generated
+                        surrogate key
+| `@Version`          | Specifies that a field of an entity holds a version
+                        number used for optimistic locking
+| `@Enumerated`       | Maps a field holding an `enum`
+| `@ManyToOne`        | Declares a many-to-one association to a second
+                        entity
+| `@OneToOne`         | Declares a one-to-one association to a second
+                        entity
+| `@OneToMany`        | Declares a one-to-many association to a second
+                        entity
+| `@Table`            | Specifies a mapping to a database table
+| `@SecondaryTable`   | Specifies a mapping to a second database table
+| `@Column`           | Specifies a mapping to a database column
+| `@JoinColumn`       | Specifies a mapping to a database foreign key
+|===
+
+=== Useful Hibernate annotations
+
+These Hibernate annotations are also quite useful to know about:
+
+|===
+| Annotation                               | Purpose
+
+| `@Cache`                                 | Enables second-level caching for an entity
+| `@Formula`                               | Maps field to SQL expression instead of a column
+| `@CreationTimestamp`, `@UpdateTimestamp` | Automatically assign a timestamp to a field
+| `@OptimisticLocking`                     | Enables optimistic locking for entities with no
+                                             `@Version` field
+| `@FilterDef` and `@Filter`               | Define a Hibernate filter
+| `@FetchProfile`                          | Defines a Hibernate fetch profile
+| `@Generated`                             | Defines a property generated by the database
+| `@ColumnDefault`                         | Specifies a SQL expression used to assign a
+                                             default value to a column
+                                             (use in combination with `@Generated(INSERT)`)
+| `@GenericGenerator`                      | Selects a custom id generator
+| `@DynamicInsert` and `@DynamicUpdate`    | Generate SQL dynamically with only needed columns
+                                             (instead of using static SQL generated at startup)
+| `@Fetch`                                 | Specifies the fetching mode for an association
+| `@BatchSize`                             | Specifies the batch size for batch fetching an
+                                             association
+| `@Loader`                                | Specifies a named query used to fetch an entity by
+                                             id (for example, when `find(type, id)` is called)
+                                             in place of the default SQL generated by Hibernate
+| `@SqlInsert`, `@SqlUpdate`, `@SqlDelete` | Specify custom DML for entity operations
+| `@NaturalId`                             | Marks a field or fields as an alternative "natural"
+                                             identifier (unique key) of the entity
+| `@Nationalized`                          | Use `nchar`, `nvarchar`, or `nclob` selectively
+                                             for one particular column.
+| `@Immutable`                             | Specifies that an entity or collection is immutable
+| `@SortNatural` or `@SortComparator`     | Maps a `SortedSet` or `SortedMap`
+| `@Check`                                 | Declares a SQL `check` constraint to be added to DDL
+|===
+
+=== Bean Validation annotations
+
+Information about Bean Validation annotations may be found in the
+{bean-validation}[documentation for Hibernate Validator].
+
+TIP: for defining a required field, we prefer to use the `@NotNull`
+annotation from Bean Validation instead of JPA's more verbose
+`@Basic(optional=false)`. Similarly, we prefer to define the length of a
+text field using `@Size(100)` rather than `@Column(length=100)`.
+
+== Getters and setters
+
+When using Hibernate Reactive _outside_ the Quarkus environment, you'll
+need to write your entity classes according to the usual JPA conventions,
+which require:
+
+- private fields for persistent attributes, and
+- a nullary constructor.
+
+It's illegal to access persistent fields from outside the entity class.
+Therefore, external access to persistent fields must be intermediated via
+getter and setter methods defined by the entity class.
+
+IMPORTANT: If you access fields of an unfetched entity instance from code
+outside the entity class, you'll obtain bogus `null` or default (zero)
+values!
+
+When you use Hibernate Reactive in Quarkus, these requirements are relaxed,
+and you can use public fields instead of getters and setters if you prefer.
+
+== `equals()` and `hashCode()`
+
+Entity classes should override `equals()` and `hashCode()`. People new to
+Hibernate or JPA are often confused by exactly which fields should be
+included in the `hashCode()`, so please keep the following principles in
+mind:
+
+- You should not include mutable fields in the hashcode, since that would
+  require rehashing any collection containing the entity whenever the field
+  is mutated.
+- It's not completely wrong to include a generated identifier (surrogate
+  key) in the hashcode, but since the identifier is not generated until
+  the entity instance is made persistent, you must take great care to not
+  add it to any hashed collection before the identifier is generated. We
+  therefore advise against including any database-generated field in the
+  hashcode.
+
+It's OK to include any immutable, non-generated field in the hashcode.
+
+TIP: We therefore recommend identifying a _natural key_ for each entity,
+that is, a combination of fields that uniquely identifies an instance of
+the entity, from the perspective of the data model of the program. The
+business key should correspond to a unique constraint on the database,
+and to the fields which are included in `equals()` and `hashCode()`.
+
+That said, an implementation of `equals()` and `hashCode()` based on the
+generated identifier of the entity can work _if you're careful_.
+
+IMPORTANT: If you can't identify a natural key, it might be a sign that
+you need to think more carefully about some aspect of your data model.
+If an entity doesn't have a meaningful unique key, then it's impossible
+to say what event or object it represents in the "real world" outside
+your program.
+
+Note that even when you've identified a natural key, we still recommend
+the use of a generated surrogate key in foreign keys, since this makes
+your data model _much_ easier to change.
+
+== Identifier generation
+
+One area where the functionality of Hibernate Reactive diverges from plain
+Hibernate is in the area of id generation. Custom identifier generators
+written to work with Hibernate ORM and JDBC will _not_ work in the reactive
+environment.
+
+- Sequence, table, and `UUID` id generation is built in, and these id
+  generation strategies may be selected using the usual JPA mapping
+  annotations: `@GeneratedValue`, `@TableGenerator`, `@SequenceGenerator`.
+- On MySQL, an autoincrement column may be used by specifying
+  `@GeneratedValue(strategy=GenerationType.IDENTITY)`
+- Custom id generators may be defined by implementing `ReactiveIdentifierGenerator`
+  and declaring the custom implementation using `@GenericGenerator`.
+- Natural ids&mdash;including composite ids&mdash;may be assigned by the
+  program in the usual way.
+
+The standard id generation strategies defined by the JPA specification may
+be customized using the following annotations:
+
+|===
+| Annotation           | Purpose
+
+| `@SequenceGenerator` | Configure a generator based on a database sequence
+| `@TableGenerator`    | Configure a generator based on a row of a database table
+|===
+
+For example, sequence id generation may be specified like this:
+
+[source,java]
+----
+@Entity
+@Table(name="authors")
+class Author {
+    @Id @GeneratedValue(generator = "authorIds")
+    @SequenceGenerator(name = "authorIds",
+               sequenceName = "author_ids",
+             allocationSize = 20)
+    Integer id;
+    ...
+}
+----
+
+You can find more information in the JPA specification.
+
+If you have very particular requirements, you can check out the Javadoc of
+`ReactiveIdentifierGenerator` for information on how to implement your own
+custom reactive identifier generator.
+
+== JSON Mapping
+
+:orm-json-basic-mapping: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#basic-mapping-json
+:orm-json-embeddable-mapping: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#_jsonxml_aggregate_embeddable_mapping
+:string-to-json-converter: https://github.com/hibernate/hibernate-reactive/blob/main/hibernate-reactive-core/src/test/java/org/hibernate/reactive/types/StringToJsonConverter.java
+
+Like in Hibernate ORM, it's possible to map a JSON field using the {orm-json-basic-mapping}[SqlTypes.JSON]
+or {orm-json-embeddable-mapping}[an embeddable].
+
+IMPORTANT: Supports for JSON is limited to PostgreSQL and MySQL.
+Only PostgreSQL supports mapping a JSON using an embeddable
+
+Hibernate Reactive will recognize fields of type `io.vertx.core.json.JsonObject`
+as JSON columns:
+
+[source,java]
+----
+@Entity
+class Example {
+
+    JsonObject jsonField;
+}
+----
+
+Finally, the {string-to-json-converter}[org.hibernate.reactive.StringToJsonConverter] converter is available
+for mapping a string to a JSON column:
+
+[source,java]
+----
+@Entity
+class Example {
+
+    @Convert(converter = StringToJsonConverter.class)
+    String json;
+
+}
+----
+
+== Custom types
+
+Hibernate custom types based on the `UserType` interface are targeted toward
+use with JDBC, and depend on interfaces defined by JDBC. So Hibernate Reactive
+features an adaptor that exposes a partial implementation of JDBC to the
+`UserType` implementation.
+
+Therefore, _some_ existing `UserType` implementations will work in Hibernate
+Reactive, depending upon precisely which features of JDBC they depend on.
+
+TIP: Where possible, use a JPA attribute converter instead of a custom type,
+since attribute converters are not in any way tied to JDBC.
+
+You may specify a custom type by annotating a field of an entity class with
+the Hibernate `@Type` annotation.
+
+== Attribute converters
+
+Any JPA `AttributeConverter` works in Hibernate Reactive. For example:
+
+[source,java]
+----
+@Converter
+public class BigIntegerAsString implements AttributeConverter<BigInteger, String> {
+    @Override
+    public String convertToDatabaseColumn(BigInteger attribute) {
+        return attribute == null ? null : attribute.toString(2);
+    }
+
+    @Override
+    public BigInteger convertToEntityAttribute(String string) {
+        return string == null ? null : new BigInteger(string, 2);
+    }
+}
+----
+
+You'll need to use one or both of these annotations:
+
+|===
+| Annotation        | Purpose
+
+| `@Converter`      | Declares a class implementing `AttributeConverter`
+| `@Convert`        | Specifies an `AttributeConverter` converter to use
+                      for a field of an entity class
+|===
+
+You'll find more information in the Javadoc for these annotations and in the
+JPA specification.
+
+== APIs for chaining reactive operations
+
+:Mutiny: https://smallrye.io/smallrye-mutiny/
+
+When you write persistence logic using Hibernate Reactive, you'll be working
+with a reactive `Session` most of the time. Just to make things a little more
+confusing for new users, the reactive `Session` and its related interfaces all
+come in two flavors:
+
+- `Stage.Session` and friends provide a reactive API based around Java's
+  `CompletionStage`, and
+- `Mutiny.Session` and friends provide an API based on {Mutiny}[Mutiny].
+
+You'll need to decide which API you want to use!
+
+TIP: If you take the time to look over the types `Stage.Session` and
+`Mutiny.Session`, you'll notice they're almost identical. Choosing between
+them is a matter of deciding which reactive API you want to use for working
+with reactive streams. Your decision won't affect what you can do with
+Hibernate Reactive. On the other hand, we've sent a lot of feedback and
+requests for improvement to the Mutiny team, and we think it's now the case
+that Hibernate Reactive code is simpler and cleaner with Mutiny.
+
+These are the most important operations on reactive streams that you'll need
+all the time when working with Hibernate Reactive:
+
+|===
+| Purpose                                  | Java `CompletionStage` | Mutiny `Uni`
+
+| Chain non-blocking operations            | `thenCompose()`        | `chain()`
+| Transform streamed items                 | `thenApply()`          | `map()` and `replaceWith()`
+| Perform an action using streamed items   | `thenAccept()`         | `invoke()` and `call()`
+| Perform cleanup (similar to `finally`)   | `whenComplete()`       | `eventually()`
+|===
+
+In this introduction, our code examples usually use Mutiny. If you're more
+familiar with `CompletionStage`, you can refer to the above table to help
+you understand the code.
+
+When we use the term _reactive stream_ in this document, we mean:
+
+- a chain of ``CompletionStage``s, or
+- a chain of Mutiny ``Uni``s and ``Multi``s
+
+that is built by the program in order to service a particular request,
+transaction, or unit of work.
+
+== Obtaining a reactive session factory
+
+Whatever you decide, the first step to getting a reactive session is to obtain
+a JPA `EntityManagerFactory` just as you usually would in plain ol' regular JPA,
+for example, by calling:
+
+[source,java]
+----
+EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
+----
+
+Now, `unwrap()` the reactive `SessionFactory`. If you want to use
+``CompletionStage``s for chaining reactive operations, ask for a
+`Stage.SessionFactory`:
+
+[source,java]
+----
+Stage.SessionFactory sessionFactory = emf.unwrap(Stage.SessionFactory.class);
+----
+
+Or, if you prefer to use the Mutiny-based API, `unwrap()` the type
+`Mutiny.SessionFactory`:
+
+[source,java]
+----
+Mutiny.SessionFactory sessionFactory = emf.unwrap(Mutiny.SessionFactory.class);
+----
+
+Reactive sessions may be obtained from the resulting reactive `SessionFactory`.
+
+TIP: It's also possible to construct a reactive `SessionFactory` via programmatic
+configuration based on Hibernate's `ServiceRegistry` architecture, by using a
+`ReactiveServiceRegistryBuilder`. But that's outside the scope of this document.
+
+== Obtaining a reactive session
+
+Persistence operations are exposed via a reactive `Session` object. It's very
+important to understand that most operations of this interface are non-blocking,
+and execution of SQL against the database is never performed synchronously.
+Persistence operations that belong to a single unit of work must be chained by
+composition within a single reactive stream.
+
+Also remember that a Hibernate session is a lightweight object that should be
+created, used, and then discarded within a single logical unit of work.
+
+IMPORTANT: That is to say, you _should_ reuse the same session across multiple
+persistence operations within a single reactive stream representing a certain
+transaction or unit of work, but _don't_ share a session between different
+concurrent reactive streams!
+
+To obtain a reactive `Session` from the `SessionFactory`, use `withSession()`:
+
+[source,java]
+----
+sessionFactory.withSession(
+        session -> session.find(Book.class, id)
+                .invoke(
+                    book -> ... //do something with the book
+                )
+);
+----
+
+The resulting `Session` object is automatically associated with the current
+reactive stream, and so nested calls to `withSession()` in a given stream
+automatically obtain the same shared session.
+
+Alternatively, you may use `openSession()`, but you must remember to `close()`
+the session when you're done.
+And you must take great care to only access each session from within exactly
+one Vert.x context. (See <<_sessions_and_vert_x_contexts>> more on this).
+
+[source,java]
+----
+Uni<Session> sessionUni = sessionFactory.openSession();
+sessionUni.chain(
+        session -> session.find(Book.class, id)
+                .invoke(
+		    book -> ... //do something with the book
+                )
+                .eventually(session::close)
+);
+----
+
+== Using the reactive session
+
+The `Session` interface has methods with the same names as methods of the JPA
+`EntityManager`. You might already be familiar with the following session
+operations defined by JPA:
+
+|===
+| Method name and parameters | Effect
+
+| `find(Class,Object)` | Obtain a persistent object given its type and its id
+                         (primary key)
+| `persist(Object)`    | Make a transient object persistent and schedule a SQL
+                         `insert` statement for later execution
+| `remove(Object)`     | Make a persistent object transient and schedule a SQL
+                         `delete` statement for later execution
+| `merge(Object)`      | Copy the state of a given detached object to a
+                         corresponding managed persistent instance and return
+                         the persistent object
+| `refresh(Object)`    | Refresh the persistent state of an object using a new
+                         SQL `select` to retrieve the current state from the
+                         database
+| `lock(Object)`       | Obtain a pessimistic lock on a persistent object
+| `flush()`            | Detect changes made to persistent objects association
+                         with the session and synchronize the database state
+                         with the state of the session by executing SQL `insert`,
+                         `update`, and `delete` statements
+| `detach(Object)`     | Disassociate a persistent object from a session without
+                         affecting the database
+| `getReference(Class,id)` or
+  `getReference(Object)` | Obtain a reference to a persistent object without
+                           actually loading its state from the database
+|===
+
+If you're not familiar with these operations, don't despair! Their semantics
+are defined in the JPA specification, and in the API documentation, and are
+explained in innumerable articles and blog posts. But if you already have some
+experience with Hibernate or JPA, you're right at home!
+
+IMPORTANT: Just like in Hibernate ORM, the session is considered to be unusable
+after any of its methods throws an exception. If you receive an exception from
+Hibernate Reactive, you should immediately close and discard the current session.
+
+Now, _here's where Hibernate Reactive is different:_ in the reactive API, each
+of these methods returns its result in a non-blocking fashion via a Java
+`CompletionStage` (or Mutiny `Uni`). For example:
+
+[source,java]
+----
+session.find(Book.class, book.id)
+       .invoke( book -> System.out.println(book.title + " is a great book!") )
+----
+
+On the other hand, methods with no meaningful return value just return
+`CompletionStage<Void>` (or `Uni<Void>`).
+
+[source,java]
+----
+session.find(Book.class, id)
+       .call( book -> session.remove(book) )
+       .call( () -> session.flush() )
+----
+
+TIP: The session will be flushed automatically at the end of a unit of work
+if&mdash;and _only_ if&mdash;you use a transaction, as described below in
+<<_transactions>>. If you don't use a transaction, and forget to flush the
+session explicitly, your persistence operations might never be sent to the
+database!
+
+An _extremely_ common mistake when using reactive streams is to forget to
+chain the return value of a "void-like" method. For example, in the following
+code, the `flush()` operation is never executed, because `invoke()` doesn't
+chain its return value to the tip of the stream.
+
+[source,java]
+----
+session.find(Book.class, id)
+       .call( book -> session.remove(book) )
+       .invoke( () -> session.flush() )   //OOPS, WRONG!!
+----
+
+So remember:
+
+- You must use `thenCompose()`, not `thenAccept()`, when calling "void-like"
+  methods that return `CompletionStage`.
+- In Mutiny, you must use `call()`, not `invoke()`, when calling "void-like"
+  methods that return `Uni`.
+
+The same problem occurs in the following code, but this time it's `remove()`
+that never gets called:
+
+[source,java]
+----
+session.find(Book.class, id)
+       .call( book -> {
+           session.remove(book);   //OOPS, WRONG!!
+           return session.flush();
+       } )
+----
+
+If you already have some experience with reactive programming, there's nothing
+new to learn here. But if you _are_ new to reactive programming, just be aware
+that you're going to make this mistake, in some form, _at least_ once!
+
+== Queries
+
+Naturally, the `Session` interface is a factory for `Query` instances which
+allow you to set query parameters and execute queries and DML statements:
+
+|===
+| Method name           | Effect
+
+| `createQuery()`       | Obtain a `Query` for executing a query or DML
+                          statement written in HQL or JPQL
+| `createNativeQuery()` | Obtain a `Query` for executing a query or DML
+                          statement written in the native SQL dialect of
+                          your database
+| `createNamedQuery()`  | Obtain a `Query` for executing a named HQL or SQL
+                          query defined by a `@NamedQuery` annotation
+|===
+
+That `createQuery()` method produces a reactive `Query`, allowing HQL / JPQL
+queries to be executed asynchronously, always returning their results via a
+`CompletionStage` (or `Uni`):
+
+[source,java]
+----
+session.createQuery("select title from Book order by title desc")
+       .getResultList()
+       .invoke( list -> list.forEach(System.out::println) )
+----
+
+The `Query` interface defines the following important operations:
+
+|===
+| Method name         | Effect
+
+| `setParameter()`    | Set an argument of a query parameter
+| `setMaxResults()`   | Limit the number of results returned by the query
+| `setFirstResult()`  | Specify a certain number of initial results to
+be skipped (for result pagination)
+| `getSingleResult()` | Execute a query and obtain the single result
+| `getResultList()`   | Execute a query and obtain the results as a list
+| `executeUpdate()`   | Execute a DML statement and obtain the number of
+affected rows
+|===
+
+TIP: The Hibernate Reactive `Query` API doesn't support `java.util.Date`
+or its subclasses in `java.sql`, nor `java.util.Calendar`. Always use
+`java.time` types like `LocalDate` or `LocalDateTime` for specifying
+arguments to temporally-typed query parameters.
+
+For  JPA criteria queries, you must first obtain the `CriteriaBuilder` using
+`SessionFactory.getCriteriaBuilder()`, and execute your query using
+`Session.createQuery()`.
+
+[source,java]
+----
+CriteriaQuery<Book> query = factory.getCriteriaBuilder().createQuery(Book.class);
+Root<Author> a = query.from(Author.class);
+Join<Author,Book> b = a.join(Author_.books);
+query.where( a.get(Author_.name).in("Neal Stephenson", "William Gibson") );
+query.select(b);
+return session.createQuery(query).getResultList().invoke(
+        books -> books.forEach( book -> out.println(book.title) )
+);
+----
+
+== Fetching lazy associations
+
+In Hibernate ORM, a lazy association is fetched transparently when the
+association is first accessed within a session. In Hibernate Reactive, on
+the other hand, lazy association fetching is an asynchronous process that
+produces a result via a `CompletionStage` (or `Uni`).
+
+Therefore, lazy fetching is an explicit operation named `fetch()`, a static
+method of `Stage` and `Mutiny`:
+
+[source,java]
+----
+session.find(Author.class, author.id)
+       .chain( author -> Mutiny.fetch(author.books) )
+       .invoke( books -> ... )
+----
+
+Of course, this isn't necessary if you fetch the association eagerly.
+
+TIP: It's very important to make sure you've fetched all the data that
+will be needed before passing control to the process that renders the
+UI! There is no transparent lazy fetching in Hibernate Reactive, so
+patterns like "open session in view" will _not help at all_.
+
+Sometimes you might need to chain multiple calls to `fetch()`, for
+example:
+
+[source,java]
+----
+Mutiny.fetch( session.getReference(detachedAuthor) )
+       .chain( author -> Mutiny.fetch(author.books) )
+       .invoke( books -> ... )
+----
+
+IMPORTANT: `fetch()` isn't recursive! You can't fetch an association
+belonging to an unfetched entity without fetching the entity instance
+first.
+
+== Field-level lazy fetching
+
+Similarly, field-level lazy fetching&mdash;an advanced feature, which
+is only supported in conjunction with Hibernate's optional compile-time
+bytecode enhancer&mdash;is also an explicit operation.
+
+To declare a lazy field we usually use the JPA `@Basic` annotation:
+
+[source,java]
+----
+@Basic(fetch=LAZY) String isbn;
+----
+
+An optional one-to-one association declared `@OneToOne(fetch=LAZY)` is
+also considered field-level lazy.
+
+IMPORTANT: This annotation has no effect at all unless the entity is
+processed by the bytecode enhancer during the build. Most Hibernate
+users don't bother with this, since it's often an inconvenience.
+
+TIP: On the other hand, if you're running Hibernate Reactive in Quarkus,
+the bytecode enhancer is always enabled, and you won't even notice it's
+there.
+
+A lazy field is only fetched if we explicitly request it by calling an
+overloaded version of the `fetch()` operation:
+
+[source,java]
+----
+session.find(Book.class, book.id)
+       .chain( book -> session.fetch(book, Book_.isbn) )
+       .invoke( isbn -> ... )
+----
+
+Note that the field to fetch is identified by a JPA metamodel `Attribute`.
+
+TIP: We don't encourage you to use field-level lazy fetching unless you
+have very specific requirements. It's almost always more efficient to fetch
+all the fields of an entity at once. Field-level lazy fetching is every bit
+as vulnerable to N+1 selects as lazy association fetching.
+
+== Transactions
+
+The `withTransaction()` method performs work within the scope of a database
+transaction.
+
+[source,java]
+----
+session.withTransaction( tx -> session.persist(book) )
+----
+
+The session is automatically flushed at the end of the transaction.
+
+For a given `Session` object, nested calls to `withTransaction()` occur
+within the same shared transaction context. However, notice that the
+transaction is a _resource local_ transaction only, delegated to the
+underlying Vert.x database client, and does not span multiple datasources,
+nor integrate with JPA container-managed transactions.
+
+IMPORTANT: Hibernate Reactive does not currently support distributed (XA)
+transactions.
+
+For extra convenience, there's a method that opens a session and starts a
+transaction in one call:
+
+[source,java]
+----
+sessionFactory.withTransaction( (session, tx) -> session.persist(book) )
+----
+
+This is probably the most convenient thing to use most of the time.
+
