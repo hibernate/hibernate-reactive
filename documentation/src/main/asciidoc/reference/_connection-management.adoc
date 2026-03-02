@@ -1,0 +1,35 @@
+[[connection-management]]
+= Custom connection management and multitenancy
+
+Hibernate Reactive supports custom management of reactive connections by letting
+you define your own implementation of `ReactiveConnectionPool`, or extend the
+built-in implementation `DefaultSqlClientPool`.
+
+|===
+| Configuration property name | Value
+
+| `hibernate.vertx.pool.class` | A class which implements `ReactiveConnectionPool`
+|===
+
+A common motivation for defining a custom pool is the need to support multitenancy.
+In a multitenant application, the database or database schema depends on the current
+tenant identifier. The easiest way to set this up in Hibernate Reactive is to extend
+`DefaultSqlClientPool` and override `getTenantPool(String tenantId)`.
+
+For multitenancy, might also need to set the following configuration property defined
+by Hibernate ORM:
+
+|===
+| Configuration property name            | Value
+
+| `hibernate.tenant_identifier_resolver` | (Optional) A class which implements `CurrentTenantIdentifierResolver`
+|===
+
+If you don't provide a `CurrentTenantIdentifierResolver`, you can specify
+the tenant id explicitly when you call `openSession()`, `withSession()`,
+or `withTransaction()`.
+
+TIP: You don't need a custom pool if you're using _discriminator_-based multitenancy.
+In that case, all you need is to declare the `@TenantId` properties of your entities,
+just like in Hibernate ORM 6.
+
