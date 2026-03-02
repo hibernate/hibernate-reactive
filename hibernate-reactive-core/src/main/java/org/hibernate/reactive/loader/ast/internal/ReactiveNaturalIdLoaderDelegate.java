@@ -7,6 +7,7 @@ package org.hibernate.reactive.loader.ast.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.hibernate.HibernateException;
@@ -207,7 +208,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     }
 
     /**
-     * @see AbstractNaturalIdLoader#selectByNaturalId(Object, NaturalIdLoadOptions, BiFunction, LoaderSqlAstCreationState.FetchProcessor, Function, BiConsumer, SharedSessionContractImplementor)
+     * @see AbstractNaturalIdLoader#executeNaturalIdQuery(Object, LockOptions, SelectStatement, TableGroup, Consumer, LoaderSqlAstCreationState, SharedSessionContractImplementor)
      */
     public CompletionStage<Object> reactiveSelectByNaturalId(
             Object bindValue,
