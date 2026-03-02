@@ -207,7 +207,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
     }
 
     /**
-     * @see AbstractNaturalIdLoader#selectByNaturalId(Object, NaturalIdLoadOptions, BiFunction, LoaderSqlAstCreationState.FetchProcessor, Function, BiConsumer, SharedSessionContractImplementor)
+     * @see AbstractNaturalIdLoader#executeNaturalIdQuery(Object, LockOptions, SelectStatement, TableGroup, java.util.function.Consumer, LoaderSqlAstCreationState, SharedSessionContractImplementor)
      */
     public CompletionStage<Object> reactiveSelectByNaturalId(
             Object bindValue,
