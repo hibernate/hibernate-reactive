@@ -1,0 +1,18 @@
+[[getting-started]]
+= Introduction to Hibernate Reactive
+
+:example: https://github.com/hibernate/hibernate-reactive/tree/main/examples/session-example
+
+Creating a new project with Hibernate Reactive isn't hard at all. In
+this short guide, we'll cover all the basic work involved in:
+
+- setting up and configuring a project, and then
+- writing Java code to define a data model and access the database.
+
+Last, we'll discuss some topics related to performance that you'll need
+to understand when you develop any large-scale project using Hibernate.
+
+But, before you start, we recommend taking a quick look at the very
+simplistic example program in the {example}[`session-example`] directory,
+which shows off all the "bits" you'll need to get your own program up and
+running.
