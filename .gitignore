@@ -43,3 +43,5 @@ bin
 # Vim
 *.swp
 *.swo
+
+.scannerwork
