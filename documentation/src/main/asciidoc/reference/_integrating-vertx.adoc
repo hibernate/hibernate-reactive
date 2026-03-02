@@ -1,0 +1,157 @@
+[[integrating-vertx]]
+= Integrating with Vert.x
+
+:vertx-context-introduction: https://vertx.io/blog/an-introduction-to-the-vert-x-context-object/
+:vertx-local-context: https://vertx.io/docs/apidocs/io/vertx/core/Context.html#getLocal-java.lang.Object-
+:vertx-get-context: https://vertx.io/docs/apidocs/io/vertx/core/Vertx.html#getOrCreateContext--
+:vertx-runon-context: https://vertx.io/docs/apidocs/io/vertx/core/Context.html#runOnContext-io.vertx.core.Handler-
+
+At runtime, interaction with the database happens on a Vert.x thread,
+typically the event loop thread. When you write code that creates and
+destroys Hibernate Reactive sessions, it's important to understand how
+sessions relate to threads and {vertx-context-introduction}[Vert.x contexts].
+
+== Sessions and Vert.x contexts
+
+TIP: Remember how in regular old Hibernate JPA, you're not supposed to
+share a session between multiple threads? Well, the idea here is essentially
+similar, it's just that the notion of a "thread" is a little more slippery,
+or at least more _technical_. You need to be able to replace the idea of a
+"thread" with the idea of a chain of callbacks occurring on a reactive stream,
+all within the scope of a certain Vert.x _local context_.
+
+When you create a session using `withSession()` or `withTransaction()`, it's
+automatically associated with the current Vert.x
+{vertx-local-context}[local context], and propagates with the local context,
+as mentioned above in <<_obtaining_a_reactive_session>>. And you're only
+allowed to use the session from the thread that owns this local context. If
+you screw up, and use it from a different thread, you might see this error:
+
+----
+HR000068: This method should exclusively be invoked from a Vert.x EventLoop thread; ...
+----
+
+On the other hand, if you use `openSession()`, you'll have to manage the
+association between sessions and contexts yourself. Now, that's in principle
+straightforward, but you'd be surprised how often people mess up.
+
+IMPORTANT: The Hibernate session is not thread-safe (nor "stream-safe"), so using
+it across different threads (or reactive streams) may cause bugs that are _extremely_
+hard to detect. Don't say we didn't warn you!
+
+More than a few users are surprised by this restriction. But we insist that it's
+completely natural. An atomic operation of the session, from your point of view as
+a user of the session, is a method like `flush()`, `find()`, or `getResultList()`.
+Any one of those methods can result in _multiple interactions with the database_.
+And between such interactions, the session is simply not in a well-defined state.
+Reactive streams are a kind of thread, and it's quite unreasonable to expect that
+reactive programming should vanish away your concurrency problems in a shimmering
+puff of pixie dust. That's not how these things work.
+
+For example, I bet you would like to be able to write code like this:
+
+[source,java]
+----
+List<CompletionStage> list = ...
+for (Entity entity : entities) {
+    list.add(session.persist(entity));
+}
+CompletableFuture.allOf(list).thenCompose(session::flush);
+----
+
+Well, we're sorry, but that's just not allowed. Parallel reactive streams may not
+share a session. Each stream must have its own session.
+
+== Executing code in a Vert.x context
+
+What if you need to run a block of code within the scope of a Vert.x context, but
+the current thread isn't associated with a `Context`? One solution is to obtain a
+Vert.x `Context` object using {vertx-get-context}[`getOrCreateContext()`] and
+then call {vertx-runon-context}[`runOnContext()`] to execute the code in that
+context.
+
+[source,java]
+----
+Context currentContext = Vertx.currentContext();
+currentContext.runOnContext( event -> {
+    // Here you will be able to use the session
+});
+----
+
+Within the block of code passed to `runOnContext()`, you'll be able to use the
+Hibernate Reactive session associated with the context.
+
+== Vert.x instance service
+
+The `VertxInstance` service defines how Hibernate Reactive obtains an instance
+of Vert.x. The default implementation just creates one the first time it's
+needed. But if your program requires control over how the Vert.x instance is
+created, or how it's obtained, you can override the default implementation and
+provide your own `VertxInstance`. Let's consider this example:
+
+[source,java]
+----
+public class MyVertx implements VertxInstance {
+
+  private final Vertx vertx;
+
+  public MyVertx() {
+    this.vertx = Vertx.vertx();
+  }
+
+  @Override
+  public Vertx getVertx() {
+    return vertx;
+  }
+
+}
+----
+
+One way to register this implementation is to configure Hibernate programmatically,
+for example:
+
+[source,java]
+----
+Configuration configuration = new Configuration();
+StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
+        .addService( VertxInstance.class, new MyVertx() )
+        .applySettings( configuration.getProperties() );
+StandardServiceRegistry registry = builder.build();
+SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
+----
+
+Alternatively, you could implement the `ServiceContributor` interface.
+
+[source,java]
+----
+public class MyServiceContributor implements ServiceContributor {
+  @Override
+  public void contribute(StandardServiceRegistryBuilder serviceRegistryBuilder) {
+    serviceRegistryBuilder.addService( VertxInstance.class, new MyVertxProvider() );
+  }
+}
+----
+
+To register this `ServiceContributor`, add a text file named
+`org.hibernate.service.spi.ServiceContributor` to `/META-INF/services/`.
+
+[source,java]
+----
+org.myproject.MyServiceContributor
+----
+
+//If you need to, you can access the `ServiceRegistry` from the `Stage.SessionFactory`
+//or `Mutiny.SessionFactory` using the `org.hibernate.reactive.common.spi.Implementor`
+//interface:
+//
+//[source,java]
+//----
+//Mutiny.SessionFactory sessionFactory = ...
+//VertxInstance vertxInstance = ((Implementor) sessionFactory)
+//					.getServiceRegistry()
+// 					.getService( VertxInstance.class );
+//Vertx vertx = vertxInstance.getVertx();
+//----
+//
+//The same will work for `Stage.SessionFactory`.
+
