@@ -10,7 +10,7 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
 
 /**
- * @see org.hibernate.query.sqm.mutation.spi.AbstractMutationHandler
+ * @see org.hibernate.query.sqm.mutation.internal.AbstractMutationHandler
  */
 public interface ReactiveAbstractMutationHandler extends ReactiveHandler {
 

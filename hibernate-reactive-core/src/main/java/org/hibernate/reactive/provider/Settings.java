@@ -38,7 +38,7 @@ public interface Settings extends AvailableSettings {
 	/**
 	 * Property for configuring the Vert.x connection pool.
 	 *
-	 * @see io.vertx.sqlclient.SqlConnectOptions#setConnectTimeout(int)
+	 * @see io.vertx.sqlclient.PoolOptions#setConnectionTimeout(int)
 	 */
 	String POOL_CONNECT_TIMEOUT = "hibernate.vertx.pool.connect_timeout";
 
