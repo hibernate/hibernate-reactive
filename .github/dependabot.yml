@@ -38,6 +38,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       # Testcontainers plus the JDBC driver we need for testing
       testcontainers:
         patterns:
@@ -93,6 +96,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -146,6 +152,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -199,6 +208,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -252,6 +264,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -305,6 +320,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -358,6 +376,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       # Testcontainers plus the JDBC driver we need for testing
       testcontainers:
         patterns:
