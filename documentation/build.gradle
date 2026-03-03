@@ -13,7 +13,7 @@ configurations {
 }
 
 dependencies {
-	themezip 'org.hibernate.infra:hibernate-asciidoctor-theme:6.0.4.Final@zip'
+	themezip "${libs.org.hibernate.infra.hibernate.asciidoctor.theme.get()}@zip"
 }
 
 ext {
@@ -156,7 +156,7 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 	}
 
 	asciidoctorj {
-		version = "3.0.0"
+		version = libs.versions.asciidoctorJVersion.get()
 		docExtensions( project( ":local-build-asciidoctor-extensions" ) )
 	}
 
