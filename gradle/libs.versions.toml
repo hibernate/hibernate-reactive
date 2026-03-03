@@ -1,5 +1,5 @@
 [versions]
-asciidoctorJVersion = "3.0.0"
+asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
 hibernateAsciidoctorExtensionsVersion = "3.2.0.Final"
 hibernateAsciidoctorThemeVersion = "6.0.4.Final"
