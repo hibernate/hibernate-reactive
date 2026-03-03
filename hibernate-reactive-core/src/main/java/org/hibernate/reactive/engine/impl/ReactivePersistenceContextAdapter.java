@@ -104,7 +104,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		throw LOG.nonReactiveMethodCall( "reactiveGetDatabaseSnapshot" );
 	}
 
-	private static final Object[] NO_ROW = new Object[] {PersistenceContext.NO_ROW};
+	private static final Object[] NO_ROW = new Object[] { PersistenceContext.NO_ROW};
 
 	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
 		SessionImplementor session = (SessionImplementor) getSession();

@@ -65,6 +65,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.type.BasicType;
@@ -637,6 +638,7 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 					new LoadQueryInfluencers( factory ),
 					LockOptions.NONE,
 					jdbcParametersListBuilder::add,
+					new SqlAliasBaseManager(),
 					factory
 			);
 			final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();

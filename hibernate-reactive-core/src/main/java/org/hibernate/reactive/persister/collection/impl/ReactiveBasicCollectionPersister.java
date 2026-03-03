@@ -122,7 +122,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 
 		return new ReactiveRemoveCoordinatorStandard(
 				this,
-				this::buildDeleteAllOperation,
+				getRowMutationOperations(),
 				getFactory().getServiceRegistry()
 		);
 	}

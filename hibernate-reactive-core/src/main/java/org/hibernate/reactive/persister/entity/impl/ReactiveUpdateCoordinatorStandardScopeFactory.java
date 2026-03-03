@@ -11,7 +11,7 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoor
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorStandard;
 
-final class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
+public final class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
 
 	public ReactiveUpdateCoordinatorStandardScopeFactory(
 			AbstractEntityPersister entityPersister,

@@ -22,6 +22,7 @@ import org.hibernate.loader.ast.spi.SqlInPredicateMultiKeyLoader;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
@@ -80,6 +81,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParametersBuilder::add,
+				new SqlAliasBaseManager(),
 				sessionFactory
 		);
 		this.jdbcParameters = jdbcParametersBuilder.build();

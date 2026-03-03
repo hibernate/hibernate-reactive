@@ -19,13 +19,13 @@ import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
+import org.hibernate.generator.EventType;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.AttributeMappingsList;
-import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.mutation.AbstractMutationCoordinator;
@@ -372,7 +372,7 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 		final AttributeMappingsList attributeMappings = entityPersister().getAttributeMappings();
 
 		insertGroupBuilder.forEachTableMutationBuilder( (builder) -> {
-			final EntityTableMapping tableMapping = (EntityTableMapping) builder.getMutatingTable().getTableMapping();
+			final var tableMapping = (EntityTableMapping) builder.getMutatingTable().getTableMapping();
 			assert !tableMapping.isInverse();
 
 			// `attributeIndexes` represents the indexes (relative to `attributeMappings`) of
@@ -380,20 +380,22 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			final int[] attributeIndexes = tableMapping.getAttributeIndexes();
 			for ( int i = 0; i < attributeIndexes.length; i++ ) {
 				final int attributeIndex = attributeIndexes[ i ];
-				final AttributeMapping attributeMapping = attributeMappings.get( attributeIndex );
-				if ( attributeInclusions[attributeIndex] ) {
+				final var attributeMapping = attributeMappings.get( attributeIndex );
+				final var generator = attributeMapping.getGenerator();
+				if ( generator instanceof OnExecutionGenerator onExecutionGenerator
+						&& hasValueGenerationOnExecution( object, session, onExecutionGenerator, EventType.INSERT ) ) {
+					if ( needsValueBinding( onExecutionGenerator, dialect() ) ) {
+						attributeInclusions[attributeIndex] = true;
+					}
+					handleValueGeneration( attributeMapping, insertGroupBuilder, onExecutionGenerator, EventType.INSERT );
+				}
+				else if ( attributeInclusions[attributeIndex] ) {
 					attributeMapping.forEachInsertable( insertGroupBuilder );
 				}
-				else {
-					final Generator generator = attributeMapping.getGenerator();
-					if ( isValueGenerated( generator ) ) {
-						if ( session != null && !generator.generatedOnExecution( object, session ) ) {
-							attributeInclusions[attributeIndex] = true;
-							attributeMapping.forEachInsertable( insertGroupBuilder );
-						}
-						else if ( isValueGenerationInSql( generator, factory().getJdbcServices().getDialect() ) ) {
-							handleValueGeneration( attributeMapping, insertGroupBuilder, (OnExecutionGenerator) generator );
-						}
+				else if ( generator != null && generator.generatesOnInsert() ) {
+					if ( session != null && generator.generatedBeforeExecution( object, session ) ) {
+						attributeInclusions[attributeIndex] = true;
+						attributeMapping.forEachInsertable( insertGroupBuilder );
 					}
 				}
 			}
@@ -401,29 +403,73 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 
 		// add the discriminator
 		entityPersister().addDiscriminatorToInsertGroup( insertGroupBuilder );
-		entityPersister().addSoftDeleteToInsertGroup( insertGroupBuilder );
+		entityPersister().addAuxiliaryToInsertGroup( insertGroupBuilder );
 
 		// add the keys
 		insertGroupBuilder.forEachTableMutationBuilder( (tableMutationBuilder) -> {
-			final TableInsertBuilder tableInsertBuilder = (TableInsertBuilder) tableMutationBuilder;
-			final EntityTableMapping tableMapping = (EntityTableMapping) tableInsertBuilder.getMutatingTable().getTableMapping();
-			if ( tableMapping.isIdentifierTable() && entityPersister().isIdentifierAssignedByInsert() && !forceIdentifierBinding ) {
+			final var tableInsertBuilder = (TableInsertBuilder) tableMutationBuilder;
+			final var tableMapping = (EntityTableMapping) tableInsertBuilder.getMutatingTable().getTableMapping();
+			final var keyMapping = tableMapping.getKeyMapping();
+			if ( tableMapping.isIdentifierTable()
+					&& entityPersister().isIdentifierAssignedByInsert()
+					&& !forceIdentifierBinding ) {
 				assert entityPersister().getInsertDelegate() != null;
-				final OnExecutionGenerator generator = (OnExecutionGenerator) entityPersister().getGenerator();
-				if ( generator.referenceColumnsInSql( dialect() ) ) {
-					final BasicEntityIdentifierMapping identifierMapping = (BasicEntityIdentifierMapping) entityPersister().getIdentifierMapping();
-					final String[] columnValues = generator.getReferencedColumnValues( dialect );
-					tableMapping.getKeyMapping().forEachKeyColumn( (i, column) -> tableInsertBuilder.addKeyColumn(
-							columnValues[i],
-							identifierMapping
-					) );
+				final var generator = (OnExecutionGenerator) entityPersister().getGenerator();
+				final boolean[] columnInclusions = generator.getColumnInclusions( dialect, EventType.INSERT );
+				final String[] columnValues = generator.getReferencedColumnValues( dialect, EventType.INSERT );
+				final int keyColumnCount = keyMapping.getColumnCount();
+				if ( columnInclusions != null ) {
+					if ( columnValues != null && columnValues.length != keyColumnCount ) {
+						throw new IllegalStateException(
+								"Mismatch between generated column values and identifier columns for "
+										+ entityPersister().getEntityName()
+						);
+					}
+					for ( int i = 0; i < keyColumnCount; i++ ) {
+						if ( columnInclusions[i] ) {
+							final String valueExpression =
+									columnValues == null
+											? keyMapping.getKeyColumn( i ).getWriteExpression()
+											: columnValues[i];
+							tableInsertBuilder.addKeyColumn( valueExpression, keyMapping.getKeyColumn( i ) );
+						}
+					}
+				}
+				else if ( generator.referenceColumnsInSql( dialect, EventType.INSERT ) ) {
+					if ( columnValues != null ) {
+						assert columnValues.length == 1;
+						assert keyColumnCount == 1;
+						tableInsertBuilder.addKeyColumn( columnValues[0], keyMapping.getKeyColumn( 0 ) );
+					}
 				}
 			}
 			else {
-				tableMapping.getKeyMapping().forEachKeyColumn( tableInsertBuilder::addKeyColumn );
+				keyMapping.forEachKeyColumn( tableInsertBuilder::addKeyColumn );
 			}
 		} );
 	}
+	private static boolean needsValueBinding(OnExecutionGenerator generator, Dialect dialect) {
+		if ( generator.generatesOnInsert() ) {
+			final boolean[] columnInclusions = generator.getColumnInclusions( dialect, EventType.INSERT );
+			final String[] columnValues = generator.getReferencedColumnValues( dialect, EventType.INSERT );
+			if ( columnValues != null ) {
+				for ( int i = 0; i < columnValues.length; i++ ) {
+					if ( (columnInclusions == null || columnInclusions[i])
+							&& "?".equals( columnValues[i] ) ) {
+						return true;
+					}
+				}
+				return false;
+			}
+			else {
+				return generator.writePropertyValue( EventType.INSERT );
+			}
+		}
+		else {
+			return false;
+		}
+	}
+
 
 	protected void breakDownJdbcValue(
 			Object id,

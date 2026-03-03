@@ -31,6 +31,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
@@ -158,6 +159,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 							session.getLoadQueryInfluencers(),
 							lockOptions,
 							jdbcParameter,
+							new SqlAliasBaseManager(),
 							getSessionFactory()
 					);
 					final JdbcSelect jdbcSelectOperation = getSessionFactory().getJdbcServices()
@@ -259,6 +261,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 				session.getLoadQueryInfluencers(),
 				lockOptions,
 				jdbcParameter,
+				new SqlAliasBaseManager(),
 				getSessionFactory()
 		);
 

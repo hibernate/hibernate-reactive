@@ -7,7 +7,7 @@ package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.AbstractEntityPersister;
-import org.hibernate.persister.entity.mutation.MergeCoordinator;
+import org.hibernate.persister.entity.mutation.MergeCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveMergeCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
@@ -20,7 +20,7 @@ import org.hibernate.sql.model.internal.OptionalTableUpdate;
 import org.hibernate.sql.model.jdbc.DeleteOrUpsertOperation;
 import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
 
-public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinator
+public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinatorStandard
 		implements ReactiveUpdateCoordinator {
 
 	public ReactiveMergeCoordinatorStandardScopeFactory(

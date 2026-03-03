@@ -105,15 +105,27 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			return updateResultStage;
 		}
 
+
 		return voidFuture()
 				.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration( entity, values, session ) )
 				.thenCompose( preUpdateGeneratedAttributeIndexes -> {
+
 					final int[] dirtyAttributeIndexes = dirtyAttributeIndexes( incomingDirtyAttributeIndexes, preUpdateGeneratedAttributeIndexes );
+					final boolean temporalExcludedUpdate =
+							entityPersister().excludedFromTemporalVersioning( dirtyAttributeIndexes, hasDirtyCollection );
 
 					final boolean[] attributeUpdateability;
 					boolean forceDynamicUpdate;
-
-					if ( entityPersister().getEntityMetamodel().isDynamicUpdate() && dirtyAttributeIndexes != null ) {
+					if ( temporalExcludedUpdate ) {
+						attributeUpdateability = getPropertiesToUpdate( dirtyAttributeIndexes, hasDirtyCollection );
+						for ( int i = 0; i < attributeUpdateability.length; i++ ) {
+							if ( attributeUpdateability[i] && !entityPersister().isPropertyTemporalExcluded( i ) ) {
+								attributeUpdateability[i] = false;
+							}
+						}
+						forceDynamicUpdate = true;
+					}
+					else if ( entityPersister().getEntityMetamodel().isDynamicUpdate() && dirtyAttributeIndexes != null ) {
 						attributeUpdateability = getPropertiesToUpdate( dirtyAttributeIndexes, hasDirtyCollection );
 						forceDynamicUpdate = true;
 					}
@@ -158,7 +170,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 							versionMapping,
 							dirtyAttributeIndexes,
 							attributeUpdateability,
-							forceDynamicUpdate
+							forceDynamicUpdate,
+							temporalExcludedUpdate
 					);
 
 					// doDynamicUpdate, doVersionUpdate, or doStaticUpdate will initialize the stage,
@@ -308,6 +321,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, dynamicUpdateGroup );
 
 		decomposeForUpdate(
+				entity,
 				id,
 				rowId,
 				values,
@@ -369,6 +383,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, staticUpdateGroup );
 
 		decomposeForUpdate(
+				entity,
 				id,
 				rowId,
 				values,

@@ -92,7 +92,7 @@ public class ReactiveTableBasedSoftDeleteHandler extends TableBasedSoftDeleteHan
 						);
 					}
 					return jdbcMutationExecutor.executeReactive(
-							getSoftDelete(),
+							getSoftDeletes(),
 							sessionUidBindings,
 							sql -> executionContext.getSession()
 									.getJdbcCoordinator()
@@ -114,7 +114,7 @@ public class ReactiveTableBasedSoftDeleteHandler extends TableBasedSoftDeleteHan
 		}
 		else {
 			return jdbcMutationExecutor.executeReactive(
-					getSoftDelete(),
+					getSoftDeletes(),
 					jdbcParameterBindings,
 					sql -> executionContext.getSession()
 							.getJdbcCoordinator()
