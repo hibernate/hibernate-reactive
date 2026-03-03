@@ -1,5 +1,8 @@
 [versions]
+asciidoctorJVersion = "3.0.0"
 assertjVersion = "3.27.7"
+hibernateAsciidoctorExtensionsVersion = "3.2.0.Final"
+hibernateAsciidoctorThemeVersion = "6.0.4.Final"
 hibernateOrmVersion = "7.1.18.Final"
 hibernateOrmGradlePluginVersion = "7.1.18.Final"
 jacksonDatabindVersion = "2.21.1"
@@ -53,6 +56,9 @@ org-testcontainers-mssqlserver = { group = "org.testcontainers", name = "mssqlse
 org-testcontainers-mysql = { group = "org.testcontainers", name = "mysql", version.ref = "testcontainersVersion" }
 org-testcontainers-oracle-xe = { group = "org.testcontainers", name = "oracle-xe", version.ref = "testcontainersVersion" }
 org-testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainersVersion" }
+org-asciidoctor-asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version.ref = "asciidoctorJVersion" }
+org-hibernate-infra-hibernate-asciidoctor-extensions = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-extensions", version.ref = "hibernateAsciidoctorExtensionsVersion" }
+org-hibernate-infra-hibernate-asciidoctor-theme = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-theme", version.ref = "hibernateAsciidoctorThemeVersion" }
 
 [plugins]
 com-diffplug-spotless = { id = "com.diffplug.spotless", version = "8.3.0" }
