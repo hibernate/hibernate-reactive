@@ -52,6 +52,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
@@ -109,6 +113,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -165,6 +173,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -221,6 +233,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -277,6 +293,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -333,6 +353,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -390,6 +414,10 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
+      # Combine all other dependencies in one group
+      other-dependencies:
+        patterns:
+          - "*"
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
