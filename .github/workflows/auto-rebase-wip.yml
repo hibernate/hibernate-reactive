@@ -3,9 +3,10 @@ name: Auto-rebase WIP branches
 # We know that if the workflow exists for this branch, the WIP also exists
 on:
   push:
-    # We don't want to run the workflow on the wip branches
-    branches-ignore:
-      - 'wip/**'
+    # Run on stable branches only: main and version branches (e.g., 2.4, 3.1, 4.2)
+    branches:
+      - 'main'
+      - '[1-9]*.[1-9]*'
 
 permissions:
   contents: write  # Required to push rebased WIP branches
