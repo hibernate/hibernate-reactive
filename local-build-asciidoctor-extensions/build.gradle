@@ -11,5 +11,5 @@ description = 'Asciidoctor extensions for Hibernate Reactive'
 
 dependencies {
     implementation "org.hibernate.infra:hibernate-asciidoctor-extensions:3.2.0.Final"
-    implementation "org.asciidoctor:asciidoctorj:3.0.0"
+    implementation "org.asciidoctor:asciidoctorj:3.0.1"
 }
