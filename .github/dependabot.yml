@@ -423,7 +423,10 @@ updates:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
       # Don't upgrade from JUnit 5 to 6
-      - dependency-name: "org.junit*"
+      - dependency-name: "org.junit.jupiter*"
+        update-types: [ "version-update:semver-major" ]
+      # JUnit 5.xrequires JUnit Platform Launcher 1.x
+      - dependency-name: "org.junit.platform*"
         update-types: [ "version-update:semver-major" ]
       # Only patches for Hibernate ORM and Vert.x
       - dependency-name: "org.hibernate*"
