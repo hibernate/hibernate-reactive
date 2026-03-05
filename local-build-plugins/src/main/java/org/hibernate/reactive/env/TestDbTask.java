@@ -17,7 +17,7 @@ public abstract class TestDbTask extends Test {
 
 	@NotNull
 	private String dbName = "PostgreSQL";
-	private boolean dockerEnabled = false;
+	private boolean dockerEnabled = true;
 	@Nullable
 	private String includeTests = null;
 	private boolean showStandardStreams = false;
@@ -66,7 +66,7 @@ public abstract class TestDbTask extends Test {
 	public Map<String, String> getCustomSystemProperties() {
 		final Map<String, String> props = new HashMap<>();
 		props.put("db", dbName);
-		props.put("docker", dockerEnabled ? "true" : "false");
+		props.put("skipTestcontainers", dockerEnabled ? "false" : "true");
 		return props;
 	}
 
