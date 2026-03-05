@@ -188,15 +188,19 @@ using the `-Pdb` property, as shown in the table below.
 | SQL Server | `./gradlew test -Pdb=mssql`  |
 | Oracle     | `./gradlew test -Pdb=oracle` |
 
-It's even possible to run all tests or certain selected tests on
-all available databases:
+It's even possible to run all tests on all available databases:
 
-    ./gradlew testAll -PincludeTests=DefaultPortTest
+    ./gradlew testAll
 
-The property `includeTests` specifies the name of the test to run
-and may contain the wildcard `*`. This property is optional, but
-very useful, since running all tests on all databases might take 
-a lot of time.
+To run specific tests on all databases, use the standard Gradle `--tests` flag:
+
+    ./gradlew testAll --tests="*SessionTest*"
+
+The `--tests` flag works with all test tasks:
+
+    ./gradlew test --tests="*SessionTest*"
+    ./gradlew testDbMySQL --tests="DefaultPortTest"
+    ./gradlew testDbPostgreSQL testDbMySQL --tests="*SessionTest*"
 
 To enable logging of the standard output streams, add the property 
 `-PshowStandardOutput`.
