@@ -173,13 +173,10 @@ You'll find the generated documentation in the subdirectory
 
 ### Running tests
 
-To run the tests, you'll need to decide which RDBMS you want to test 
-with, and then get an instance of the test database running on your 
-machine.
-
-By default, the tests will be run against PostgreSQL. To test against 
-a different database, you must explicitly specify it using the property
-`-Pdb`, as shown in the table below.
+By default, the tests use [Testcontainers](https://www.testcontainers.org/)
+to automatically manage database instances in Docker containers. The
+tests will run against PostgreSQL unless you specify a different database
+using the `-Pdb` property, as shown in the table below.
 
 | Database   | Command                      |
 |------------|------------------------------|
@@ -204,32 +201,37 @@ To enable logging of the standard output streams, add the property
 `-PshowStandardOutput`.
 
 There are three ways to start the test database.
-    
-#### If you have Docker installed
 
-If you have Docker installed, running the tests is really easy. You
-don't need to create the test databases manually. Just type:
+#### Using Testcontainers (default)
 
-    ./gradlew test -Pdocker
+By default, the tests use [Testcontainers](https://www.testcontainers.org/)
+to automatically start database containers. If you have Docker installed,
+running the tests is really easy - you don't need to create the test
+databases manually. Just type:
+
+    ./gradlew test
 
 The above command will start an instance of PostgreSQL in a Docker
 container. You may specify a different database using one of the
 commands show in the table below.
 
-| Database   | Command                               |
-|------------|---------------------------------------|
-| PostgreSQL | `./gradlew test -Pdocker -Pdb=pg`     |
-| MySQL      | `./gradlew test -Pdocker -Pdb=mysql`  |
-| MariaDB    | `./gradlew test -Pdocker -Pdb=maria`  |
-| DB2        | `./gradlew test -Pdocker -Pdb=db2`    |
-| SQL Server | `./gradlew test -Pdocker -Pdb=mssql`  |
-| Oracle     | `./gradlew test -Pdocker -Pdb=oracle` |
+| Database   | Command                      |
+|------------|------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  |
+| MariaDB    | `./gradlew test -Pdb=maria`  |
+| DB2        | `./gradlew test -Pdb=db2`    |
+| SQL Server | `./gradlew test -Pdb=mssql`  |
+| Oracle     | `./gradlew test -Pdb=oracle` |
 
-The tests will run faster if you reuse the same containers across 
-multiple test runs. To do this, edit the testcontainers configuration 
-file `.testcontainers.properties` in your home directory, adding the 
-line `testcontainers.reuse.enable=true`. (Just create the file if it 
+The tests will run faster if you reuse the same containers across
+multiple test runs. To do this, edit the testcontainers configuration
+file `.testcontainers.properties` in your home directory, adding the
+line `testcontainers.reuse.enable=true`. (Just create the file if it
 doesn't already exist.)
+
+If you prefer to test on a database that's not started by Testcontainers,
+you can use the parameters `-PskipTestcontainers`.
 
 #### If you already have PostgreSQL installed
 
@@ -243,11 +245,11 @@ following commands:
     grant all privileges on database hreact to hreact;
     alter user hreact createdb;
 
-Then run `./gradlew test` from the `hibernate-reactive` directory.
+Then run `./gradlew test -PskipTestcontainers` from the `hibernate-reactive` directory.
 
 #### If you already have MySQL installed
 
-If you have MySQL installed, you can create the test database using 
+If you have MySQL installed, you can create the test database using
 the following commands:
 
     mysql -uroot
@@ -255,7 +257,7 @@ the following commands:
     create user hreact identified by 'hreact';
     grant all on hreact.* to hreact;
 
-Then run `./gradlew test -Pdb=mysql` from the `hibernate-reactive` 
+Then run `./gradlew test -Pdb=mysql -PskipTestcontainers` from the `hibernate-reactive`
 directory.
 
 #### If you have Podman
