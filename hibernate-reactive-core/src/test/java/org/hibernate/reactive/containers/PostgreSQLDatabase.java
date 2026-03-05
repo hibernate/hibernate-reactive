@@ -80,8 +80,8 @@ class PostgreSQLDatabase implements TestableDatabase {
 	}}
 
 	/**
-	 * Holds configuration for the PostgreSQL database container. If the build is run with <code>-Pdocker</code> then
-	 * Testcontainers+Docker will be used.
+	 * Holds configuration for the PostgreSQL database container. By default, Testcontainers will be used.
+	 * To use a local PostgreSQL instance instead, run the build with <code>-PskipTestcontainers</code>.
 	 * <p>
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
