@@ -10,6 +10,9 @@ dbs.each { db ->
 	tasks.register( "testDb${db}", TestDbTask ) {
 		dbName = db
 		description = "Run tests for ${db}"
+		// Configure test sources from the main test task
+		testClassesDirs = sourceSets.test.output.classesDirs
+		classpath = sourceSets.test.runtimeClasspath
 	}
 }
 
@@ -68,6 +71,8 @@ tasks.withType( TestDbTask ).configureEach {
 	if ( project.hasProperty( 'includeTests' ) ) {
 		includeTests = project.property( 'includeTests' )
 	}
+	// Disable up-to-date checking to ensure switching databases always re-runs tests
+	outputs.upToDateWhen { false }
 }
 
 // task with all database
