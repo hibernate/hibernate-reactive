@@ -35,7 +35,7 @@ public class VertxServer {
 	private static final Log LOG = make( Log.class, lookup() );
 
 	// These properties are in DatabaseConfiguration in core
-	public static final boolean USE_DOCKER = Boolean.getBoolean( "docker" );
+	public static final boolean USE_DOCKER = !Boolean.getBoolean( "skipTestcontainers" );
 
 	public static final String IMAGE_NAME = "postgres:15-bullseye";
 	public static final String USERNAME = "hreact";
