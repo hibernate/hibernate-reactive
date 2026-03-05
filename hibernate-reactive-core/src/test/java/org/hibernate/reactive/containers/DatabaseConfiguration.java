@@ -24,7 +24,7 @@ import org.hibernate.dialect.SQLServerDialect;
  */
 public class DatabaseConfiguration {
 
-	public static final boolean USE_DOCKER = Boolean.getBoolean("docker");
+	public static final boolean USE_DOCKER = !Boolean.getBoolean("skipTestcontainers");
 
 	public enum DBType {
 		DB2( DB2Database.INSTANCE, 50000, "com.ibm.db2.jcc.DB2Driver", DB2Dialect.class ),
