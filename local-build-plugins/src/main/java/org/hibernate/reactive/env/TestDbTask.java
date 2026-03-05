@@ -11,15 +11,12 @@ import org.gradle.api.tasks.testing.TestListener;
 import org.gradle.api.tasks.testing.TestResult;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class TestDbTask extends Test {
 
 	@NotNull
 	private String dbName = "PostgreSQL";
 	private boolean dockerEnabled = true;
-	@Nullable
-	private String includeTests = null;
 	private boolean showStandardStreams = false;
 
 	@Input
@@ -40,17 +37,6 @@ public abstract class TestDbTask extends Test {
 
 	public void setDockerEnabled(final boolean dockerEnabled) {
 		this.dockerEnabled = dockerEnabled;
-	}
-
-	@Input
-	@Optional
-	@Nullable
-	public String getIncludeTests() {
-		return includeTests;
-	}
-
-	public void setIncludeTests(final @Nullable String includeTests) {
-		this.includeTests = includeTests;
 	}
 
 	@Input
@@ -114,10 +100,6 @@ public abstract class TestDbTask extends Test {
 		// Apply system properties before running
 		getCustomSystemProperties().forEach(this::systemProperty);
 		getTestLogging().setShowStandardStreams( showStandardStreams );
-
-		if ( includeTests != null && !includeTests.isEmpty() ) {
-			getFilter().includeTestsMatching( includeTests );
-		}
 
 		super.executeTests();
 	}
