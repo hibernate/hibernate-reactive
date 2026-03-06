@@ -177,18 +177,19 @@ You'll find the generated documentation in the subdirectory
 By default, the tests use [Testcontainers](https://www.testcontainers.org/)
 to automatically manage database instances in Docker containers. The
 tests will run against PostgreSQL unless you specify a different database
-using the `-Pdb` property, as shown in the table below.
+using the `-Pdb` property or use the dedicated task, as shown in the table below.
 
-| Database   | Command                      |
-|------------|------------------------------|
-| PostgreSQL | `./gradlew test -Pdb=pg`     |
-| MySQL      | `./gradlew test -Pdb=mysql`  |
-| MariaDB    | `./gradlew test -Pdb=maria`  |
-| DB2        | `./gradlew test -Pdb=db2`    |
-| SQL Server | `./gradlew test -Pdb=mssql`  |
-| Oracle     | `./gradlew test -Pdb=oracle` |
+| Database   | Command                      | Dedicated task                   |
+|------------|------------------------------|----------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     | `./gradlew testDbPostgreSQL`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  | `./gradlew testDbMySQL`          |
+| MariaDB    | `./gradlew test -Pdb=maria`  | `./gradlew testDbMariaDB`        |
+| DB2        | `./gradlew test -Pdb=db2`    | `./gradlew testDbDB2`            |
+| SQL Server | `./gradlew test -Pdb=mssql`  | `./gradlew testDbMSSQLServer`    |
+| Oracle     | `./gradlew test -Pdb=oracle` | `./gradlew testDbOracle`         |
+| CockroachDB| `./gradlew test -Pdb=cockroachdb` | `./gradlew testDbCockroachDB` |
 
-It's even possible to run all tests on all available databases:
+It's even possible (but not recommended) to run all tests on all available databases:
 
     ./gradlew testAll
 
@@ -220,14 +221,15 @@ The above command will start an instance of PostgreSQL in a Docker
 container. You may specify a different database using one of the
 commands show in the table below.
 
-| Database   | Command                      |
-|------------|------------------------------|
-| PostgreSQL | `./gradlew test -Pdb=pg`     |
-| MySQL      | `./gradlew test -Pdb=mysql`  |
-| MariaDB    | `./gradlew test -Pdb=maria`  |
-| DB2        | `./gradlew test -Pdb=db2`    |
-| SQL Server | `./gradlew test -Pdb=mssql`  |
-| Oracle     | `./gradlew test -Pdb=oracle` |
+| Database   | Command                      | Dedicated task                   |
+|------------|------------------------------|----------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     | `./gradlew testDbPostgreSQL`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  | `./gradlew testDbMySQL`          |
+| MariaDB    | `./gradlew test -Pdb=maria`  | `./gradlew testDbMariaDB`        |
+| DB2        | `./gradlew test -Pdb=db2`    | `./gradlew testDbDB2`            |
+| SQL Server | `./gradlew test -Pdb=mssql`  | `./gradlew testDbMSSQLServer`    |
+| Oracle     | `./gradlew test -Pdb=oracle` | `./gradlew testDbOracle`         |
+| CockroachDB| `./gradlew test -Pdb=cockroachdb` | `./gradlew testDbCockroachDB` |
 
 The tests will run faster if you reuse the same containers across
 multiple test runs. To do this, edit the testcontainers configuration
