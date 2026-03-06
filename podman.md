@@ -11,17 +11,20 @@ Containers can either be run as root or in rootless mode.
 **TIP**
 
 If you replace `podman` with `sudo docker`, they will also work with [Docker][docker].
-Example:
 
-```
-podman run --rm --name HibernateTestingPGSQL postgres:17.5
-```
+---
 
-becomes for Docker:
+Each database has a Dockerfile in `tooling/docker/` that contains the base image,
+environment variables, exposed ports, and startup commands.
+You can use these Dockerfiles directly with `podman build` to start a database for testing
+without Testcontainers.
 
-```
-sudo docker run --rm --name HibernateTestingPGSQL postgres:17.5
-```
+---
+**TIP**
+
+Use the `-t` option with `podman build` to tag the image with a specific version,
+e.g. `-t hreact-postgresql:18.3`. Without it, the image defaults to `:latest`.
+
 ---
 
 [podman]:https://podman.io/
@@ -29,23 +32,19 @@ sudo docker run --rm --name HibernateTestingPGSQL postgres:17.5
 
 ## PostgreSQL
 
-Use the following command to start a [PostgreSQL][postgresql] database with the
-required credentials and schema to run the tests:
+Build and start a [PostgreSQL][postgresql] database:
 
 [postgresql]:https://www.postgresql.org
 
-
 ```
-podman run --rm --name HibernateTestingPGSQL \
-    -e POSTGRES_USER=hreact -e POSTGRES_PASSWORD=hreact -e POSTGRES_DB=hreact \
-    -e POSTGRES_INITDB_ARGS="-A password" \
-    -p 5432:5432 docker.io/postgres:17.5
+podman build -f tooling/docker/postgresql.Dockerfile -t hreact-postgresql .
+podman run --rm --name HibernateTestingPGSQL -p 5432:5432 hreact-postgresql
 ```
 
 When the database has started, you can run the tests on PostgreSQL with:
 
 ```
-./gradlew test
+./gradlew testDbPostgreSQL -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [PostgreSQL interactive terminal][psql](`psql`)
@@ -59,21 +58,19 @@ podman exec -e PGPASSWORD=hreact -it HibernateTestingPGSQL psql -U hreact -d hre
 
 ## MariaDB
 
-Use the following command to start a [MariaDB][mariadb] database with the required credentials
-and schema to run the tests:
+Build and start a [MariaDB][mariadb] database:
 
 [mariadb]:https://mariadb.org/
 
 ```
-podman run --rm --name HibernateTestingMariaDB \
-    -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 docker.io/mariadb:11.7.2
+podman build -f tooling/docker/maria.Dockerfile -t hreact-maria .
+podman run --rm --name HibernateTestingMariaDB -p 3306:3306 hreact-maria
 ```
 
 When the database has started, you can run the tests on MariaDB with:
 
 ```
-./gradlew test -Pdb=mariadb
+./gradlew testDbMariaDB -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
@@ -86,26 +83,22 @@ podman exec -it HibernateTestingMariaDB mysql -U hreact -phreact
 
 ## MySQL
 
-Use the following command to start a [MySQL][mysql] database with the required credentials
-and schema to run the tests:
+Build and start a [MySQL][mysql] database:
 
 [mysql]:https://www.mysql.com/
 
 ```
-podman run --rm --name HibernateTestingMySQL \
-    -e MYSQL_ROOT_PASSWORD=hreact -e MYSQL_DATABASE=hreact -e MYSQL_USER=hreact -e MYSQL_PASSWORD=hreact \
-    -p 3306:3306 docker.io/mysql:9.2.0
+podman build -f tooling/docker/mysql.Dockerfile -t hreact-mysql .
+podman run --rm --name HibernateTestingMySQL -p 3306:3306 hreact-mysql
 ```
 
 When the database has started, you can run the tests on MySQL with:
 
 ```
-./gradlew test -Pdb=mysql
+./gradlew testDbMySQL -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
-
-[mysql-cli]:https://www.mysql.com/
 
 ```
 podman exec -it HibernateTestingMySQL mysql -U hreact -phreact
@@ -113,15 +106,13 @@ podman exec -it HibernateTestingMySQL mysql -U hreact -phreact
 
 ## CockroachDB
 
-Use the following commands to start a [CockroachDB][cockroachdb] database with the
-configured to run the tests:
+Build and start a [CockroachDB][cockroachdb] database:
 
 [cockroachdb]:https://www.cockroachlabs.com/get-cockroachdb/
 
 ```
-podman run --rm --name=HibernateTestingCockroachDB \
-    --hostname=roachrr1 -p 26257:26257 -p 8080:8080 \
-    docker.io/cockroachdb/cockroach:v24.3.13 start-single-node --insecure
+podman build -f tooling/docker/cockroachdb.Dockerfile -t hreact-cockroachdb .
+podman run --rm --name HibernateTestingCockroachDB -p 26257:26257 -p 8080:8080 hreact-cockroachdb
 ```
 
 Some of tests needs temporary tables and because this is an experimental feature in
@@ -135,36 +126,36 @@ podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure \
 When the database has started, you can run the tests on CockroachDB with:
 
 ```
-./gradlew test -Pdb=CockroachDB
+./gradlew testDbCockroachDB -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [Cockroach commands][cockroach-cli](`cockroach`)
 using:
 
 ```
-podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure 
+podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure
 ```
 
 [cockroach-cli]:https://www.cockroachlabs.com/docs/stable/cockroach-commands.html
 
 ## Db2
 
-Use the following command to start a [Db2][db2] database with the required credentials
-and schema to run the tests:
+Build and start a [Db2][db2] database:
 
 [db2]:https://www.ibm.com/analytics/db2
 
 ```
-podman run --rm -e LICENSE=accept --privileged=true --group-add keep-groups \
-    --name HibernateTestingDB2 -e DBNAME=hreact -e DB2INSTANCE=hreact \
-    -e DB2INST1_PASSWORD=hreact -e PERSISTENT_HOME=false -e ARCHIVE_LOGS=false \
-    -e AUTOCONFIG=false -p 50000:50000 icr.io/db2_community/db2:12.1.2.0
+podman build -f tooling/docker/db2.Dockerfile -t hreact-db2 .
+podman run --rm --privileged --name HibernateTestingDB2 -p 50000:50000 hreact-db2
 ```
+
+**NOTE:** Db2 requires `--privileged` mode. On Fedora with rootless Podman, this may not work.
+See the [Db2 with rootless Podman](#db2-with-rootless-podman) section for workarounds.
 
 When the database has started, you can run the tests on Db2 with:
 
 ```
-./gradlew test -Pdb=db2
+./gradlew testDbDB2 -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [Db2 command line interface][db2-cli] using:
@@ -174,21 +165,32 @@ podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c db2 connect"
 ```
 [db2-cli]:https://www.ibm.com/support/knowledgecenter/en/SSEPEK_11.0.0/comref/src/tpc/db2z_commandlineprocessor.html
 
+### Db2 with rootless Podman
+
+Db2 requires `--privileged` mode for shared memory management, which doesn't work with
+rootless Podman. You can use rootful Podman instead:
+
+```
+sudo systemctl enable --now podman.socket
+sudo podman build -f tooling/docker/db2.Dockerfile -t hreact-db2 .
+sudo podman run --rm --privileged --name HibernateTestingDB2 -p 50000:50000 hreact-db2
+```
+
 ## Microsoft SQL Server
 
-Use the following command to start a [Microsoft SQL Server][mssql] database with the required credentials
-and schema to run the tests:
+Build and start a [Microsoft SQL Server][mssql] database:
 
 [mssql]:https://www.microsoft.com/en-gb/sql-server/
 
 ```
-podman run --rm -it --name HibernateTestingMSSQL -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=~!HReact!~' -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+podman build -f tooling/docker/sqlserver.Dockerfile -t hreact-sqlserver .
+podman run --rm --name HibernateTestingMSSQL -p 1433:1433 hreact-sqlserver
 ```
 
 When the database has started, you can run the tests on MS SQL Server with:
 
 ```
-./gradlew test -Pdb=SqlServer
+./gradlew testDbMSSQLServer -PskipTestcontainers
 ```
 
 Optionally, you can connect to the database with the [sqlcmd utility][sqlcmd-cli] using:
@@ -201,11 +203,24 @@ podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -
 
 ## Oracle Database
 
-Use the following command to start an [Oracle Database 23c Free—Developer Release][oracle] with the required
-credentials and schema to run the tests:
+Build and start an [Oracle Database Free][oracle]:
 
 [oracle]:https://www.oracle.com/database/free/
 
 ```
-podman run --rm --name HibernateTestingOracle -e ORACLE_PASSWORD=hreact -e APP_USER=hreact -e APP_USER_PASSWORD=hreact -e ORACLE_DATABASE=hreact -p 1521:1521 docker.io/gvenzl/oracle-free:23-slim-faststart
+podman build -f tooling/docker/oracle.Dockerfile -t hreact-oracle .
+podman run --rm --name HibernateTestingOracle -p 1521:1521 hreact-oracle
+```
+
+**NOTE:** Oracle Database takes 30-60 seconds to fully initialize after the container starts.
+Wait for the message "DATABASE IS READY TO USE!" in the logs before running tests:
+
+```
+podman logs -f HibernateTestingOracle
+```
+
+When the database has started, you can run the tests on Oracle with:
+
+```
+./gradlew testDbOracle -PskipTestcontainers
 ```
