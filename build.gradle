@@ -39,7 +39,5 @@ tasks.register("testAll", Test) {
 rootProject.afterEvaluate {
     // Workaround since "libs.versions.NAME" notation cannot be used here
     def libs = project.extensions.getByType(VersionCatalogsExtension).named('libs')
-    logger.lifecycle "ORM version: ${libs.findVersion('hibernateOrmVersion').get().requiredVersion}"
-    logger.lifecycle "ORM Gradle plugin version: ${libs.findVersion('hibernateOrmGradlePluginVersion').get().requiredVersion}"
     logger.lifecycle "Vert.x SQL Client version: ${libs.findVersion('vertxSqlClientVersion').get().requiredVersion}"
 }
