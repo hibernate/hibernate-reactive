@@ -25,6 +25,12 @@ tasks.named( "test", Test ).configure { t ->
 	t.systemProperty( "skipTestcontainers", dockerEnabled ? "false" : "true" )
 	t.systemProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" )
 
+	// Log Testcontainers status
+	t.doFirst {
+		def testcontainersStatus = dockerEnabled ? "enabled" : "disabled"
+		logger.lifecycle( "Running ${dbName.get()} tests with Testcontainers ${testcontainersStatus}" )
+	}
+
 	t.defaultCharacterEncoding = "UTF-8"
 	t.useJUnitPlatform()
 	t.testLogging {
