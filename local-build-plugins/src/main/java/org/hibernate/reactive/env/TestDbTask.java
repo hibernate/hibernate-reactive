@@ -101,6 +101,10 @@ public abstract class TestDbTask extends Test {
 		getCustomSystemProperties().forEach(this::systemProperty);
 		getTestLogging().setShowStandardStreams( showStandardStreams );
 
+		// Log Testcontainers status
+		final var testcontainersStatus = dockerEnabled ? "enabled" : "disabled";
+		getLogger().lifecycle( "Running {} tests with Testcontainers {}", dbName, testcontainersStatus );
+
 		super.executeTests();
 	}
 
