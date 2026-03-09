@@ -1,0 +1,141 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.associations;
+
+import java.io.Serializable;
+import java.util.Objects;
+
+import org.hibernate.cfg.Configuration;
+
+import org.hibernate.reactive.BaseReactiveTest;
+import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.OneToOne;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@Timeout(value = 10, timeUnit = MINUTES)
+
+public class OneToOneIdClassParentIdClassTest extends BaseReactiveTest {
+
+	@Override
+	protected Configuration constructConfiguration() {
+		Configuration configuration = super.constructConfiguration();
+		configuration.addAnnotatedClass( AnEntity.class );
+		configuration.addAnnotatedClass( OtherEntity.class );
+		return configuration;
+	}
+
+	@Test
+	public void testLoad(VertxTestContext context) {
+		final OtherEntity otherEntity = new OtherEntity( 1, "Other Entity" );
+		final AnEntity anEntity = new AnEntity( otherEntity, "An Entity" );
+
+		test(
+				context,
+				openSession()
+						.thenCompose( s -> s.persist( otherEntity )
+								.thenCompose( v -> s.persist( anEntity ) )
+								.thenCompose( v -> s.flush() )
+						)
+						.thenCompose( v -> openSession() )
+						.thenCompose( s -> s.find( AnEntity.class, new OtherEntityId( 1 ) )
+								.thenAccept( optionalAnEntity -> {
+									assertNotNull( optionalAnEntity );
+									assertEquals( anEntity, optionalAnEntity );
+									assertEquals( otherEntity, optionalAnEntity.otherEntity );
+								} )
+						)
+		);
+	}
+
+	@Entity(name = "AnEntity")
+	@IdClass(OtherEntityId.class)
+	public static class AnEntity implements Serializable {
+		@Id
+		@OneToOne
+		private OtherEntity otherEntity;
+		private String name;
+
+		AnEntity() {
+		}
+
+		AnEntity(OtherEntity otherEntity, String name) {
+			this.otherEntity = otherEntity;
+			this.name = name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			AnEntity anEntity = (AnEntity) o;
+			return otherEntity.equals( anEntity.otherEntity ) &&
+					Objects.equals( name, anEntity.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( otherEntity, name );
+		}
+	}
+
+	public static class OtherEntityId implements Serializable {
+		private int id;
+
+		OtherEntityId() {
+		}
+
+		OtherEntityId(int id) {
+			this.id = id;
+		}
+	}
+
+	@Entity(name = "OtherEntity")
+	@IdClass(OtherEntityId.class)
+	public static class OtherEntity implements Serializable {
+
+		@Id
+		private int id;
+		private String name;
+
+		OtherEntity() {
+		}
+
+		OtherEntity(int id, String name) {
+			this.id = id;
+			this.name = name;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			OtherEntity that = (OtherEntity) o;
+			return id == that.id &&
+					Objects.equals( name, that.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( id, name );
+		}
+	}
+}

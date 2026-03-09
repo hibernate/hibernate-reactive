@@ -13,6 +13,8 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import org.hibernate.reactive.fetch.EagerElementCollectionForBasicTypeListTest;
+import org.hibernate.reactive.fetch.EagerElementCollectionForBasicTypeSetTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
