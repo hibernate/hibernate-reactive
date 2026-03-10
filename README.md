@@ -174,63 +174,71 @@ You'll find the generated documentation in the subdirectory
 
 ### Running tests
 
-To run the tests, you'll need to decide which RDBMS you want to test 
-with, and then get an instance of the test database running on your 
-machine.
+By default, the tests use [Testcontainers](https://www.testcontainers.org/)
+to automatically manage database instances in Docker containers. The
+tests will run against PostgreSQL unless you specify a different database
+using the `-Pdb` property or use the dedicated task, as shown in the table below.
 
-By default, the tests will be run against PostgreSQL. To test against 
-a different database, you must explicitly specify it using the property
-`-Pdb`, as shown in the table below.
+| Database   | Command                      | Dedicated task                   |
+|------------|------------------------------|----------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     | `./gradlew testDbPostgreSQL`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  | `./gradlew testDbMySQL`          |
+| MariaDB    | `./gradlew test -Pdb=maria`  | `./gradlew testDbMariaDB`        |
+| DB2        | `./gradlew test -Pdb=db2`    | `./gradlew testDbDB2`            |
+| SQL Server | `./gradlew test -Pdb=mssql`  | `./gradlew testDbMSSQLServer`    |
+| Oracle     | `./gradlew test -Pdb=oracle` | `./gradlew testDbOracle`         |
+| CockroachDB| `./gradlew test -Pdb=cockroachdb` | `./gradlew testDbCockroachDB` |
 
-| Database   | Command                      |
-|------------|------------------------------|
-| PostgreSQL | `./gradlew test -Pdb=pg`     |
-| MySQL      | `./gradlew test -Pdb=mysql`  |
-| MariaDB    | `./gradlew test -Pdb=maria`  |
-| DB2        | `./gradlew test -Pdb=db2`    |
-| SQL Server | `./gradlew test -Pdb=mssql`  |
-| Oracle     | `./gradlew test -Pdb=oracle` |
+It's even possible (but not recommended) to run all tests on all available databases:
 
-It's even possible to run all tests or certain selected tests on
-all available databases:
+    ./gradlew testAll
 
-    ./gradlew testAll -PincludeTests=DefaultPortTest
+To run specific tests on all databases, use the standard Gradle `--tests` flag:
 
-The property `includeTests` specifies the name of the test to run
-and may contain the wildcard `*`. This property is optional, but
-very useful, since running all tests on all databases might take 
-a lot of time.
+    ./gradlew testAll --tests="*SessionTest*"
+
+The `--tests` flag works with all test tasks:
+
+    ./gradlew test --tests="*SessionTest*"
+    ./gradlew testDbMySQL --tests="DefaultPortTest"
+    ./gradlew testDbPostgreSQL testDbMySQL --tests="*SessionTest*"
 
 To enable logging of the standard output streams, add the property 
 `-PshowStandardOutput`.
 
 There are three ways to start the test database.
-    
-#### If you have Docker installed
 
-If you have Docker installed, running the tests is really easy. You
-don't need to create the test databases manually. Just type:
+#### Using Testcontainers (default)
 
-    ./gradlew test -Pdocker
+By default, the tests use [Testcontainers](https://www.testcontainers.org/)
+to automatically start database containers. If you have Docker installed,
+running the tests is really easy - you don't need to create the test
+databases manually. Just type:
+
+    ./gradlew test
 
 The above command will start an instance of PostgreSQL in a Docker
 container. You may specify a different database using one of the
 commands show in the table below.
 
-| Database   | Command                               |
-|------------|---------------------------------------|
-| PostgreSQL | `./gradlew test -Pdocker -Pdb=pg`     |
-| MySQL      | `./gradlew test -Pdocker -Pdb=mysql`  |
-| MariaDB    | `./gradlew test -Pdocker -Pdb=maria`  |
-| DB2        | `./gradlew test -Pdocker -Pdb=db2`    |
-| SQL Server | `./gradlew test -Pdocker -Pdb=mssql`  |
-| Oracle     | `./gradlew test -Pdocker -Pdb=oracle` |
+| Database   | Command                      | Dedicated task                   |
+|------------|------------------------------|----------------------------------|
+| PostgreSQL | `./gradlew test -Pdb=pg`     | `./gradlew testDbPostgreSQL`     |
+| MySQL      | `./gradlew test -Pdb=mysql`  | `./gradlew testDbMySQL`          |
+| MariaDB    | `./gradlew test -Pdb=maria`  | `./gradlew testDbMariaDB`        |
+| DB2        | `./gradlew test -Pdb=db2`    | `./gradlew testDbDB2`            |
+| SQL Server | `./gradlew test -Pdb=mssql`  | `./gradlew testDbMSSQLServer`    |
+| Oracle     | `./gradlew test -Pdb=oracle` | `./gradlew testDbOracle`         |
+| CockroachDB| `./gradlew test -Pdb=cockroachdb` | `./gradlew testDbCockroachDB` |
 
-The tests will run faster if you reuse the same containers across 
-multiple test runs. To do this, edit the testcontainers configuration 
-file `.testcontainers.properties` in your home directory, adding the 
-line `testcontainers.reuse.enable=true`. (Just create the file if it 
+The tests will run faster if you reuse the same containers across
+multiple test runs. To do this, edit the testcontainers configuration
+file `.testcontainers.properties` in your home directory, adding the
+line `testcontainers.reuse.enable=true`. (Just create the file if it
 doesn't already exist.)
+
+If you prefer to test on a database that's not started by Testcontainers,
+you can use the parameters `-PskipTestcontainers`.
 
 #### If you already have PostgreSQL installed
 
@@ -244,11 +252,11 @@ following commands:
     grant all privileges on database hreact to hreact;
     alter user hreact createdb;
 
-Then run `./gradlew test` from the `hibernate-reactive` directory.
+Then run `./gradlew test -PskipTestcontainers` from the `hibernate-reactive` directory.
 
 #### If you already have MySQL installed
 
-If you have MySQL installed, you can create the test database using 
+If you have MySQL installed, you can create the test database using
 the following commands:
 
     mysql -uroot
@@ -256,7 +264,7 @@ the following commands:
     create user hreact identified by 'hreact';
     grant all on hreact.* to hreact;
 
-Then run `./gradlew test -Pdb=mysql` from the `hibernate-reactive` 
+Then run `./gradlew test -Pdb=mysql -PskipTestcontainers` from the `hibernate-reactive`
 directory.
 
 #### If you have Podman

@@ -1,18 +1,34 @@
 = Hibernate Reactive {fullVersion} Reference Documentation
 Davide D'Alto <davide@hibernate.org>; Gavin King <gavin@hibernate.org>
-:toc2:
-:toclevels: 3
+:doctype: book
+:toc: left
+:toclevels: 4
 :sectanchors:
 :sourcedir: src/main/asciidoc/reference
-:leveloffset: +1
 :version-selector-enabled: true
 :html-meta-canonical-link: https://docs.hibernate.org/stable/reactive/reference/html_single
 
-include::{sourcedir}/preface.adoc[]
+:leveloffset: +1
+
+include::{sourcedir}/_preface.adoc[]
+
+include::{sourcedir}/_introduction.adoc[]
 
 :numbered:
 
-include::{sourcedir}/introduction.adoc[]
+include::{sourcedir}/_information-about-orm.adoc[]
+
+include::{sourcedir}/_setting-up.adoc[]
+
+include::{sourcedir}/_writing-code.adoc[]
+
+include::{sourcedir}/_integrating-vertx.adoc[]
+
+include::{sourcedir}/_tuning-performance.adoc[]
+
+include::{sourcedir}/_connection-management.adoc[]
+
+include::{sourcedir}/_next-steps.adoc[]
 
 :leveloffset: -1
 

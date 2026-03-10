@@ -1,5 +1,8 @@
 [versions]
+asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
+hibernateAsciidoctorExtensionsVersion = "3.2.0.Final"
+hibernateAsciidoctorThemeVersion = "6.0.4.Final"
 hibernateOrmVersion = "7.3.0.CR2"
 hibernateOrmGradlePluginVersion = "7.3.0.CR2"
 jacksonDatabindVersion = "2.21.1"
@@ -14,8 +17,8 @@ vertxWebClientVersion = "5.0.8"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
-com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.3.0" }
-com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.3.1.jre11-preview" }
+com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.4.0" }
+com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.3.2.jre11-preview" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.6.0" }
 com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.2" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "3.1.1" }
@@ -43,7 +46,7 @@ org-jboss-logging-jboss-logging-annotations = { group = "org.jboss.logging", nam
 org-jboss-logging-jboss-logging-processor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingAnnotationVersion" }
 org-junit-jupiter-junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 org-junit-jupiter-junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
-org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "junitVersion" }
+org-junit-platform-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitVersion" }
 org-mariadb-jdbc-mariadb-java-client = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "3.5.7" }
 org-postgresql-postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.10" }
 org-testcontainers-cockroachdb = { group = "org.testcontainers", name = "cockroachdb", version.ref = "testcontainersVersion" }
@@ -53,8 +56,11 @@ org-testcontainers-mssqlserver = { group = "org.testcontainers", name = "mssqlse
 org-testcontainers-mysql = { group = "org.testcontainers", name = "mysql", version.ref = "testcontainersVersion" }
 org-testcontainers-oracle-xe = { group = "org.testcontainers", name = "oracle-xe", version.ref = "testcontainersVersion" }
 org-testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainersVersion" }
+org-asciidoctor-asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version.ref = "asciidoctorJVersion" }
+org-hibernate-infra-hibernate-asciidoctor-extensions = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-extensions", version.ref = "hibernateAsciidoctorExtensionsVersion" }
+org-hibernate-infra-hibernate-asciidoctor-theme = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-theme", version.ref = "hibernateAsciidoctorThemeVersion" }
 
 [plugins]
-com-diffplug-spotless = { id = "com.diffplug.spotless", version = "8.2.1" }
+com-diffplug-spotless = { id = "com.diffplug.spotless", version = "8.3.0" }
 org-asciidoctor-jvm-convert = { id = "org.asciidoctor.jvm.convert", version = "4.0.5" }
 org-hibernate-orm = { id = "org.hibernate.orm", version.ref = "hibernateOrmGradlePluginVersion" }

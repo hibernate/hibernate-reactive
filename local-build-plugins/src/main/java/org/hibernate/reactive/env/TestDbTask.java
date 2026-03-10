@@ -11,15 +11,12 @@ import org.gradle.api.tasks.testing.TestListener;
 import org.gradle.api.tasks.testing.TestResult;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class TestDbTask extends Test {
 
 	@NotNull
 	private String dbName = "PostgreSQL";
-	private boolean dockerEnabled = false;
-	@Nullable
-	private String includeTests = null;
+	private boolean dockerEnabled = true;
 	private boolean showStandardStreams = false;
 
 	@Input
@@ -43,17 +40,6 @@ public abstract class TestDbTask extends Test {
 	}
 
 	@Input
-	@Optional
-	@Nullable
-	public String getIncludeTests() {
-		return includeTests;
-	}
-
-	public void setIncludeTests(final @Nullable String includeTests) {
-		this.includeTests = includeTests;
-	}
-
-	@Input
 	public boolean isShowStandardStreams() {
 		return showStandardStreams;
 	}
@@ -66,7 +52,7 @@ public abstract class TestDbTask extends Test {
 	public Map<String, String> getCustomSystemProperties() {
 		final Map<String, String> props = new HashMap<>();
 		props.put("db", dbName);
-		props.put("docker", dockerEnabled ? "true" : "false");
+		props.put("skipTestcontainers", dockerEnabled ? "false" : "true");
 		return props;
 	}
 
@@ -115,9 +101,9 @@ public abstract class TestDbTask extends Test {
 		getCustomSystemProperties().forEach(this::systemProperty);
 		getTestLogging().setShowStandardStreams( showStandardStreams );
 
-		if ( includeTests != null && !includeTests.isEmpty() ) {
-			getFilter().includeTestsMatching( includeTests );
-		}
+		// Log Testcontainers status
+		final var testcontainersStatus = dockerEnabled ? "enabled" : "disabled";
+		getLogger().lifecycle( "Running {} tests with Testcontainers {}", dbName, testcontainersStatus );
 
 		super.executeTests();
 	}

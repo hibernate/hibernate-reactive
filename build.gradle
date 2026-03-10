@@ -11,10 +11,33 @@ group = "org.hibernate.reactive"
 // leverage the ProjectVersion which comes from the `local.versions` plugin
 version = project.projectVersion.fullName
 
+// Create root-level aliases for test tasks so they appear in autocomplete.
+// Even if you can run the test tasks in all subprojects, some subprojects only test a specific database,
+// so selecting a different one cause the test to fail or have no effect on.
+def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
+
+dbs.each { db ->
+    tasks.register("testDb${db}", Test) {
+        description = "Run ${db} tests in all subprojects"
+        group = "verification"
+        onlyIf { false }
+        subprojects.each { subproject ->
+            dependsOn subproject.tasks.matching { it.name == "testDb${db}" }
+        }
+    }
+}
+
+tasks.register("testAll", Test) {
+    description = "Run tests on all databases in all subprojects"
+    group = "verification"
+    onlyIf { false }
+    subprojects.each { subproject ->
+        dependsOn subproject.tasks.matching { it.name == "testAll" }
+    }
+}
+
 rootProject.afterEvaluate {
     // Workaround since "libs.versions.NAME" notation cannot be used here
     def libs = project.extensions.getByType(VersionCatalogsExtension).named('libs')
-    logger.lifecycle "ORM version: ${libs.findVersion('hibernateOrmVersion').get().requiredVersion}"
-    logger.lifecycle "ORM Gradle plugin version: ${libs.findVersion('hibernateOrmGradlePluginVersion').get().requiredVersion}"
     logger.lifecycle "Vert.x SQL Client version: ${libs.findVersion('vertxSqlClientVersion').get().requiredVersion}"
 }

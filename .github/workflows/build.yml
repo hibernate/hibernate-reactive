@@ -126,7 +126,7 @@ jobs:
       - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
         run: ./gradlew :${{ matrix.example }}:runAllExamplesOn${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
@@ -182,9 +182,9 @@ jobs:
       - name: Print the effective ORM version used
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
       - name: Build and Test with ${{ matrix.db }}
-        run: ./gradlew build -PshowStandardOutput -Pdocker -Pdb=${{ matrix.db }}
+        run: ./gradlew build -PshowStandardOutput -Pdb=${{ matrix.db }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}-${{steps.current-branch-suffix.outputs.value}}
@@ -311,11 +311,11 @@ jobs:
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
       - name: Build and Test with Java ${{ matrix.java.name }}
         run: |
-          ./gradlew build -PshowStandardOutput -Pdocker -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
+          ./gradlew build -PshowStandardOutput -Ptest.jdk.version=${{ matrix.java.java_version_numeric }} \
               -Porg.gradle.java.installations.paths=${{ steps.mainjdk-exportpath.outputs.path }},${{ steps.testjdk-exportpath.outputs.path }} \
               ${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}-${{steps.current-branch-suffix.outputs.value}}

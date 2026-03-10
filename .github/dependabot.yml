@@ -38,6 +38,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       # Testcontainers plus the JDBC driver we need for testing
       testcontainers:
         patterns:
@@ -49,10 +52,13 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
@@ -71,10 +77,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 4.2
@@ -101,6 +103,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -111,10 +116,13 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -132,10 +140,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 4.1
@@ -162,6 +166,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -172,10 +179,13 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -193,10 +203,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 3.3
@@ -223,6 +229,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -233,10 +242,12 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
 
     ignore:
       - dependency-name: "org.glassfish.expressly*"
@@ -255,10 +266,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 3.2
@@ -285,6 +292,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -295,10 +305,12 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
 
     ignore:
       - dependency-name: "org.glassfish.expressly*"
@@ -317,15 +329,11 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
-  #################################################################################
-  # Duplicate the package-ecosystems for main because we want to target branch 3.1
-  # and dependabot doesn't support YAML aliases and anchors at the moment
-  #################################################################################
+#################################################################################
+# Duplicate the package-ecosystems for main because we want to target branch 3.1
+# and dependabot doesn't support YAML aliases and anchors at the moment
+#################################################################################
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "3.1"
@@ -347,6 +355,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       testcontainers:
         patterns:
           - "org.testcontainers*"
@@ -357,11 +368,12 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - docker
-          - testing
-
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
     ignore:
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
@@ -379,10 +391,6 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing
 
   #################################################################################
   # Duplicate the package-ecosystems for main because we want to target branch 2.4
@@ -409,6 +417,9 @@ updates:
       mutiny:
         patterns:
           - "io.smallrye.reactive*"
+      junit:
+        patterns:
+          - "org.junit*"
       # Testcontainers plus the JDBC driver we need for testing
       testcontainers:
         patterns:
@@ -420,17 +431,21 @@ updates:
           - "com.fasterxml.jackson.core*"
           - "com.mysql*"
           - "org.mariadb.jdbc*"
-        labels:
-          - dependencies
-          - java
-          - testing
-
+      # Combine all remaining patches in one group
+      all-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
     ignore:
       # For Hibernate Validator, we will need to update major version manually as needed (but we only use it in tests)
       - dependency-name: "org.glassfish.expressly*"
         update-types: ["version-update:semver-major"]
       # Don't upgrade from JUnit 5 to 6
-      - dependency-name: "org.junit*"
+      - dependency-name: "org.junit.jupiter*"
+        update-types: [ "version-update:semver-major" ]
+      # JUnit 5.xrequires JUnit Platform Launcher 1.x
+      - dependency-name: "org.junit.platform*"
         update-types: [ "version-update:semver-major" ]
       # Only patches for Hibernate ORM and Vert.x
       - dependency-name: "org.hibernate*"
@@ -439,6 +454,12 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "io.smallrye.reactive*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # Keep Gradle on version 8.x (Hibernate ORM 6.6 gradle plugin does not support 9)
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
+      # Spotless 8 requires Java 17, but 2.4 branch uses Java 11
+      - dependency-name: "com.diffplug.spotless*"
+        update-types: ["version-update:semver-major"]
 
   # Dockerfiles in tooling/docker/, and database services we use for examples (MySQL and PostgreSQL)
   - package-ecosystem: "docker"
@@ -448,7 +469,3 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    labels:
-      - dependencies
-      - docker
-      - testing

@@ -2,30 +2,33 @@ import org.hibernate.reactive.env.TestDbTask
 
 def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
 
-// create a task for each DB, now is static configure and not dynamic with rule pattern
-// and run the tests on the selected db
+// create a task for each DB that run the tests on the selected db
 // Example:
 // gradlew testDbMySQL testDbDB2
 dbs.each { db ->
 	tasks.register( "testDb${db}", TestDbTask ) {
 		dbName = db
 		description = "Run tests for ${db}"
+		// Configure test sources from the main test task
+		testClassesDirs = sourceSets.test.output.classesDirs
+		classpath = sourceSets.test.runtimeClasspath
 	}
 }
 
 // configure default task 'test' with same config of TestDbTask, with cache safe
 tasks.named( "test", Test ).configure { t ->
 	def dbName = providers.gradleProperty( "db" ).orElse( "PostgreSQL" )
-	def dockerEnabled = providers.gradleProperty( "docker" ).isPresent()
-	def includeTests = providers.gradleProperty( "includeTests" ).orNull
+	def dockerEnabled = !providers.gradleProperty( "skipTestcontainers" ).isPresent()
 	def showStandardStreams = providers.gradleProperty( "showStandardOutput" ).isPresent()
 
 	t.systemProperty( "db", dbName.get() )
-	t.systemProperty( "docker", dockerEnabled ? "true" : "false" )
+	t.systemProperty( "skipTestcontainers", dockerEnabled ? "false" : "true" )
 	t.systemProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" )
 
-	if ( includeTests ) {
-		t.filter { f -> f.includeTestsMatching( includeTests ) }
+	// Log Testcontainers status
+	t.doFirst {
+		def testcontainersStatus = dockerEnabled ? "enabled" : "disabled"
+		logger.lifecycle( "Running ${dbName.get()} tests with Testcontainers ${testcontainersStatus}" )
 	}
 
 	t.defaultCharacterEncoding = "UTF-8"
@@ -62,16 +65,39 @@ tasks.named( "test", Test ).configure { t ->
 	} )
 }
 
-// configure all testDbTask with docker and filter test
-tasks.withType( TestDbTask ).configureEach {
-	dockerEnabled = project.hasProperty( 'docker' )
-	if ( project.hasProperty( 'includeTests' ) ) {
-		includeTests = project.property( 'includeTests' )
-	}
-}
-
-// task with all database
+// Test all databases
 tasks.register( "testAll", Test ) {
 	description = "Run tests for ${dbs}"
+
+	// Depend on all database-specific test tasks
 	dependsOn( dbs.collect { "testDb${it}" } )
+
+	// Disabled because this task doesn't actually run tests,
+	// it will just trigger the actual tasks because it depends on them
+	onlyIf { false }
+}
+
+// Configure all testDbXXX tasks with the same parameters as the testAll task
+tasks.withType( TestDbTask ).all { task ->
+	dockerEnabled = !project.hasProperty( 'skipTestcontainers' )
+
+	// Propagate --tests filter from testAll task if it's in the task graph
+	gradle.taskGraph.whenReady { graph ->
+		if ( graph.hasTask( tasks.testAll ) ) {
+			def testAllTask = tasks.testAll
+			// Copy the test filter from testAll to this task
+			def testAllFilter = testAllTask.filter
+			if ( !testAllFilter.includePatterns.empty || !testAllFilter.commandLineIncludePatterns.empty ) {
+				testAllFilter.commandLineIncludePatterns.each { pattern ->
+					task.filter.includeTestsMatching( pattern )
+				}
+				testAllFilter.includePatterns.each { pattern ->
+					task.filter.includeTestsMatching( pattern )
+				}
+			}
+		}
+	}
+
+	// Disable up-to-date checking to ensure switching databases always re-runs tests
+	outputs.upToDateWhen { false }
 }

@@ -1,0 +1,12 @@
+[[information-about-orm]]
+= Information about Hibernate ORM
+
+This document assumes some passing familiarity with Hibernate ORM or another
+implementation of JPA. If you've never used JPA before, that's OK, but you
+might need to refer to the following sources of information at some points
+in this text:
+
+- the http://hibernate.org/orm/documentation/{ormMinorVersion}/[documentation for Hibernate ORM],
+- the https://jakarta.ee/specifications/persistence/3.2/jakarta-persistence-spec-3.2[Jakarta Persistence 3.2 specification], or
+- https://www.manning.com/books/java-persistence-with-hibernate-second-edition[Java Persistence with Hibernate],
+  the latest edition of the book originally titled _Hibernate in Action_.
