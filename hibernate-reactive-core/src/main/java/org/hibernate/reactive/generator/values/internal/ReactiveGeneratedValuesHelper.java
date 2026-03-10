@@ -28,7 +28,6 @@ import org.hibernate.generator.values.internal.GeneratedValuesHelper;
 import org.hibernate.generator.values.internal.GeneratedValuesImpl;
 import org.hibernate.generator.values.internal.GeneratedValuesMappingProducer;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
-import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.SelectGenerator;
 import org.hibernate.id.enhanced.DatabaseStructure;
@@ -112,7 +111,7 @@ public class ReactiveGeneratedValuesHelper {
 			return new ReactiveGetGeneratedKeysDelegate( persister, false, timing );
 		}
 		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null
-				&& !persister.getEntityMetamodel().isNaturalIdentifierInsertGenerated() ) {
+				&& !persister.isNaturalIdentifierInsertGenerated() ) {
 			return new ReactiveUniqueKeySelectingDelegate( persister, getNaturalIdPropertyNames( persister ), timing );
 		}
 		return null;
@@ -278,7 +277,7 @@ public class ReactiveGeneratedValuesHelper {
 			IdentifierGenerator idGenerator,
 			ReactiveIdentifierGenerator<?> reactiveIdGenerator,
 			GeneratorCreationContext creationContext) {
-		( (Configurable) reactiveIdGenerator ).initialize( creationContext.getSqlStringGenerationContext() );
+		reactiveIdGenerator.initialize( creationContext.getSqlStringGenerationContext() );
 		return new ReactiveGeneratorWrapper( reactiveIdGenerator, idGenerator );
 	}
 
