@@ -28,7 +28,6 @@ import org.hibernate.generator.values.internal.GeneratedValuesHelper;
 import org.hibernate.generator.values.internal.GeneratedValuesImpl;
 import org.hibernate.generator.values.internal.GeneratedValuesMappingProducer;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
-import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.SelectGenerator;
 import org.hibernate.id.enhanced.DatabaseStructure;
 import org.hibernate.id.enhanced.SequenceStructure;
@@ -44,7 +43,6 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
-import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.insert.ReactiveGetGeneratedKeysDelegate;
@@ -240,18 +238,15 @@ public class ReactiveGeneratedValuesHelper {
 		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
 			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
-				return initialize( (IdentifierGenerator) generator, new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
+				return initialize( new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
 			}
 			if ( structure instanceof SequenceStructure ) {
-				return initialize( (IdentifierGenerator) generator, new ReactiveSequenceIdentifierGenerator( structure, runtimeModelCreationContext ), creationContext );
+				return initialize( new ReactiveSequenceIdentifierGenerator( structure, runtimeModelCreationContext ), creationContext );
 			}
 			throw LOG.unknownStructureType();
 		}
 		if ( generator instanceof TableGenerator tableGenerator ) {
-			return initialize(
-					(IdentifierGenerator) generator,
-					new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ),
-					creationContext
+			return initialize( new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ), creationContext
 			);
 		}
 		if ( generator instanceof SelectGenerator ) {
@@ -263,22 +258,17 @@ public class ReactiveGeneratedValuesHelper {
 					creationContext,
 					runtimeModelCreationContext
 			);
-			return initialize(
-					(IdentifierGenerator) generator,
-					reactiveCompositeNestedGeneratedValueGenerator,
-					creationContext
-			);
+			return initialize( reactiveCompositeNestedGeneratedValueGenerator, creationContext );
 		}
 		//nothing to do
 		return generator;
 	}
 
 	private static Generator initialize(
-			IdentifierGenerator idGenerator,
 			ReactiveIdentifierGenerator<?> reactiveIdGenerator,
 			GeneratorCreationContext creationContext) {
 		reactiveIdGenerator.initialize( creationContext.getSqlStringGenerationContext() );
-		return new ReactiveGeneratorWrapper( reactiveIdGenerator, idGenerator );
+		return reactiveIdGenerator;
 	}
 
 }
