@@ -1,0 +1,28 @@
+plugins {
+    id "hr-java-library"
+    id 'jacoco-report-aggregation'
+}
+
+description = 'Reporting module'
+
+ext {
+    projectsToIncludeWhenAggregatingCoverage = [
+            'hibernate-reactive-core',
+            'hibernate-validator-postgres-it'
+    ]
+}
+
+tasks.register('mergeCodeCoverageReport', JacocoReport) {
+    executionData fileTree(rootProject.layout.projectDirectory.asFile).include("**/build/jacoco/*.exec")
+    parent.subprojects.each { Project subProject ->
+        if ( project.projectsToIncludeWhenAggregatingCoverage.contains( subProject.name ) ) {
+            sourceSets  subProject.sourceSets.main
+        }
+    }
+
+    reports {
+        xml.required = true
+    }
+
+    dependsOn rootProject.subprojects.collect { p -> p.tasks.matching { it.name == 'compileJava' } }
+}
