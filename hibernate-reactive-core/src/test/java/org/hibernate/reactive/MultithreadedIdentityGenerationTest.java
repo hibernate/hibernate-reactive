@@ -18,7 +18,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
@@ -128,9 +128,9 @@ public class MultithreadedIdentityGenerationTest {
 		stageSessionFactory.close();
 	}
 
-	private ReactiveGeneratorWrapper getIdGenerator() {
+	private ReactiveIdentifierGenerator<Object> getIdGenerator() {
 		final ReactiveSessionFactoryImpl hibernateSessionFactory = (ReactiveSessionFactoryImpl) sessionFactory;
-		return (ReactiveGeneratorWrapper) hibernateSessionFactory
+		return (ReactiveIdentifierGenerator<Object>) hibernateSessionFactory
 				.getRuntimeMetamodels()
 				.getMappingMetamodel()
 				.getEntityDescriptor( "org.hibernate.reactive.MultithreadedIdentityGenerationTest$EntityWithGeneratedId" )
@@ -139,7 +139,7 @@ public class MultithreadedIdentityGenerationTest {
 
 	@Test
 	public void testIdentityGenerator(VertxTestContext context) {
-		final ReactiveGeneratorWrapper idGenerator = getIdGenerator();
+		final ReactiveIdentifierGenerator<Object> idGenerator = getIdGenerator();
 		assertNotNull( idGenerator );
 
 		final DeploymentOptions deploymentOptions = new DeploymentOptions();
@@ -184,11 +184,11 @@ public class MultithreadedIdentityGenerationTest {
 
 	private static class IdGenVerticle extends AbstractVerticle {
 
-		private final ReactiveGeneratorWrapper idGenerator;
+		private final ReactiveIdentifierGenerator<Object> idGenerator;
 		private final ResultsCollector allResults;
 		private final ArrayList<Long> generatedIds = new ArrayList<>( IDS_GENERATED_PER_THREAD );
 
-		public IdGenVerticle(ReactiveGeneratorWrapper idGenerator, ResultsCollector allResults) {
+		public IdGenVerticle(ReactiveIdentifierGenerator<Object> idGenerator, ResultsCollector allResults) {
 			this.idGenerator = idGenerator;
 			this.allResults = allResults;
 		}
@@ -239,14 +239,14 @@ public class MultithreadedIdentityGenerationTest {
 	}
 
 	private static CompletionStage<Void> generateMultipleIds(
-			ReactiveGeneratorWrapper idGenerator,
+			ReactiveIdentifierGenerator<Object> idGenerator,
 			Stage.Session s,
 			ArrayList<Long> collector) {
 		return CompletionStages.loop( 0, IDS_GENERATED_PER_THREAD, index -> generateIds( idGenerator, s, collector ) );
 	}
 
 	private static CompletionStage<Void> generateIds(
-			ReactiveGeneratorWrapper idGenerator,
+			ReactiveIdentifierGenerator<Object> idGenerator,
 			Stage.Session s,
 			ArrayList<Long> collector) {
 		final Thread beforeOperationThread = Thread.currentThread();
