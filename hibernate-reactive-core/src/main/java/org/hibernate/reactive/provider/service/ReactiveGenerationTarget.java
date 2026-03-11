@@ -16,6 +16,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
+import org.hibernate.reactive.pool.impl.ExternallyManagedConnection;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.spi.GenerationTarget;
@@ -96,9 +97,16 @@ public class ReactiveGenerationTarget implements GenerationTarget {
 		}
 		return result
 				.thenApply( v -> reactiveConnection )
-				.thenCompose( ReactiveConnection::close )
+				.thenCompose( this::closeConnection )
 				// In case there is a failure closing the connection
 				.handle( ReactiveGenerationTarget::logCommandFailure );
+	}
+
+	private CompletionStage<Void> closeConnection(ReactiveConnection connection) {
+		if ( connection.getTransactionCoordinator().isExternallyManaged() ) {
+			return ( (ExternallyManagedConnection) connection ).closeUnderlyingConnection();
+		}
+		return connection.close();
 	}
 
 	private static <U> U logCommandFailure(Void ignore, Throwable throwable) {
