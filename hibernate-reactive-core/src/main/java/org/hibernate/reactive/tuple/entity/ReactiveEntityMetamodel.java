@@ -13,7 +13,6 @@ import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.GeneratorCreationContext;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
-import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.SelectGenerator;
 import org.hibernate.id.enhanced.DatabaseStructure;
@@ -32,7 +31,6 @@ import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataP
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.EmulatedSequenceReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.impl.ReactiveCompositeNestedGeneratedValueGenerator;
-import org.hibernate.reactive.id.impl.ReactiveGeneratorWrapper;
 import org.hibernate.reactive.id.impl.ReactiveSequenceIdentifierGenerator;
 import org.hibernate.reactive.id.impl.TableReactiveIdentifierGenerator;
 import org.hibernate.reactive.logging.impl.Log;
@@ -143,8 +141,8 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 			IdentifierGenerator idGenerator,
 			ReactiveIdentifierGenerator<?> reactiveIdGenerator,
 			GeneratorCreationContext creationContext) {
-		( (Configurable) reactiveIdGenerator ).initialize( creationContext.getSqlStringGenerationContext() );
-		return new ReactiveGeneratorWrapper( reactiveIdGenerator, idGenerator );
+		( reactiveIdGenerator ).initialize( creationContext.getSqlStringGenerationContext() );
+		return reactiveIdGenerator;
 	}
 
 	private record IdGeneratorCreationContext(
