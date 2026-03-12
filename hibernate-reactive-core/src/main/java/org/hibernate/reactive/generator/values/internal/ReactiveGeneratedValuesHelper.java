@@ -238,7 +238,7 @@ public class ReactiveGeneratedValuesHelper {
 		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
 			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
-				return initialize( new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
+				return initialize( new EmulatedSequenceReactiveIdentifierGenerator( sequenceStyleGenerator, runtimeModelCreationContext ), creationContext );
 			}
 			if ( structure instanceof SequenceStructure ) {
 				return initialize( new ReactiveSequenceIdentifierGenerator( structure, runtimeModelCreationContext ), creationContext );
