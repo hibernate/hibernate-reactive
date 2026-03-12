@@ -13,6 +13,10 @@ import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.query.criteria.JpaCriteriaInsertValues;
 import org.hibernate.query.criteria.JpaCriteriaQuery;
 import org.hibernate.query.criteria.JpaRoot;
+import org.hibernate.query.sqm.internal.SqmCriteriaNodeBuilder;
+import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.insert.SqmInsertSelectStatement;
+import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
@@ -22,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Tuple;
@@ -44,7 +49,7 @@ public class CriteriaMutationQueryTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Flour.class );
+		return List.of( Flour.class, Book.class );
 	}
 
 	@BeforeEach
@@ -195,6 +200,57 @@ public class CriteriaMutationQueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testMutinyInsertSelectCriteriaQueryWithBulkInserts(VertxTestContext context) {
+		Book howTo = new Book();
+		howTo.title = "How to Completely Lose Your Mind: A Graphic Novel Memoir of One Indie Band's Attempt to Break a World Record";
+		howTo.isbn = "978-1684813742";
+		Book maus = new Book();
+		maus.title = "MAUS";
+		maus.isbn = "978-8806202347";
+
+		test(
+				context, getMutinySessionFactory()
+						// First we add some books in the database, assuming that it's empty
+						.withTransaction( session -> session.persistAll( howTo, maus ) )
+						// Create new books using the titles that are already in the database, isbn will be null
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> {
+							final SqmCriteriaNodeBuilder criteriaBuilder = (SqmCriteriaNodeBuilder) session.getCriteriaBuilder();
+							final SqmInsertSelectStatement<Book> insertSelect = criteriaBuilder.createCriteriaInsertSelect( Book.class );
+
+							final SqmSelectStatement<Tuple> select = criteriaBuilder.createQuery( Tuple.class );
+							insertSelect.addInsertTargetStateField( insertSelect.getTarget().get( "title" ) );
+
+							final SqmRoot<Book> root = select.from( Book.class );
+							select.select( root.get( "title" ) );
+							insertSelect.setSelectQueryPart( select.getQuerySpec() );
+
+							return session.createMutationQuery( insertSelect ).executeUpdate();
+						} ) )
+						.invoke( count -> assertThat( count )
+								.as( "Should have created only a copy of each book" )
+								.isEqualTo( 2 ) )
+						.chain( () -> getMutinySessionFactory().withTransaction( session -> session
+								.createSelectionQuery( "from Book order by id asc", Book.class )
+								.getResultList()
+						) )
+						.invoke( list -> {
+							assertThat( list )
+									.as( "Each title should appear only twice" )
+									.extracting( Book::getTitle )
+									.containsExactly( howTo.title, maus.title, howTo.title, maus.title );
+							assertThat( list )
+									.as( "Only the title of the book should have been copied" )
+									.extracting( Book::getIsbn )
+									.containsExactly( howTo.isbn, maus.isbn, null, null );
+							assertThat( list )
+									.as( "Id should not be null" )
+									.extracting( Book::getId )
+									.doesNotContainNull();
+						} )
+		);
+	}
+
 	private CriteriaUpdate<Flour> criteriaUpdate(CriteriaBuilder cb, String updatedDescription, Flour rye) {
 		CriteriaUpdate<Flour> criteriaUpdate = cb.createCriteriaUpdate( Flour.class );
 		Root<Flour> from = criteriaUpdate.from( Flour.class );
@@ -320,6 +376,55 @@ public class CriteriaMutationQueryTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash( name, description, type );
+		}
+	}
+
+	@Entity(name = "Book")
+	@Table(name = "BOOK_CMQT")
+	static class Book {
+		@Id
+		@GeneratedValue
+		Integer id;
+
+		String isbn;
+
+		String title;
+
+		Book(String isbn, String title) {
+			this.title = title;
+			this.isbn = isbn;
+		}
+
+		Book() {
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+
+		public String getIsbn() {
+			return isbn;
+		}
+
+		public void setIsbn(String isbn) {
+			this.isbn = isbn;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		@Override
+		public String toString() {
+			return id + ":" + title + ":" + isbn;
 		}
 	}
 }
