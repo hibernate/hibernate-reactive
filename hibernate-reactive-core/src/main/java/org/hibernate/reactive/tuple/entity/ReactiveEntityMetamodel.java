@@ -104,7 +104,7 @@ public class ReactiveEntityMetamodel extends EntityMetamodel {
 		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
 			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
-				return initialize( (IdentifierGenerator) generator, new EmulatedSequenceReactiveIdentifierGenerator( (TableStructure) structure, runtimeModelCreationContext ), creationContext );
+				return initialize( (IdentifierGenerator) generator, new EmulatedSequenceReactiveIdentifierGenerator( sequenceStyleGenerator, runtimeModelCreationContext ), creationContext );
 			}
 			if ( structure instanceof SequenceStructure ) {
 				return initialize( (IdentifierGenerator) generator, new ReactiveSequenceIdentifierGenerator( structure, runtimeModelCreationContext ), creationContext );
