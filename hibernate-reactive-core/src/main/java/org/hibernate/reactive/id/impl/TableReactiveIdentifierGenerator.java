@@ -18,6 +18,7 @@ import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
@@ -74,11 +75,12 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	public TableReactiveIdentifierGenerator(
-			TableStructure structure,
+			SequenceStyleGenerator generator,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
 		ServiceRegistry serviceRegistry = runtimeModelCreationContext.getServiceRegistry();
 		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
 		Dialect dialect = jdbcEnvironment.getDialect();
+		TableStructure structure = (TableStructure) generator.getDatabaseStructure();
 
 		valueColumnName = structure.getLogicalValueColumnNameIdentifier().render( dialect );
 		initialValue = structure.getInitialValue();

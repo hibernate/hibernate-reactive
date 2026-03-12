@@ -4,8 +4,11 @@
  */
 package org.hibernate.reactive.id.impl;
 
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
+import org.hibernate.id.PersistentIdentifierGenerator;
+import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
-import org.hibernate.id.enhanced.TableStructure;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.service.ServiceRegistry;
 
@@ -19,10 +22,31 @@ import org.hibernate.service.ServiceRegistry;
  * This implementation supports block allocation, but does not
  * guarantee that generated identifiers are sequential.
  */
-public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator {
+public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveIdentifierGenerator
+		implements BulkInsertionCapableIdentifierGenerator, PersistentIdentifierGenerator {
 
-	public EmulatedSequenceReactiveIdentifierGenerator(TableStructure structure, RuntimeModelCreationContext runtimeModelCreationContext) {
-		super( structure, runtimeModelCreationContext );
+	private final SequenceStyleGenerator generator;
+
+	public EmulatedSequenceReactiveIdentifierGenerator(SequenceStyleGenerator generator, RuntimeModelCreationContext runtimeModelCreationContext) {
+		super( generator, runtimeModelCreationContext );
+		this.generator = generator;
+	}
+
+	@Override
+	public Optimizer getOptimizer() {
+		// I don't think this is correct because the Optimizer is not reactive, but tests will fail for MySQL if
+		// we don't return something (See tests running insert-select update queries with MySQL).
+		return generator.getOptimizer();
+	}
+
+	@Override
+	public boolean supportsBulkInsertionIdentifierGeneration() {
+		return generator.supportsBulkInsertionIdentifierGeneration();
+	}
+
+	@Override
+	public String determineBulkInsertionIdentifierGenerationSelectFragment(SqlStringGenerationContext context) {
+		return generator.determineBulkInsertionIdentifierGenerationSelectFragment( context );
 	}
 
 	@Override
