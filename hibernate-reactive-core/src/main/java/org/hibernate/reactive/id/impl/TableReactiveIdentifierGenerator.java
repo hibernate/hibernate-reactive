@@ -5,10 +5,8 @@
 package org.hibernate.reactive.id.impl;
 
 import java.util.Collections;
-import java.util.Properties;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.CockroachDialect;
@@ -19,29 +17,18 @@ import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.TableGenerator;
 import org.hibernate.id.enhanced.TableStructure;
-import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jdbc.TooManyRowsAffectedException;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.type.Type;
 
-import static org.hibernate.id.enhanced.TableGenerator.CONFIG_PREFER_SEGMENT_PER_ENTITY;
-import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_COLUMN;
-import static org.hibernate.id.enhanced.TableGenerator.DEF_SEGMENT_VALUE;
-import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_COLUMN_PARAM;
-import static org.hibernate.id.enhanced.TableGenerator.SEGMENT_VALUE_PARAM;
-import static org.hibernate.id.enhanced.TableGenerator.TABLE;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getBoolean;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
-import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 
 /**
  * Support for JPA's {@link jakarta.persistence.TableGenerator}.
@@ -53,26 +40,28 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  */
 public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerator implements IdentifierGenerator {
 
-	private boolean storeLastUsedValue;
+	private final boolean storeLastUsedValue;
 
-	protected String renderedTableName;
-	protected String segmentColumnName;
-	protected String valueColumnName;
+	private final String renderedTableName;
+	private final String segmentColumnName;
+	private final String valueColumnName;
 
-	private String segmentValue;
-	private long initialValue;
-	private int increment;
+	private final String segmentValue;
+	private final long initialValue;
+	private final int increment;
 
-	private String selectQuery;
-	private String insertQuery;
-	private String updateQuery;
+	private final String selectQuery;
+	private final String insertQuery;
+	private final String updateQuery;
 
-	public TableReactiveIdentifierGenerator(TableGenerator generator, RuntimeModelCreationContext runtimeModelCreationContext) {
+	public TableReactiveIdentifierGenerator(
+			TableGenerator generator,
+			RuntimeModelCreationContext runtimeModelCreationContext) {
 		ServiceRegistry serviceRegistry = runtimeModelCreationContext.getServiceRegistry();
 		segmentColumnName = generator.getSegmentColumnName();
 		valueColumnName = generator.getValueColumnName();
 		segmentValue = generator.getSegmentValue();
-		initialValue =  generator.getInitialValue();
+		initialValue = generator.getInitialValue();
 		increment = generator.getIncrementSize();
 		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
 		renderedTableName = generator.getTableName();
@@ -92,7 +81,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		Dialect dialect = jdbcEnvironment.getDialect();
 
 		valueColumnName = structure.getLogicalValueColumnNameIdentifier().render( dialect );
-		initialValue =  structure.getInitialValue();
+		initialValue = structure.getInitialValue();
 		increment = structure.getIncrementSize();
 		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
 		renderedTableName = structure.getPhysicalName().render();
@@ -105,30 +94,12 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	@Override
-	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) {
-		JdbcEnvironment jdbcEnvironment = serviceRegistry.getService( JdbcEnvironment.class );
-		segmentColumnName = determineSegmentColumnName( params, jdbcEnvironment );
-		valueColumnName = determineValueColumnNameForTable( params, jdbcEnvironment );
-		segmentValue = determineSegmentValue( params );
-		initialValue = determineInitialValue( params );
-		increment = determineIncrement( params );
-		storeLastUsedValue = determineStoreLastUsedValue( serviceRegistry );
-		renderedTableName = determineTableName( type, params, serviceRegistry );
-
-		Dialect dialect = jdbcEnvironment.getDialect();
-		selectQuery = applyLocksToSelect( dialect, "tbl", buildSelectQuery( dialect ) );
-		updateQuery = buildUpdateQuery( dialect );
-		insertQuery = buildInsertQuery( dialect );
-	}
-
-	@Override
 	protected int getBlockSize() {
 		return increment;
 	}
 
 	@Override
 	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
-
 		// We need to read the current hi value from the table
 		// and update it by the specified increment, but we
 		// need to do it atomically, and without depending on
@@ -164,138 +135,86 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 					}
 					return connection.update( sql, params )
 							// 3) check the updated row count to detect simultaneous update
-							.thenCompose(
-									rowCount -> {
-										switch ( rowCount ) {
-											case 1:
-												//we successfully obtained the next hi value
-												return completedFuture( id );
-											case 0:
-												//someone else grabbed the next hi value
-												//so retry everything from scratch
-												return nextHiValue( session );
-											default:
-												throw new TooManyRowsAffectedException(
-														"multiple rows in id table",
-														1,
-														rowCount
-												);
-										}
-									}
-							);
+							.thenCompose( rowCount -> checkValue( session, rowCount, id ) );
 				} );
 	}
 
-	@Override
-	public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-		throw new UnsupportedOperationException();
+	private CompletionStage<Long> checkValue(ReactiveConnectionSupplier session, Integer rowCount, long id) {
+		return switch ( rowCount ) {
+			// we successfully obtained the next hi value
+			case 1 -> completedFuture( id );
+			// someone else grabbed the next hi value, so retry everything from scratch
+			case 0 -> nextHiValue( session );
+			// Something is wrong
+			default -> failedFuture( new TooManyRowsAffectedException( "multiple rows in id table", 1, rowCount ) );
+		};
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
 		return dialect.applyLocksToSql(
 				query,
-				new LockOptions(LockMode.PESSIMISTIC_WRITE)
-						.setAliasSpecificLockMode(alias, LockMode.PESSIMISTIC_WRITE),
-				Collections.singletonMap(alias, new String[]{valueColumnName})
+				new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
+				Collections.singletonMap( alias, new String[] { valueColumnName } )
 		);
 	}
 
 	protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {
-		return serviceRegistry.getService(ConfigurationService.class)
+		return serviceRegistry.getService( ConfigurationService.class )
 				.getSetting( Settings.TABLE_GENERATOR_STORE_LAST_USED, StandardConverters.BOOLEAN, true );
 	}
 
-	protected String determineTableName(Type type, Properties params, ServiceRegistry serviceRegistry) {
-		TableGenerator ormTableGenerator = new TableGenerator();
-		ormTableGenerator.configure( type, params, serviceRegistry );
-		return ormTableGenerator.getTableName();
-	}
-
-	protected String determineSegmentColumnName(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = getString( SEGMENT_COLUMN_PARAM, params, DEF_SEGMENT_COLUMN );
-		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
-	}
-
-	protected String determineValueColumnNameForTable(Properties params, JdbcEnvironment jdbcEnvironment) {
-		final String name = getString( TableGenerator.VALUE_COLUMN_PARAM, params, TableGenerator.DEF_VALUE_COLUMN );
-		return jdbcEnvironment.getIdentifierHelper().toIdentifier( name ).render( jdbcEnvironment.getDialect() );
-	}
-
-	protected String determineSegmentValue(Properties params) {
-		String segmentValue = params.getProperty( SEGMENT_VALUE_PARAM );
-		if ( StringHelper.isEmpty( segmentValue ) ) {
-			segmentValue = determineDefaultSegmentValue( params );
-		}
-		return segmentValue;
-	}
-
-	protected String determineDefaultSegmentValue(Properties params) {
-		final boolean preferSegmentPerEntity = getBoolean( CONFIG_PREFER_SEGMENT_PER_ENTITY, params, false );
-		return preferSegmentPerEntity ? params.getProperty( TABLE ) : DEF_SEGMENT_VALUE;
-	}
-
-	protected int determineInitialValue(Properties params) {
-		return getInt( TableGenerator.INITIAL_PARAM, params, TableGenerator.DEFAULT_INITIAL_VALUE );
-	}
-
-	protected int determineIncrement(Properties params) {
-		return getInt( TableGenerator.INCREMENT_PARAM, params, TableGenerator.DEFAULT_INCREMENT_SIZE );
-	}
-
 	protected Object[] updateParameters(long currentValue, long updatedValue) {
-		return new Object[]{ updatedValue, currentValue, segmentValue };
+		return segmentColumnName == null
+				? new Object[] { updatedValue, currentValue }
+				: new Object[] { updatedValue, currentValue, segmentValue };
 	}
 
 	protected Object[] insertParameters(long insertedValue) {
-		return new Object[]{ segmentValue, insertedValue };
+		return segmentColumnName == null
+				? new Object[] { insertedValue }
+				: new Object[] { segmentValue, insertedValue };
 	}
 
 	protected Object[] selectParameters() {
-		return new Object[]{ segmentValue };
+		return segmentColumnName == null
+				? new Object[] {}
+				: new Object[] { segmentValue };
 	}
 
 	protected String buildSelectQuery(Dialect dialect) {
-		final String sql = "select tbl." + valueColumnName + " from " + renderedTableName + " tbl where tbl." + segmentColumnName;
-		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
-			return sql + "=$1";
-		}
-		if ( dialect instanceof SQLServerDialect ) {
-			return sql + "=@P1";
-		}
-		if ( dialect instanceof OracleDialect ) {
-			return sql + "=:1";
-		}
-		return sql + "=?";
+		final String sql = "select tbl." + valueColumnName + " from " + renderedTableName + " tbl";
+		return segmentColumnName != null
+				? sql + " where tbl." + segmentColumnName + "=" + paramMarker( dialect, 1 )
+				: sql;
 	}
 
 	protected String buildUpdateQuery(Dialect dialect) {
-		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
-			return "update " + renderedTableName + " set " + valueColumnName + "=$1"
-					+ " where " + valueColumnName + "=$2 and " + segmentColumnName + "=$3";
-		}
-		if ( dialect instanceof SQLServerDialect ) {
-			return "update " + renderedTableName + " set " + valueColumnName + "=@P1"
-					+ " where " + valueColumnName + "=@P2 and " + segmentColumnName + "=@P3";
-		}
-		if ( dialect instanceof OracleDialect ) {
-			return "update " + renderedTableName + " set " + valueColumnName + "=:1"
-					+ " where " + valueColumnName + "=:2 and " + segmentColumnName + "=:3";
-		}
-		return "update " + renderedTableName + " set " + valueColumnName + "=?"
-				+ " where " + valueColumnName + "=?  and " + segmentColumnName + "=?";
+		final String sql = "update " + renderedTableName
+				+ " set " + valueColumnName + "=" + paramMarker( dialect, 1 )
+				+ " where " + valueColumnName + "=" + paramMarker( dialect, 2 );
+		return segmentValue != null
+				? sql + " and " + segmentColumnName + "=" + paramMarker( dialect, 3 )
+				: sql;
 	}
 
 	protected String buildInsertQuery(Dialect dialect) {
-		final String sql = "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") ";
+		if ( segmentColumnName == null ) {
+			return "insert into " + renderedTableName + " (" + valueColumnName + ") values (" + paramMarker( dialect, 1 ) + ")";
+		}
+		return "insert into " + renderedTableName + " (" + segmentColumnName + ", " + valueColumnName + ") values ("
+				+ paramMarker( dialect, 1 ) + ", " + paramMarker( dialect, 2 ) + ")";
+	}
+
+	private static String paramMarker(Dialect dialect, int pos) {
 		if ( dialect instanceof PostgreSQLDialect || dialect instanceof CockroachDialect ) {
-			return sql + " values ($1, $2)";
+			return "$" + pos;
 		}
 		if ( dialect instanceof SQLServerDialect ) {
-			return sql + " values (@P1, @P2)";
+			return "@P" + pos;
 		}
 		if ( dialect instanceof OracleDialect ) {
-			return sql + " values (:1, :2)";
+			return ":" + pos;
 		}
-		return sql + " values (?, ?)";
+		return "?";
 	}
 }
