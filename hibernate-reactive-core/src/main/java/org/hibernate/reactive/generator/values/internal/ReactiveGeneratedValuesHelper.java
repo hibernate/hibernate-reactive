@@ -246,8 +246,7 @@ public class ReactiveGeneratedValuesHelper {
 			throw LOG.unknownStructureType();
 		}
 		if ( generator instanceof TableGenerator tableGenerator ) {
-			return initialize( new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ), creationContext
-			);
+			return initialize( new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ), creationContext );
 		}
 		if ( generator instanceof SelectGenerator ) {
 			throw LOG.selectGeneratorIsNotSupportedInHibernateReactive();
