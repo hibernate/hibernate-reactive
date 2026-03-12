@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.enhanced.DatabaseStructure;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -22,13 +23,15 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
  * This implementation supports block allocation, but does not
  * guarantee that generated identifiers are sequential.
  */
-public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGenerator implements IdentifierGenerator {
+public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGenerator
+		implements IdentifierGenerator, BulkInsertionCapableIdentifierGenerator {
 
 	public static final Object[] NO_PARAMS = new Object[0];
 
 	private final Dialect dialect;
 	private final QualifiedName qualifiedName;
 	private final int increment;
+	private final boolean supportsBulkInsertion;
 
 	private String sql;
 
@@ -36,6 +39,7 @@ public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGener
 		qualifiedName = structure.getPhysicalName();
 		increment = structure.getIncrementSize();
 		dialect = creationContext.getDialect();
+		supportsBulkInsertion = structure.isPhysicalSequence();
 	}
 
 	@Override
@@ -52,5 +56,15 @@ public class ReactiveSequenceIdentifierGenerator extends BlockingIdentifierGener
 	@Override
 	public void initialize(SqlStringGenerationContext context) {
 		sql = dialect.getSequenceSupport().getSequenceNextValString( context.format( qualifiedName ) );
+	}
+
+	@Override
+	public boolean supportsBulkInsertionIdentifierGeneration() {
+		return supportsBulkInsertion;
+	}
+
+	@Override
+	public String determineBulkInsertionIdentifierGenerationSelectFragment(SqlStringGenerationContext context) {
+		return context.getDialect().getSequenceSupport().getSelectSequenceNextValString( context.format( qualifiedName ) );
 	}
 }
