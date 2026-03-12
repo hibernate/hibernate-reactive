@@ -4,6 +4,17 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.dialect.temptable.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -21,10 +32,12 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedInsertHandler;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
+import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
@@ -37,17 +50,6 @@ import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.type.descriptor.ValueBinder;
-
-import java.lang.invoke.MethodHandles;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.stream.IntStream;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -278,36 +280,33 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			BeforeExecutionGenerator beforeExecutionGenerator,
 			SharedSessionContractImplementor session,
 			RootTableInserter rootTableInserter) {
-		return loop( rowNumbers, rowNumberValue -> {
-			updateBindings.addBinding(
-					rowNumber,
-					new JdbcParameterBindingImpl(
-							rowNumber.getExpressionType().getSingleJdbcMapping(),
-							rowNumberValue
-					)
-			);
-			updateBindings.addBinding(
-					rootIdentity,
-					new JdbcParameterBindingImpl(
-							basicIdentifierMapping.getJdbcMapping(),
-							beforeExecutionGenerator.generate( session, null, null, INSERT )
-					)
-			);
-			return StandardReactiveJdbcMutationExecutor.INSTANCE.executeReactive(
-					rootTableInserter.temporaryTableIdUpdate(),
-					updateBindings,
-					sql -> session
-							.getJdbcCoordinator()
-							.getStatementPreparer()
-							.prepareStatement( sql ),
-					(integer, preparedStatement) -> {
-					},
-					executionContext
-			).thenApply( updateCount -> {
-				assert updateCount == 1;
-				return updateCount;
-			} );
-	} );
+		return loop(
+				rowNumbers, rowNumberValue -> {
+					updateBindings.addBinding( rowNumber, new JdbcParameterBindingImpl( rowNumber.getExpressionType().getSingleJdbcMapping(), rowNumberValue ) );
+					return ( (ReactiveIdentifierGenerator) beforeExecutionGenerator )
+							.generate( (ReactiveConnectionSupplier) session, null, null, INSERT )
+							.thenAccept( generated -> {
+								JdbcMapping jdbcMapping = basicIdentifierMapping.getJdbcMapping();
+								// ORM doesn't do this cast, but it expects an Integer and we generate a Long
+								Object cast = jdbcMapping.getJdbcJavaType().wrap( generated, null );
+								updateBindings.addBinding( rootIdentity, new JdbcParameterBindingImpl( jdbcMapping, cast ) );
+							} )
+							.thenCompose( v -> StandardReactiveJdbcMutationExecutor.INSTANCE.executeReactive(
+										rootTableInserter.temporaryTableIdUpdate(),
+										updateBindings,
+										sql -> session
+												.getJdbcCoordinator()
+												.getStatementPreparer()
+												.prepareStatement( sql ),
+										(integer, preparedStatement) -> {},
+										executionContext)
+										.thenApply( updateCount -> {
+											assert updateCount == 1;
+											return updateCount;
+										} )
+							);
+				}
+		);
 	}
 
 	private CompletionStage<Integer> insertRootTable(
