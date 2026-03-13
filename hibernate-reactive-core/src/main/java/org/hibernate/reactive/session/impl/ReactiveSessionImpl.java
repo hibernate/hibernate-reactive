@@ -112,6 +112,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.pool.ReactiveTransactionCoordinator;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQuery;
@@ -174,6 +175,37 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		reactiveConnection = batchSize == null || batchSize < 2
 				? connection
 				: new BatchingConnection( connection, batchSize );
+		// Register transaction synchronization for externally-managed transactions.
+		// This mirrors Hibernate ORM's behavior of registering JTA Synchronization
+		// when the session joins the transaction.
+		registerTransactionSynchronizationIfNeeded();
+	}
+
+	/**
+	 * Registers synchronization callbacks with externally-managed transactions.
+	 * Similar to how Hibernate ORM registers {@code javax.transaction.Synchronization}
+	 * with JTA when the session joins a JTA transaction.
+	 */
+	private void registerTransactionSynchronizationIfNeeded() {
+		if ( isExternallyManagedTransaction() ) {
+			ReactiveTransactionCoordinator coordinator = reactiveConnection.getTransactionCoordinator();
+			// Register flush to happen before commit (like JTA Synchronization.beforeCompletion)
+			coordinator.registerBeforeCommit( this::reactiveFlushBeforeTransactionCompletion );
+			// Register session cleanup to happen after transaction completes (like JTA Synchronization.afterCompletion)
+			// Use doClose() directly since reactiveClose() would short-circuit for external transactions
+			coordinator.registerAfterCompletion( status -> doClose() );
+		}
+	}
+
+	/**
+	 * Called before transaction completion to flush pending changes.
+	 * Only flushes if the session is still open and flush mode allows it.
+	 */
+	private CompletionStage<Void> reactiveFlushBeforeTransactionCompletion() {
+		if ( isOpen() && !getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ) {
+			return doFlush();
+		}
+		return voidFuture();
 	}
 
 	@Override
@@ -1710,6 +1742,21 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public CompletionStage<Void> reactiveClose() {
+		// For externally-managed transactions, synchronization callbacks were registered
+		// at session creation time. The actual flush and cleanup happen at transaction
+		// completion via the registered callbacks, so there's nothing to do here.
+		if ( isExternallyManagedTransaction() ) {
+			return voidFuture();
+		}
+		return doClose();
+	}
+
+	private boolean isExternallyManagedTransaction() {
+		return reactiveConnection != null
+			&& reactiveConnection.getTransactionCoordinator().isExternallyManaged();
+	}
+
+	private CompletionStage<Void> doClose() {
 		try {
 			super.close();
 			return closeConnection();
