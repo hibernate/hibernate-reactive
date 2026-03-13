@@ -8,7 +8,10 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.EventType;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
+import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
 import io.vertx.core.Context;
@@ -18,6 +21,8 @@ import io.vertx.core.net.impl.pool.CombinerExecutor;
 import io.vertx.core.net.impl.pool.Executor;
 import io.vertx.core.net.impl.pool.Task;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 
@@ -32,6 +37,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
  * @author Sanne Grinovero
  */
 public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierGenerator<Long> {
+
+	private static final Log LOG = make( Log.class, lookup() );
 
 	/**
 	 * The block size (the number of "lo" values for each "hi" value)
@@ -51,6 +58,16 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	 * Allocate a new block, by obtaining the next "hi" value from the database
 	 */
 	protected abstract CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session);
+
+	@Override
+	public Object generate(SharedSessionContractImplementor session, Object object) {
+		throw LOG.nonReactiveMethodCall( "generate(ReactiveConnectionSupplier, Object)" );
+	}
+
+	@Override
+	public Long generate(SharedSessionContractImplementor session, Object owner, Object currentValue, EventType eventType) {
+		throw LOG.nonReactiveMethodCall( "generate(ReactiveConnectionSupplier, Object, Object, EventType)" );
+	}
 
 	//Not strictly necessary to put these fields into a dedicated class, but it helps
 	//to reason about what the current state is and what the CombinerExecutor is
