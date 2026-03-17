@@ -31,6 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+
 public class ReactiveTableBasedSoftDeleteHandler extends TableBasedSoftDeleteHandler implements ReactiveHandler {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
@@ -56,73 +58,62 @@ public class ReactiveTableBasedSoftDeleteHandler extends TableBasedSoftDeleteHan
 	}
 
 	@Override
-	public CompletionStage<Integer> reactiveExecute(
-			JdbcParameterBindings jdbcParameterBindings,
-			DomainQueryExecutionContext context) {
+	public CompletionStage<Integer> reactiveExecute(JdbcParameterBindings jdbcParameterBindings, DomainQueryExecutionContext context) {
 		if ( LOG.isTraceEnabled() ) {
-			LOG.tracef(
-					"Starting multi-table delete execution - %s",
-					getSqmStatement().getTarget().getModel().getName()
-			);
+			LOG.tracef( "Starting multi-table delete execution - %s", getSqmStatement().getTarget().getModel().getName() );
 		}
 		final SqmJdbcExecutionContextAdapter executionContext = SqmJdbcExecutionContextAdapter.omittingLockingAndPaging( context );
 		StandardReactiveJdbcMutationExecutor jdbcMutationExecutor  = StandardReactiveJdbcMutationExecutor.INSTANCE;
-
 		final CacheableSqmInterpretation<InsertSelectStatement, JdbcOperationQueryMutation> idTableInsert = getIdTableInsert();
 		if ( idTableInsert != null ) {
-			return ReactiveExecuteWithTemporaryTableHelper.performBeforeTemporaryTableUseActions(
-					getIdTable(),
-					getTemporaryTableStrategy(),
-					executionContext
-			).thenCompose( unused ->
-				ReactiveExecuteWithTemporaryTableHelper.saveIntoTemporaryTable(
-						idTableInsert.jdbcOperation(),
-						jdbcParameterBindings,
-						executionContext
-				).thenCompose( rows -> {
-					final JdbcParameterBindings sessionUidBindings = new JdbcParameterBindingsImpl( 1 );
-					final JdbcParameter sessionUidParameter = getSessionUidParameter();
-					if ( sessionUidParameter != null ) {
-						sessionUidBindings.addBinding(
-								sessionUidParameter,
-								new JdbcParameterBindingImpl(
-										sessionUidParameter.getExpressionType().getSingleJdbcMapping(),
-										UUID.fromString( getSessionUidAccess().apply( executionContext.getSession() ) )
-								)
-						);
-					}
-					return jdbcMutationExecutor.executeReactive(
-							getSoftDelete(),
-							sessionUidBindings,
-							sql -> executionContext.getSession()
-									.getJdbcCoordinator()
-									.getStatementPreparer()
-									.prepareStatement( sql ),
-							(integer, preparedStatement) -> {},
-							executionContext
-					).thenApply( u -> rows );
-				} )
+			return ReactiveExecuteWithTemporaryTableHelper
+					.performBeforeTemporaryTableUseActions( getIdTable(), getTemporaryTableStrategy(), executionContext )
+					.thenCompose( unused -> ReactiveExecuteWithTemporaryTableHelper
+							.saveIntoTemporaryTable( idTableInsert.jdbcOperation(), jdbcParameterBindings, executionContext )
+							.thenCompose( rows -> {
+								final JdbcParameterBindings sessionUidBindings = new JdbcParameterBindingsImpl( 1 );
+								final JdbcParameter sessionUidParameter = getSessionUidParameter();
+								if ( sessionUidParameter != null ) {
+									sessionUidBindings.addBinding(
+											sessionUidParameter,
+											new JdbcParameterBindingImpl(
+													sessionUidParameter.getExpressionType().getSingleJdbcMapping(),
+													UUID.fromString( getSessionUidAccess().apply( executionContext.getSession() ) )
+											)
+									);
+								}
+								return executeSoftDelete( jdbcMutationExecutor, sessionUidBindings, executionContext )
+										.thenApply( ignore -> rows );
+							} )
 						.handle( CompletionStages::handle)
 						.thenCompose( handler -> ReactiveExecuteWithTemporaryTableHelper
-								.performAfterTemporaryTableUseActions(
-										getIdTable(),
-										getSessionUidAccess(),
-										getAfterUseAction(),
-										executionContext)
+								.performAfterTemporaryTableUseActions( getIdTable(), getSessionUidAccess(), getAfterUseAction(), executionContext)
 								.thenCompose( v -> handler.getResultAsCompletionStage() ) )
 			 );
 		}
 		else {
-			return jdbcMutationExecutor.executeReactive(
-					getSoftDelete(),
-					jdbcParameterBindings,
-					sql -> executionContext.getSession()
-							.getJdbcCoordinator()
-							.getStatementPreparer()
-							.prepareStatement( sql ),
-					(integer, preparedStatement) -> {},
-					executionContext
-			);
+			return executeSoftDelete( jdbcMutationExecutor, jdbcParameterBindings, executionContext );
 		}
+	}
+
+	private CompletionStage<Integer> executeSoftDelete(
+			StandardReactiveJdbcMutationExecutor jdbcMutationExecutor,
+			JdbcParameterBindings paramBindings,
+			SqmJdbcExecutionContextAdapter executionContext) {
+		final Integer[] total = { 0 };
+		return loop( getSoftDeletes(), softDelete -> jdbcMutationExecutor
+				.executeReactive(
+						softDelete,
+						paramBindings,
+						sql -> executionContext.getSession()
+								.getJdbcCoordinator()
+								.getStatementPreparer()
+								.prepareStatement( sql ),
+						(integer, preparedStatement) -> {},
+						executionContext
+				)
+				.thenAccept( count -> total[0] += count )
+		)
+		.thenApply( v -> total[0] );
 	}
 }
