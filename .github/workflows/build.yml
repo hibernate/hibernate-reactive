@@ -208,8 +208,8 @@ jobs:
           # even if we don't use these features, just enabling them can cause side effects
           # and it's useful to test that.
           - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
-          - { name: "25", java_version_numeric: 25, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-          - { name: "26-ea", java_version_numeric: 26, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "26", java_version_numeric: 26, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "27-ea", java_version_numeric: 27, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
