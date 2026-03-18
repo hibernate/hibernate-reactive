@@ -1,6 +1,7 @@
 [versions]
 asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
+checkerFrameworkVersion = "3.53.1"
 hibernateAsciidoctorExtensionsVersion = "3.2.1.Final"
 hibernateAsciidoctorThemeVersion = "6.0.4.Final"
 hibernateOrmVersion = "7.3.1.Final"
@@ -18,6 +19,7 @@ vertxWebClientVersion = "5.0.10"
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
 com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.4.0" }
+org-checkerframework-checker-qual = { group = "org.checkerframework", name = "checker-qual-android", version.ref = "checkerFrameworkVersion" }
 com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.4.0.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "9.6.0" }
 com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.2" }
