@@ -19,8 +19,7 @@ dependencies {
 ext {
 	projectsToSkipWhenAggregatingJavadocs = [
 			'example',
-            'release',
-            'reporting',
+			'release',
 			'documentation'
 	]
 }
