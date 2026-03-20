@@ -9,7 +9,7 @@
 //DEPS io.vertx:vertx-pg-client:${vertx.version:5.0.8}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.0.8}
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.0.8}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:4.3.0.CR1}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:4.3.0.Final}
 //DEPS org.slf4j:slf4j-simple:2.0.17
 //DESCRIPTION Allow authentication to PostgreSQL using SCRAM:
 
