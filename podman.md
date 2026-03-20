@@ -115,14 +115,6 @@ podman build -f tooling/docker/cockroachdb.Dockerfile -t hreact-cockroachdb .
 podman run --rm --name HibernateTestingCockroachDB -p 26257:26257 -p 8080:8080 hreact-cockroachdb
 ```
 
-Some of tests needs temporary tables and because this is an experimental feature in
-CockroachDB, it needs to be enabled after the database has started:
-
-```
-podman exec -it HibernateTestingCockroachDB ./cockroach sql --insecure \
-    -e "SET CLUSTER SETTING sql.defaults.experimental_temporary_tables.enabled = 'true';"
-```
-
 When the database has started, you can run the tests on CockroachDB with:
 
 ```
