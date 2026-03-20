@@ -7,22 +7,23 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.25}
 //DEPS com.ongres.scram:scram-client:3.2
+
 //DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.25}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.25}
 //DEPS io.vertx:vertx-unit:${vertx.version:4.5.25}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.3.0.CR1}
-//DEPS org.assertj:assertj-core:3.27.3
-//DEPS junit:junit:6.0.3
-//DEPS org.testcontainers:postgresql:1.21.3
-//DEPS org.testcontainers:mysql:1.21.3
-//DEPS org.testcontainers:db2:1.21.3
-//DEPS org.testcontainers:mariadb:1.21.3
-//DEPS org.testcontainers:cockroachdb:1.21.3
+//DEPS org.assertj:assertj-core:3.27.7
+//DEPS junit:junit:4.13.2
+//DEPS org.testcontainers:postgresql:1.21.4
+//DEPS org.testcontainers:mysql:1.21.4
+//DEPS org.testcontainers:db2:1.21.4
+//DEPS org.testcontainers:mariadb:1.21.4
+//DEPS org.testcontainers:cockroachdb:1.21.4
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
 //DEPS org.postgresql:postgresql:42.7.5
-//DEPS com.mysql:mysql-connector-j:9.3.0
+//DEPS com.mysql:mysql-connector-j:9.6.0
 //DEPS org.mariadb.jdbc:mariadb-java-client:3.5.3
 //
 

@@ -7,15 +7,15 @@
 
 //DEPS io.vertx:vertx-mysql-client:$\{vertx.version:4.5.25}
 //DEPS io.vertx:vertx-unit:$\{vertx.version:4.5.25}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:3.3.0.CR1}
-//DEPS org.assertj:assertj-core:3.27.3
-//DEPS junit:junit:6.0.3
-//DEPS org.testcontainers:mysql:1.21.3
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:3.3.0.Final}
+//DEPS org.assertj:assertj-core:3.27.7
+//DEPS junit:junit:4.13.2
+//DEPS org.testcontainers:mysql:1.21.4
 //DEPS org.slf4j:slf4j-simple:2.0.17
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS com.mysql:mysql-connector-j:9.3.0
+//DEPS com.mysql:mysql-connector-j:9.6.0
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
