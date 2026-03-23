@@ -221,9 +221,13 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 						}
 					};
 
+					final var loadedValuesCollector = jdbcSelect.getLoadedValuesCollectorFactory() == null
+							? null
+							: jdbcSelect.getLoadedValuesCollectorFactory().build();
+
 					final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState =
 							new JdbcValuesSourceProcessingStateStandardImpl(
-									jdbcSelect.getLoadedValuesCollector(),
+									loadedValuesCollector,
 									processingOptions,
 									executionContext
 							);
@@ -257,7 +261,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 												rowReader
 										) )
 								.thenCompose( result -> reactiveJdbcSelect
-										.reactivePerformPostActions( true, reactiveConnection, executionContext )
+										.reactivePerformPostActions( true, reactiveConnection, executionContext, loadedValuesCollector )
 										.thenApply( v -> {
 											statistics.end( jdbcSelect, result );
 											return result;
