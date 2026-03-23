@@ -4,6 +4,13 @@
  */
 package org.hibernate.reactive.sql.exec.internal;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.lock.spi.LockTimeoutType;
 import org.hibernate.dialect.lock.spi.LockingSupport;
@@ -21,6 +28,7 @@ import org.hibernate.sql.ast.spi.LockingClauseStrategy;
 import org.hibernate.sql.ast.tree.select.QuerySpec;
 import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcSelectWithActions;
+import org.hibernate.sql.exec.internal.lock.LoadedValuesCollectorFactory;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
@@ -30,15 +38,8 @@ import org.hibernate.sql.exec.spi.PreAction;
 import org.hibernate.sql.exec.spi.SecondaryAction;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
-import java.lang.invoke.MethodHandles;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link JdbcSelectWithActions}
@@ -56,26 +57,21 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 	}
 
 	@Override
-	public void performPostAction(
+	public void performPostActions(
 			boolean succeeded,
 			StatementAccess jdbcStatementAccess,
 			Connection jdbcConnection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostActions()" );
 	}
 
 	public ReactiveJdbcSelectWithActions(
 			JdbcOperationQuerySelect primaryOperation,
-			LoadedValuesCollector loadedValuesCollector,
+			LoadedValuesCollectorFactory loadedValuesCollectorFactory,
 			PreAction[] preActions,
 			PostAction[] postActions) {
-		super( primaryOperation, loadedValuesCollector, preActions, postActions );
-	}
-
-	public ReactiveJdbcSelectWithActions(
-			JdbcOperationQuerySelect primaryAction,
-			LoadedValuesCollector loadedValuesCollector) {
-		super( primaryAction, loadedValuesCollector );
+		super( primaryOperation, loadedValuesCollectorFactory, preActions, postActions );
 	}
 
 	@Override
@@ -83,11 +79,11 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 			ReactiveConnection connection,
 			ExecutionContext executionContext) {
 		if ( preActions == null ) {
-			return nullFuture();
+			return voidFuture();
 		}
 
-		return loop( preActions, preAction ->
-						( (ReactivePreAction) preAction ).reactivePerformPreAction( connection, executionContext )
+		return loop( preActions, preAction -> ( (ReactivePreAction) preAction )
+				.reactivePerformPreAction( connection, executionContext )
 		);
 	}
 
@@ -95,35 +91,27 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 	public CompletionStage<Void> reactivePerformPostActions(
 			boolean succeeded,
 			ReactiveConnection connection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		if ( postActions != null ) {
 			return loop(
 					postActions, postAction -> {
 						if ( succeeded || postAction.shouldRunAfterFail() ) {
-							return ( (ReactivePostAction) postAction ).reactivePerformReactivePostAction(
-									connection,
-									executionContext
-							);
+							return ( (ReactivePostAction) postAction )
+									.reactivePerformReactivePostAction( connection, executionContext, loadedValuesCollector );
 						}
-						return nullFuture();
+						return voidFuture();
 					}
-			).thenAccept( unused -> {
-				if ( loadedValuesCollector != null ) {
-					loadedValuesCollector.clear();
-				}
-			} );
+			);
 		}
 		else {
-			if ( loadedValuesCollector != null ) {
-				loadedValuesCollector.clear();
-			}
-			return nullFuture();
+			return voidFuture();
 		}
 	}
 
 	public static class Builder implements JdbcSelectWithActionsBuilder {
 		private JdbcOperationQuerySelect primaryAction;
-		private LoadedValuesCollector loadedValuesCollector;
+		private LoadedValuesCollectorFactory loadedValuesCollectorFactory;
 		protected List<PreAction> preActions;
 		protected List<PostAction> postActions;
 		protected LockTimeoutType lockTimeoutType;
@@ -142,8 +130,8 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 
 		@SuppressWarnings("UnusedReturnValue")
 		@Override
-		public Builder setLoadedValuesCollector(LoadedValuesCollector loadedValuesCollector) {
-			this.loadedValuesCollector = loadedValuesCollector;
+		public JdbcSelectWithActionsBuilder setLoadedValuesCollectorFactory(LoadedValuesCollectorFactory loadedValuesCollectorFactory) {
+			this.loadedValuesCollectorFactory = loadedValuesCollectorFactory;
 			return this;
 		}
 
@@ -198,12 +186,12 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 			}
 
 			if ( preActions == null && postActions == null ) {
-				assert loadedValuesCollector == null;
+				assert loadedValuesCollectorFactory == null;
 				return primaryAction;
 			}
 			final PreAction[] preActions = toPreActionArray( this.preActions );
 			final PostAction[] postActions = toPostActionArray( this.postActions );
-			return new ReactiveJdbcSelectWithActions( primaryAction, loadedValuesCollector, preActions, postActions );
+			return new ReactiveJdbcSelectWithActions( primaryAction, loadedValuesCollectorFactory, preActions, postActions );
 		}
 
 		/**
