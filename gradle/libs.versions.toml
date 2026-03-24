@@ -1,9 +1,9 @@
 [versions]
 asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
-hibernateOrmVersion = "6.6.44.Final"
-hibernateOrmGradlePluginVersion = "6.6.44.Final"
-hibernateAsciidoctorExtensionsVersion = "3.2.0.Final"
+hibernateOrmVersion = "6.6.45.Final"
+hibernateOrmGradlePluginVersion = "6.6.45.Final"
+hibernateAsciidoctorExtensionsVersion = "3.2.1.Final"
 hibernateAsciidoctorThemeVersion = "6.0.4.Final"
 jacksonDatabindVersion = "2.21.1"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
