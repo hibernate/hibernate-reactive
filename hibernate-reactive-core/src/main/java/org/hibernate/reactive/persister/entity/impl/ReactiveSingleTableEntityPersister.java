@@ -39,16 +39,13 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
-import org.hibernate.persister.entity.mutation.DeleteCoordinator;
-import org.hibernate.persister.entity.mutation.InsertCoordinator;
-import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveRuntimeModelCreationContext;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveAbstractDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -78,7 +75,13 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			final EntityDataAccess cacheAccessStrategy,
 			final NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
-		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
+		super(
+				persistentClass,
+				cacheAccessStrategy,
+				naturalIdRegionAccessStrategy,
+				new ReactiveRuntimeModelCreationContext( creationContext ),
+				ReactiveAbstractEntityPersister::reactiveStateManagement
+		);
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
 	}
 
@@ -116,26 +119,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	@Override
 	protected MultiIdEntityLoader<?> buildMultiIdLoader() {
 		return reactiveDelegate.buildMultiIdEntityLoader();
-	}
-
-	@Override
-	protected UpdateCoordinator buildUpdateCoordinator() {
-		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
-	}
-
-	@Override
-	protected InsertCoordinator buildInsertCoordinator() {
-		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
-	}
-
-	@Override
-	protected DeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveCoordinatorFactory.buildDeleteCoordinator( super.getSoftDeleteMapping(), this, getFactory() );
-	}
-
-	@Override
-	protected UpdateCoordinator buildMergeCoordinator() {
-		return ReactiveCoordinatorFactory.buildMergeCoordinator( this, getFactory() );
 	}
 
 	@Override
@@ -342,7 +325,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
-		return ( (ReactiveAbstractDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
 	}
 
 	/**

@@ -23,6 +23,7 @@ import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
@@ -75,6 +76,7 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParameter,
+				new SqlAliasBaseManager(),
 				sessionFactory
 		);
 
