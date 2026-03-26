@@ -72,13 +72,7 @@ public class TimestampTest extends BaseReactiveTest {
 										  .isNotNull()
 										  .isEqualTo( entity.getUpdated().truncatedTo( SECONDS ) )
 										  .isEqualTo( entity.getCurrentTimestampInsert().truncatedTo( SECONDS ) );
-								  if ( embedded && eventSourceType == DB) {
-									  assertThat( entity.getCreated().truncatedTo( SECONDS ) )
-											  .isEqualTo( entity.getCurrentTimestampUpdate().truncatedTo( SECONDS ) );
-								  }
-								  else {
-									  assertThat( entity.getCurrentTimestampUpdate() ).isNull();
-								  }
+								  assertThat( entity.getCurrentTimestampUpdate() ).isNull();
 								  assertThat( entity.getCurrentTimestampForce() ).isNull();
 								  assertThat( entity.getVersion() ).isZero();
 								  creationTime[0] = entity.getCreated();
