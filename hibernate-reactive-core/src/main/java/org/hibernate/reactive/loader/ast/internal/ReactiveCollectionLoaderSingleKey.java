@@ -24,6 +24,7 @@ import org.hibernate.reactive.metamodel.mapping.internal.ReactivePluralAttribute
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
@@ -59,6 +60,7 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 				influencers,
 				LockOptions.NONE,
 				jdbcParametersBuilder::add,
+				new SqlAliasBaseManager(),
 				sessionFactory
 		);
 		this.jdbcParameters = jdbcParametersBuilder.build();
