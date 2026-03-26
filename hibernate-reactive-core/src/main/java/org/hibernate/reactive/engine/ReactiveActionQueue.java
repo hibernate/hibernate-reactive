@@ -898,7 +898,7 @@ public class ReactiveActionQueue {
 		public CompletionStage<Void> beforeTransactionCompletion() {
 			while ( !processes.isEmpty() ) {
 				try {
-					processes.poll().doBeforeTransactionCompletion( session.getSharedContract() );
+					processes.poll().doBeforeTransactionCompletion( (SharedSessionContractImplementor) session.getSharedContract() );
 				}
 				catch (HibernateException he) {
 					throw he;

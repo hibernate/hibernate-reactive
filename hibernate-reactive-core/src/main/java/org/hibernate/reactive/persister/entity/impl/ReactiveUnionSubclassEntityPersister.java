@@ -40,9 +40,7 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.UnionSubclassEntityPersister;
-import org.hibernate.persister.entity.mutation.DeleteCoordinator;
-import org.hibernate.persister.entity.mutation.InsertCoordinator;
-import org.hibernate.persister.entity.mutation.UpdateCoordinator;
+import org.hibernate.persister.state.spi.StateManagement;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
@@ -50,7 +48,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveRuntimeModelCreationContext;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -60,6 +58,8 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
+
+import static org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister.reactiveStateManagement;
 
 /**
  * An {@link ReactiveEntityPersister} backed by {@link UnionSubclassEntityPersister}
@@ -76,8 +76,18 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			final EntityDataAccess cacheAccessStrategy,
 			final NaturalIdDataAccess naturalIdRegionAccessStrategy,
 			final RuntimeModelCreationContext creationContext) throws HibernateException {
-		super( persistentClass, cacheAccessStrategy, naturalIdRegionAccessStrategy, new ReactiveRuntimeModelCreationContext( creationContext ) );
+		super(
+				persistentClass,
+				cacheAccessStrategy,
+				naturalIdRegionAccessStrategy,
+				new ReactiveRuntimeModelCreationContext( creationContext ),
+				ReactiveUnionSubclassEntityPersister::createReactiveStateManagement
+		);
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
+	}
+
+	private static StateManagement createReactiveStateManagement(PersistentClass pc) {
+		return reactiveStateManagement( AbstractEntityPersister.createStateManagement( pc ) );
 	}
 
 	@Override
@@ -161,21 +171,6 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	@Override
 	public NaturalIdMapping generateNaturalIdMapping(MappingModelCreationProcess creationProcess, PersistentClass bootEntityDescriptor) {
 		return ReactiveAbstractEntityPersister.super.generateNaturalIdMapping(creationProcess, bootEntityDescriptor);
-	}
-
-	@Override
-	protected InsertCoordinator buildInsertCoordinator() {
-		return ReactiveCoordinatorFactory.buildInsertCoordinator( this, getFactory() );
-	}
-
-	@Override
-	protected UpdateCoordinator buildUpdateCoordinator() {
-		return ReactiveCoordinatorFactory.buildUpdateCoordinator( this, getFactory() );
-	}
-
-	@Override
-	protected DeleteCoordinator buildDeleteCoordinator() {
-		return ReactiveCoordinatorFactory.buildDeleteCoordinator( super.getSoftDeleteMapping(), this, getFactory() );
 	}
 
 	@Override
@@ -334,7 +329,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
-		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
+		return ( (ReactiveDeleteCoordinatorStandard) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
 	}
 
 	@Override
@@ -440,5 +435,4 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	protected GeneratedValuesMutationDelegate createUpdateDelegate() {
 		return ReactiveAbstractEntityPersister.super.createReactiveUpdateDelegate();
 	}
-
 }
