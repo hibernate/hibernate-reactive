@@ -4,6 +4,7 @@
  */
 package org.hibernate.engine.internal;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -52,6 +53,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
 /**
  * Add reactive methods to a {@link PersistenceContext}.
+ * See {@code org.hibernate.engine.internal.StatefulPersistenceContext}
  */
 public class ReactivePersistenceContextAdapter implements PersistenceContext {
 
@@ -78,9 +80,9 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		@Override
 		public void accept(PersistentCollection<?> nonLazyCollection) {
 			if ( !nonLazyCollection.wasInitialized() ) {
-				stage = stage.thenCompose( v ->
-						( (ReactiveSharedSessionContractImplementor) getSession() )
-								.reactiveInitializeCollection( nonLazyCollection, false ) );
+				stage = stage
+						.thenCompose( v -> ( (ReactiveSharedSessionContractImplementor) getSession() )
+						.reactiveInitializeCollection( nonLazyCollection, false ) );
 			}
 		}
 	}
@@ -105,22 +107,34 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		throw LOG.nonReactiveMethodCall( "reactiveGetDatabaseSnapshot" );
 	}
 
-	private static final Object[] NO_ROW = new Object[] {StatefulPersistenceContext.NO_ROW};
+	/**
+	 * Marker object used to indicate (via reference checking) that no row was returned.
+	 * See org.hibernate.engine.internal.StatefulPersistenceContext#NO_ROW
+	 */
+	private static final Serializable NO_ROW = new Serializable() {
+		@Override
+		public String toString() {
+			return "NO_ROW";
+		}
+
+		@Serial
+		public Object readResolve() {
+			return NO_ROW;
+		}
+	};
 
 	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
 		SessionImplementor session = (SessionImplementor) getSession();
 		final EntityKey key = session.generateEntityKey( id, persister );
-		final Object[] cached = getEntitySnapshotsByKey() == null
-				? null
-				: (Object[]) getEntitySnapshotsByKey().get( key );
+		final Object cached = getEntitySnapshotsByKey() == null ? null : getEntitySnapshotsByKey().get( key );
 		if ( cached != null ) {
-			return completedFuture( cached == NO_ROW ? null : cached );
+			return completedFuture( cached == NO_ROW ? null : (Object[]) cached );
 		}
 		else {
 			return ( (ReactiveEntityPersister) persister )
 					.reactiveGetDatabaseSnapshot( id, session )
 					.thenApply( snapshot -> {
-						getOrInitializeEntitySnapshotsByKey().put( key, snapshot );
+						getOrInitializeEntitySnapshotsByKey().put( key, snapshot == null ? NO_ROW : snapshot );
 						return snapshot;
 					} );
 		}
@@ -708,7 +722,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 
 	@Internal
 	@Override
-	public Map<EntityKey,Object> getEntitySnapshotsByKey() {
+	public Map<EntityKey, Object> getEntitySnapshotsByKey() {
 		return delegate.getEntitySnapshotsByKey();
 	}
 

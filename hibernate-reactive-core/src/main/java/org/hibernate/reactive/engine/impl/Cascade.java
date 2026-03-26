@@ -633,8 +633,7 @@ public final class Cascade {
 			final Type elemType,
 			final T anything,
 			final boolean isCascadeDeleteEnabled) throws HibernateException {
-		final boolean reallyDoCascade = style.reallyDoCascade( action.delegate() ) && child != CollectionType.UNFETCHED_COLLECTION;
-		if ( reallyDoCascade ) {
+		if ( style.reallyDoCascade( action.delegate() ) ) {
 			final boolean traceEnabled = LOG.isTraceEnabled();
 
 			if ( traceEnabled ) {

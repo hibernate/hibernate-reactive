@@ -23,19 +23,16 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.Generator;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.id.IdentityGenerator;
-import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
-import org.hibernate.mapping.RootClass;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
-import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.EmbeddedIdentifierMappingImpl;
 import org.hibernate.metamodel.mapping.internal.GeneratedValuesProcessor;
@@ -67,8 +64,6 @@ import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonA
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultImpl;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.ast.tree.from.TableGroup;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
@@ -353,71 +348,7 @@ public class ReactiveAbstractPersisterDelegate {
 		}
 	}
 
-	/*
-	 * Same as AbstractEntityPersister#getOrCreateLazyLoadPlan
-	 */
-	public ReactiveSingleIdArrayLoadPlan getOrCreateLazyLoadPlan(String fieldName, List<ModelPart> partsToSelect) {
-		var propertyLoadPlansByName = nonLazyPropertyLoadPlansByName;
-		if ( propertyLoadPlansByName == null ) {
-			propertyLoadPlansByName = new ConcurrentHashMap<>();
-			final ReactiveSingleIdArrayLoadPlan newLazyLoanPlan = createLazyLoadPlan( partsToSelect );
-			propertyLoadPlansByName.put( fieldName, newLazyLoanPlan );
-			nonLazyPropertyLoadPlansByName = propertyLoadPlansByName;
-			return newLazyLoanPlan;
-		}
-		else {
-			final ReactiveSingleIdArrayLoadPlan lazyLoanPlan = nonLazyPropertyLoadPlansByName.get( fieldName );
-			if ( lazyLoanPlan == null ) {
-				final ReactiveSingleIdArrayLoadPlan newLazyLoanPlan = createLazyLoadPlan( partsToSelect );
-				nonLazyPropertyLoadPlansByName.put( fieldName, newLazyLoanPlan );
-				return newLazyLoanPlan;
-			}
-			else {
-				return lazyLoanPlan;
-			}
-		}
-	}
-
-	private ReactiveSingleIdArrayLoadPlan createLazyLoadPlan(List<ModelPart> partsToSelect) {
-		if ( partsToSelect.isEmpty() ) {
-			// only one-to-one is lazily fetched
-			return null;
-		}
-		else {
-			final LockOptions lockOptions = new LockOptions();
-			final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder();
-			final SelectStatement select = LoaderSelectBuilder.createSelect(
-					entityDescriptor,
-					partsToSelect,
-					entityDescriptor.getIdentifierMapping(),
-					null,
-					1,
-					new LoadQueryInfluencers( entityDescriptor.getFactory() ),
-					lockOptions,
-					jdbcParametersBuilder::add,
-					entityDescriptor.getFactory()
-			);
-			return new ReactiveSingleIdArrayLoadPlan(
-					entityDescriptor,
-					entityDescriptor.getIdentifierMapping(),
-					select,
-					jdbcParametersBuilder.build(),
-					lockOptions,
-					entityDescriptor.getFactory()
-			);
-		}
-	}
-
 	private static class ReactiveNonAggregatedIdentifierMappingImpl extends NonAggregatedIdentifierMappingImpl {
-
-		public ReactiveNonAggregatedIdentifierMappingImpl(
-				EntityPersister entityPersister,
-				RootClass bootEntityDescriptor,
-				String rootTableName,
-				String[] rootTableKeyColumnNames,
-				MappingModelCreationProcess creationProcess) {
-			super( entityPersister, bootEntityDescriptor, rootTableName, rootTableKeyColumnNames, creationProcess );
-		}
 
 		public ReactiveNonAggregatedIdentifierMappingImpl(NonAggregatedIdentifierMappingImpl entityIdentifierMapping) {
 			super( entityIdentifierMapping );
