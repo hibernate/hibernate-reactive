@@ -15,6 +15,7 @@ import org.hibernate.persister.collection.mutation.CollectionMutationTarget;
 import org.hibernate.persister.collection.mutation.CollectionTableMapping;
 import org.hibernate.persister.collection.mutation.OperationProducer;
 import org.hibernate.persister.collection.mutation.RemoveCoordinatorStandard;
+import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
@@ -35,11 +36,12 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 
 	public ReactiveRemoveCoordinatorStandard(
 			CollectionMutationTarget mutationTarget,
-			OperationProducer operationProducer,
+			RowMutationOperations mutationOperations,
 			ServiceRegistry serviceRegistry) {
-		super( mutationTarget, operationProducer, serviceRegistry );
-		this.operationProducer = operationProducer;
-		this.batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
+		super( mutationTarget, mutationOperations, serviceRegistry );
+		this.operationProducer = mutationOperations.getDeleteAllRowsOperationProducer();
+
+		batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
 	}
 
 	private BasicBatchKey getBatchKey() {

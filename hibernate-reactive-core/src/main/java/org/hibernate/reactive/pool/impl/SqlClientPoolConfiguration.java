@@ -4,11 +4,12 @@
  */
 package org.hibernate.reactive.pool.impl;
 
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlConnectOptions;
+import java.net.URI;
+
 import org.hibernate.service.Service;
 
-import java.net.URI;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlConnectOptions;
 
 /**
  * A strategy for configuring the Vert.x {@link io.vertx.sqlclient.Pool}
@@ -22,6 +23,7 @@ public interface SqlClientPoolConfiguration extends Service {
      * The {@link PoolOptions} used to configure the {@code Pool}
      */
     PoolOptions poolOptions();
+
     /**
      * The {@link SqlConnectOptions} used to configure the {@code Pool}
      *

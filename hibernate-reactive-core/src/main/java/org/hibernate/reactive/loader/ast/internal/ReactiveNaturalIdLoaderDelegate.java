@@ -154,6 +154,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
                 session.getLoadQueryInfluencers(),
                 LockOptions.NONE,
                 jdbcParametersListBuilder::add,
+                new SqlAliasBaseManager(),
                 sessionFactory
         );
         final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();

@@ -7,7 +7,9 @@ package org.hibernate.reactive.sql.exec.internal;
 import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -26,6 +28,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
 /**
  * @see org.hibernate.sql.exec.internal.StandardJdbcMutationExecutor
@@ -37,6 +40,19 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 	public static final StandardReactiveJdbcMutationExecutor INSTANCE = new StandardReactiveJdbcMutationExecutor();
 
 	private StandardReactiveJdbcMutationExecutor() {
+	}
+
+	@Override
+	public CompletionStage<Integer> executeReactive(
+			List<JdbcOperationQueryMutation> jdbcMutations,
+			JdbcParameterBindings jdbcParameterBindings,
+			Function<String, PreparedStatement> statementCreator,
+			BiConsumer<Integer, PreparedStatement> expectationCheck,
+			ExecutionContext executionContext) {
+		final AtomicInteger rows = new AtomicInteger(0);
+		return loop(jdbcMutations, (jdbcMutation) ->
+			 executeReactive( jdbcMutation, jdbcParameterBindings, statementCreator, expectationCheck, executionContext )
+					 .thenAccept( result -> rows.addAndGet(result) ) ).thenApply( unused -> rows.get() );
 	}
 
 	@Override

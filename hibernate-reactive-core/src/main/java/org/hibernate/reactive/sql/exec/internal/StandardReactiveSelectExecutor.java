@@ -381,11 +381,11 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
 
-		final ReactiveValuesMappingProducer mappingProducer =
-				(ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
+		final ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
 		if ( cachedResults == null ) {
 			if ( queryResultsCacheKey == null ) {
-				return mappingProducer.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
+				return mappingProducer
+						.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
 						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
 								resultSetAccess,
 								null,
@@ -400,7 +400,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			else {
 				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
 				final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-				return mappingProducer.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
+				return mappingProducer
+						.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
 						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
 								resultSetAccess,
 								queryResultsCacheKey,

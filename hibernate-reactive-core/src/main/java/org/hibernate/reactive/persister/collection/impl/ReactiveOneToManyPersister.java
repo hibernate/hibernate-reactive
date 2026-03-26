@@ -150,7 +150,7 @@ public class ReactiveOneToManyPersister extends OneToManyPersister
 		}
 		return new ReactiveRemoveCoordinatorStandard(
 				this,
-				this::buildDeleteAllOperation,
+				getRowMutationOperations(),
 				getFactory().getServiceRegistry()
 		);
 	}
