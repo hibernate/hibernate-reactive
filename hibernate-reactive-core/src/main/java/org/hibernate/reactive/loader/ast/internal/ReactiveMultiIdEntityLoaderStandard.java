@@ -37,6 +37,7 @@ import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
@@ -52,7 +53,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 
 /**
- * @see org.hibernate.loader.ast.internal.MultiIdEntityLoaderStandard
+ * @see org.hibernate.loader.ast.internal.MultiIdEntityLoaderInPredicate
  */
 public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMultiIdEntityLoader<T> {
 
@@ -219,6 +220,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 				session.getLoadQueryInfluencers(),
 				lockOptions,
 				jdbcParametersListBuilder::add,
+				new SqlAliasBaseManager(),
 				getSessionFactory()
 		);
 		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();

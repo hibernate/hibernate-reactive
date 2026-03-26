@@ -27,7 +27,6 @@ import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
-import org.hibernate.mapping.RootClass;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -347,15 +346,6 @@ public class ReactiveAbstractPersisterDelegate {
 	}
 
 	private static class ReactiveNonAggregatedIdentifierMappingImpl extends NonAggregatedIdentifierMappingImpl {
-
-		public ReactiveNonAggregatedIdentifierMappingImpl(
-				EntityPersister entityPersister,
-				RootClass bootEntityDescriptor,
-				String rootTableName,
-				String[] rootTableKeyColumnNames,
-				MappingModelCreationProcess creationProcess) {
-			super( entityPersister, bootEntityDescriptor, rootTableName, rootTableKeyColumnNames, creationProcess );
-		}
 
 		public ReactiveNonAggregatedIdentifierMappingImpl(NonAggregatedIdentifierMappingImpl entityIdentifierMapping) {
 			super( entityIdentifierMapping );

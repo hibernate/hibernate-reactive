@@ -24,18 +24,14 @@ import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 
-public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNestedGeneratedValueGenerator implements
-		ReactiveIdentifierGenerator<Object> {
+public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNestedGeneratedValueGenerator
+		implements ReactiveIdentifierGenerator<Object> {
 
 	public ReactiveCompositeNestedGeneratedValueGenerator(
 			CompositeNestedGeneratedValueGenerator generator,
 			GeneratorCreationContext creationContext,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		super(
-				generator.getGenerationContextLocator(),
-				generator.getCompositeType(),
-				reactivePlans( generator, creationContext, runtimeModelCreationContext )
-		);
+		super( generator, reactivePlans( generator, creationContext, runtimeModelCreationContext ) );
 	}
 
 	private static List<GenerationPlan> reactivePlans(
@@ -63,7 +59,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 		SharedSessionContractImplementor session = (SharedSessionContractImplementor) reactiveConnectionSupplier;
 		final Object context = getGenerationContextLocator().locateGenerationContext( session, object );
 
-		final List<Object> generatedValues = getCompositeType().isMutable()
+		final List<Object> generatedValues = getComponentType().isMutable()
 				? null
 				: new ArrayList<>( getGenerationPlans().size() );
 		return loop( getGenerationPlans(), generationPlan -> generateIdentifier(
@@ -100,7 +96,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			}
 			else {
 				final Object currentValue = generator.allowAssignedIdentifiers()
-						? getCompositeType().getPropertyValue( context, generationPlan.getPropertyIndex(), session )
+						? getComponentType().getPropertyValue( context, generationPlan.getPropertyIndex(), session )
 						: null;
 				return completedFuture( ( (BeforeExecutionGenerator) generator )
 												.generate( session, object, currentValue, INSERT ) );
@@ -116,11 +112,11 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			Object context,
 			SharedSessionContractImplementor session) {
 		if ( generatedValues != null ) {
-			final Object[] values = getCompositeType().getPropertyValues( context );
+			final Object[] values = getComponentType().getPropertyValues( context );
 			for ( int i = 0; i < generatedValues.size(); i++ ) {
 				values[getGenerationPlans().get( i ).getPropertyIndex()] = generatedValues.get( i );
 			}
-			return completedFuture( getCompositeType().replacePropertyValues( context, values, session ) );
+			return completedFuture( getComponentType().replacePropertyValues( context, values, session ) );
 		}
 		else {
 			return completedFuture( context );
