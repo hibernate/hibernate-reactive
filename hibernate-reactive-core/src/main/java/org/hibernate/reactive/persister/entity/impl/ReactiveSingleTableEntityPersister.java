@@ -39,7 +39,6 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.SingleTableEntityPersister;
-import org.hibernate.persister.state.spi.StateManagement;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.reactive.bythecode.spi.ReactiveBytecodeEnhancementMetadataPojoImplAdapter;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
@@ -59,7 +58,6 @@ import org.hibernate.type.EntityType;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.persister.entity.impl.ReactiveAbstractEntityPersister.reactiveStateManagement;
 
 
 /**
@@ -82,13 +80,9 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 				cacheAccessStrategy,
 				naturalIdRegionAccessStrategy,
 				new ReactiveRuntimeModelCreationContext( creationContext ),
-				ReactiveSingleTableEntityPersister::createReactiveStateManagement
+				ReactiveAbstractEntityPersister::reactiveStateManagement
 		);
 		reactiveDelegate = new ReactiveAbstractPersisterDelegate( this, persistentClass, new ReactiveRuntimeModelCreationContext( creationContext ) );
-	}
-
-	private static StateManagement createReactiveStateManagement(PersistentClass pc) {
-		return reactiveStateManagement( AbstractEntityPersister.createStateManagement( pc ) );
 	}
 
 	@Override
