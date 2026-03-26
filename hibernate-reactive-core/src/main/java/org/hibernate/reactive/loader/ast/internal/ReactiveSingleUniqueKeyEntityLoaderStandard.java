@@ -28,6 +28,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
@@ -77,6 +78,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParametersListBuilder::add,
+				new SqlAliasBaseManager(),
 				sessionFactory
 		);
 		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();
@@ -133,6 +135,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				new LoadQueryInfluencers( sessionFactory ),
 				LockOptions.NONE,
 				jdbcParametersListBuilder::add,
+				new SqlAliasBaseManager(),
 				sessionFactory
 		);
 		final JdbcParametersList jdbcParameters = jdbcParametersListBuilder.build();

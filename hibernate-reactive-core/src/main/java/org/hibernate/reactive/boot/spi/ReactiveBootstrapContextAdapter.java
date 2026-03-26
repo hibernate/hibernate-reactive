@@ -25,6 +25,8 @@ import org.hibernate.reactive.metamodel.spi.ReactiveManagedTypeRepresentationRes
 import org.hibernate.resource.beans.spi.BeanInstanceProducer;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistry;
 import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.java.JavaType;
+import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.spi.TypeConfiguration;
 
 import java.util.Collection;
@@ -175,6 +177,11 @@ public class ReactiveBootstrapContextAdapter implements BootstrapContext {
 	@Override
 	public <T> BasicType<T> resolveAdHocBasicType(String key) {
 		return delegate.resolveAdHocBasicType( key );
+	}
+
+	@Override
+	public <T> BasicType<T> findAdHocBasicType(JavaType<T> javaType, JdbcType jdbcType) {
+		return delegate.findAdHocBasicType( javaType, jdbcType );
 	}
 
 }

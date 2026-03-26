@@ -44,7 +44,9 @@ public class ReactiveInsertRowsCoordinatorStandard implements ReactiveInsertRows
 
 	private MutationOperationGroup operationGroup;
 
-	public ReactiveInsertRowsCoordinatorStandard(CollectionMutationTarget mutationTarget, RowMutationOperations rowMutationOperations) {
+	public ReactiveInsertRowsCoordinatorStandard(
+			CollectionMutationTarget mutationTarget,
+			RowMutationOperations rowMutationOperations) {
 		this.mutationTarget = mutationTarget;
 		this.rowMutationOperations = rowMutationOperations;
 		this.batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#INSERT" );

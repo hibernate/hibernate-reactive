@@ -8,29 +8,15 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.values.GeneratedValues;
-import org.hibernate.persister.entity.AbstractEntityPersister;
+import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorNoOp;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
 
 public class ReactiveUpdateCoordinatorNoOp extends UpdateCoordinatorNoOp implements ReactiveScopedUpdateCoordinator, ReactiveUpdateCoordinator {
 
-	public ReactiveUpdateCoordinatorNoOp(AbstractEntityPersister entityPersister) {
+	public ReactiveUpdateCoordinatorNoOp(EntityPersister entityPersister) {
 		super( entityPersister );
-	}
-
-	@Override
-	public GeneratedValues update(
-			Object entity,
-			Object id,
-			Object rowId,
-			Object[] values,
-			Object oldVersion,
-			Object[] incomingOldValues,
-			int[] dirtyAttributeIndexes,
-			boolean hasDirtyCollection,
-			SharedSessionContractImplementor session) {
-		return null;
 	}
 
 	@Override

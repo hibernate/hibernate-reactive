@@ -24,6 +24,7 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcSelect;
@@ -74,6 +75,8 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 				getSessionFactory()
 		);
 
+		final var sqlAliasBaseGenerator = new SqlAliasBaseManager();
+
 		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
 		sqlSelect = LoaderSelectBuilder.createSelectBySingleArrayParameter(
 				getLoadable(),
@@ -81,7 +84,17 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 				getInfluencers(),
 				LockOptions.NONE,
 				jdbcParameter,
+				sqlAliasBaseGenerator,
 				getSessionFactory()
+		);
+
+		final var querySpec = sqlSelect.getQueryPart().getFirstQuerySpec();
+		final var tableGroup = querySpec.getFromClause().getRoots().get( 0 );
+		attributeMapping.applyAuxiliaryRestrictions(
+				tableGroup,
+				querySpec::applyPredicate,
+				getInfluencers(),
+				sqlAliasBaseGenerator
 		);
 
 		jdbcSelectOperation = getSessionFactory().getJdbcServices()
