@@ -7,6 +7,7 @@ package org.hibernate.reactive.sql.exec.spi;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcSelect;
+import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 
 import java.util.concurrent.CompletionStage;
 
@@ -22,5 +23,6 @@ public interface ReactiveJdbcSelect extends JdbcSelect {
 	CompletionStage<Void> reactivePerformPostActions(
 			boolean succeeded,
 			ReactiveConnection connection,
-			ExecutionContext executionContext);
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector);
 }
