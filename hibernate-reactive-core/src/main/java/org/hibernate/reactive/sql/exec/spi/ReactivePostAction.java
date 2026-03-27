@@ -6,6 +6,7 @@ package org.hibernate.reactive.sql.exec.spi;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 import org.hibernate.sql.exec.spi.PostAction;
 
 import java.util.concurrent.CompletionStage;
@@ -17,5 +18,6 @@ public interface ReactivePostAction extends PostAction {
 
 	CompletionStage<Void> reactivePerformReactivePostAction(
 			ReactiveConnection jdbcConnection,
-			ExecutionContext executionContext);
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector);
 }
