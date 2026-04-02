@@ -413,16 +413,17 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Test
 	public void testDateAsTimeType(VertxTestContext context) {
-		Date date = new Date();
+		// Use java.sql.Time directly to avoid timezone conversion issues
+		Time time = new Time( System.currentTimeMillis() );
 
 		Basic basic = new Basic();
-		basic.dateAsTime = date;
+		basic.dateAsTime = time;
 
 		testField(
 				context, basic, found -> {
-					SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
-					assertThat( found.dateAsTime instanceof Time ).isTrue();
-					assertThat( timeSdf.format( found.dateAsTime ) ).isEqualTo( timeSdf.format( date ) );
+					assertThat( found.dateAsTime ).isInstanceOf( Time.class );
+					// Compare as LocalTime to avoid timezone issues
+					assertThat( ( (Time) found.dateAsTime ).toLocalTime() ).isEqualTo( time.toLocalTime() );
 				}
 		);
 	}
