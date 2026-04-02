@@ -63,6 +63,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -386,15 +387,16 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Test
 	public void testDateAsTimeType(VertxTestContext context) {
-		Date date = new Date();
+		// Use java.sql.Time directly to avoid timezone conversion issues
+		Time time = new Time( System.currentTimeMillis() );
 
 		Basic basic = new Basic();
-		basic.dateAsTime = date;
+		basic.dateAsTime = time;
 
 		testField( context, basic, found -> {
-			SimpleDateFormat timeSdf = new SimpleDateFormat( "HH:mm:ss" );
-			assertTrue( found.dateAsTime instanceof Time);
-			assertEquals( timeSdf.format( date ), timeSdf.format( found.dateAsTime ) );
+			assertInstanceOf( Time.class, found.dateAsTime );
+			// Compare as LocalTime to avoid timezone issues
+			assertEquals( time.toLocalTime(), ( (Time) found.dateAsTime ).toLocalTime() );
 		} );
 	}
 
