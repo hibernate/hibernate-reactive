@@ -8,7 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
@@ -82,10 +81,11 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			SharedSessionContractImplementor session) {
 		final EntityVersionMapping versionMapping = entityPersister().getVersionMapping();
 		if ( versionMapping != null ) {
-			final Supplier<GeneratedValues> generatedValuesAccess = handlePotentialImplicitForcedVersionIncrement(
+			final var generatedValuesAccess = handlePotentialImplicitForcedVersionIncrement(
 					entity,
 					id,
 					values,
+					incomingOldValues,
 					oldVersion,
 					incomingDirtyAttributeIndexes,
 					session,
@@ -220,6 +220,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object id,
 			Object version,
 			Object oldVersion,
+			boolean batching,
+			Object[] loadedState,
 			SharedSessionContractImplementor session) {
 		assert getVersionUpdateGroup() != null;
 		this.updateResultStage = new CompletableFuture<>();
