@@ -19,7 +19,6 @@ import org.hibernate.event.spi.PersistContext;
 import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.id.ForeignGenerator;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
@@ -40,7 +39,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  */
 public class DefaultReactivePersistEventListener
 		extends AbstractReactiveSaveEventListener<PersistContext>
-		implements PersistEventListener, ReactivePersistEventListener, CallbackRegistryConsumer {
+		implements PersistEventListener, ReactivePersistEventListener {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	@Override
