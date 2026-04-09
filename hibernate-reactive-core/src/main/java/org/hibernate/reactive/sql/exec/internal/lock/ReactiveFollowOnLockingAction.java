@@ -6,7 +6,6 @@ package org.hibernate.reactive.sql.exec.internal.lock;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.Locking;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
