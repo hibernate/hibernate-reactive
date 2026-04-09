@@ -5,8 +5,6 @@
 package org.hibernate.reactive.boot.spi;
 
 import org.hibernate.boot.CacheRegionDefinition;
-import org.hibernate.boot.archive.scan.spi.ScanEnvironment;
-import org.hibernate.boot.archive.scan.spi.ScanOptions;
 import org.hibernate.boot.archive.spi.ArchiveDescriptorFactory;
 import org.hibernate.boot.model.convert.spi.ConverterDescriptor;
 import org.hibernate.boot.model.relational.AuxiliaryDatabaseObject;
@@ -118,18 +116,8 @@ public class ReactiveBootstrapContextAdapter implements BootstrapContext {
 	}
 
 	@Override
-	public ScanOptions getScanOptions() {
-		return delegate.getScanOptions();
-	}
-
-	@Override
-	public ScanEnvironment getScanEnvironment() {
-		return delegate.getScanEnvironment();
-	}
-
-	@Override
-	public Object getScanner() {
-		return delegate.getScanner();
+	public Object getScanning() {
+		return delegate.getScanning();
 	}
 
 	@Override
