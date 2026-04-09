@@ -25,6 +25,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
+import jakarta.persistence.PessimisticLockScope;
 import jakarta.persistence.Timeout;
 import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
@@ -52,7 +53,7 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 			LoadedValuesCollectorImpl loadedValuesCollector,
 			LockMode lockMode,
 			Timeout lockTimeout,
-			Locking.Scope lockScope) {
+			PessimisticLockScope lockScope) {
 		super( loadedValuesCollector, lockMode, lockTimeout, lockScope );
 	}
 
