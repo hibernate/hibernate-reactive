@@ -232,7 +232,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-orm' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-reactive' && 'fork' || github.base_ref || github.ref_name }}"
           CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
           CURRENT_DAY=$(/bin/date -u "+%d")
           ROOT_CACHE_KEY="buildtool-cache"
