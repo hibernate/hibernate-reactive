@@ -250,7 +250,7 @@ jobs:
 
       - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
         if: matrix.java.from == 'jdk.java.net'
-        uses: oracle-actions/setup-java@2e744f723b003fdd759727d0ff654c8717024845 # v1.4.0
+        uses: oracle-actions/setup-java@fff43251af9936a0e6a4d5d0946e14f1680e9b6b # v1.5.0
         with:
           website: jdk.java.net
           release: ${{ matrix.java.java_version_numeric }}
