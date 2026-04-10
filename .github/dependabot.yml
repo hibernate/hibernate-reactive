@@ -7,6 +7,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "main"
     schedule:
       interval: "monthly"
     groups:
@@ -84,6 +85,21 @@ updates:
   # Duplicate the package-ecosystems for main because we want to target branch 4.2
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "4.2"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "4.2"
@@ -147,6 +163,21 @@ updates:
   # Duplicate the package-ecosystems for main because we want to target branch 4.1
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "4.1"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "4.1"
@@ -210,6 +241,21 @@ updates:
   # Duplicate the package-ecosystems for main because we want to target branch 3.3
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "3.3"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "3.3"
@@ -273,6 +319,21 @@ updates:
   # Duplicate the package-ecosystems for main because we want to target branch 3.2
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "3.2"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "3.2"
@@ -336,6 +397,21 @@ updates:
 # Duplicate the package-ecosystems for main because we want to target branch 3.1
 # and dependabot doesn't support YAML aliases and anchors at the moment
 #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "3.1"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "3.1"
@@ -398,6 +474,21 @@ updates:
   # Duplicate the package-ecosystems for main because we want to target branch 2.4
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "2.4"
+    schedule:
+      interval: "monthly"
+    groups:
+      workflow-actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "dependabot/*"
+      - dependency-name: "oracle-actions/*"
+      - dependency-name: "redhat-actions/*"
+
   - package-ecosystem: "gradle"
     directory: "/"
     target-branch: "2.4"
