@@ -34,7 +34,6 @@ import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveRowReader;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
-import org.hibernate.sql.exec.SqlExecLogger;
 import org.hibernate.sql.exec.internal.StandardStatementCreator;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
@@ -56,6 +55,7 @@ import org.hibernate.type.spi.TypeConfiguration;
 
 import static org.hibernate.internal.util.NullnessHelper.coalesceSuppliedValues;
 import static org.hibernate.internal.util.collections.ArrayHelper.indexOf;
+import static org.hibernate.sql.exec.SqlExecLogger.SQL_EXEC_LOGGER;
 
 /**
  * @see org.hibernate.sql.exec.internal.JdbcSelectExecutorStandardImpl
@@ -221,9 +221,12 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 						}
 					};
 
+					final var loadedValuesCollector = jdbcSelect.getLoadedValuesCollectorFactory() == null
+							? null
+							: jdbcSelect.getLoadedValuesCollectorFactory().build();
 					final JdbcValuesSourceProcessingStateStandardImpl valuesProcessingState =
 							new JdbcValuesSourceProcessingStateStandardImpl(
-									jdbcSelect.getLoadedValuesCollector(),
+									loadedValuesCollector,
 									processingOptions,
 									executionContext
 							);
@@ -257,7 +260,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 												rowReader
 										) )
 								.thenCompose( result -> reactiveJdbcSelect
-										.reactivePerformPostActions( true, reactiveConnection, executionContext )
+										.reactivePerformPostActions( true, reactiveConnection, executionContext, loadedValuesCollector )
 										.thenApply( v -> {
 											statistics.end( jdbcSelect, result );
 											return result;
@@ -318,13 +321,13 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 		final QueryKey queryResultsCacheKey;
 		final List<?> cachedResults;
 		if ( cacheable && cacheMode.isGetEnabled() ) {
-			SqlExecLogger.SQL_EXEC_LOGGER.debugf( "Reading Query result cache data per CacheMode#isGetEnabled [%s]", cacheMode.name() );
+			SQL_EXEC_LOGGER.readingQueryResultCacheData( cacheMode.name() );
 			final Set<String> querySpaces = jdbcSelect.getAffectedTableNames();
 			if ( querySpaces == null || querySpaces.isEmpty() ) {
-				SqlExecLogger.SQL_EXEC_LOGGER.tracef( "Unexpected querySpaces is empty" );
+				SQL_EXEC_LOGGER.affectedQuerySpacesUnexpectedlyEmpty();
 			}
 			else {
-				SqlExecLogger.SQL_EXEC_LOGGER.tracef( "querySpaces is `%s`", querySpaces );
+				SQL_EXEC_LOGGER.affectedQuerySpaces( querySpaces );
 			}
 
 			final QueryResultsCache queryCache = factory.getCache()
@@ -360,8 +363,8 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 		else {
-			SqlExecLogger.SQL_EXEC_LOGGER
-					.debugf( "Skipping reading Query result cache data: cache-enabled = %s, cache-mode = %s", queryCacheEnabled, cacheMode.name() );
+			SQL_EXEC_LOGGER
+					.skippingReadingQueryResultCacheData( queryCacheEnabled ? "enabled" : "disabled", cacheMode.name() );
 			cachedResults = null;
 			if ( cacheable && cacheMode.isPutEnabled() ) {
 				queryResultsCacheKey = QueryKey.from(
@@ -405,7 +408,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 								queryOptions,
 								false,
 								jdbcValuesMapping,
-								capturingMetadata.resolveMetadataForCache(),
+								capturingMetadata.resolveMetadataForCache( jdbcValuesMapping ),
 								executionContext
 						) );
 			}
@@ -426,7 +429,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					queryOptions,
 					false,
 					jdbcValuesMapping,
-					capturingMetadata.resolveMetadataForCache(),
+					capturingMetadata.resolveMetadataForCache( jdbcValuesMapping ),
 					executionContext
 			) );
         }
@@ -522,11 +525,20 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			return basicType;
 		}
 
-		public CachedJdbcValuesMetadata resolveMetadataForCache() {
+		// FIXME: Review the whole class in ORM, we can probably remove some duplicated code
+		public CachedJdbcValuesMetadata resolveMetadataForCache(JdbcValuesMapping jdbcValuesMapping) {
 			if ( columnNames == null ) {
 				return null;
 			}
-			return new CachedJdbcValuesMetadata( columnNames, types );
+			// Fill in types from the mapping's SqlSelections for positions that
+			// were not captured during mapping resolution (e.g. entity results)
+			for ( var selection : jdbcValuesMapping.getSqlSelections() ) {
+				final int pos = selection.getValuesArrayPosition();
+				if ( types[pos] == null && selection.getExpressionType() != null ) {
+					types[pos] = (BasicType<?>) selection.getExpressionType().getSingleJdbcMapping();
+				}
+			}
+			return new CachedJdbcValuesMetadata( columnNames, types, jdbcValuesMapping.getValueIndexesToCacheIndexes() );
 		}
 	}
 
