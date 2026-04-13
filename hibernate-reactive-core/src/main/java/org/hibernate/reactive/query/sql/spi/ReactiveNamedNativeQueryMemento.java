@@ -11,7 +11,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryEngine;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
+import org.hibernate.query.named.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 
