@@ -4,18 +4,20 @@
  */
 package org.hibernate.reactive.sql.exec.internal.lock;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.Connection;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.exec.spi.ReactivePostAction;
 import org.hibernate.reactive.sql.exec.spi.ReactivePreAction;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
 import jakarta.persistence.Timeout;
-import java.lang.invoke.MethodHandles;
-import java.sql.Connection;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Reactive version of {@link org.hibernate.sql.exec.internal.LockTimeoutHandler}
@@ -47,7 +49,8 @@ public class ReactiveLockTimeoutHandler implements ReactivePreAction, ReactivePo
 	public void performPostAction(
 			StatementAccess jdbcStatementAccess,
 			Connection jdbcConnection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostAction()" );
 	}
 
@@ -71,14 +74,13 @@ public class ReactiveLockTimeoutHandler implements ReactivePreAction, ReactivePo
 	@Override
 	public CompletionStage<Void> reactivePerformReactivePostAction(
 			ReactiveConnection connection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		final var factory = executionContext.getSession().getFactory();
 
 		// reset the timeout
 		return lockTimeoutStrategy.setReactiveLockTimeout(baseline, connection,factory );
 	}
-
-
 
 	@Override
 	public boolean shouldRunAfterFail() {

@@ -85,6 +85,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 					entity,
 					id,
 					values,
+					incomingOldValues,
 					oldVersion,
 					incomingDirtyAttributeIndexes,
 					session,
@@ -219,6 +220,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object id,
 			Object version,
 			Object oldVersion,
+			Object[] loadedState,
 			SharedSessionContractImplementor session) {
 		assert getVersionUpdateGroup() != null;
 		this.updateResultStage = new CompletableFuture<>();
@@ -235,6 +237,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				versionMapping.getSelectionExpression(),
 				ParameterUsage.SET
 		);
+
+		bindPartitionColumnValueBindings( loadedState, session, mutationExecutor.getJdbcValueBindings() );
 
 		// restrict the key
 		mutatingTableDetails.getKeyMapping().breakDownKeyJdbcValues(
