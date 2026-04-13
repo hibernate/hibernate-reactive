@@ -23,6 +23,7 @@ import org.hibernate.sql.exec.internal.lock.LockingHelper;
 import org.hibernate.sql.exec.internal.lock.TableLock;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
+import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
 import jakarta.persistence.Timeout;
@@ -39,21 +40,20 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
 public class ReactiveFollowOnLockingAction extends FollowOnLockingAction implements ReactivePostAction {
 	public static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	@Override
 	public void performPostAction(
 			StatementAccess jdbcStatementAccess,
 			Connection jdbcConnection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostAction()" );
 	}
 
 
 	protected ReactiveFollowOnLockingAction(
-			LoadedValuesCollectorImpl loadedValuesCollector,
 			LockMode lockMode,
 			Timeout lockTimeout,
 			Locking.Scope lockScope) {
-		super( loadedValuesCollector, lockMode, lockTimeout, lockScope );
+		super( lockMode, lockTimeout, lockScope );
 	}
 
 	public static void apply(
@@ -62,15 +62,12 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 			LockingClauseStrategy lockingClauseStrategy,
 			JdbcSelectWithActionsBuilder jdbcSelectBuilder) {
 		final var fromClause = lockingTarget.getFromClause();
-		final var loadedValuesCollector = resolveLoadedValuesCollector( fromClause, lockingClauseStrategy );
-
 		// NOTE: we need to set this separately so that it can get incorporated into
 		// the JdbcValuesSourceProcessingState for proper callbacks
-		jdbcSelectBuilder.setLoadedValuesCollector( loadedValuesCollector );
+		jdbcSelectBuilder.setLoadedValuesCollectorFactory( resolveLoadedValuesCollectorFactory( fromClause, lockingClauseStrategy ) );
 
 		// additionally, add a post-action which uses the collected values.
 		jdbcSelectBuilder.appendPostAction( new ReactiveFollowOnLockingAction(
-				loadedValuesCollector,
 				lockOptions.getLockMode(),
 				lockOptions.getTimeout(),
 				lockOptions.getScope()
@@ -81,7 +78,8 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 	@Override
 	public CompletionStage<Void> reactivePerformReactivePostAction(
 			ReactiveConnection jdbcConnection,
-			ExecutionContext executionContext) {
+			ExecutionContext executionContext,
+			LoadedValuesCollector loadedValuesCollector) {
 		LockingHelper.logLoadedValues( loadedValuesCollector );
 
 		final var session = executionContext.getSession();
@@ -92,17 +90,17 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 		final var initialSemantic = effectiveEntityGraph.getSemantic();
 
 		// collect registrations by entity type
-		final var entitySegments = segmentLoadedValues();
-		final var collectionSegments = segmentLoadedCollections();
+		final var entitySegments = segmentLoadedValues( loadedValuesCollector );
+		final var collectionSegments = segmentLoadedCollections( loadedValuesCollector );
 
 		// for each entity-type, prepare a locking select statement per table.
 		// this is based on the attributes for "state array" ordering purposes -
 		// we match each attribute to the table it is mapped to and add it to
 		// the select-list for that table-segment.
 
-		return loop(
-				entitySegments.keySet().iterator(), (entityMappingType, index) -> {
-					List<EntityKey> entityKeys = entitySegments.get( entityMappingType );
+		return loop( entitySegments.entrySet().iterator(), (entry, index) -> {
+					final var entityMappingType = entry.getKey();
+					final var entityKeys = entry.getValue();
 					final var tableLocks = prepareTableLocks( entityMappingType, entityKeys, session );
 
 					// create a cross-reference of information related to an entity based on its identifier,
@@ -118,14 +116,12 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 							entityKeys,
 							collectionSegments,
 							session,
-							executionContext
+							executionContext,
+							loadedValuesCollector
 					);
 					return loop( tableLocks.values().iterator(), (tableLock, i) ->
-							( (ReactiveTableLock) tableLock ).reactivePerformActions(
-									entityDetailsMap,
-									lockingOptions,
-									(ReactiveSessionImpl) session
-							)
+							( (ReactiveTableLock) tableLock )
+									.reactivePerformActions( entityDetailsMap, lockingOptions, (ReactiveSessionImpl) session )
 					 );
 
 				}
