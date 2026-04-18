@@ -123,7 +123,8 @@ public class DefaultSqlClientPool extends SqlClientPool
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
-		this.sqlStatementLogger = serviceRegistry.getService( SqlStatementLogger.class );
+		SqlStatementLogger logger = serviceRegistry.getService( SqlStatementLogger.class );
+		this.sqlStatementLogger = logger != null ? logger : new SqlStatementLogger();
 	}
 
 	@Override

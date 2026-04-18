@@ -20,6 +20,10 @@ import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
+import org.hibernate.service.Service;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.spi.ServiceBinding;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -115,11 +119,95 @@ public class ReactiveConnectionPoolTest {
 		);
 	}
 
+	@Test
+	public void configureWithNullSqlStatementLogger(VertxTestContext context) {
+		Map<String, Object> config = new HashMap<>();
+		config.put( URL, getJdbcUrl() );
+
+		DefaultSqlClientPoolConfiguration poolConfig = new DefaultSqlClientPoolConfiguration();
+		poolConfig.configure( config );
+		registryExtension.addService( SqlClientPoolConfiguration.class, poolConfig );
+		registryExtension.addService( JdbcServices.class, new JdbcServicesImpl() {
+			@Override
+			public SqlStatementLogger getSqlStatementLogger() {
+				return new SqlStatementLogger();
+			}
+
+			@Override
+			public SqlExceptionHelper getSqlExceptionHelper() {
+				return new SqlExceptionHelper( true );
+			}
+		} );
+
+		// Wrap registry to return null for SqlStatementLogger, simulating a custom logger setup
+		ServiceRegistryImplementor nullLoggerRegistry = new NullStatementLoggerRegistry(
+				registryExtension.getServiceRegistry()
+		);
+		DefaultSqlClientPool reactivePool = new DefaultSqlClientPool();
+		reactivePool.injectServices( nullLoggerRegistry );
+		reactivePool.configure( config );
+		reactivePool.start();
+
+		test( context, verifyConnectivity( reactivePool ) );
+	}
+
 	private static CompletionStage<Void> verifyConnectivity(ReactiveConnectionPool reactivePool) {
 		return reactivePool.getConnection().thenCompose(
 				connection -> connection.select( "SELECT 1" )
 						.thenAccept( result -> assertThat( result ).hasNext()
 								.satisfies( iterator -> assertEquals( 1, result.next()[0] ) )
 						) );
+	}
+
+	private static class NullStatementLoggerRegistry implements ServiceRegistryImplementor {
+		private final ServiceRegistryImplementor delegate;
+
+		NullStatementLoggerRegistry(ServiceRegistryImplementor delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public <R extends Service> R getService(Class<R> serviceRole) {
+			if ( serviceRole == SqlStatementLogger.class ) {
+				return null;
+			}
+			return delegate.getService( serviceRole );
+		}
+
+		@Override
+		public <R extends Service> ServiceBinding<R> locateServiceBinding(Class<R> serviceRole) {
+			return delegate.locateServiceBinding( serviceRole );
+		}
+
+		@Override
+		public void destroy() {
+			delegate.destroy();
+		}
+
+		@Override
+		public boolean isActive() {
+			return delegate.isActive();
+		}
+
+		@Override
+		public void registerChild(ServiceRegistryImplementor child) {
+			delegate.registerChild( child );
+		}
+
+		@Override
+		public void deRegisterChild(ServiceRegistryImplementor child) {
+			delegate.deRegisterChild( child );
+		}
+
+		@Override
+		public ServiceRegistry getParentServiceRegistry() {
+			return delegate.getParentServiceRegistry();
+		}
+
+		@Override
+		public <T extends Service> T fromRegistryOrChildren(Class<T> serviceRole) {
+			return delegate.fromRegistryOrChildren( serviceRole );
+		}
 	}
 }
