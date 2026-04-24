@@ -90,11 +90,11 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsert<R> insert);
 
-	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
+	<R> ReactiveMutationQuery<R> createReactiveNativeMutationQuery(String sqlString);
 
-	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType);
+	<R> ReactiveSelectionQuery<R> createReactiveNamedSelectionQuery(String name, Class<R> resultType);
 
-	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name);
+	<R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String name);
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities);
 
