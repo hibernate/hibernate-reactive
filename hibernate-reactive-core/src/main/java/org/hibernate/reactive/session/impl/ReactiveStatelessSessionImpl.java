@@ -1017,7 +1017,34 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
-		return createReactiveQuery( queryString, null );
+		checkOpen();
+		pulseTransactionCoordinator();
+		delayedAfterCompletion();
+
+		try {
+			@SuppressWarnings("unchecked")
+			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, null );
+			if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
+				final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
+						new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, null, this );
+				applyQuerySettingsAndHints( selectionQuery );
+				selectionQuery.setComment( queryString );
+				@SuppressWarnings("unchecked")
+				final ReactiveSqmQueryImplementor<R> result = (ReactiveSqmQueryImplementor<R>) (Object) selectionQuery;
+				return result;
+			}
+			else {
+				final ReactiveSqmQueryImpl<R> mutationQuery =
+						new ReactiveSqmQueryImpl<>( queryString, interpretation, null, this );
+				applyQuerySettingsAndHints( mutationQuery );
+				mutationQuery.setComment( queryString );
+				return mutationQuery;
+			}
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw getExceptionConverter().convert( e );
+		}
 	}
 
 	@Override
@@ -1073,25 +1100,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
-		try {
-			@SuppressWarnings("unchecked")
-			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, expectedResultType );
-			final ReactiveSqmQueryImpl<R> query =
-					new ReactiveSqmQueryImpl<>( queryString, interpretation, expectedResultType, this );
-			applyQuerySettingsAndHints( query );
-			query.setComment( queryString );
-
-			return query;
-		}
-		catch (RuntimeException e) {
-			markForRollbackOnly();
-			throw getExceptionConverter().convert( e );
-		}
+		return (ReactiveSqmQueryImplementor<R>) createReactiveSelectionQuery( queryString, expectedResultType );
 	}
 
 	@Override

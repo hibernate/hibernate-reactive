@@ -437,41 +437,47 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
-		return createReactiveQuery( queryString, null );
-	}
-
-	@Override
-	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
 		checkOpen();
 		pulseTransactionCoordinator();
 		delayedAfterCompletion();
 
 		try {
 			@SuppressWarnings("unchecked")
-			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, expectedResultType );
-			final ReactiveQuery<R> query;
+			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, null );
 			if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
-				final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
-						new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
-				applyQuerySettingsAndHints( selectionQuery );
-				selectionQuery.setComment( queryString );
-				@SuppressWarnings("unchecked")
-				final ReactiveQuery<R> selectionAsQuery = (ReactiveQuery<R>) (Object) selectionQuery;
-				query = selectionAsQuery;
+				return buildReactiveHqlSelectionQuery( queryString, interpretation, null );
 			}
 			else {
 				final ReactiveSqmQueryImpl<R> mutationQuery =
-						new ReactiveSqmQueryImpl<>( queryString, interpretation, expectedResultType, this );
+						new ReactiveSqmQueryImpl<>( queryString, interpretation, null, this );
 				applyQuerySettingsAndHints( mutationQuery );
 				mutationQuery.setComment( queryString );
-				query = mutationQuery;
+				return mutationQuery;
 			}
-			return query;
 		}
 		catch (RuntimeException e) {
 			markForRollbackOnly();
 			throw getExceptionConverter().convert( e );
 		}
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+		return (ReactiveQuery<R>) createReactiveSelectionQuery( queryString, expectedResultType );
+	}
+
+	private <R> ReactiveQuery<R> buildReactiveHqlSelectionQuery(
+			String queryString,
+			HqlInterpretation<R> interpretation,
+			Class<R> expectedResultType) {
+		final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
+				new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
+		applyQuerySettingsAndHints( selectionQuery );
+		selectionQuery.setComment( queryString );
+		@SuppressWarnings("unchecked")
+		final ReactiveQuery<R> result = (ReactiveQuery<R>) (Object) selectionQuery;
+		return result;
 	}
 
 	@Override
