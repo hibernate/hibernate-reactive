@@ -1203,8 +1203,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation<?> interpretation) {
-		final ReactiveSqmSelectionQueryImpl<R> query =
-				new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
+		final ReactiveSqmSelectionQueryImpl<R> query = new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
 		if ( resultType != null ) {
 			checkResultType( resultType, query );
 		}
@@ -1244,14 +1243,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		checkOpen();
 		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
-			@SuppressWarnings("unchecked")
-			final Class<R> resultType = (Class<R>) specification.getResultType();
+			final Class<R> resultType = specification.getResultType();
 			return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) query, resultType, this );
 		}
 		// Fall back to createReactiveQuery for named queries
-		@SuppressWarnings("unchecked")
-		final ReactiveSelectionQuery<R> query = (ReactiveSelectionQuery<R>) createReactiveQuery( typedQueryReference );
-		return query;
+		return createReactiveQuery( typedQueryReference );
 	}
 
 	@Override
@@ -1311,7 +1307,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		try {
 			final var memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( queryName, false );
 			if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
-				return createReactiveSqmQueryImplementorFromMemento( (NamedSqmQueryMemento<R>) sqmMemento );
+				return createReactiveSqmQueryImplementorFromMemento( sqmMemento );
 			}
 			else if ( memento instanceof NamedNativeQueryMemento<?> nativeMemento ) {
 				return createReactiveNativeQueryImplementorNoResultType( (NamedNativeQueryMemento<R>) nativeMemento );
@@ -1328,12 +1324,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@SuppressWarnings("unchecked")
 	private <T> ReactiveQueryImplementor<T> createReactiveSqmQueryImplementorFromMemento(NamedSqmQueryMemento<?> memento) {
 		final String hqlString = memento.getHqlString();
-		final HqlInterpretation<T> interpretation = (HqlInterpretation<T>) interpretHql( hqlString, null );
+		final HqlInterpretation<T> interpretation = interpretHql( hqlString, null );
 		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement<?> sqmSelectStatement ) {
 			final SqmSelectStatement<T> typedStatement = (SqmSelectStatement<T>) sqmSelectStatement;
-			final Class<T> resultType = (Class<T>) typedStatement.getResultType();
-			final ReactiveSqmSelectionQueryImpl<T> selectionQuery =
-					new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			final Class<T> resultType = typedStatement.getResultType();
+			final ReactiveSqmSelectionQueryImpl<T> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
 			if ( isEmpty( selectionQuery.getComment() ) ) {
 				selectionQuery.setComment( hqlString );
 			}
@@ -1377,10 +1372,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@SuppressWarnings("unchecked")
 	private <T> ReactiveQueryImplementor<T> createReactiveSqmQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
 		final String hqlString = memento.getHqlString();
-		final HqlInterpretation<T> interpretation = (HqlInterpretation<T>) interpretHql( hqlString, resultType );
+		final HqlInterpretation<T> interpretation = interpretHql( hqlString, resultType );
 		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement<?> ) {
-			final ReactiveSqmSelectionQueryImpl<T> selectionQuery =
-					new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			final ReactiveSqmSelectionQueryImpl<T> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
 			if ( resultType != null ) {
 				checkResultType( resultType, selectionQuery );
 			}
@@ -1391,8 +1385,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			return selectionQuery;
 		}
 		// DML named query - create reactive mutation query directly from HQL interpretation
-		final ReactiveSqmQueryImpl<T> dmlQuery =
-				new ReactiveSqmQueryImpl<>( hqlString, interpretation, resultType, this );
+		final ReactiveSqmQueryImpl<T> dmlQuery = new ReactiveSqmQueryImpl<>( hqlString, interpretation, resultType, this );
 		if ( isEmpty( dmlQuery.getComment() ) ) {
 			dmlQuery.setComment( hqlString );
 		}

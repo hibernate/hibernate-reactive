@@ -33,7 +33,6 @@ import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NamedNativeQueryMemento;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
-import org.hibernate.query.named.internal.NativeMutationMementoImpl;
 import org.hibernate.query.named.internal.NativeSelectionMementoImpl;
 import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
 import org.hibernate.query.spi.NonSelectQueryPlan;
@@ -75,12 +74,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(String sql, Class<R> resultClass, SharedSessionContractImplementor session) {
-		super( sql, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-		addResultTypeClass( resultClass );
-	}
-
 	public ReactiveNativeQueryImpl(String sql, NamedResultSetMappingMemento resultSetMappingMemento, Class<R> resultClass, SharedSessionContractImplementor session) {
 		super( sql, resultSetMappingMemento, resultClass, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
@@ -113,13 +106,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 			String resultSetMappingName,
 			SharedSessionContractImplementor session) {
 		super( memento, resultJavaType, resultSetMappingName, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-	}
-
-	public ReactiveNativeQueryImpl(
-			NativeMutationMementoImpl<R> memento,
-			SharedSessionContractImplementor session) {
-		super( memento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 

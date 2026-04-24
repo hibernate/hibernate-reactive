@@ -124,7 +124,6 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 		);
 	}
 
-	@SuppressWarnings("unchecked")
 	private ReactiveSelectQueryPlan<R> resolveSelectReactiveQueryPlan() {
 		return (ReactiveSelectQueryPlan<R>) buildConcreteQueryPlan( getSqmStatement() );
 	}

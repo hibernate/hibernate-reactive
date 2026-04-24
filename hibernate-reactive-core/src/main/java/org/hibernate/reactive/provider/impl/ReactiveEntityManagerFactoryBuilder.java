@@ -13,9 +13,6 @@ import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.mapping.PersistentClass;
-import org.hibernate.mapping.RootClass;
-import org.hibernate.reactive.persister.state.ReactiveStateManagement;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilder;
@@ -47,13 +44,6 @@ public final class ReactiveEntityManagerFactoryBuilder extends EntityManagerFact
     @Override
     public EntityManagerFactory build() {
         final MetadataImplementor metadata = metadata();
-        // Register ReactiveStateManagement for all root entity classes so that
-        // reactive coordinators are used for entity mutations
-        for ( PersistentClass entityBinding : metadata.getEntityBindings() ) {
-            if ( entityBinding instanceof RootClass rootClass ) {
-                rootClass.setStateManagementType( ReactiveStateManagement.class );
-            }
-        }
         SessionFactoryOptionsBuilder optionsBuilder = new SessionFactoryOptionsBuilder(
                 metadata.getMetadataBuildingOptions().getServiceRegistry(),
                 ( (MetadataImpl) metadata ).getBootstrapContext()
