@@ -131,6 +131,7 @@ import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Attribute;
 
@@ -554,13 +555,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		}
 	}
 
-	@Override @Deprecated(forRemoval = true)
-	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass) {
-		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString, resultSetMappingName );
-		handleTupleResultType( resultClass, query );
-		return query;
-	}
-
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
 		return interpretAndCreateSelectionQuery( hqlString, resultType );
@@ -722,9 +716,33 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
+		final Class<R> resultType = resultGraph.getGraphedType().getJavaType();
+		checksBeforeQueryCreation();
+		try {
+			final HqlInterpretation<?> interpretation = interpretHql( hqlString, resultType );
+			checkSelectionQuery( hqlString, interpretation );
+			final ReactiveSqmSelectionQueryImpl<R> query =
+					new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			query.setComment( hqlString );
+			applyQuerySettingsAndHints( query );
+			return query;
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw e;
+		}
+	}
+
+	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
 		return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaSelect<R> criteria) {
+		return createReactiveSelectionQuery( (CriteriaQuery<R>) criteria );
 	}
 
 	@Override
@@ -790,11 +808,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				memento -> createSqmQueryImplementor( null, memento ),
 				memento -> createNativeQueryImplementor( queryName, memento )
 		);
-	}
-
-	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName) {
-		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName, null );
 	}
 
 	@Override
