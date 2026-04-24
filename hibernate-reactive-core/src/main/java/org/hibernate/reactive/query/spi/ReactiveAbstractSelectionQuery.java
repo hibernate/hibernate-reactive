@@ -363,6 +363,19 @@ public class ReactiveAbstractSelectionQuery<R> {
 		throw LOG.nonReactiveMethodCall( "reactiveUniqueResultOptional" );
 	}
 
+	public static <T> T uniqueElement(List<T> list) {
+		int size = list.size();
+		if ( size == 0 ) {
+			return null;
+		}
+		if ( size > 1 ) {
+			throw new jakarta.persistence.NonUniqueResultException(
+					"Query did not return a unique result: " + size + " results were returned"
+			);
+		}
+		return list.get( 0 );
+	}
+
 	public void enableFetchProfile(String profileName) {
 		if ( fetchProfiles == null ) {
 			fetchProfiles = new HashSet<>();

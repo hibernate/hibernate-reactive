@@ -15,6 +15,8 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.type.ComponentType;
+import org.hibernate.type.CompositeType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +33,13 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			CompositeNestedGeneratedValueGenerator generator,
 			GeneratorCreationContext creationContext,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		super( generator, reactivePlans( generator, creationContext, runtimeModelCreationContext ) );
+		super(
+				generator.getGenerationContextLocator(),
+				// downcast required: super constructor takes ComponentType,
+				// but getComponentType() returns CompositeType
+				(ComponentType) generator.getComponentType(),
+				reactivePlans( generator, creationContext, runtimeModelCreationContext )
+		);
 	}
 
 	private static List<GenerationPlan> reactivePlans(
@@ -56,10 +64,10 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 
 	@Override
 	public CompletionStage<Object> generate(ReactiveConnectionSupplier reactiveConnectionSupplier, Object object) {
-		SharedSessionContractImplementor session = (SharedSessionContractImplementor) reactiveConnectionSupplier;
+		final SharedSessionContractImplementor session = (SharedSessionContractImplementor) reactiveConnectionSupplier;
 		final Object context = getGenerationContextLocator().locateGenerationContext( session, object );
-
-		final List<Object> generatedValues = getComponentType().isMutable()
+		final CompositeType compositeType = getComponentType();
+		final List<Object> generatedValues = compositeType.isMutable()
 				? null
 				: new ArrayList<>( getGenerationPlans().size() );
 		return loop( getGenerationPlans(), generationPlan -> generateIdentifier(
@@ -67,10 +75,11 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 						object,
 						generationPlan,
 						session,
+						compositeType,
 						generatedValues,
 						context
 				) )
-				.thenCompose( v -> handleGeneratedValues( generatedValues, context, session ) );
+				.thenCompose( v -> handleGeneratedValues( compositeType, generatedValues, context, session ) );
 	}
 
 	private CompletionStage<?> generateIdentifier(
@@ -78,6 +87,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			Object object,
 			GenerationPlan generationPlan,
 			SharedSessionContractImplementor session,
+			CompositeType compositeType,
 			List<Object> generatedValues,
 			Object context) {
 		final Generator generator = generationPlan.getGenerator();
@@ -96,7 +106,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			}
 			else {
 				final Object currentValue = generator.allowAssignedIdentifiers()
-						? getComponentType().getPropertyValue( context, generationPlan.getPropertyIndex(), session )
+						? compositeType.getPropertyValue( context, generationPlan.getPropertyIndex(), session )
 						: null;
 				return completedFuture( ( (BeforeExecutionGenerator) generator )
 												.generate( session, object, currentValue, INSERT ) );
@@ -108,15 +118,16 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 	}
 
 	private CompletionStage<Object> handleGeneratedValues(
+			CompositeType compositeType,
 			List<Object> generatedValues,
 			Object context,
 			SharedSessionContractImplementor session) {
 		if ( generatedValues != null ) {
-			final Object[] values = getComponentType().getPropertyValues( context );
+			final Object[] values = compositeType.getPropertyValues( context );
 			for ( int i = 0; i < generatedValues.size(); i++ ) {
 				values[getGenerationPlans().get( i ).getPropertyIndex()] = generatedValues.get( i );
 			}
-			return completedFuture( getComponentType().replacePropertyValues( context, values, session ) );
+			return completedFuture( compositeType.replacePropertyValues( context, values, session ) );
 		}
 		else {
 			return completedFuture( context );

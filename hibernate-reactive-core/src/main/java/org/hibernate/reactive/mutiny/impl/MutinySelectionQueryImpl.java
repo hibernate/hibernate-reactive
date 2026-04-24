@@ -54,7 +54,7 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 
 	@Override
 	public FlushMode getFlushMode() {
-		return delegate.getHibernateFlushMode();
+		return delegate.getEffectiveFlushMode();
 	}
 
 	@Override
