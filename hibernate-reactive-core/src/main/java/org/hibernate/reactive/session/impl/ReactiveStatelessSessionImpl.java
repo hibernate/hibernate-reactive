@@ -85,7 +85,6 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.impl.CompletionStages.Completable;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -1016,26 +1015,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+	@SuppressWarnings("unchecked")
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
+		checksBeforeQueryCreation();
 		try {
-			@SuppressWarnings("unchecked")
-			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, null );
+			final HqlInterpretation<?> interpretation = interpretHql( queryString, null );
 			if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
-				final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
-						new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, null, this );
-				applyQuerySettingsAndHints( selectionQuery );
-				selectionQuery.setComment( queryString );
-				@SuppressWarnings("unchecked")
-				final ReactiveSqmQueryImplementor<R> result = (ReactiveSqmQueryImplementor<R>) (Object) selectionQuery;
-				return result;
+				return buildReactiveHqlSelectionQuery( queryString, interpretation, null );
 			}
 			else {
 				final ReactiveSqmQueryImpl<R> mutationQuery =
-						new ReactiveSqmQueryImpl<>( queryString, interpretation, null, this );
+						new ReactiveSqmQueryImpl<>( queryString, (HqlInterpretation<R>) interpretation, null, this );
 				applyQuerySettingsAndHints( mutationQuery );
 				mutationQuery.setComment( queryString );
 				return mutationQuery;
@@ -1045,6 +1035,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			markForRollbackOnly();
 			throw getExceptionConverter().convert( e );
 		}
+	}
+
+	private <R> ReactiveQuery<R> buildReactiveHqlSelectionQuery(
+			String queryString,
+			HqlInterpretation<?> interpretation,
+			Class<R> expectedResultType) {
+		final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
+				new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
+		applyQuerySettingsAndHints( selectionQuery );
+		selectionQuery.setComment( queryString );
+		return selectionQuery;
 	}
 
 	@Override
@@ -1100,17 +1101,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
-		return (ReactiveSqmQueryImplementor<R>) createReactiveSelectionQuery( queryString, expectedResultType );
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+		return buildReactiveHqlSelectionQuery(
+				queryString,
+				interpretHql( queryString, expectedResultType ),
+				expectedResultType
+		);
 	}
 
 	@Override
 	public <R> ReactiveNativeQueryImplementor<R> createReactiveNativeQuery(String sqlString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, this);
 			if ( isEmpty( query.getComment() ) ) {
@@ -1158,10 +1159,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override @Deprecated(forRemoval = true)
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			if ( isNotEmpty( resultSetMappingName ) ) {
 				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
@@ -1199,10 +1197,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private <R> ReactiveSelectionQuery<R> interpretAndCreateSelectionQuery(String hql, Class<R> resultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final HqlInterpretation<?> interpretation = interpretHql( hql, resultType );
 			checkSelectionQuery( hql, interpretation );

@@ -436,20 +436,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
-			@SuppressWarnings("unchecked")
-			final HqlInterpretation<R> interpretation = (HqlInterpretation<R>) interpretHql( queryString, null );
+			final HqlInterpretation<?> interpretation = interpretHql( queryString, null );
 			if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
 				return buildReactiveHqlSelectionQuery( queryString, interpretation, null );
 			}
 			else {
 				final ReactiveSqmQueryImpl<R> mutationQuery =
-						new ReactiveSqmQueryImpl<>( queryString, interpretation, null, this );
+						new ReactiveSqmQueryImpl<>( queryString, (HqlInterpretation<R>) interpretation, null, this );
 				applyQuerySettingsAndHints( mutationQuery );
 				mutationQuery.setComment( queryString );
 				return mutationQuery;
@@ -462,30 +459,30 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
-		return (ReactiveQuery<R>) createReactiveSelectionQuery( queryString, expectedResultType );
+		// Delegate to createReactiveSelectionQuery, matching ORM 8's
+		// createQuery(String, Class) -> createSelectionQuery(String, Class)
+		return buildReactiveHqlSelectionQuery(
+				queryString,
+				interpretHql( queryString, expectedResultType ),
+				expectedResultType
+		);
 	}
 
 	private <R> ReactiveQuery<R> buildReactiveHqlSelectionQuery(
 			String queryString,
-			HqlInterpretation<R> interpretation,
+			HqlInterpretation<?> interpretation,
 			Class<R> expectedResultType) {
 		final ReactiveSqmSelectionQueryImpl<R> selectionQuery =
 				new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
 		applyQuerySettingsAndHints( selectionQuery );
 		selectionQuery.setComment( queryString );
-		@SuppressWarnings("unchecked")
-		final ReactiveQuery<R> result = (ReactiveQuery<R>) (Object) selectionQuery;
-		return result;
+		return selectionQuery;
 	}
 
 	@Override
 	public <T> ReactiveNativeQueryImplementor<T> createReactiveNativeQuery(String sqlString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( sqlString, this );
 			if ( isEmpty( query.getComment() ) ) {
@@ -547,10 +544,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			throw new IllegalArgumentException( "Result set mapping name was not specified" );
 		}
 
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			return new ReactiveNativeQueryImpl<>( sqlString, getResultSetMappingMemento( resultSetMappingName ), null, this );
 			//TODO: why no applyQuerySettingsAndHints( query ); ???
@@ -573,10 +567,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private <R> ReactiveSelectionQuery<R> interpretAndCreateSelectionQuery(String hql, Class<R> resultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final HqlInterpretation<?> interpretation = interpretHql( hql, resultType );
 			checkSelectionQuery( hql, interpretation );
@@ -822,10 +813,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( queryString, this );
 			addAffectedEntities( affectedEntities, query );
@@ -862,9 +850,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveNativeQueryImpl<R> createReactiveNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
+		checksBeforeQueryCreation();
 		// Should we throw an exception?
 		NamedResultSetMappingMemento memento = resultSetMapping == null ? null : getResultSetMappingMemento( resultSetMapping.getName() );
 		try {
