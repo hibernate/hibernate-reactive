@@ -802,7 +802,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String queryName) {
+	public <R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String queryName) {
 		return (ReactiveMutationQuery<R>) buildNamedQuery(
 				queryName,
 				memento -> createSqmQueryImplementor( null, memento ),
@@ -811,12 +811,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName, Class<R> expectedResultType) {
+	public <R> ReactiveSelectionQuery<R> createReactiveNamedSelectionQuery(String queryName, Class<R> expectedResultType) {
 		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName , expectedResultType );
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
+	public <R> ReactiveMutationQuery<R> createReactiveNativeMutationQuery(String sqlString) {
 		final ReactiveNativeQueryImplementor<R> query = createReactiveNativeQuery( sqlString );
 		if ( query.isSelectQuery() == TRUE ) {
 			throw new IllegalMutationQueryException( "Expecting a native mutation query, but found `" + sqlString + "`" );
