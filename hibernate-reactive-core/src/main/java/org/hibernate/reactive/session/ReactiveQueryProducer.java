@@ -79,6 +79,8 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria);
 
+	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(TypedQueryReference<R> typedQueryReference);
+
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString);
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(CriteriaUpdate<R> updateQuery);
