@@ -20,7 +20,6 @@ import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -137,9 +136,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
-		return new MutinyQueryImpl<>( reactiveQuery, factory );
+	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( typedQueryReference ), factory );
 	}
 
 	@Override @Deprecated
@@ -149,12 +147,12 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
-		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ), factory );
 	}
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( criteriaQuery ), factory );
 	}
 
 	@Override

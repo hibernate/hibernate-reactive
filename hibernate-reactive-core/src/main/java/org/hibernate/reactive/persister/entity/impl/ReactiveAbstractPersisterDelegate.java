@@ -41,7 +41,11 @@ import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.mapping.internal.NonAggregatedIdentifierMappingImpl;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.DeleteCoordinator;
+import org.hibernate.persister.entity.mutation.InsertCoordinator;
+import org.hibernate.persister.entity.mutation.UpdateCoordinator;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
@@ -89,6 +93,11 @@ public class ReactiveAbstractPersisterDelegate {
 	private final EntityPersister entityDescriptor;
 
 	private Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> uniqueKeyLoadersNew;
+
+	private InsertCoordinator reactiveInsertCoordinator;
+	private UpdateCoordinator reactiveUpdateCoordinator;
+	private UpdateCoordinator reactiveMergeCoordinator;
+	private DeleteCoordinator reactiveDeleteCoordinator;
 
 	public ReactiveAbstractPersisterDelegate(
 			final EntityPersister entityPersister,
@@ -186,6 +195,47 @@ public class ReactiveAbstractPersisterDelegate {
 				factory.getServiceRegistry().requireService( BatchLoaderFactory.class )
 						.createEntityBatchLoader( domainBatchSize, entityDescriptor, factory );
 		return (ReactiveSingleIdEntityLoader<?>) batchLoader;
+	}
+
+	public InsertCoordinator getInsertCoordinator() {
+		if ( reactiveInsertCoordinator == null ) {
+			reactiveInsertCoordinator = ReactiveCoordinatorFactory.buildInsertCoordinator(
+					(AbstractEntityPersister) entityDescriptor,
+					entityDescriptor.getFactory()
+			);
+		}
+		return reactiveInsertCoordinator;
+	}
+
+	public UpdateCoordinator getUpdateCoordinator() {
+		if ( reactiveUpdateCoordinator == null ) {
+			reactiveUpdateCoordinator = ReactiveCoordinatorFactory.buildUpdateCoordinator(
+					(AbstractEntityPersister) entityDescriptor,
+					entityDescriptor.getFactory()
+			);
+		}
+		return reactiveUpdateCoordinator;
+	}
+
+	public UpdateCoordinator getMergeCoordinator() {
+		if ( reactiveMergeCoordinator == null ) {
+			reactiveMergeCoordinator = ReactiveCoordinatorFactory.buildMergeCoordinator(
+					(AbstractEntityPersister) entityDescriptor,
+					entityDescriptor.getFactory()
+			);
+		}
+		return reactiveMergeCoordinator;
+	}
+
+	public DeleteCoordinator getDeleteCoordinator() {
+		if ( reactiveDeleteCoordinator == null ) {
+			reactiveDeleteCoordinator = ReactiveCoordinatorFactory.buildDeleteCoordinator(
+					( (AbstractEntityPersister) entityDescriptor ).getSoftDeleteMapping(),
+					(AbstractEntityPersister) entityDescriptor,
+					entityDescriptor.getFactory()
+			);
+		}
+		return reactiveDeleteCoordinator;
 	}
 
 	public CompletionStage<Void> processInsertGeneratedProperties(

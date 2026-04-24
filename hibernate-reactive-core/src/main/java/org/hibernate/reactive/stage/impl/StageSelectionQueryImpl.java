@@ -47,7 +47,7 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 
 	@Override
 	public FlushMode getFlushMode() {
-		return delegate.getHibernateFlushMode();
+		return delegate.getEffectiveFlushMode();
 	}
 
 	@Override

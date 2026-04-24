@@ -60,7 +60,6 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 	@Override
 	ReactiveSelectionQuery<R> setFlushMode(FlushModeType flushMode);
 
-	@Override
 	ReactiveSelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override

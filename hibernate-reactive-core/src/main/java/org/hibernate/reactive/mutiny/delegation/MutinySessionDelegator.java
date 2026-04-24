@@ -107,7 +107,7 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
         return delegate().lock(entity, lockModeType);
     }
 
-    public <R> Mutiny.Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+    public <R> Mutiny.SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
         return delegate().createQuery(typedQueryReference);
     }
 

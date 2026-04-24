@@ -21,7 +21,7 @@ import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
 import org.hibernate.query.named.NameableQuery;
 import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
+import org.hibernate.query.named.NamedNativeQueryMemento;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQueryImplementor;
 

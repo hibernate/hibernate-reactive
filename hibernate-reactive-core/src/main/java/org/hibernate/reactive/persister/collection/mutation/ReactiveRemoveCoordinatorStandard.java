@@ -40,8 +40,7 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 			ServiceRegistry serviceRegistry) {
 		super( mutationTarget, mutationOperations, serviceRegistry );
 		this.operationProducer = mutationOperations.getDeleteAllRowsOperationProducer();
-
-		batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
+		this.batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
 	}
 
 	private BasicBatchKey getBatchKey() {

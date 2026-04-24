@@ -7,13 +7,16 @@ package org.hibernate.reactive.query.sql.spi;
 import java.util.Map;
 import java.util.Set;
 
-import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.named.NamedNativeQueryMemento;
+import org.hibernate.query.spi.MutationQueryImplementor;
+import org.hibernate.query.spi.QueryEngine;
+import org.hibernate.query.spi.SelectionQueryImplementor;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
+
+import jakarta.persistence.Timeout;
 
 /**
  * @see NamedNativeQueryMemento
@@ -26,19 +29,13 @@ public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemen
 		this.delegate = delegate;
 	}
 
-	@Override
-	public Class<? extends E> getResultType() {
-		return delegate.getResultType();
+	public NamedNativeQueryMemento<E> getDelegate() {
+		return delegate;
 	}
 
 	@Override
 	public String getSqlString() {
 		return delegate.getSqlString();
-	}
-
-	@Override
-	public String getOriginalSqlString() {
-		return delegate.getOriginalSqlString();
 	}
 
 	@Override
@@ -49,11 +46,6 @@ public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemen
 	@Override
 	public String getResultMappingName() {
 		return delegate.getResultMappingName();
-	}
-
-	@Override
-	public Class<?> getResultMappingClass() {
-		return delegate.getResultMappingClass();
 	}
 
 	@Override
@@ -82,8 +74,33 @@ public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemen
 	}
 
 	@Override
+	public SelectionQueryImplementor<E> toSelectionQuery(SharedSessionContractImplementor session) {
+		return (SelectionQueryImplementor<E>) delegate.toSelectionQuery( session );
+	}
+
+	@Override
+	public <X> SelectionQueryImplementor<X> toSelectionQuery(SharedSessionContractImplementor session, Class<X> resultType) {
+		return (SelectionQueryImplementor<X>) delegate.toSelectionQuery( session, resultType );
+	}
+
+	@Override
+	public MutationQueryImplementor<E> toMutationQuery(SharedSessionContractImplementor session) {
+		return delegate.toMutationQuery( session );
+	}
+
+	@Override
+	public <X> MutationQueryImplementor<X> toMutationQuery(SharedSessionContractImplementor session, Class<X> resultType) {
+		return delegate.toMutationQuery( session, resultType );
+	}
+
+	@Override
 	public NamedNativeQueryMemento<E> makeCopy(String name) {
 		return new ReactiveNamedNativeQueryMemento<>( delegate.makeCopy( name ) );
+	}
+
+	@Override
+	public String getName() {
+		return delegate.getName();
 	}
 
 	@Override
@@ -92,38 +109,13 @@ public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemen
 	}
 
 	@Override
-	public Boolean getCacheable() {
-		return delegate.getCacheable();
-	}
-
-	@Override
-	public String getCacheRegion() {
-		return delegate.getCacheRegion();
-	}
-
-	@Override
-	public CacheMode getCacheMode() {
-		return delegate.getCacheMode();
-	}
-
-	@Override
 	public FlushMode getFlushMode() {
 		return delegate.getFlushMode();
 	}
 
 	@Override
-	public Boolean getReadOnly() {
-		return delegate.getReadOnly();
-	}
-
-	@Override
-	public Integer getTimeout() {
+	public Timeout getTimeout() {
 		return delegate.getTimeout();
-	}
-
-	@Override
-	public Integer getFetchSize() {
-		return delegate.getFetchSize();
 	}
 
 	@Override

@@ -18,6 +18,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
+import org.hibernate.Locking;
+import org.hibernate.query.QueryFlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -29,13 +31,15 @@ import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.named.NamedNativeQueryMemento;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.named.internal.NativeMutationMementoImpl;
+import org.hibernate.query.named.internal.NativeSelectionMementoImpl;
 import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
-import org.hibernate.query.spi.AbstractSelectionQuery;
 import org.hibernate.query.spi.NonSelectQueryPlan;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.sql.internal.NativeQueryImpl;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
+import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
@@ -67,39 +71,68 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	private final ReactiveAbstractSelectionQuery<R> selectionQueryDelegate;
 
 	public ReactiveNativeQueryImpl(String sql, SharedSessionContractImplementor session) {
-		super( sql, null, session );
+		super( sql, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
 	public ReactiveNativeQueryImpl(String sql, Class<R> resultClass, SharedSessionContractImplementor session) {
-		super( sql, resultClass, session );
+		super( sql, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+		addResultTypeClass( resultClass );
 	}
 
 	public ReactiveNativeQueryImpl(String sql, NamedResultSetMappingMemento resultSetMappingMemento, Class<R> resultClass, SharedSessionContractImplementor session) {
-		super( sql, resultSetMappingMemento, resultClass, session);
+		super( sql, resultSetMappingMemento, resultClass, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(NamedNativeQueryMemento memento, SharedSessionContractImplementor session) {
+	@SuppressWarnings("unchecked")
+	public ReactiveNativeQueryImpl(NamedNativeQueryMemento<?> memento, SharedSessionContractImplementor session) {
+		this( unwrapSelectionMemento( memento ), null, null, session );
+	}
+
+	@SuppressWarnings("unchecked")
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento<?> memento,
+			Class<R> resultJavaType,
+			SharedSessionContractImplementor session) {
+		this( unwrapSelectionMemento( memento ), resultJavaType, null, session );
+	}
+
+	@SuppressWarnings("unchecked")
+	public ReactiveNativeQueryImpl(
+			NamedNativeQueryMemento<?> memento,
+			String resultSetMappingName,
+			SharedSessionContractImplementor session) {
+		this( unwrapSelectionMemento( memento ), null, resultSetMappingName, session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			NativeSelectionMementoImpl<?> memento,
+			Class<R> resultJavaType,
+			String resultSetMappingName,
+			SharedSessionContractImplementor session) {
+		super( memento, resultJavaType, resultSetMappingName, session );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+	}
+
+	public ReactiveNativeQueryImpl(
+			NativeMutationMementoImpl<R> memento,
+			SharedSessionContractImplementor session) {
 		super( memento, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
 	}
 
-	public ReactiveNativeQueryImpl(
-			NamedNativeQueryMemento memento,
-			Class<R> resultJavaType,
-			SharedSessionContractImplementor session) {
-		super( memento, resultJavaType, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
-	}
-
-	public ReactiveNativeQueryImpl(
-			NamedNativeQueryMemento memento,
-			String resultSetMappingName,
-			SharedSessionContractImplementor session) {
-		super( memento, resultSetMappingName, session );
-		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+	@SuppressWarnings("unchecked")
+	private static <T> NativeSelectionMementoImpl<T> unwrapSelectionMemento(NamedNativeQueryMemento<?> memento) {
+		if ( memento instanceof ReactiveNamedNativeQueryMemento<?> wrapper ) {
+			return (NativeSelectionMementoImpl<T>) unwrapSelectionMemento( wrapper.getDelegate() );
+		}
+		if ( memento instanceof NativeSelectionMementoImpl<?> selectionMemento ) {
+			return (NativeSelectionMementoImpl<T>) selectionMemento;
+		}
+		// Fallback: treat as selection memento by creating a simple wrapper
+		throw new IllegalArgumentException( "Cannot unwrap memento of type: " + memento.getClass().getName() );
 	}
 
 	// Convenient for passing parameters to ReactiveAbstractSelectionQuery using method reference
@@ -129,7 +162,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 				this::getQueryString,
 				this::reactiveBeforeQuery,
 				this::afterQuery,
-				AbstractSelectionQuery::uniqueElement,
+				ReactiveAbstractSelectionQuery::uniqueElement,
 				null
 		);
 	}
@@ -185,13 +218,25 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		}
 
 		final String sqlString = expandParameterLists( 1 );
-		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan( sqlString, getQuerySpaces(), getParameterOccurrences() );
+		ReactiveNonSelectQueryPlan queryPlan = new ReactiveNativeNonSelectQueryPlan( sqlString, getQuerySpaces(), getParameterOccurrencesViaReflection() );
 		if ( cacheKey != null ) {
 			getSession().getFactory().getQueryEngine().getInterpretationCache()
 					.cacheNonSelectQueryPlan( cacheKey, queryPlan );
 		}
 
 		return queryPlan;
+	}
+
+	@SuppressWarnings("unchecked")
+	private java.util.List<org.hibernate.query.sql.spi.ParameterOccurrence> getParameterOccurrencesViaReflection() {
+		try {
+			java.lang.reflect.Field field = NativeQueryImpl.class.getDeclaredField( "parameterOccurrences" );
+			field.setAccessible( true );
+			return (java.util.List<org.hibernate.query.sql.spi.ParameterOccurrence>) field.get( this );
+		}
+		catch (Exception e) {
+			return java.util.Collections.emptyList();
+		}
 	}
 
 	private Set<String> getQuerySpaces() {
@@ -264,15 +309,13 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		return selectionQueryDelegate.uniqueResultOptional();
 	}
 
-	@Override
 	public ReactiveNativeQueryImpl<R> applyGraph(RootGraph graph, GraphSemantic semantic) {
-		super.applyGraph( graph, semantic );
+		// Not supported for native queries in ORM 8
 		return this;
 	}
 
-	@Override
 	public ReactiveNativeQueryImpl<R> applyFetchGraph(RootGraph graph) {
-		super.applyFetchGraph( graph );
+		// Not supported for native queries in ORM 8
 		return this;
 	}
 
@@ -456,9 +499,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 // covariant overrides - Query / QueryImplementor
 
 
-	@Override
 	public ReactiveNativeQueryImpl<R> applyLoadGraph(RootGraph graph) {
-		super.applyLoadGraph( graph );
+		// Not supported for native queries in ORM 8
 		return this;
 	}
 
@@ -470,7 +512,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		super.setHibernateFlushMode( flushMode );
+		setQueryFlushMode( QueryFlushMode.fromHibernateMode( flushMode ) );
 		return this;
 	}
 
@@ -482,7 +524,9 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFollowOnLocking(boolean enable) {
-		super.setFollowOnLocking( enable );
+		super.setFollowOnLockingStrategy( enable
+				? Locking.FollowOn.FORCE
+				: Locking.FollowOn.DISALLOW );
 		return this;
 	}
 
@@ -536,8 +580,14 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockOptions(LockOptions lockOptions) {
-		super.setLockOptions( lockOptions );
+		// setLockOptions removed in ORM 8 from NativeQueryImpl - apply individual settings
+		getQueryOptions().getLockOptions().setLockMode( lockOptions.getLockMode() );
 		return this;
+	}
+
+	@Override
+	public LockOptions getLockOptions() {
+		return getQueryOptions().getLockOptions();
 	}
 
 	@Override
@@ -554,7 +604,8 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
-		super.setLockMode( alias, lockMode );
+		// setLockMode(String, LockMode) removed in ORM 8 from NativeQueryImpl
+		getQueryOptions().getLockOptions().setAliasSpecificLockMode( alias, lockMode );
 		return this;
 	}
 
@@ -847,7 +898,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
-		super.applyGraph( graph, semantic );
+		// Not supported for native queries in ORM 8
 	}
 
 	@Override

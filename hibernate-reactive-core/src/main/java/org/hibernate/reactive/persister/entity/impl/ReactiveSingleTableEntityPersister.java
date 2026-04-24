@@ -314,6 +314,26 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	public InsertCoordinator getInsertCoordinator() {
+		return reactiveDelegate.getInsertCoordinator();
+	}
+
+	@Override
+	public UpdateCoordinator getUpdateCoordinator() {
+		return reactiveDelegate.getUpdateCoordinator();
+	}
+
+	@Override
+	public UpdateCoordinator getMergeCoordinator() {
+		return reactiveDelegate.getMergeCoordinator();
+	}
+
+	@Override
+	public DeleteCoordinator getDeleteCoordinator() {
+		return reactiveDelegate.getDeleteCoordinator();
+	}
+
+	@Override
 	public CompletionStage<GeneratedValues> insertReactive(Object[] fields, Object entity, SharedSessionContractImplementor session) {
 		return ( (ReactiveInsertCoordinatorStandard) getInsertCoordinator() ).coordinateReactiveInsert( entity, null, fields, session, true );
 	}
