@@ -391,16 +391,24 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 				else if ( attributeInclusions[attributeIndex] ) {
 					attributeMapping.forEachInsertable( insertGroupBuilder );
 				}
-				else if ( generator != null && generator.generatesOnInsert()
-						&& session != null && generator.generatedBeforeExecution( object, session ) ) {
-					attributeInclusions[attributeIndex] = true;
-					attributeMapping.forEachInsertable( insertGroupBuilder );
+				else {
+					final Generator generator = attributeMapping.getGenerator();
+					if ( isValueGenerated( generator ) ) {
+						if ( session != null && !generator.generatedOnExecution( object, session ) ) {
+							attributeInclusions[attributeIndex] = true;
+							attributeMapping.forEachInsertable( insertGroupBuilder );
+						}
+						else if ( isValueGenerationInSql( generator, factory().getJdbcServices().getDialect() ) ) {
+							handleValueGeneration( attributeMapping, insertGroupBuilder, (OnExecutionGenerator) generator, INSERT );
+						}
+					}
 				}
 			}
 		} );
 
 		// add the discriminator
 		entityPersister().addDiscriminatorToInsertGroup( insertGroupBuilder );
+		// add auxiliary mappings (e.g. soft delete)
 		entityPersister().addAuxiliaryToInsertGroup( insertGroupBuilder );
 
 		// add the keys

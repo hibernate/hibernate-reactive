@@ -19,7 +19,6 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -522,9 +521,8 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
-		return new StageQueryImpl<>( reactiveQuery );
+	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( typedQueryReference ) );
 	}
 
 	@Override @Deprecated
@@ -534,7 +532,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
 	}
 
 	@Override
@@ -544,7 +542,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( criteriaQuery ) );
 	}
 
 	@Override

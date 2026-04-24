@@ -23,6 +23,7 @@ import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
+import org.hibernate.service.internal.TransactionIdentifierServiceInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
@@ -167,6 +168,11 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] InternalCacheFactoryService
 		serviceInitiators.add( InternalCacheFactoryInitiator.INSTANCE );
+
+		// ParameterMarkerStrategy: handled by NativeParametersHandling above (reactive-specific, dialect-aware)
+
+		// [standard] TransactionIdentifierService
+		serviceInitiators.add( TransactionIdentifierServiceInitiator.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 
