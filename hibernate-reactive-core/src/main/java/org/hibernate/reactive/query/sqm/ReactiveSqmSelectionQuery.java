@@ -13,7 +13,6 @@ import java.util.Map;
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.query.QueryParameter;
-import org.hibernate.query.spi.SqmQuery;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
 import jakarta.persistence.Parameter;
@@ -23,7 +22,7 @@ import jakarta.persistence.metamodel.Type;
 /**
  * @see org.hibernate.query.sqm.SqmSelectionQuery
  */
-public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R>, SqmQuery<R> {
+public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R> {
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setParameter(String name, Object value);

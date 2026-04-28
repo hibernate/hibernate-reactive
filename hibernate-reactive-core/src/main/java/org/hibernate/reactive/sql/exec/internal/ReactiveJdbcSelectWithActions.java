@@ -129,7 +129,7 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 
 		@SuppressWarnings("UnusedReturnValue")
 		@Override
-		public Builder setLoadedValuesCollectorFactory(LoadedValuesCollectorFactory loadedValuesCollectorFactory) {
+		public JdbcSelectWithActionsBuilder setLoadedValuesCollectorFactory(LoadedValuesCollectorFactory loadedValuesCollectorFactory) {
 			this.loadedValuesCollectorFactory = loadedValuesCollectorFactory;
 			return this;
 		}

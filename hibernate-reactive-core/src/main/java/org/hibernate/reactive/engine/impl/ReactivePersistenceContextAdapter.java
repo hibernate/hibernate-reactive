@@ -126,6 +126,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		SessionImplementor session = (SessionImplementor) getSession();
 		final EntityKey key = session.generateEntityKey( id, persister );
 		final Object cached = getEntitySnapshotsByKey() == null ? null : getEntitySnapshotsByKey().get( key );
+
 		if ( cached != null ) {
 			return completedFuture( cached == NO_ROW ? null : (Object[]) cached );
 		}
@@ -747,8 +748,10 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	public CompletionStage<Void> reactivePostLoad(
 			JdbcValuesSourceProcessingState processingState,
 			Consumer<EntityHolder> holderConsumer) {
-		final ReactiveCallbackImpl callback = (ReactiveCallbackImpl) processingState
-				.getExecutionContext().getCallback();
+		final org.hibernate.sql.exec.spi.Callback rawCallback = processingState.getExecutionContext().getCallback();
+		final ReactiveCallbackImpl callback = rawCallback instanceof ReactiveCallbackImpl
+				? (ReactiveCallbackImpl) rawCallback
+				: null;
 		return processHolders(
 				holderConsumer,
 				processingState.getLoadingEntityHolders(),

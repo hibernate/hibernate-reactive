@@ -56,7 +56,7 @@ public class MutinyQueryImpl<R> implements Query<R> {
 
 	@Override
 	public FlushMode getFlushMode() {
-		return delegate.getHibernateFlushMode();
+		return delegate.getEffectiveFlushMode();
 	}
 
 	@Override

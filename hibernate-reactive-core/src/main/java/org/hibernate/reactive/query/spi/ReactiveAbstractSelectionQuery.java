@@ -14,17 +14,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
+import org.hibernate.NonUniqueResultException;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
-import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
-import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -38,7 +36,6 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.internal.AggregatedSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.internal.ConcreteSqmSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
-import org.hibernate.reactive.sql.results.spi.ReactiveSingleResultConsumer;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.results.internal.TupleMetadata;
 
@@ -49,10 +46,11 @@ import static java.util.Collections.emptySet;
 /**
  * Emulate {@link org.hibernate.query.spi.AbstractSelectionQuery}.
  * <p>
- *     Hibernate Reactive implementations already extend another class,
- *     they cannot extend {@link org.hibernate.query.spi.AbstractSelectionQuery too}.
- *     This approach allows us to avoid duplicating code.
+ * Hibernate Reactive implementations already extend another class,
+ * they cannot extend {@link org.hibernate.query.spi.AbstractSelectionQuery too}.
+ * This approach allows us to avoid duplicating code.
  * </p>
+ *
  * @param <R>
  */
 public class ReactiveAbstractSelectionQuery<R> {
@@ -81,36 +79,6 @@ public class ReactiveAbstractSelectionQuery<R> {
 	private final InterpretationsKeySource interpretationsKeySource;
 
 	private Callback callback;
-
-	// I'm sure we can avoid some of this by making some methods public in ORM,
-	// but this allows me to prototype faster. We can refactor the code later.
-	public ReactiveAbstractSelectionQuery(
-			InterpretationsKeySource interpretationKeySource,
-			SharedSessionContractImplementor session,
-			Supplier<CompletionStage<List<R>>> doList,
-			Supplier<SqmStatement<?>> getStatement,
-			Supplier<TupleMetadata> getTupleMetadata,
-			Supplier<DomainParameterXref> getDomainParameterXref,
-			Supplier<Class<?>> getResultType,
-			Supplier<String> getQueryString,
-			Supplier<CompletionStage<Void>> beforeQuery,
-			Consumer<Boolean> afterQuery,
-			Function<List<R>, R> uniqueElement) {
-		this(
-				interpretationKeySource::getQueryOptions,
-				session,
-				doList,
-				getStatement,
-				getTupleMetadata,
-				getDomainParameterXref,
-				getResultType,
-				getQueryString,
-				beforeQuery,
-				afterQuery,
-				uniqueElement,
-				interpretationKeySource
-		);
-	}
 
 	public ReactiveAbstractSelectionQuery(
 			Supplier<QueryOptions> queryOptionsSupplier,
@@ -144,26 +112,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 				.thenApply( uniqueElement );
 	}
 
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
-		return reactiveUnique()
-				.thenApply( Optional::ofNullable );
-	}
-
 	public CompletionStage<R> getReactiveSingleResult() {
 		return reactiveList()
 				.thenApply( this::reactiveSingleResult )
 				.exceptionally( this::convertException );
-	}
-
-	public CompletionStage<Long> getReactiveResultsCount(SqmSelectStatement<?> sqmStatement, DomainQueryExecutionContext domainQueryExecutionContext) {
-		final DelegatingDomainQueryExecutionContext context = new DelegatingDomainQueryExecutionContext( domainQueryExecutionContext ) {
-			@Override
-			public QueryOptions getQueryOptions() {
-				return QueryOptions.NONE;
-			}
-		};
-		return buildConcreteSelectQueryPlan( sqmStatement.createCountQuery(), Long.class, getQueryOptions() )
-				.reactiveExecuteQuery( context, new ReactiveSingleResultConsumer<>() );
 	}
 
 	private R reactiveSingleResult(List<R> list) {
@@ -213,7 +165,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private void unapplyProfiles(Set<String> profiles) {
-		for ( String profile : profiles) {
+		for ( String profile : profiles ) {
 			session.getLoadQueryInfluencers().disableFetchProfile( profile );
 		}
 	}
@@ -278,7 +230,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private ReactiveSelectQueryPlan<R> buildAggregatedSelectQueryPlan(SqmSelectStatement<?>[] concreteSqmStatements) {
-		final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans = new ReactiveSelectQueryPlan[ concreteSqmStatements.length ];
+		final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans = new ReactiveSelectQueryPlan[concreteSqmStatements.length];
 
 		// todo (6.0) : we want to make sure that certain thing (ResultListTransformer, etc) only get applied at the aggregator-level
 
@@ -286,10 +238,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 			aggregatedQueryPlans[i] = buildConcreteSelectQueryPlan( concreteSqmStatements[i], getResultType(), getQueryOptions() );
 		}
 
-		return new AggregatedSelectReactiveQueryPlan<>(  aggregatedQueryPlans );
+		return new AggregatedSelectReactiveQueryPlan<>( aggregatedQueryPlans );
 	}
 
-	public  <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
+	public <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {
@@ -351,16 +303,24 @@ public class ReactiveAbstractSelectionQuery<R> {
 		throw LOG.nonReactiveMethodCall( "reactiveList" );
 	}
 
-	public Stream<R> getResultStream() {
-		throw LOG.nonReactiveMethodCall( "<no alternative>" );
-	}
-
 	public R uniqueResult() {
 		throw LOG.nonReactiveMethodCall( "reactiveUniqueResult" );
 	}
 
 	public Optional<R> uniqueResultOptional() {
 		throw LOG.nonReactiveMethodCall( "reactiveUniqueResultOptional" );
+	}
+
+	/**
+	 * @see org.hibernate.query.spi.AbstractSelectionQuery#uniqueElement
+	 */
+	public static <T> T uniqueElement(List<T> list) throws NonUniqueResultException {
+		final int size = list.size();
+		return switch ( size ) {
+			case 0 -> null;
+			case 1 -> list.get( 0 );
+			default -> throw new NonUniqueResultException( size );
+		};
 	}
 
 	public void enableFetchProfile(String profileName) {

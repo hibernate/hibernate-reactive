@@ -22,7 +22,6 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.Collection;
 import java.util.List;
@@ -296,15 +295,14 @@ public class QuerySpecificationTest extends BaseReactiveTest {
 	@Test
 	public void mutationSpecificationWithStage(VertxTestContext context) {
 		SingularAttribute<Book, String> title = (SingularAttribute<Book, String>) attribute( "title" );
-		TypedQueryReference<Void> deleteAnimalFarm = MutationSpecification
+		MutationSpecification<Book> deleteAnimalFarm = MutationSpecification
 				.create( Book.class, "delete Book" )
-				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) )
-				.reference();
+				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) );
 
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( animalFarmBook2 ) )
 				.thenCompose( v -> getSessionFactory().withTransaction( session -> session
-						.createQuery( deleteAnimalFarm )
+						.createMutationQuery( (jakarta.persistence.criteria.CriteriaDelete<Book>) deleteAnimalFarm.buildCriteria( getSessionFactory().getCriteriaBuilder() ) )
 						.executeUpdate() ) )
 				.thenAccept( deleted -> assertThat( deleted ).isEqualTo( 2 ) )
 				.thenCompose( v -> getSessionFactory().withSession( session -> session
@@ -316,15 +314,14 @@ public class QuerySpecificationTest extends BaseReactiveTest {
 	@Test
 	public void mutationSpecificationWithStageStateless(VertxTestContext context) {
 		SingularAttribute<Book, String> title = (SingularAttribute<Book, String>) attribute( "title" );
-		TypedQueryReference<Void> deleteAnimalFarm = MutationSpecification
+		MutationSpecification<Book> deleteAnimalFarm = MutationSpecification
 				.create( Book.class, "delete Book" )
-				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) )
-				.reference();
+				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) );
 
 		test( context, getSessionFactory()
 				.withTransaction( session -> session.persist( animalFarmBook2 ) )
 				.thenCompose( v -> getSessionFactory().withStatelessTransaction( session -> session
-						.createQuery( deleteAnimalFarm )
+						.createMutationQuery( (jakarta.persistence.criteria.CriteriaDelete<Book>) deleteAnimalFarm.buildCriteria( getSessionFactory().getCriteriaBuilder() ) )
 						.executeUpdate() ) )
 				.thenAccept( deleted -> assertThat( deleted ).isEqualTo( 2 ) )
 				.thenCompose( v -> getSessionFactory().withSession( session -> session
@@ -336,15 +333,14 @@ public class QuerySpecificationTest extends BaseReactiveTest {
 	@Test
 	public void mutationSpecificationWithMutiny(VertxTestContext context) {
 		SingularAttribute<Book, String> title = (SingularAttribute<Book, String>) attribute( "title" );
-		TypedQueryReference<Void> deleteAnimalFarm = MutationSpecification
+		MutationSpecification<Book> deleteAnimalFarm = MutationSpecification
 				.create( Book.class, "delete Book" )
-				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) )
-				.reference();
+				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) );
 
 		test( context, getMutinySessionFactory()
 				.withTransaction( session -> session.persist( animalFarmBook2 ) )
 				.chain( v -> getMutinySessionFactory().withTransaction( session -> session
-						.createQuery( deleteAnimalFarm )
+						.createMutationQuery( (jakarta.persistence.criteria.CriteriaDelete<Book>) deleteAnimalFarm.buildCriteria( getMutinySessionFactory().getCriteriaBuilder() ) )
 						.executeUpdate() ) )
 				.invoke( deleted -> assertThat( deleted ).isEqualTo( 2 ) )
 				.chain( () -> getMutinySessionFactory().withSession( session -> session
@@ -356,15 +352,14 @@ public class QuerySpecificationTest extends BaseReactiveTest {
 	@Test
 	public void mutationSpecificationWithMutinyStateless(VertxTestContext context) {
 		SingularAttribute<Book, String> title = (SingularAttribute<Book, String>) attribute( "title" );
-		TypedQueryReference<Void> deleteAnimalFarm = MutationSpecification
+		MutationSpecification<Book> deleteAnimalFarm = MutationSpecification
 				.create( Book.class, "delete Book" )
-				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) )
-				.reference();
+				.restrict( Restriction.equalIgnoringCase( title, animalFarmBook.title ) );
 
 		test( context, getMutinySessionFactory()
 				.withStatelessTransaction( session -> session.insert( animalFarmBook2 ) )
 				.chain( v -> getMutinySessionFactory().withStatelessTransaction( session -> session
-						.createQuery( deleteAnimalFarm )
+						.createMutationQuery( (jakarta.persistence.criteria.CriteriaDelete<Book>) deleteAnimalFarm.buildCriteria( getMutinySessionFactory().getCriteriaBuilder() ) )
 						.executeUpdate() ) )
 				.invoke( deleted -> assertThat( deleted ).isEqualTo( 2 ) )
 				.chain( () -> getMutinySessionFactory().withStatelessSession( session -> session

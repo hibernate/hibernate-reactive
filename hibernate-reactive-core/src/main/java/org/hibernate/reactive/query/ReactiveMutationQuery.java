@@ -139,6 +139,5 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 	@Override
 	ReactiveMutationQuery<R> setProperties(Map bean);
 
-	@Override
 	ReactiveMutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
 }
