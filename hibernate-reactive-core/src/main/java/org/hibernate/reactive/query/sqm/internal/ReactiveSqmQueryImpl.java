@@ -217,14 +217,12 @@ public class ReactiveSqmQueryImpl<R> extends SqmQueryImpl<R> implements Reactive
 	private CompletionStage<List<R>> doReactiveList() {
 		verifySelect();
 		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
-
 		final SqmSelectStatement<?> sqmStatement = (SqmSelectStatement<?>) getSqmStatement();
 		final boolean containsCollectionFetches = sqmStatement.containsCollectionFetches();
-		final boolean hasLimit = hasLimit( sqmStatement, getQueryOptions() );
-		final boolean needsDistinct = containsCollectionFetches
-				&& ( sqmStatement.usesDistinct() || hasAppliedGraph( getQueryOptions() ) || hasLimit );
+		final boolean hasLimit = shouldApplyLimitInMemory( sqmStatement, getQueryOptions() );
+		final boolean needsDistinct = needsDistinct( containsCollectionFetches, hasLimit, sqmStatement );
 
-		final DomainQueryExecutionContext executionContextToUse = executionContextForDoList( containsCollectionFetches, hasLimit, needsDistinct );
+		final DomainQueryExecutionContext executionContextToUse = executionContextForDoList( containsCollectionFetches, hasLimit, needsDistinct, hasLimit );
 
 		return resolveSelectReactiveQueryPlan()
 				.reactivePerformList( executionContextToUse )
