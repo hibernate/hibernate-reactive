@@ -56,6 +56,7 @@ public class ReactiveEntityResultImpl extends EntityResultImpl {
 				getDiscriminatorFetch(),
 				null,
 				getRowIdResult(),
+				null,
 				NotFoundAction.EXCEPTION,
 				false,
 				null,

@@ -34,6 +34,7 @@ public class ReactiveEntityFetchJoinedImpl extends EntityFetchJoinedImpl {
 				getEntityResult().getDiscriminatorFetch(),
 				getKeyResult(),
 				getEntityResult().getRowIdResult(),
+				getEntityResult().getAuditChangesetIdResult(),
 				getNotFoundAction(),
 				isAffectedByFilter(),
 				parent,
