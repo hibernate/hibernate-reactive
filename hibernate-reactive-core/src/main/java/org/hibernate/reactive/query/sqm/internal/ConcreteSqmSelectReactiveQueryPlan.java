@@ -97,7 +97,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 										.getQueryPart()
 										.getFetchClauseExpression();
 								final int resultCountEstimate = fetchExpression != null
-										? interpretIntExpression( fetchExpression, jdbcParameterBindings )
+										? interpretIntExpression( fetchExpression, jdbcParameterBindings, executionContext )
 										: -1;
 								return StandardReactiveSelectExecutor.INSTANCE.list(
 										jdbcSelect,
@@ -151,7 +151,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 											),
 											rowTransformer,
 											null,
-											resultCountEstimate( sqmInterpretation, jdbcParameterBindings ),
+											resultCountEstimate( sqmInterpretation, jdbcParameterBindings, executionContext ),
 											resultsConsumer
 									)
 							);
@@ -161,11 +161,12 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 	private static int resultCountEstimate(
 			CacheableSqmInterpretation<SelectStatement,JdbcSelect> sqmInterpretation,
-			JdbcParameterBindings jdbcParameterBindings) {
+			JdbcParameterBindings jdbcParameterBindings,
+			DomainQueryExecutionContext executionContext) {
 		final Expression fetchExpression = sqmInterpretation.statement().getQueryPart()
 				.getFetchClauseExpression();
 		return fetchExpression != null
-				? interpretIntExpression( fetchExpression, jdbcParameterBindings )
+				? interpretIntExpression( fetchExpression, jdbcParameterBindings, executionContext )
 				: -1;
 	}
 
