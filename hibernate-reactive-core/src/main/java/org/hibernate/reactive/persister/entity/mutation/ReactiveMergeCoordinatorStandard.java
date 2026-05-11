@@ -25,9 +25,9 @@ import org.hibernate.sql.model.ast.builder.TableUpdateBuilder;
  * @see org.hibernate.persister.entity.mutation.MergeCoordinatorStandard
  * @see org.hibernate.reactive.persister.entity.impl.ReactiveMergeCoordinatorStandardScopeFactory
  */
-public class ReactiveMergeCoordinator extends ReactiveUpdateCoordinatorStandard implements ReactiveScopedUpdateCoordinator {
+public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorStandard implements ReactiveScopedUpdateCoordinator {
 
-	public ReactiveMergeCoordinator(
+	public ReactiveMergeCoordinatorStandard(
 			EntityPersister entityPersister,
 			SessionFactoryImplementor factory,
 			MutationOperationGroup staticUpdateGroup,

@@ -8,7 +8,7 @@ package org.hibernate.reactive.persister.entity.impl;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.MergeCoordinatorStandard;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveMergeCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveMergeCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.sql.model.ReactiveDeleteOrUpsertOperation;
@@ -31,7 +31,7 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 
 	@Override
 	public ReactiveScopedUpdateCoordinator makeScopedCoordinator() {
-		return new ReactiveMergeCoordinator(
+		return new ReactiveMergeCoordinatorStandard(
 				entityPersister(),
 				factory(),
 				getStaticMutationOperationGroup(),
