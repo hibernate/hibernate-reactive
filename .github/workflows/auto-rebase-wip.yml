@@ -34,11 +34,7 @@ jobs:
         run: |
           BASE_BRANCH="${{ github.ref_name }}"
 
-          if [ "$BASE_BRANCH" = "main" ]; then
-            WIP_BRANCH="wip/4.3"
-          else
-            WIP_BRANCH="wip/$BASE_BRANCH"
-          fi
+          WIP_BRANCH="wip/$BASE_BRANCH"
 
           echo "wip_branch=$WIP_BRANCH" >> $GITHUB_OUTPUT
           echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
