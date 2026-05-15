@@ -13,9 +13,9 @@ ext {
 }
 
 tasks.register('mergeCodeCoverageReport', JacocoReport) {
-    executionData fileTree(rootProject.layout.projectDirectory.asFile).include("**/build/jacoco/*.exec")
     parent.subprojects.each { Project subProject ->
         if ( project.projectsToIncludeWhenAggregatingCoverage.contains( subProject.name ) ) {
+            executionData fileTree( subProject.layout.buildDirectory.asFile ).include( "jacoco/*.exec" )
             sourceSets  subProject.sourceSets.main
         }
     }
