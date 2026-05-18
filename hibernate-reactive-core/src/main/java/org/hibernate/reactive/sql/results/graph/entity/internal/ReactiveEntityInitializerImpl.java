@@ -200,7 +200,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					final var entityKey = data.getEntityHolder().getEntityKey();
 					if ( entity == null ) {
 						final Object proxy = data.getEntityHolder().getProxy();
-						assert proxy != instance;
+						if ( proxy == instance ) {
+							throw new IllegalStateException( "Proxy should not be the same as instance" );
+						}
 						return reactiveResolveEntityInstance( data )
 								.thenCompose( resolvedInstance -> {
 									data.setEntityKey( entityKey );
