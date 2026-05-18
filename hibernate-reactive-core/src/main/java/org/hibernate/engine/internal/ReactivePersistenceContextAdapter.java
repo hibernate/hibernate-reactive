@@ -111,17 +111,24 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	 * Marker object used to indicate (via reference checking) that no row was returned.
 	 * See org.hibernate.engine.internal.StatefulPersistenceContext#NO_ROW
 	 */
-	private static final Serializable NO_ROW = new Serializable() {
+	private static final Serializable NO_ROW = NoRow.INSTANCE;
+
+	private static final class NoRow implements Serializable {
+		private static final NoRow INSTANCE = new NoRow();
+
+		private NoRow() {
+		}
+
 		@Override
 		public String toString() {
 			return "NO_ROW";
 		}
 
 		@Serial
-		public Object readResolve() {
-			return NO_ROW;
+		private Object readResolve() {
+			return INSTANCE;
 		}
-	};
+	}
 
 	public CompletionStage<Object[]> reactiveGetDatabaseSnapshot(Object id, EntityPersister persister) throws HibernateException {
 		SessionImplementor session = (SessionImplementor) getSession();
