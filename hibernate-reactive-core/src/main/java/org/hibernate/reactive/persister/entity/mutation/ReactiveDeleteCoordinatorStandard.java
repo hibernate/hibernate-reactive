@@ -50,11 +50,11 @@ public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard
 			super.delete( entity, id, version, session );
 			return stage != null ? stage : voidFuture();
 		}
-		catch (Throwable t) {
+		catch (Exception e) {
 			if ( stage == null ) {
-				return failedFuture( t );
+				return failedFuture( e );
 			}
-			stage.toCompletableFuture().completeExceptionally( t );
+			stage.toCompletableFuture().completeExceptionally( e );
 			return stage;
 		}
 	}
