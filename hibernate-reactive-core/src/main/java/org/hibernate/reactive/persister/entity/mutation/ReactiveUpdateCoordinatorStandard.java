@@ -126,7 +126,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						}
 						forceDynamicUpdate = true;
 					}
-					else if ( entityPersister().getEntityMetamodel().isDynamicUpdate() && dirtyAttributeIndexes != null ) {
+					else if ( entityPersister().isDynamicUpdate() && dirtyAttributeIndexes != null ) {
 						attributeUpdateability = getPropertiesToUpdate( dirtyAttributeIndexes, hasDirtyCollection );
 						forceDynamicUpdate = true;
 					}
