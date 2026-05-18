@@ -342,8 +342,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Sanitize the branch name
+        shell: bash
+        id: current-branch-suffix
+        run: |
+         echo "value=$(echo ${{ inputs.branch }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -378,7 +385,7 @@ jobs:
       - name: Download coverage reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
-          pattern: build-coverage-data*
+          pattern: build-coverage-data*${{ steps.current-branch-suffix.outputs.value }}*
           path: .
           merge-multiple: 'true'
         # Don't fail the build if there are no matching artifacts
