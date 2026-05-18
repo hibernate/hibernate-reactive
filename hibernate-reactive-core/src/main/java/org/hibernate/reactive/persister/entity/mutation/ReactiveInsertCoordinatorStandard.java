@@ -391,11 +391,10 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 				else if ( attributeInclusions[attributeIndex] ) {
 					attributeMapping.forEachInsertable( insertGroupBuilder );
 				}
-				else if ( generator != null && generator.generatesOnInsert() ) {
-					if ( session != null && generator.generatedBeforeExecution( object, session ) ) {
-						attributeInclusions[attributeIndex] = true;
-						attributeMapping.forEachInsertable( insertGroupBuilder );
-					}
+				else if ( generator != null && generator.generatesOnInsert()
+						&& session != null && generator.generatedBeforeExecution( object, session ) ) {
+					attributeInclusions[attributeIndex] = true;
+					attributeMapping.forEachInsertable( insertGroupBuilder );
 				}
 			}
 		} );
@@ -433,12 +432,10 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 						}
 					}
 				}
-				else if ( generator.referenceColumnsInSql( dialect, EventType.INSERT ) ) {
-					if ( columnValues != null ) {
-						assert columnValues.length == 1;
-						assert keyColumnCount == 1;
-						tableInsertBuilder.addKeyColumn( columnValues[0], keyMapping.getKeyColumn( 0 ) );
-					}
+				else if ( generator.referenceColumnsInSql( dialect, EventType.INSERT ) && columnValues != null ) {
+					assert columnValues.length == 1;
+					assert keyColumnCount == 1;
+					tableInsertBuilder.addKeyColumn( columnValues[0], keyMapping.getKeyColumn( 0 ) );
 				}
 			}
 			else {
