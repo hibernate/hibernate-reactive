@@ -52,7 +52,7 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 		final AtomicInteger rows = new AtomicInteger(0);
 		return loop(jdbcMutations, (jdbcMutation) ->
 			 executeReactive( jdbcMutation, jdbcParameterBindings, statementCreator, expectationCheck, executionContext )
-					 .thenAccept( result -> rows.addAndGet(result) ) ).thenApply( unused -> rows.get() );
+					 .thenAccept( rows::addAndGet ) ).thenApply( unused -> rows.get() );
 	}
 
 	@Override
