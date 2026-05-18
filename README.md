@@ -38,7 +38,7 @@ Hibernate Reactive has been tested with:
 - CockroachDB v26
 - MS SQL Server 2025
 - Oracle 23
-- [Hibernate ORM][] 7.3
+- [Hibernate ORM][] 7.4
 - [Vert.x Reactive PostgreSQL Client](https://vertx.io/docs/vertx-pg-client/java/) 5.0
 - [Vert.x Reactive MySQL Client](https://vertx.io/docs/vertx-mysql-client/java/) 5.0
 - [Vert.x Reactive Db2 Client](https://vertx.io/docs/vertx-db2-client/java/) 5.0
