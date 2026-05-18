@@ -444,17 +444,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					rowProcessingState.getJdbcValuesSourceProcessingState().registerLoadingEntityHolder( data.getEntityHolder() );
 					preLoad( data, resolvedEntityState );
 
-					if ( isPersistentAttributeInterceptable( data.getEntityInstanceForNotify() ) ) {
-						final PersistentAttributeInterceptor persistentAttributeInterceptor =
-								asPersistentAttributeInterceptable( data.getEntityInstanceForNotify() ).$$_hibernate_getInterceptor();
-						if ( persistentAttributeInterceptor == null
-								|| persistentAttributeInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
-							// if we do this after the entity has been initialized the
-							// BytecodeLazyAttributeInterceptor#isAttributeLoaded(String fieldName) would return false;
-							data.getConcreteDescriptor().getBytecodeEnhancementMetadata()
-									.injectInterceptor( data.getEntityInstanceForNotify(), entityIdentifier, session );
-						}
-					}
+					injectInterceptorIfNeeded( data, entityIdentifier, session );
 					data.getConcreteDescriptor().setPropertyValues( data.getEntityInstanceForNotify(), resolvedEntityState );
 
 					persistenceContext.addEntity( data.getEntityKey(), data.getEntityInstanceForNotify() );
@@ -487,14 +477,36 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 					assert data.getConcreteDescriptor().getIdentifier( data.getEntityInstanceForNotify(), session ) != null;
 
-					final StatisticsImplementor statistics = session.getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						if ( !rowProcessingState.isQueryCacheHit() ) {
-							statistics.loadEntity( data.getConcreteDescriptor().getEntityName() );
-						}
-					}
+					recordStatisticsIfEnabled( rowProcessingState, session, data );
 					updateCaches( data, session, session.getPersistenceContextInternal(), resolvedEntityState, version );
 				} );
+	}
+
+	private void injectInterceptorIfNeeded(
+			ReactiveEntityInitializerData data,
+			Object entityIdentifier,
+			SharedSessionContractImplementor session) {
+		if ( isPersistentAttributeInterceptable( data.getEntityInstanceForNotify() ) ) {
+			final PersistentAttributeInterceptor persistentAttributeInterceptor =
+					asPersistentAttributeInterceptable( data.getEntityInstanceForNotify() ).$$_hibernate_getInterceptor();
+			if ( persistentAttributeInterceptor == null
+					|| persistentAttributeInterceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
+				// if we do this after the entity has been initialized the
+				// BytecodeLazyAttributeInterceptor#isAttributeLoaded(String fieldName) would return false;
+				data.getConcreteDescriptor().getBytecodeEnhancementMetadata()
+						.injectInterceptor( data.getEntityInstanceForNotify(), entityIdentifier, session );
+			}
+		}
+	}
+
+	private void recordStatisticsIfEnabled(
+			RowProcessingState rowProcessingState,
+			SharedSessionContractImplementor session,
+			ReactiveEntityInitializerData data) {
+		final StatisticsImplementor statistics = session.getFactory().getStatistics();
+		if ( statistics.isStatisticsEnabled() && !rowProcessingState.isQueryCacheHit() ) {
+			statistics.loadEntity( data.getConcreteDescriptor().getEntityName() );
+		}
 	}
 
 	// Hibernate ORM has a similar method, but it checks if we are in a transaction first
