@@ -160,7 +160,7 @@ updates:
       - dependency-type: "all"
 
   #################################################################################
-  # Duplicate the package-ecosystems for main because we want to target branch 3.3
+  # Duplicate the package-ecosystems for main because we want to target branch 3.4
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
   - package-ecosystem: "github-actions"
@@ -231,7 +231,7 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/tooling/docker"
-    target-branch: "3.3"
+    target-branch: "3.4"
     schedule:
       interval: "weekly"
     allow:
