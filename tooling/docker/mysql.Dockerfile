@@ -2,7 +2,7 @@
 # See https://hub.docker.com/_/mysql
 # NOTE: Only the FROM value is used by Testcontainers in our test suite.
 # The rest of this file is for running the container manually (see podman.md).
-FROM container-registry.oracle.com/mysql/community-server:9.6.0
+FROM container-registry.oracle.com/mysql/community-server:9.7.0
 ENV MYSQL_USER=hreact
 ENV MYSQL_PASSWORD=hreact
 ENV MYSQL_DATABASE=hreact
