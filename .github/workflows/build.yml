@@ -339,6 +339,7 @@ jobs:
       always() && !cancelled()
       && needs.run_examples.result != 'cancelled'
       && needs.test_dbs.result != 'cancelled'
+      && github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
     steps:
