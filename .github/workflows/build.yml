@@ -337,20 +337,34 @@ jobs:
       - test_dbs
     if: |
       always() && !cancelled()
-      && needs.run_examples.result != 'cancelled' 
+      && needs.run_examples.result != 'cancelled'
       && needs.test_dbs.result != 'cancelled'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout ${{ inputs.branch }}
+      - name: Determine branch reference
+        id: determine-branch
+        run: |
+          if [ -n "${{ inputs.branch }}" ]; then
+            # workflow_call or workflow_dispatch
+            BRANCH_REF="${{ inputs.branch }}"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            # pull_request event
+            BRANCH_REF="${{ github.head_ref }}"
+          else
+            # push event
+            BRANCH_REF="${{ github.ref_name }}"
+          fi
+          echo "branch_ref=$BRANCH_REF" >> "$GITHUB_OUTPUT"
+      - name: Checkout ${{ steps.determine-branch.outputs.branch_ref }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ steps.determine-branch.outputs.branch_ref }}
       - name: Sanitize the branch name
         shell: bash
         id: current-branch-suffix
         run: |
-         echo "value=$(echo ${{ inputs.branch }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
+         echo "value=$(echo ${{ steps.determine-branch.outputs.branch_ref }} | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
