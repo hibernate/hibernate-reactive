@@ -9,8 +9,10 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.action.internal.EntityDeleteAction;
+import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.event.spi.EventSource;
+import org.hibernate.event.spi.PreDeleteEvent;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 import org.hibernate.reactive.logging.impl.Log;
@@ -50,6 +52,43 @@ public class ReactiveEntityDeleteAction extends EntityDeleteAction implements Re
 	private boolean isInstanceLoaded() {
 		// A null instance signals that we're deleting an unloaded proxy.
 		return getInstance() != null;
+	}
+
+	private boolean preDelete() {
+		final var listenerGroup = getEventListenerGroups().eventListenerGroup_PRE_DELETE;
+		if ( listenerGroup.isEmpty() ) {
+			return false;
+		}
+		else {
+			final PreDeleteEvent event =
+					new PreDeleteEvent( getInstance(), getId(), getState(), getPersister(), eventSource() );
+			boolean veto = false;
+			for ( var listener : listenerGroup.listeners() ) {
+				veto |= listener.onPreDelete( event );
+			}
+			return veto;
+		}
+	}
+
+	private SoftLock lock;
+
+	private Object lockCacheItem() {
+		final var persister = getPersister();
+		if ( persister.canWriteToCache() ) {
+			final var cache = persister.getCacheAccessStrategy();
+			final var session = getSession();
+			final Object cacheKey = cache.generateCacheKey(
+					getId(),
+					persister,
+					session.getFactory(),
+					session.getTenantIdentifier()
+			);
+			lock = cache.lockItem( session, cacheKey, getCurrentVersion() );
+			return cacheKey;
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Override

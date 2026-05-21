@@ -7,23 +7,24 @@ package org.hibernate.reactive.query.sql.spi;
 import java.util.Map;
 import java.util.Objects;
 
-import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
-import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.query.criteria.internal.NamedCriteriaQueryMementoImpl;
-import org.hibernate.query.hql.internal.NamedHqlQueryMementoImpl;
-import org.hibernate.query.hql.spi.SqmQueryImplementor;
+import org.hibernate.query.named.NamedNativeQueryMemento;
+import org.hibernate.query.named.NamedSqmQueryMemento;
+import org.hibernate.query.named.internal.SqmSelectionMemento;
+import org.hibernate.query.spi.MutationQueryImplementor;
 import org.hibernate.query.spi.QueryEngine;
-import org.hibernate.query.sqm.SqmSelectionQuery;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
+import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.spi.SelectionQueryImplementor;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 
+import jakarta.persistence.Timeout;
+
 /**
- * @see org.hibernate.query.sql.spi.NamedNativeQueryMemento
+ * @see NamedNativeQueryMemento
  */
 public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> {
 
@@ -35,40 +36,41 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	}
 
 	@Override
-	public Class<? extends E> getResultType() {
-		return delegate.getResultType();
-	}
-
-	@Override
-	public SqmQueryImplementor<E> toQuery(SharedSessionContractImplementor session) {
+	public QueryImplementor<E> toQuery(SharedSessionContractImplementor session) {
 		return toQuery( session, null );
 	}
 
 	@Override
-	public <T> SqmQueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
-		// A bit of a hack, I'm sure that if we have a better look at this we can avoid the instanceof
-		if ( delegate instanceof NamedHqlQueryMementoImpl ) {
-			return new ReactiveSqmQueryImpl<>( (NamedHqlQueryMementoImpl) delegate, resultType, session );
-		}
-		if ( delegate instanceof NamedCriteriaQueryMementoImpl ) {
-			return new ReactiveSqmQueryImpl<>( (NamedCriteriaQueryMementoImpl) delegate, resultType, session );
-		}
-		else {
-			throw new UnsupportedOperationException( "NamedSqmQueryMemento not recognized: " + delegate.getClass() );
-		}
+	public <T> QueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
+		@SuppressWarnings("unchecked")
+		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
+		return new ReactiveSqmQueryImpl<>( typedDelegate, resultType, session );
 	}
 
 	@Override
-	public <T> SqmSelectionQuery<T> toSelectionQuery(Class<T> resultType, SharedSessionContractImplementor session) {
-		final SqmSelectionQuery<T> selectionQuery = delegate.toSelectionQuery( resultType, session );
-		if ( selectionQuery == null ) {
-			return null;
-		}
-		else {
+	public SelectionQueryImplementor<E> toSelectionQuery(SharedSessionContractImplementor session) {
+		return toSelectionQuery( session, null );
+	}
+
+	@Override
+	public <T> SelectionQueryImplementor<T> toSelectionQuery(SharedSessionContractImplementor session, Class<T> resultType) {
+		if ( delegate instanceof SqmSelectionMemento ) {
+			final SqmStatement<E> sqmStatement = delegate.getSqmStatement();
 			@SuppressWarnings("unchecked")
-			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) selectionQuery.getSqmStatement();
+			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) sqmStatement;
 			return new ReactiveSqmSelectionQueryImpl<>( statement, resultType, session );
 		}
+		return null;
+	}
+
+	@Override
+	public MutationQueryImplementor<E> toMutationQuery(SharedSessionContractImplementor session) {
+		return delegate.toMutationQuery( session );
+	}
+
+	@Override
+	public <T> MutationQueryImplementor<T> toMutationQuery(SharedSessionContractImplementor session, Class<T> resultType) {
+		return delegate.toMutationQuery( session, resultType );
 	}
 
 	@Override
@@ -82,23 +84,8 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	}
 
 	@Override
-	public Integer getFirstResult() {
-		return delegate.getFirstResult();
-	}
-
-	@Override
-	public Integer getMaxResults() {
-		return delegate.getMaxResults();
-	}
-
-	@Override
-	public LockOptions getLockOptions() {
-		return delegate.getLockOptions();
-	}
-
-	@Override
-	public Map<String, String> getParameterTypes() {
-		return delegate.getParameterTypes();
+	public Map<String, String> getAnticipatedParameterTypes() {
+		return delegate.getAnticipatedParameterTypes();
 	}
 
 	@Override
@@ -107,23 +94,13 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	}
 
 	@Override
+	public String getName() {
+		return delegate.getName();
+	}
+
+	@Override
 	public String getRegistrationName() {
 		return delegate.getRegistrationName();
-	}
-
-	@Override
-	public Boolean getCacheable() {
-		return delegate.getCacheable();
-	}
-
-	@Override
-	public String getCacheRegion() {
-		return delegate.getCacheRegion();
-	}
-
-	@Override
-	public CacheMode getCacheMode() {
-		return delegate.getCacheMode();
 	}
 
 	@Override
@@ -132,18 +109,8 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	}
 
 	@Override
-	public Boolean getReadOnly() {
-		return delegate.getReadOnly();
-	}
-
-	@Override
-	public Integer getTimeout() {
+	public Timeout getTimeout() {
 		return delegate.getTimeout();
-	}
-
-	@Override
-	public Integer getFetchSize() {
-		return delegate.getFetchSize();
 	}
 
 	@Override

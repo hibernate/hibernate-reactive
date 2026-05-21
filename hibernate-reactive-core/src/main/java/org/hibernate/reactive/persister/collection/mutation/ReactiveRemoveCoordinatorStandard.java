@@ -8,51 +8,56 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
+import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
-import org.hibernate.persister.collection.mutation.CollectionMutationTarget;
-import org.hibernate.persister.collection.mutation.CollectionTableMapping;
+import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.collection.mutation.OperationProducer;
 import org.hibernate.persister.collection.mutation.RemoveCoordinatorStandard;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
+import org.hibernate.persister.entity.mutation.TemporalMutationHelper;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.util.impl.CompletionStages;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.ast.MutatingTableReference;
 
 import static org.hibernate.persister.collection.mutation.RowMutationOperations.DEFAULT_RESTRICTOR;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.MutationType.DELETE;
 import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard implements ReactiveRemoveCoordinator {
 
-	private final BasicBatchKey batchKey;
-	private final OperationProducer operationProducer;
 	private MutationOperationGroup operationGroup;
+	private final OperationProducer operationProducer;
+	private final BasicBatchKey batchKey;
 
 	public ReactiveRemoveCoordinatorStandard(
-			CollectionMutationTarget mutationTarget,
+			AbstractCollectionPersister mutationTarget,
 			RowMutationOperations mutationOperations,
 			ServiceRegistry serviceRegistry) {
 		super( mutationTarget, mutationOperations, serviceRegistry );
 		this.operationProducer = mutationOperations.getDeleteAllRowsOperationProducer();
-
-		batchKey = new BasicBatchKey( mutationTarget.getRolePath() + "#REMOVE" );
+		this.batchKey = new BasicBatchKey( getMutationTarget().getRolePath() + "#REMOVE" );
 	}
 
-	private BasicBatchKey getBatchKey() {
-		return batchKey;
+	private MutationOperationGroup buildOperationGroup() {
+		assert getMutationTarget().getTargetPart() != null
+			&& getMutationTarget().getTargetPart().getKeyDescriptor() != null;
+
+		final var tableMapping = getMutationTarget().getCollectionTableMapping();
+		final var tableReference = new MutatingTableReference( tableMapping );
+		return singleOperation( MutationType.DELETE, getMutationTarget(),
+				operationProducer.createOperation( tableReference ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveDeleteAllRows(Object key, SharedSessionContractImplementor session) {
-		if ( MODEL_MUTATION_LOGGER.isDebugEnabled() ) {
-			MODEL_MUTATION_LOGGER
-					.debugf( "Deleting collection - %s : %s", getMutationTarget().getRolePath(), key );
+		if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
+			MODEL_MUTATION_LOGGER.removingCollection( getMutationTarget().getRolePath(), key );
 		}
 
 		if ( operationGroup == null ) {
@@ -61,14 +66,20 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 		}
 
 		final ReactiveMutationExecutor mutationExecutor = reactiveMutationExecutor( session, operationGroup );
-
-		return voidFuture()
-				.thenCompose( unused -> {
+		return supplyStage( () -> {
 					final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
 					final ForeignKeyDescriptor fkDescriptor = getMutationTarget().getTargetPart().getKeyDescriptor();
 					fkDescriptor.getKeyPart()
 							.decompose( key, 0, jdbcValueBindings, null, DEFAULT_RESTRICTOR, session );
 
+					final var temporalMapping = getMutationTarget().getTargetPart().getTemporalMapping();
+					if ( temporalMapping != null && TemporalMutationHelper.isUsingParameters( session ) ) {
+						jdbcValueBindings.bindValue(
+								session.getCurrentChangesetIdentifier(),
+								temporalMapping.getEndingColumnMapping(),
+								ParameterUsage.SET
+						);
+					}
 					return mutationExecutor
 							.executeReactive( key, null, null, null, session );
 				} )
@@ -84,21 +95,6 @@ public class ReactiveRemoveCoordinatorStandard extends RemoveCoordinatorStandard
 				.getService( MutationExecutorService.class );
 
 		return  (ReactiveMutationExecutor) mutationExecutorService
-				.createExecutor( this::getBatchKey, operationGroup, session );
-	}
-
-	// FIXME: Update ORM and inherit this
-	private MutationOperationGroup buildOperationGroup() {
-		assert getMutationTarget().getTargetPart() != null;
-		assert getMutationTarget().getTargetPart().getKeyDescriptor() != null;
-
-		if ( MODEL_MUTATION_LOGGER.isTraceEnabled() ) {
-			MODEL_MUTATION_LOGGER.tracef( "Starting RemoveCoordinator#buildOperationGroup - %s", getMutationTarget().getRolePath() );
-		}
-
-		final CollectionTableMapping tableMapping = getMutationTarget().getCollectionTableMapping();
-		final MutatingTableReference tableReference = new MutatingTableReference( tableMapping );
-
-		return singleOperation( DELETE, getMutationTarget(), operationProducer.createOperation( tableReference ) );
+				.createExecutor( () -> batchKey, operationGroup, session );
 	}
 }

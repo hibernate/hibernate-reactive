@@ -17,6 +17,7 @@ dependencies {
     api(libs.org.hibernate.orm.hibernate.core)
 	compileOnly(libs.org.hibernate.models)
 	compileOnly(libs.org.checkerframework.checker.qual)
+	compileOnly(libs.checker.qual)
 
     api(libs.io.smallrye.reactive.mutiny)
 

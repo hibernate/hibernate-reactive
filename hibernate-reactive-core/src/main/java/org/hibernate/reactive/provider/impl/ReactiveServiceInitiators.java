@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.action.queue.internal.support.ActionQueueFactoryServiceInitiator;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.internal.BytecodeProviderInitiator;
@@ -134,6 +135,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] SessionFactoryServiceRegistryFactory
 		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
+
+		// [standard] ActionQueueFactoryService
+		serviceInitiators.add( ActionQueueFactoryServiceInitiator.INSTANCE );
 
 		// [standard] RegionFactory
 		serviceInitiators.add( RegionFactoryInitiator.INSTANCE );

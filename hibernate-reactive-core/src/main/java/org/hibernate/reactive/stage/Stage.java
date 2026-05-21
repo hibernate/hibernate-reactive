@@ -561,7 +561,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
 		 */
-		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
+		<R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query

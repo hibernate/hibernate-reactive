@@ -13,7 +13,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
 import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 
 import io.smallrye.mutiny.Uni;
@@ -74,9 +73,8 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
-		return new MutinyQueryImpl<>( reactiveQuery, factory );
+	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( typedQueryReference ), factory );
 	}
 
 	@Override
@@ -86,7 +84,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override @Deprecated
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
-		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ), factory );
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ), factory );
 	}
 
 	@Override
@@ -156,7 +154,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new MutinySelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ), factory );
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( criteriaQuery ), factory );
 	}
 
 	@Override
