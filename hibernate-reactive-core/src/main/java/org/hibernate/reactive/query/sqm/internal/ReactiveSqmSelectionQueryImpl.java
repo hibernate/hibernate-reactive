@@ -19,7 +19,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.query.QueryFlushMode;
+import jakarta.persistence.QueryFlushMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
@@ -124,7 +124,6 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 		);
 	}
 
-	@SuppressWarnings("unchecked")
 	private ReactiveSelectQueryPlan<R> resolveSelectReactiveQueryPlan() {
 		return (ReactiveSelectQueryPlan<R>) buildConcreteQueryPlan( getSqmStatement() );
 	}
@@ -389,7 +388,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 
 	@Override
 	public ReactiveSqmSelectionQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		setQueryFlushMode( QueryFlushMode.fromHibernateMode( flushMode ) );
+		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
