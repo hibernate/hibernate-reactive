@@ -15,7 +15,6 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.type.ComponentType;
 import org.hibernate.type.CompositeType;
 
 import java.util.ArrayList;
@@ -34,10 +33,7 @@ public class ReactiveCompositeNestedGeneratedValueGenerator extends CompositeNes
 			GeneratorCreationContext creationContext,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
 		super(
-				generator.getGenerationContextLocator(),
-				// downcast required: super constructor takes ComponentType,
-				// but getComponentType() returns CompositeType
-				(ComponentType) generator.getComponentType(),
+				generator,
 				reactivePlans( generator, creationContext, runtimeModelCreationContext )
 		);
 	}

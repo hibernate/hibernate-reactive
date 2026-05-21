@@ -25,7 +25,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.IllegalQueryOperationException;
-import org.hibernate.query.QueryFlushMode;
+import jakarta.persistence.QueryFlushMode;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -444,7 +444,7 @@ public class ReactiveSqmQueryImpl<R> extends MutationQueryImpl<R> implements Rea
 
 	@Override
 	public ReactiveSqmQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		setQueryFlushMode( QueryFlushMode.fromHibernateMode( flushMode ) );
+		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
