@@ -7,6 +7,7 @@ package org.hibernate.reactive.persister.entity.impl;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.persister.entity.mutation.MergeCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveMergeCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoordinator;
@@ -46,7 +47,7 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 		MutationOperation operation = singleTableMutation.createMutationOperation( valuesAnalysis, factory() );
 		if ( operation instanceof OptionalTableUpdateOperation ) {
 			// We need to plug in our own reactive operation
-			return new ReactiveOptionalTableUpdateOperation( operation.getMutationTarget(), (OptionalTableUpdate) singleTableMutation, factory() );
+			return new ReactiveOptionalTableUpdateOperation( (EntityMutationTarget) operation.getMutationTarget(), (OptionalTableUpdate) singleTableMutation, factory() );
 		}
 		if ( operation instanceof DeleteOrUpsertOperation ) {
 			return new ReactiveDeleteOrUpsertOperation( (DeleteOrUpsertOperation) operation );

@@ -181,12 +181,12 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected ReactiveInsertRowsCoordinator getCreateEntryCoordinator() {
+	public ReactiveInsertRowsCoordinator getCreateEntryCoordinator() {
 		return insertRowsCoordinator;
 	}
 
 	@Override
-	protected ReactiveUpdateRowsCoordinator getUpdateEntryCoordinator() {
+	public ReactiveUpdateRowsCoordinator getUpdateEntryCoordinator() {
 		return updateRowsCoordinator;
 	}
 
@@ -196,7 +196,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
+	public ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
 		return deleteRowsCoordinator;
 	}
 }

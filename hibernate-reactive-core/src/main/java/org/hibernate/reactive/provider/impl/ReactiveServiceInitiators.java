@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.action.queue.internal.support.ActionQueueFactoryServiceInitiator;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.internal.BytecodeProviderInitiator;
@@ -23,7 +24,6 @@ import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
-import org.hibernate.service.internal.TransactionIdentifierServiceInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
@@ -136,6 +136,9 @@ public final class ReactiveServiceInitiators {
 		// [standard] SessionFactoryServiceRegistryFactory
 		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
 
+		// [standard] ActionQueueFactoryService
+		serviceInitiators.add( ActionQueueFactoryServiceInitiator.INSTANCE );
+
 		// [standard] RegionFactory
 		serviceInitiators.add( RegionFactoryInitiator.INSTANCE );
 
@@ -168,11 +171,6 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] InternalCacheFactoryService
 		serviceInitiators.add( InternalCacheFactoryInitiator.INSTANCE );
-
-		// ParameterMarkerStrategy: handled by NativeParametersHandling above (reactive-specific, dialect-aware)
-
-		// [standard] TransactionIdentifierService
-		serviceInitiators.add( TransactionIdentifierServiceInitiator.INSTANCE );
 
 		// --- end of services defined by Hibernate ORM
 
