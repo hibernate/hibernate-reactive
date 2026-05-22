@@ -22,6 +22,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.QueryFlushMode;
 
 public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	private final ReactiveSelectionQuery<T> delegate;
@@ -52,7 +53,7 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 
 	@Override
 	public SelectionQuery<T> setFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
+		delegate.setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
