@@ -145,6 +145,10 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
         return delegate().createMutationQuery(queryString);
     }
 
+    public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
+        return delegate().createNativeMutationQuery(sqlString);
+    }
+
     public Uni<Void> refresh(Object entity) {
         return delegate().refresh(entity);
     }
