@@ -83,6 +83,10 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
         return delegate().createMutationQuery(queryString);
     }
 
+    public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
+        return delegate().createNativeMutationQuery(sqlString);
+    }
+
     public Uni<Void> close() {
         return delegate().close();
     }
