@@ -47,6 +47,7 @@ import org.hibernate.sql.results.spi.LoadContexts;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -752,13 +753,8 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	/**
 	 * Reactive version of {@link org.hibernate.engine.internal.StatefulPersistenceContext#postLoad(JdbcValuesSourceProcessingState, Consumer)}
 	 */
-	public CompletionStage<Void> reactivePostLoad(
-			JdbcValuesSourceProcessingState processingState,
-			Consumer<EntityHolder> holderConsumer) {
-		final org.hibernate.sql.exec.spi.Callback rawCallback = processingState.getExecutionContext().getCallback();
-		final ReactiveCallbackImpl callback = rawCallback instanceof ReactiveCallbackImpl
-				? (ReactiveCallbackImpl) rawCallback
-				: null;
+	public CompletionStage<Void> reactivePostLoad(JdbcValuesSourceProcessingState processingState, Consumer<EntityHolder> holderConsumer) {
+		final Callback callback = processingState.getExecutionContext().getCallback();
 		return processHolders(
 				holderConsumer,
 				processingState.getLoadingEntityHolders(),
@@ -779,7 +775,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			List<EntityHolder> loadingEntityHolders,
 			EventListenerGroup<PostLoadEventListener> listenerGroup,
 			PostLoadEvent postLoadEvent,
-			ReactiveCallbackImpl callback) {
+			Callback callback) {
 		if ( loadingEntityHolders != null ) {
 			return loop( loadingEntityHolders,
 						 holder -> processLoadedEntityHolder(
@@ -801,7 +797,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			EntityHolder holder,
 			EventListenerGroup<PostLoadEventListener> listenerGroup,
 			PostLoadEvent postLoadEvent,
-			ReactiveCallbackImpl callback,
+			Callback callback,
 			Consumer<EntityHolder> holderConsumer) {
 		if ( holderConsumer != null ) {
 			holderConsumer.accept( holder );
@@ -820,9 +816,12 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 						.setPersister( holder.getDescriptor() );
 				listenerGroup.fireEventOnEachListener( postLoadEvent, PostLoadEventListener::onPostLoad	);
 				if ( callback != null ) {
-					return callback
-							.invokeReactiveLoadActions( holder.getEntity(), holder.getDescriptor(), getSession() )
-							.thenAccept( v -> holder.resetEntityInitialier() );
+					if ( callback instanceof ReactiveCallbackImpl reactiveCallback) {
+						return reactiveCallback
+								.invokeReactiveLoadActions( holder.getEntity(), holder.getDescriptor(), getSession() )
+								.thenRun( holder::resetEntityInitialier );
+					}
+					return failedFuture( LOG.nonReactiveCallback( callback.getClass() ) );
 				}
 			}
 		}
