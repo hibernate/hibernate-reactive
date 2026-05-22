@@ -41,7 +41,7 @@ import org.hibernate.query.sql.internal.NativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
+import org.hibernate.reactive.query.internal.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;

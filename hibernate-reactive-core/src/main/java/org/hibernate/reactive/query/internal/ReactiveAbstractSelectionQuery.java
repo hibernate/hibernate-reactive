@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.query.spi;
+package org.hibernate.reactive.query.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
@@ -33,8 +33,8 @@ import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.query.sqm.internal.AggregatedSelectReactiveQueryPlan;
-import org.hibernate.reactive.query.sqm.internal.ConcreteSqmSelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.ReactiveAggregatedSelectQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.ReactiveConcreteSqmSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.sql.results.internal.TupleMetadata;
@@ -238,14 +238,14 @@ public class ReactiveAbstractSelectionQuery<R> {
 			aggregatedQueryPlans[i] = buildConcreteSelectQueryPlan( concreteSqmStatements[i], getResultType(), getQueryOptions() );
 		}
 
-		return new AggregatedSelectReactiveQueryPlan<>( aggregatedQueryPlans );
+		return new ReactiveAggregatedSelectQueryPlan<>( aggregatedQueryPlans );
 	}
 
 	public <T> ReactiveSelectQueryPlan<T> buildConcreteSelectQueryPlan(
 			SqmSelectStatement<?> concreteSqmStatement,
 			Class<T> resultType,
 			QueryOptions queryOptions) {
-		return new ConcreteSqmSelectReactiveQueryPlan<>(
+		return new ReactiveConcreteSqmSelectQueryPlan<>(
 				concreteSqmStatement,
 				getQueryString(),
 				getDomainParameterXref(),

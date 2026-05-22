@@ -68,13 +68,13 @@ import static org.hibernate.query.spi.SqlOmittingQueryOptions.omitSqlQueryOption
  *
  * @param <R> the result type
  */
-public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> implements ReactiveSqmSelectionQuery<R>, ReactiveQueryImplementor<R> {
+public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> implements ReactiveSqmSelectionQuery<R>, ReactiveQueryImplementor<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private ReactiveCallbackImpl reactiveCallback;
 
-	public ReactiveSqmSelectionQueryImpl(
+	public ReactiveSelectionQueryImpl(
 			String hql,
 			HqlInterpretation hqlInterpretation,
 			Class<R> expectedResultType,
@@ -82,7 +82,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 		super( hql, hqlInterpretation, expectedResultType, null, session );
 	}
 
-	public ReactiveSqmSelectionQueryImpl(
+	public ReactiveSelectionQueryImpl(
 			SqmSelectStatement<R> criteria,
 			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
@@ -114,7 +114,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 			Class<T> resultType,
 			TupleMetadata tupleMetadata,
 			QueryOptions queryOptions) {
-		return new ConcreteSqmSelectReactiveQueryPlan<>(
+		return new ReactiveConcreteSqmSelectQueryPlan<>(
 				concreteSqmStatement,
 				getQueryString(),
 				getDomainParameterXref(),
@@ -248,12 +248,12 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 
 	@Override
 	public CompletionStage<R> getReactiveSingleResultOrNull() {
-		return reactiveList().thenApply( ReactiveSqmSelectionQueryImpl::reactiveUniqueElement );
+		return reactiveList().thenApply( ReactiveSelectionQueryImpl::reactiveUniqueElement );
 	}
 
 	@Override
 	public CompletionStage<R> reactiveUnique() {
-		return reactiveList().thenApply( ReactiveSqmSelectionQueryImpl::reactiveUniqueElement );
+		return reactiveList().thenApply( ReactiveSelectionQueryImpl::reactiveUniqueElement );
 	}
 
 	@Override
@@ -313,31 +313,31 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setFlushMode(FlushModeType flushMode) {
+	public ReactiveSelectionQueryImpl<R> setFlushMode(FlushModeType flushMode) {
 		super.setFlushMode( flushMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setLockMode(LockModeType lockMode) {
+	public ReactiveSelectionQueryImpl<R> setLockMode(LockModeType lockMode) {
 		super.setLockMode( lockMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
+	public ReactiveSelectionQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
 		super.setHibernateLockMode( lockMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
+	public ReactiveSelectionQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
 		getQueryOptions().getLockOptions().setAliasSpecificLockMode( alias, lockMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setFollowOnLocking(boolean enable) {
+	public ReactiveSelectionQueryImpl<R> setFollowOnLocking(boolean enable) {
 		super.setFollowOnLockingStrategy( enable
 				? org.hibernate.Locking.FollowOn.FORCE
 				: org.hibernate.Locking.FollowOn.DISALLOW );
@@ -345,139 +345,139 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setFetchSize(int fetchSize) {
+	public ReactiveSelectionQueryImpl<R> setFetchSize(int fetchSize) {
 		super.setFetchSize( fetchSize );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setReadOnly(boolean readOnly) {
+	public ReactiveSelectionQueryImpl<R> setReadOnly(boolean readOnly) {
 		super.setReadOnly( readOnly );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setCacheMode(CacheMode cacheMode) {
+	public ReactiveSelectionQueryImpl<R> setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode( cacheMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+	public ReactiveSelectionQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
 		super.setCacheRetrieveMode( cacheRetrieveMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+	public ReactiveSelectionQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
 		super.setCacheStoreMode( cacheStoreMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setCacheable(boolean cacheable) {
+	public ReactiveSelectionQueryImpl<R> setCacheable(boolean cacheable) {
 		super.setCacheable( cacheable );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setCacheRegion(String regionName) {
+	public ReactiveSelectionQueryImpl<R> setCacheRegion(String regionName) {
 		super.setCacheRegion( regionName );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
+	public ReactiveSelectionQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
 		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setTimeout(int timeout) {
+	public ReactiveSelectionQueryImpl<R> setTimeout(int timeout) {
 		super.setTimeout( timeout );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setMaxResults(int maxResult) {
+	public ReactiveSelectionQueryImpl<R> setMaxResults(int maxResult) {
 		super.setMaxResults( maxResult );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setFirstResult(int startPosition) {
+	public ReactiveSelectionQueryImpl<R> setFirstResult(int startPosition) {
 		super.setFirstResult( startPosition );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setHint(String hintName, Object value) {
+	public ReactiveSelectionQueryImpl<R> setHint(String hintName, Object value) {
 		super.setHint( hintName, value );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Object value) {
+	public ReactiveSelectionQueryImpl<R> setParameter(String name, Object value) {
 		super.setParameter( name, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
 		super.setParameter( name, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(String name, P value, Type<P> type) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(String name, P value, Type<P> type) {
 		super.setParameter( name, value, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Object value) {
+	public ReactiveSelectionQueryImpl<R> setParameter(int position, Object value) {
 		super.setParameter( position, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
 		super.setParameter( position, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(int position, P value, Type<P> type) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(int position, P value, Type<P> type) {
 		super.setParameter( position, value, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
 		super.setParameter( parameter, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
 		super.setParameter( parameter, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(
 			QueryParameter<P> parameter,
 			P value,
 			Type<P> type) {
@@ -486,13 +486,13 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
 		super.setParameter( parameter, value );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(
+	public ReactiveSelectionQueryImpl<R> setParameter(
 			Parameter<Calendar> param,
 			Calendar value,
 			TemporalType temporalType) {
@@ -501,43 +501,43 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(Parameter<Date> param, Date value, TemporalType temporalType) {
 		super.setParameter( param, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
+	public ReactiveSelectionQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, Collection values) {
+	public ReactiveSelectionQueryImpl<R> setParameterList(String name, Collection values) {
 		super.setParameterList( name, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			String name,
 			Collection<? extends P> values,
 			Class<P> javaType) {
@@ -546,7 +546,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			String name,
 			Collection<? extends P> values,
 			Type<P> type) {
@@ -555,31 +555,31 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, Object[] values) {
+	public ReactiveSelectionQueryImpl<R> setParameterList(String name, Object[] values) {
 		super.setParameterList( name, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
 		super.setParameterList( name, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, Collection values) {
+	public ReactiveSelectionQueryImpl<R> setParameterList(int position, Collection values) {
 		super.setParameterList( position, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			int position,
 			Collection<? extends P> values,
 			Class<P> javaType) {
@@ -588,7 +588,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			int position,
 			Collection<? extends P> values,
 			Type<P> type) {
@@ -597,25 +597,25 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, Object[] values) {
+	public ReactiveSelectionQueryImpl<R> setParameterList(int position, Object[] values) {
 		super.setParameterList( position, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
 		super.setParameterList( position, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values) {
 		super.setParameterList( parameter, values );
@@ -623,7 +623,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values,
 			Class<P> javaType) {
@@ -632,7 +632,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			Collection<? extends P> values,
 			Type<P> type) {
@@ -641,13 +641,13 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
 		super.setParameterList( parameter, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			P[] values,
 			Class<P> javaType) {
@@ -656,7 +656,7 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public <P> ReactiveSqmSelectionQueryImpl<R> setParameterList(
+	public <P> ReactiveSelectionQueryImpl<R> setParameterList(
 			QueryParameter<P> parameter,
 			P[] values,
 			Type<P> type) {
@@ -665,19 +665,19 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setProperties(Map map) {
+	public ReactiveSelectionQueryImpl<R> setProperties(Map map) {
 		super.setProperties( map );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setProperties(Object bean) {
+	public ReactiveSelectionQueryImpl<R> setProperties(Object bean) {
 		super.setProperties( bean );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> enableFetchProfile(String profileName) {
+	public ReactiveSelectionQueryImpl<R> enableFetchProfile(String profileName) {
 		super.enableFetchProfile( profileName );
 		return this;
 	}
@@ -685,19 +685,19 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 	// ReactiveQueryImplementor methods
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setComment(String comment) {
+	public ReactiveSelectionQueryImpl<R> setComment(String comment) {
 		super.setComment( comment );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> addQueryHint(String hint) {
+	public ReactiveSelectionQueryImpl<R> addQueryHint(String hint) {
 		super.addQueryHint( hint );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setLockOptions(LockOptions lockOptions) {
+	public ReactiveSelectionQueryImpl<R> setLockOptions(LockOptions lockOptions) {
 		// Apply lock options to the query
 		if ( lockOptions != null ) {
 			getQueryOptions().getLockOptions().overlay( lockOptions );
@@ -712,13 +712,13 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SelectionQueryImpl<R> impl
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> ReactiveSqmSelectionQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
+	public <T> ReactiveSelectionQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
 		super.setTupleTransformer( transformer );
-		return (ReactiveSqmSelectionQueryImpl<T>) this;
+		return (ReactiveSelectionQueryImpl<T>) this;
 	}
 
 	@Override
-	public ReactiveSqmSelectionQueryImpl<R> setResultListTransformer(ResultListTransformer<R> transformer) {
+	public ReactiveSelectionQueryImpl<R> setResultListTransformer(ResultListTransformer<R> transformer) {
 		super.setResultListTransformer( transformer );
 		return this;
 	}

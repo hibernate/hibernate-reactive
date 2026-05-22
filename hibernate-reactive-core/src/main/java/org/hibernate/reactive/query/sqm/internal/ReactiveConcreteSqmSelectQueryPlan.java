@@ -42,7 +42,7 @@ import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
  *
  * @see org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan
  */
-public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
+public class ReactiveConcreteSqmSelectQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
 		implements ReactiveSelectQueryPlan<R> {
 
 	private final SqmInterpreter<Object, ReactiveResultsConsumer<Object, R>> executeQueryInterpreter;
@@ -54,7 +54,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 	private volatile CacheableSqmInterpretation<SelectStatement, JdbcSelect> cacheableSqmInterpretation;
 
-	public ConcreteSqmSelectReactiveQueryPlan(
+	public ReactiveConcreteSqmSelectQueryPlan(
 			SqmSelectStatement<?> sqm,
 			String hql,
 			DomainParameterXref domainParameterXref,
