@@ -18,8 +18,8 @@ import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.spi.SelectionQueryImplementor;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveMutationQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSelectionQueryImpl;
 
 import jakarta.persistence.Timeout;
 
@@ -44,7 +44,7 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	public <T> QueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
 		@SuppressWarnings("unchecked")
 		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
-		return new ReactiveSqmQueryImpl<>( typedDelegate, resultType, session );
+		return new ReactiveMutationQueryImpl<>( typedDelegate, resultType, session );
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 			final SqmStatement<E> sqmStatement = delegate.getSqmStatement();
 			@SuppressWarnings("unchecked")
 			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) sqmStatement;
-			return new ReactiveSqmSelectionQueryImpl<>( statement, resultType, session );
+			return new ReactiveSelectionQueryImpl<>( statement, resultType, session );
 		}
 		return null;
 	}

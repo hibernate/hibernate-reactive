@@ -68,11 +68,11 @@ import jakarta.persistence.metamodel.Type;
  *
  * @param <R> the result type (target entity type for DML)
  */
-public class ReactiveSqmQueryImpl<R> extends MutationQueryImpl<R> implements ReactiveSqmQueryImplementor<R> {
+public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implements ReactiveSqmQueryImplementor<R> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	public ReactiveSqmQueryImpl(
+	public ReactiveMutationQueryImpl(
 			String hql,
 			HqlInterpretation<R> hqlInterpretation,
 			Class<R> expectedResultType,
@@ -80,14 +80,14 @@ public class ReactiveSqmQueryImpl<R> extends MutationQueryImpl<R> implements Rea
 		super( hql, hqlInterpretation, expectedResultType, session );
 	}
 
-	public ReactiveSqmQueryImpl(
+	public ReactiveMutationQueryImpl(
 			NamedSqmQueryMemento<R> memento,
 			Class<R> resultType,
 			SharedSessionContractImplementor session) {
 		this( (SqmDmlStatement<R>) memento.getSqmStatement(), session );
 	}
 
-	public ReactiveSqmQueryImpl(
+	public ReactiveMutationQueryImpl(
 			SqmDmlStatement<R> criteria,
 			SharedSessionContractImplementor session) {
 		super( criteria, session );
@@ -329,7 +329,7 @@ public class ReactiveSqmQueryImpl<R> extends MutationQueryImpl<R> implements Rea
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> enableFetchProfile(String profileName) {
+	public ReactiveMutationQueryImpl<R> enableFetchProfile(String profileName) {
 		return this;
 	}
 
@@ -390,362 +390,362 @@ public class ReactiveSqmQueryImpl<R> extends MutationQueryImpl<R> implements Rea
 	// Covariant overrides
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setHint(String hintName, Object value) {
+	public ReactiveMutationQueryImpl<R>setHint(String hintName, Object value) {
 		super.setHint( hintName, value );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setComment(String comment) {
+	public ReactiveMutationQueryImpl<R>setComment(String comment) {
 		super.setComment( comment );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> addQueryHint(String hint) {
+	public ReactiveMutationQueryImpl<R>addQueryHint(String hint) {
 		super.addQueryHint( hint );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setLockOptions(LockOptions lockOptions) {
+	public ReactiveMutationQueryImpl<R>setLockOptions(LockOptions lockOptions) {
 		// MutationQueryImpl doesn't support lock options directly
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
+	public ReactiveMutationQueryImpl<R>setLockMode(String alias, LockMode lockMode) {
 		// Not applicable for mutation queries
 		return this;
 	}
 
 	@Override
-	public <T> ReactiveSqmQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
+	public <T> ReactiveMutationQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
 		throw new UnsupportedOperationException( "Not supported for mutation queries" );
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setResultListTransformer(ResultListTransformer<R> transformer) {
+	public ReactiveMutationQueryImpl<R>setResultListTransformer(ResultListTransformer<R> transformer) {
 		// Not applicable for mutation queries
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setMaxResults(int maxResult) {
+	public ReactiveMutationQueryImpl<R>setMaxResults(int maxResult) {
 		super.setMaxResults( maxResult );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setFirstResult(int startPosition) {
+	public ReactiveMutationQueryImpl<R>setFirstResult(int startPosition) {
 		super.setFirstResult( startPosition );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
+	public ReactiveMutationQueryImpl<R>setHibernateFlushMode(FlushMode flushMode) {
 		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setFlushMode(FlushModeType flushMode) {
+	public ReactiveMutationQueryImpl<R>setFlushMode(FlushModeType flushMode) {
 		super.setFlushMode( flushMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setLockMode(LockModeType lockMode) {
+	public ReactiveMutationQueryImpl<R>setLockMode(LockModeType lockMode) {
 		// Mutation queries have limited lock mode support
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setFollowOnLocking(boolean enable) {
+	public ReactiveMutationQueryImpl<R>setFollowOnLocking(boolean enable) {
 		// Not applicable to mutation queries
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setCacheMode(CacheMode cacheMode) {
+	public ReactiveMutationQueryImpl<R>setCacheMode(CacheMode cacheMode) {
 		super.setCacheMode( cacheMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+	public ReactiveMutationQueryImpl<R>setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
 		super.setCacheRetrieveMode( cacheRetrieveMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+	public ReactiveMutationQueryImpl<R>setCacheStoreMode(CacheStoreMode cacheStoreMode) {
 		super.setCacheStoreMode( cacheStoreMode );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setCacheable(boolean cacheable) {
+	public ReactiveMutationQueryImpl<R>setCacheable(boolean cacheable) {
 		super.setCacheable( cacheable );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setCacheRegion(String cacheRegion) {
+	public ReactiveMutationQueryImpl<R>setCacheRegion(String cacheRegion) {
 		super.setCacheRegion( cacheRegion );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
+	public ReactiveMutationQueryImpl<R>setHibernateLockMode(LockMode lockMode) {
 		// Not applicable for mutation queries
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setTimeout(int timeout) {
+	public ReactiveMutationQueryImpl<R>setTimeout(int timeout) {
 		super.setTimeout( timeout );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setFetchSize(int fetchSize) {
+	public ReactiveMutationQueryImpl<R>setFetchSize(int fetchSize) {
 		// Not applicable for mutation queries
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setReadOnly(boolean readOnly) {
+	public ReactiveMutationQueryImpl<R>setReadOnly(boolean readOnly) {
 		// Not applicable for mutation queries
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setProperties(Object bean) {
+	public ReactiveMutationQueryImpl<R>setProperties(Object bean) {
 		super.setProperties( bean );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setProperties(Map bean) {
+	public ReactiveMutationQueryImpl<R>setProperties(Map bean) {
 		super.setProperties( bean );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(String name, Object value) {
+	public ReactiveMutationQueryImpl<R>setParameter(String name, Object value) {
 		super.setParameter( name, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
 		super.setParameter( name, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(String name, P value, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(String name, P value, Type<P> type) {
 		super.setParameter( name, value, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(String name, Instant value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(String name, Calendar value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(String name, Date value, TemporalType temporalType) {
 		super.setParameter( name, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(int position, Object value) {
+	public ReactiveMutationQueryImpl<R>setParameter(int position, Object value) {
 		super.setParameter( position, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
 		super.setParameter( position, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(int position, P value, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(int position, P value, Type<P> type) {
 		super.setParameter( position, value, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(int position, Instant value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(int position, Calendar value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(int position, Date value, TemporalType temporalType) {
 		super.setParameter( position, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
 		super.setParameter( parameter, value );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
 		super.setParameter( parameter, value, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Type<P> type) {
 		super.setParameter( parameter, value, type );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
+	public <P> ReactiveMutationQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
 		super.setParameter( parameter, value );
 		return this;
 	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
-	public ReactiveSqmQueryImpl<R> setParameter(Parameter param, Calendar value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(Parameter param, Calendar value, TemporalType temporalType) {
 		super.setParameter( param, value, temporalType );
 		return this;
 	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
-	public ReactiveSqmQueryImpl<R> setParameter(Parameter param, Date value, TemporalType temporalType) {
+	public ReactiveMutationQueryImpl<R>setParameter(Parameter param, Date value, TemporalType temporalType) {
 		super.setParameter( param, value, temporalType );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameterList(String name, Collection values) {
+	public ReactiveMutationQueryImpl<R>setParameterList(String name, Collection values) {
 		super.setParameterList( name, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType) {
 		super.setParameterList( name, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameterList(String name, Object[] values) {
+	public ReactiveMutationQueryImpl<R>setParameterList(String name, Object[] values) {
 		super.setParameterList( name, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
 		super.setParameterList( name, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
 		super.setParameterList( name, values, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameterList(int position, Collection values) {
+	public ReactiveMutationQueryImpl<R>setParameterList(int position, Collection values) {
 		super.setParameterList( position, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType) {
 		super.setParameterList( position, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
 
 	@Override
-	public ReactiveSqmQueryImpl<R> setParameterList(int position, Object[] values) {
+	public ReactiveMutationQueryImpl<R>setParameterList(int position, Object[] values) {
 		super.setParameterList( position, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
 		super.setParameterList( position, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
 		super.setParameterList( position, values, type );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
 		super.setParameterList( parameter, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
 		super.setParameterList( parameter, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
 		super.setParameterList( parameter, values );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType) {
 		super.setParameterList( parameter, values, javaType );
 		return this;
 	}
 
 	@Override
-	public <P> ReactiveSqmQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type) {
+	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type) {
 		super.setParameterList( parameter, values, type );
 		return this;
 	}

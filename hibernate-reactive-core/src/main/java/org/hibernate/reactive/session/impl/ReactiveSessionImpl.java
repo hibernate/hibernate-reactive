@@ -120,8 +120,8 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveMutationQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.util.impl.CompletionStages;
 
@@ -395,7 +395,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				}
 			}
 
-			final ReactiveSqmSelectionQueryImpl<R> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( selectStatement, criteriaQuery.getResultType(), this );
+			final ReactiveSelectionQueryImpl<R> selectionQuery = new ReactiveSelectionQueryImpl<>( selectStatement, criteriaQuery.getResultType(), this );
 			applyQuerySettingsAndHints( selectionQuery );
 			return selectionQuery;
 		}
@@ -408,7 +408,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	protected <T> ReactiveQueryImplementor<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
-		final ReactiveSqmQueryImpl<T> query = new ReactiveSqmQueryImpl<>( (SqmDmlStatement<T>) criteria, this );
+		final ReactiveMutationQueryImpl<T> query = new ReactiveMutationQueryImpl<>( (SqmDmlStatement<T>) criteria, this );
 		applyQuerySettingsAndHints( query );
 		return query;
 	}
@@ -418,7 +418,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		checksBeforeQueryCreation();
 		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) query, specification.getResultType(), this );
+			return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) query, specification.getResultType(), this );
 		}
 		else {
 			// this cast is fine because of all our impls of TypedQueryReference return Class<R>
@@ -438,7 +438,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				return buildReactiveHqlSelectionQuery( queryString, interpretation, null );
 			}
 			else {
-				final ReactiveSqmQueryImpl<R> mutationQuery = new ReactiveSqmQueryImpl<>( queryString, (HqlInterpretation<R>) interpretation, null, this );
+				final ReactiveMutationQueryImpl<R> mutationQuery = new ReactiveMutationQueryImpl<>( queryString, (HqlInterpretation<R>) interpretation, null, this );
 				applyQuerySettingsAndHints( mutationQuery );
 				mutationQuery.setComment( queryString );
 				return mutationQuery;
@@ -461,7 +461,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			String queryString,
 			HqlInterpretation<?> interpretation,
 			Class<R> expectedResultType) {
-		final ReactiveSqmSelectionQueryImpl<R> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
+		final ReactiveSelectionQueryImpl<R> selectionQuery = new ReactiveSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
 		applyQuerySettingsAndHints( selectionQuery );
 		selectionQuery.setComment( queryString );
 		return selectionQuery;
@@ -560,7 +560,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation<?> interpretation) {
-		final ReactiveSqmSelectionQueryImpl<R> query = new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
+		final ReactiveSelectionQueryImpl<R> query = new ReactiveSelectionQueryImpl<>( hql, interpretation, resultType, this );
 		if ( resultType != null ) {
 			checkResultType( resultType, query );
 		}
@@ -576,7 +576,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		try {
 			final var memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( name, false );
 			if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
-				return createReactiveSqmQueryImplementorFromMemento( sqmMemento );
+				return createReactiveMutationQueryImplementorFromMemento( sqmMemento );
 			}
 			else if ( memento instanceof NamedNativeQueryMemento<?> nativeMemento ) {
 				return createReactiveNativeQueryImplementorNoResultType( (NamedNativeQueryMemento<R>) nativeMemento );
@@ -600,13 +600,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> ReactiveQueryImplementor<T> createReactiveSqmQueryImplementorFromMemento(NamedSqmQueryMemento<?> memento) {
+	private <T> ReactiveQueryImplementor<T> createReactiveMutationQueryImplementorFromMemento(NamedSqmQueryMemento<?> memento) {
 		final String hqlString = memento.getHqlString();
 		final HqlInterpretation<T> interpretation = interpretHql( hqlString, null );
 		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement<?> sqmSelectStatement ) {
 			final SqmSelectStatement<T> typedStatement = (SqmSelectStatement<T>) sqmSelectStatement;
 			final Class<T> resultType = typedStatement.getResultType();
-			final ReactiveSqmSelectionQueryImpl<T> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			final ReactiveSelectionQueryImpl<T> selectionQuery = new ReactiveSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
 			if ( isEmpty( selectionQuery.getComment() ) ) {
 				selectionQuery.setComment( hqlString );
 			}
@@ -614,7 +614,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return selectionQuery;
 		}
 		// DML named query - create reactive mutation query directly from HQL interpretation
-		final ReactiveSqmQueryImpl<T> dmlQuery = new ReactiveSqmQueryImpl<>( hqlString, interpretation, null, this );
+		final ReactiveMutationQueryImpl<T> dmlQuery = new ReactiveMutationQueryImpl<>( hqlString, interpretation, null, this );
 		if ( isEmpty( dmlQuery.getComment() ) ) {
 			dmlQuery.setComment( hqlString );
 		}
@@ -631,7 +631,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		try {
 			final var memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( name, false );
 			if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
-				return createReactiveSqmQueryImplementor( resultType, sqmMemento );
+				return createReactiveMutationQueryImplementor( resultType, sqmMemento );
 			}
 			else if ( memento instanceof NamedNativeQueryMemento<?> nativeMemento ) {
 				return createReactiveNativeQueryImplementor( resultType, nativeMemento );
@@ -655,11 +655,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		return query;
 	}
 
-	protected <T> ReactiveQueryImplementor<T> createReactiveSqmQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
+	protected <T> ReactiveQueryImplementor<T> createReactiveMutationQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
 		final String hqlString = memento.getHqlString();
 		final HqlInterpretation<T> interpretation = interpretHql( hqlString, resultType );
 		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
-			final ReactiveSqmSelectionQueryImpl<T> selectionQuery = new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			final ReactiveSelectionQueryImpl<T> selectionQuery = new ReactiveSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
 			if ( resultType != null ) {
 				checkResultType( resultType, selectionQuery );
 			}
@@ -670,7 +670,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return selectionQuery;
 		}
 		// DML named query - create reactive mutation query directly from HQL interpretation
-		final ReactiveSqmQueryImpl<T> dmlQuery = new ReactiveSqmQueryImpl<>( hqlString, interpretation, resultType, this );
+		final ReactiveMutationQueryImpl<T> dmlQuery = new ReactiveMutationQueryImpl<>( hqlString, interpretation, resultType, this );
 		if ( isEmpty( dmlQuery.getComment() ) ) {
 			dmlQuery.setComment( hqlString );
 		}
@@ -700,8 +700,8 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		try {
 			final HqlInterpretation<?> interpretation = interpretHql( hqlString, resultType );
 			checkSelectionQuery( hqlString, interpretation );
-			final ReactiveSqmSelectionQueryImpl<R> query =
-					new ReactiveSqmSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			final ReactiveSelectionQueryImpl<R> query =
+					new ReactiveSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
 			query.setComment( hqlString );
 			applyQuerySettingsAndHints( query );
 			return query;
@@ -715,7 +715,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
-		return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
+		return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
 	}
 
 	@Override
@@ -730,7 +730,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
 			@SuppressWarnings("unchecked")
 			final Class<R> resultType = (Class<R>) specification.getResultType();
-			return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) query, resultType, this );
+			return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) query, resultType, this );
 		}
 		// Fall back to createReactiveQuery for named queries (which implement ReactiveSelectionQuery via ReactiveQuery)
 		@SuppressWarnings("unchecked")
@@ -743,7 +743,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		final QueryImplementor<?> query = createQuery( hqlString );
 		final SqmStatement<R> sqmStatement = ( (SqmStatementAccess<R>) query ).getSqmStatement();
 		SqmUtil.verifyIsNonSelectStatement( sqmStatement, hqlString );
-		return new ReactiveSqmQueryImpl<>( (SqmDmlStatement<R>) sqmStatement, this );
+		return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) sqmStatement, this );
 	}
 
 	@Override

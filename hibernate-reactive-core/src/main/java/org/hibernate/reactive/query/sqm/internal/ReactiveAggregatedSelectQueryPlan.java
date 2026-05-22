@@ -20,11 +20,11 @@ import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
 /**
  * @see org.hibernate.query.sqm.internal.AggregatedSelectQueryPlanImpl
  */
-public class AggregatedSelectReactiveQueryPlan<R> implements ReactiveSelectQueryPlan<R> {
+public class ReactiveAggregatedSelectQueryPlan<R> implements ReactiveSelectQueryPlan<R> {
 
 	private final ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans;
 
-	public AggregatedSelectReactiveQueryPlan(ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans) {
+	public ReactiveAggregatedSelectQueryPlan(ReactiveSelectQueryPlan<R>[] aggregatedQueryPlans) {
 		this.aggregatedQueryPlans = aggregatedQueryPlans;
 	}
 
