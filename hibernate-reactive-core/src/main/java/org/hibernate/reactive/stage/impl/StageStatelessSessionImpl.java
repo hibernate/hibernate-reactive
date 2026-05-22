@@ -324,6 +324,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
+	public MutationQuery createNativeMutationQuery(String sqlString) {
+		return new StageMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ) );
+	}
+
+	@Override
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
 		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
 	}
