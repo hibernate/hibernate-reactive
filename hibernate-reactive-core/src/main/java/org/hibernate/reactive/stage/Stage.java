@@ -548,6 +548,18 @@ public interface Stage {
 		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
 
 		/**
+		 * Create an instance of {@link MutationQuery} for the given native
+		 * SQL update, insert, or delete statement.
+		 *
+		 * @param sqlString a native SQL statement string
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createNativeMutationQuery(String)
+		 */
+		MutationQuery createNativeMutationQuery(String sqlString);
+
+		/**
 		 * Create a typed {@link Query} instance for the given typed query reference.
 		 *
 		 * @param typedQueryReference the type query reference
