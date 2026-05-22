@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.Filter;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.Test;
 

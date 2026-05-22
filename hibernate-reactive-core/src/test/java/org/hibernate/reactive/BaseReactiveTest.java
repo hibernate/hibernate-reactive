@@ -27,7 +27,7 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.testing.SessionFactoryManager;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 
 import org.junit.jupiter.api.AfterAll;
@@ -50,8 +50,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Base class for unit tests that need a connection to the selected db and
