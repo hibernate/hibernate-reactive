@@ -75,12 +75,12 @@ public class ReactiveNamedNativeQueryMemento<E> implements NamedNativeQueryMemen
 
 	@Override
 	public SelectionQueryImplementor<E> toSelectionQuery(SharedSessionContractImplementor session) {
-		return (SelectionQueryImplementor<E>) delegate.toSelectionQuery( session );
+		return toQuery( session );
 	}
 
 	@Override
 	public <X> SelectionQueryImplementor<X> toSelectionQuery(SharedSessionContractImplementor session, Class<X> resultType) {
-		return (SelectionQueryImplementor<X>) delegate.toSelectionQuery( session, resultType );
+		return toQuery( session, resultType );
 	}
 
 	@Override

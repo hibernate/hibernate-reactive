@@ -60,17 +60,20 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) sqmStatement;
 			return new ReactiveSelectionQueryImpl<>( statement, resultType, session );
 		}
-		return null;
+		// Delegate has a different memento type, use toQuery instead
+		@SuppressWarnings("unchecked")
+		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
+		return (SelectionQueryImplementor<T>) new ReactiveMutationQueryImpl<>( typedDelegate, resultType, session );
 	}
 
 	@Override
 	public MutationQueryImplementor<E> toMutationQuery(SharedSessionContractImplementor session) {
-		return delegate.toMutationQuery( session );
+		return (MutationQueryImplementor<E>) toQuery( session );
 	}
 
 	@Override
 	public <T> MutationQueryImplementor<T> toMutationQuery(SharedSessionContractImplementor session, Class<T> resultType) {
-		return delegate.toMutationQuery( session, resultType );
+		return (MutationQueryImplementor<T>) toQuery( session, resultType );
 	}
 
 	@Override
