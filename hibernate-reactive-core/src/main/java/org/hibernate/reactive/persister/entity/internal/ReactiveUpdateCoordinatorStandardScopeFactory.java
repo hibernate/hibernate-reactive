@@ -1,0 +1,34 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.persister.entity.internal;
+
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorStandard;
+
+public final class ReactiveUpdateCoordinatorStandardScopeFactory extends UpdateCoordinatorStandard implements ReactiveUpdateCoordinator {
+
+	public ReactiveUpdateCoordinatorStandardScopeFactory(
+			EntityPersister entityPersister,
+			SessionFactoryImplementor factory) {
+		super( entityPersister, factory );
+	}
+
+	@Override
+	public ReactiveScopedUpdateCoordinator makeScopedCoordinator() {
+		return new ReactiveUpdateCoordinatorStandard(
+				entityPersister(),
+				factory(),
+				this.getStaticMutationOperationGroup(),
+				this.getBatchKey(),
+				this.getVersionUpdateGroup(),
+				this.getVersionUpdateBatchkey()
+		);
+	}
+
+}

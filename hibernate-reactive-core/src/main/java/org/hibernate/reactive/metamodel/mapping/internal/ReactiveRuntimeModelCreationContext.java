@@ -28,7 +28,7 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.action.queue.spi.PlanningOptions;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.reactive.boot.spi.ReactiveBootstrapContextAdapter;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 import org.hibernate.type.descriptor.java.spi.JavaTypeRegistry;
@@ -36,7 +36,7 @@ import org.hibernate.type.spi.TypeConfiguration;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper.augmentWithReactiveGenerator;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreationContext {
 

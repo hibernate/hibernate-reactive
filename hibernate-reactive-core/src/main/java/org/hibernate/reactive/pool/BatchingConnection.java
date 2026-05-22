@@ -5,7 +5,7 @@
 package org.hibernate.reactive.pool;
 
 
-import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.adaptor.internal.ResultSetAdaptor;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.concurrent.CompletionStage;
 
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * A {@link ReactiveConnection} that automatically performs batching
