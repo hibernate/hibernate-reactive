@@ -567,6 +567,18 @@ public interface Mutiny {
 		MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert);
 
 		/**
+		 * Create an instance of {@link MutationQuery} for the given native
+		 * SQL update, insert, or delete statement.
+		 *
+		 * @param sqlString a native SQL statement string
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createNativeMutationQuery(String)
+		 */
+		MutationQuery createNativeMutationQuery(String sqlString);
+
+		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
 		 * string or HQL/JPQL update or delete statement. In the case of an
 		 * update or delete, the returned {@link Query} must be executed using
