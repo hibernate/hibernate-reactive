@@ -8,8 +8,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Objects;
 
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 import io.vertx.core.Context;
 import io.vertx.core.internal.ContextInternal;

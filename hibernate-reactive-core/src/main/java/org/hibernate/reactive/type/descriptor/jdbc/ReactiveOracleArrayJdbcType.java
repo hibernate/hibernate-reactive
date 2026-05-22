@@ -14,7 +14,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
 
 import org.hibernate.dialect.type.OracleArrayJdbcType;
-import org.hibernate.reactive.adaptor.impl.ArrayAdaptor;
+import org.hibernate.reactive.adaptor.internal.ArrayAdaptor;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.WrapperOptions;

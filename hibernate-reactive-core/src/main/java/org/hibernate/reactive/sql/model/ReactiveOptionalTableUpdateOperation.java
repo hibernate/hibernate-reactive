@@ -13,13 +13,13 @@ import org.hibernate.engine.jdbc.mutation.internal.PreparedStatementGroupSingleT
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.mutation.UpdateValuesAnalysis;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 import org.hibernate.sql.model.internal.OptionalTableUpdate;
@@ -29,8 +29,8 @@ import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
 public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOperation

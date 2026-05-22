@@ -9,11 +9,11 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.internal.StandardPersisterClassResolver;
 import org.hibernate.persister.spi.PersisterClassResolver;
-import org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister;
-import org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister;
-import org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister;
-import org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister;
-import org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister;
+import org.hibernate.reactive.persister.collection.internal.ReactiveBasicCollectionPersister;
+import org.hibernate.reactive.persister.collection.internal.ReactiveOneToManyPersister;
+import org.hibernate.reactive.persister.entity.internal.ReactiveJoinedSubclassEntityPersister;
+import org.hibernate.reactive.persister.entity.internal.ReactiveSingleTableEntityPersister;
+import org.hibernate.reactive.persister.entity.internal.ReactiveUnionSubclassEntityPersister;
 
 /**
  * Define the persisters required by Hibernate Reactive, usually a reactive version of the ones
