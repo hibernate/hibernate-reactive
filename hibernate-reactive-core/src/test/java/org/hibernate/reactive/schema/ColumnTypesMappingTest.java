@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.expectedDatatype;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.getDatatypeQuery;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Check that each property is mapped as the expected type in the database.
