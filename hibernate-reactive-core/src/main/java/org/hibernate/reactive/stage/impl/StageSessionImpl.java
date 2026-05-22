@@ -133,6 +133,11 @@ public class StageSessionImpl implements Stage.Session {
 	}
 
 	@Override
+	public MutationQuery createNativeMutationQuery(String sqlString) {
+		return new StageMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ) );
+	}
+
+	@Override
 	public <T> CompletionStage<T> find(Class<T> entityClass, Object primaryKey) {
 		return delegate.reactiveFind( entityClass, primaryKey );
 	}
