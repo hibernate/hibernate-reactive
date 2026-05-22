@@ -14,12 +14,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import jakarta.persistence.QueryFlushMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
@@ -383,12 +381,6 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 	@Override
 	public ReactiveSelectionQueryImpl<R> setCacheRegion(String regionName) {
 		super.setCacheRegion( regionName );
-		return this;
-	}
-
-	@Override
-	public ReactiveSelectionQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 

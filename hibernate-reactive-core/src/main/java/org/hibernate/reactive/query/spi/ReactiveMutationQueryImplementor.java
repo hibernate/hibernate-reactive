@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
-import org.hibernate.FlushMode;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.reactive.query.ReactiveMutationQuery;
 import org.hibernate.reactive.query.ReactiveQueryImplementor;
@@ -27,9 +26,6 @@ import jakarta.persistence.metamodel.Type;
  * @param <R> the result type
  */
 public interface ReactiveMutationQueryImplementor<R> extends ReactiveQueryImplementor<R>, ReactiveMutationQuery<R> {
-
-	@Override
-	ReactiveMutationQueryImplementor<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveMutationQueryImplementor<R> setFlushMode(FlushModeType flushMode);

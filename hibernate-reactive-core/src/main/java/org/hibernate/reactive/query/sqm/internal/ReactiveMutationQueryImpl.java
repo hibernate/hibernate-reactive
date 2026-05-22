@@ -16,7 +16,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -25,7 +24,6 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.IllegalQueryOperationException;
-import jakarta.persistence.QueryFlushMode;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -439,12 +437,6 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	@Override
 	public ReactiveMutationQueryImpl<R>setFirstResult(int startPosition) {
 		super.setFirstResult( startPosition );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R>setHibernateFlushMode(FlushMode flushMode) {
-		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 

@@ -12,7 +12,6 @@ import java.util.Map;
 
 import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
@@ -113,9 +112,6 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setHint(String hintName, Object value);
-
-	@Override
-	ReactiveNativeQueryImplementor<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setFlushMode(FlushModeType flushMode);

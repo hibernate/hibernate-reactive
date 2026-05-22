@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.FlushMode;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
 
@@ -138,6 +137,4 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 
 	@Override
 	ReactiveMutationQuery<R> setProperties(Map bean);
-
-	ReactiveMutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
 }

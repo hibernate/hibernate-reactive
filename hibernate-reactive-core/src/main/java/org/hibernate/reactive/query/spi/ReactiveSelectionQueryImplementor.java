@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.Map;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
@@ -40,9 +39,6 @@ public interface ReactiveSelectionQueryImplementor<R> extends ReactiveQueryImple
 
 	@Override
 	ReactiveSelectionQueryImplementor<R> setResultListTransformer(ResultListTransformer<R> transformer);
-
-	@Override
-	ReactiveSelectionQueryImplementor<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveSelectionQueryImplementor<R> setFlushMode(FlushModeType flushMode);

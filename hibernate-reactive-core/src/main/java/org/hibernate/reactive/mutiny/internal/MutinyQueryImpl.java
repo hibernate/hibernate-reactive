@@ -21,6 +21,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.QueryFlushMode;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -61,7 +62,7 @@ public class MutinyQueryImpl<R> implements Query<R> {
 
 	@Override
 	public Query<R> setFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
+		delegate.setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 

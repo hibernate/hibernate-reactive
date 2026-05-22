@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.Map;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
@@ -149,9 +148,6 @@ public interface ReactiveSqmSelectionQuery<R> extends ReactiveSelectionQuery<R> 
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setProperties(Map bean);
-
-	@Override
-	ReactiveSqmSelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveSqmSelectionQuery<R> setCacheMode(CacheMode cacheMode);

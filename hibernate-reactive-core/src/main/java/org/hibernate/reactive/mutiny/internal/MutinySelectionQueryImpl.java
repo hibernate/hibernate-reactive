@@ -18,6 +18,7 @@ import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
+import jakarta.persistence.QueryFlushMode;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import java.util.List;
@@ -59,7 +60,7 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 
 	@Override
 	public SelectionQuery<R> setFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
+		delegate.setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 

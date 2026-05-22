@@ -17,9 +17,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.Locking;
-import jakarta.persistence.QueryFlushMode;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -493,12 +491,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	@Override
 	public ReactiveNativeQueryImpl<R> setHint(String hintName, Object value) {
 		super.setHint( hintName, value );
-		return this;
-	}
-
-	@Override
-	public ReactiveNativeQueryImpl<R> setHibernateFlushMode(FlushMode flushMode) {
-		setQueryFlushMode( flushMode == FlushMode.ALWAYS ? QueryFlushMode.FLUSH : QueryFlushMode.NO_FLUSH );
 		return this;
 	}
 
