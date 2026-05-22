@@ -142,6 +142,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	}
 
 	@Override
+	public MutationQuery createNativeMutationQuery(String sqlString) {
+		return new MutinyMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ), factory );
+	}
+
+	@Override
 	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
 		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
 		return new MutinyQueryImpl<>( reactiveQuery, factory );
