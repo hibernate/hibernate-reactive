@@ -81,7 +81,7 @@ import org.hibernate.query.named.NamedSqmQueryMemento;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.sqm.spi.SqmStatementAccess;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.MutationQuery;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -486,7 +486,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public void prepareForQueryExecution(boolean requiresTxn) {
 		checkOpen();
-		checkTransactionSynchStatus();
 
 		// FIXME: this does not work at the moment
 //		if ( requiresTxn && !isTransactionInProgress() ) {
@@ -740,7 +739,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		final QueryImplementor<?> query = createQuery( hqlString );
+		final MutationQuery query = createMutationQuery( hqlString );
 		final SqmStatement<R> sqmStatement = ( (SqmStatementAccess<R>) query ).getSqmStatement();
 		SqmUtil.verifyIsNonSelectStatement( sqmStatement, hqlString );
 		return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) sqmStatement, this );
@@ -944,7 +943,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	// Should be similar to firePersist
 	private CompletionStage<Void> firePersist(PersistEvent event) {
-		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
 		return getFactory().getEventListenerGroups().eventListenerGroup_PERSIST
@@ -1077,7 +1075,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@SuppressWarnings("unchecked")
 	private <T> CompletionStage<T> fireMerge(MergeEvent event) {
-		checkTransactionSynchStatus();
 		checkNoUnresolvedActionsBeforeOperation();
 
 		return getFactory().getEventListenerGroups().eventListenerGroup_MERGE
@@ -1210,18 +1207,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	CompletionStage<Void> fireRefresh(RefreshEvent event) {
-		if ( !getSessionFactory().getSessionFactoryOptions().isAllowRefreshDetachedEntity() ) {
-			if ( event.getEntityName() != null ) {
-				if ( !contains( event.getEntityName(), event.getObject() ) ) {
-					throw new IllegalArgumentException( "Entity not managed" );
-				}
-			}
-			else {
-				if ( !contains( event.getObject() ) ) {
-					throw new IllegalArgumentException( "Entity not managed" );
-				}
-			}
-		}
 		pulseTransactionCoordinator();
 
 		return getFactory().getEventListenerGroups().eventListenerGroup_REFRESH

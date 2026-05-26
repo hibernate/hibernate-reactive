@@ -155,7 +155,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 		getQueryParameterBindings().validate();
 
 		final var session = getSession();
-		session.prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().getLockMode() ) );
+		session.prepareForQueryExecution( requiresTransaction() );
 		return reactivePrepareForExecution()
 				.thenAccept( v -> {
 					prepareSessionFlushMode( session );
@@ -502,7 +502,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setFollowOnLocking(boolean enable) {
-		super.setFollowOnLockingStrategy( enable
+		super.setFollowOnStrategy( enable
 				? Locking.FollowOn.FORCE
 				: Locking.FollowOn.DISALLOW );
 		return this;

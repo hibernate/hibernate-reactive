@@ -27,7 +27,6 @@ import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
 import static org.hibernate.generator.EventType.UPDATE;
@@ -187,14 +186,14 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object entity,
 			Object[] currentValues,
 			SharedSessionContractImplementor session) {
-		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
-		if ( !entityMetamodel.hasPreUpdateGeneratedValues() ) {
+		final EntityPersister persister = entityPersister();
+		if ( !persister.hasPreUpdateGeneratedProperties() ) {
 			return completedFuture(EMPTY_INT_ARRAY);
 		}
 
 		CompletionStage<Void> result = voidFuture();
 
-		final Generator[] generators = entityMetamodel.getGenerators();
+		final Generator[] generators = persister.getGenerators();
 		if ( generators.length != 0 ) {
 			final int[] fieldsPreUpdateNeeded = new int[generators.length];
 

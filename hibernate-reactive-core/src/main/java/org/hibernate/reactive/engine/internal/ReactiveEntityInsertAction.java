@@ -21,6 +21,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.ReactiveExecutable;
 
+import static org.hibernate.engine.internal.Nullability.NullabilityCheckType.CREATE;
 import static org.hibernate.engine.internal.Versioning.getVersion;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -65,7 +66,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 			return new ForeignKeys.Nullifier( getInstance(), false, isEarlyInsert(), getSession(), getPersister() )
 					.nullifyTransientReferences( getState() )
 					.thenAccept( v -> {
-						new Nullability( getSession() ).checkNullability( getState(), getPersister(), false );
+						new Nullability( getSession(), CREATE ).checkNullability( getState(), getPersister() );
 						setTransientReferencesNullified();
 					} );
 		}

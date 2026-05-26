@@ -55,7 +55,7 @@ import org.hibernate.query.named.NamedResultSetMappingMemento;
 import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.MutationQuery;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -1085,7 +1085,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public void prepareForQueryExecution(boolean requiresTxn) {
 		checkOpen();
-		checkTransactionSynchStatus();
 
 		// FIXME: this does not work at the moment
 //		if ( requiresTxn && !isTransactionInProgress() ) {
@@ -1252,7 +1251,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		final QueryImplementor<?> query = createQuery( hqlString );
+		final MutationQuery query = createMutationQuery( hqlString );
 		final SqmStatement<R> sqmStatement = ( (SqmStatementAccess<R>) query ).getSqmStatement();
 		SqmUtil.verifyIsNonSelectStatement( sqmStatement, hqlString );
 		return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) sqmStatement, this );
@@ -1435,7 +1434,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	protected void checksBeforeQueryCreation() {
 		checkOpen();
-		checkTransactionSynchStatus();
 	}
 
 	@Override

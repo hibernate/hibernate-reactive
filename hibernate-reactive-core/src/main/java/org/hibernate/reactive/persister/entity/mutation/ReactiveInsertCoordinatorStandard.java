@@ -23,7 +23,6 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
@@ -70,17 +69,17 @@ public class ReactiveInsertCoordinatorStandard extends InsertCoordinatorStandard
 		return reactivePreInsertInMemoryValueGeneration( values, entity, session )
 				.thenCompose( needsDynamicInsert -> {
 					final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
-					return entityPersister().getEntityMetamodel().isDynamicInsert() || needsDynamicInsert || forceIdentifierBinding
+					return entityPersister().isDynamicInsert() || needsDynamicInsert || forceIdentifierBinding
 						? doDynamicInserts( id, values, entity, session, forceIdentifierBinding, isIdentityInsert )
 						: doStaticInserts( id, values, entity, session, isIdentityInsert );
 				} );
 	}
 
 	private CompletionStage<Boolean> reactivePreInsertInMemoryValueGeneration(Object[] currentValues, Object entity, SharedSessionContractImplementor session) {
-		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
+		final EntityPersister persister = entityPersister();
 		CompletionStage<Boolean> stage = falseFuture();
-		if ( entityMetamodel.hasPreInsertGeneratedValues() ) {
-			final Generator[] generators = entityMetamodel.getGenerators();
+		if ( persister.hasPreInsertGeneratedProperties() ) {
+			final Generator[] generators = persister.getGenerators();
 			for ( int i = 0; i < generators.length; i++ ) {
 				final int index = i;
 				final Generator generator = generators[i];

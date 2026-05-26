@@ -116,7 +116,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
-		return new MutinyMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ), factory );
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ), factory );
 	}
 
 	@Override
