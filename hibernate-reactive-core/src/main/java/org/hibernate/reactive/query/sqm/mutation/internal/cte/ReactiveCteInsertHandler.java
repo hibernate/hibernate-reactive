@@ -36,11 +36,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 	}
 
 	@Override
-	public int execute(DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
-	}
-
-	@Override
 	public CompletionStage<Integer> reactiveExecute(
 			JdbcParameterBindings jdbcParameterBindings,
 			DomainQueryExecutionContext context) {

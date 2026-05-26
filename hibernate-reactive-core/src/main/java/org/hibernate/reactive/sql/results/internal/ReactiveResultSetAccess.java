@@ -137,7 +137,8 @@ public interface ReactiveResultSetAccess extends JdbcValuesMetadata {
 			}
 			else {
 				jdbcType = resolvedJdbcType;
-				javaType = jdbcType.getJdbcRecommendedJavaTypeMapping( length, scale, typeConfiguration );
+				//noinspection unchecked
+				javaType = (JavaType<J>) jdbcType.getRecommendedJavaType( length, scale, typeConfiguration );
 			}
 			return typeConfiguration.getBasicTypeRegistry().resolve( javaType, jdbcType );
 		}

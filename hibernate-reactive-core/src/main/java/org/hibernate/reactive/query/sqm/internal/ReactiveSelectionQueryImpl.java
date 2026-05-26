@@ -131,7 +131,8 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 	}
 
 	private CompletionStage<List<R>> doReactiveList() {
-		getSession().prepareForQueryExecution( requiresTxn( getQueryOptions().getLockOptions().findGreatestLockMode() ) );
+		final LockMode lockMode = getQueryOptions().getLockOptions().findGreatestLockMode();
+		getSession().prepareForQueryExecution( lockMode != null && lockMode.isPessimistic() );
 
 		final SqmSelectStatement<?> sqmStatement = getSqmStatement();
 		final boolean containsCollectionFetches = sqmStatement.containsCollectionFetches();
@@ -336,7 +337,7 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 
 	@Override
 	public ReactiveSelectionQueryImpl<R> setFollowOnLocking(boolean enable) {
-		super.setFollowOnLockingStrategy( enable
+		super.setFollowOnStrategy( enable
 				? org.hibernate.Locking.FollowOn.FORCE
 				: org.hibernate.Locking.FollowOn.DISALLOW );
 		return this;

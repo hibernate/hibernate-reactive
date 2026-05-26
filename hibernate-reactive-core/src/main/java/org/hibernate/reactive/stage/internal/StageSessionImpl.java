@@ -133,7 +133,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public MutationQuery createNativeMutationQuery(String sqlString) {
-		return new StageMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ) );
+		return new StageMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ) );
 	}
 
 	@Override

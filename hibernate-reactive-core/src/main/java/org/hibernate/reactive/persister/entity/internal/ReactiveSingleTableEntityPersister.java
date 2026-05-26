@@ -379,11 +379,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "loadEntityIdByNaturalId" );
-	}
-
-	@Override
 	public Object loadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session) {
 		return loadByUniqueKey( propertyName, uniqueKey, null, session );
 	}
