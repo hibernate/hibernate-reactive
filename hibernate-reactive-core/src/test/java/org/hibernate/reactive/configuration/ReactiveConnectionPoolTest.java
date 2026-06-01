@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.internal.JdbcServicesImpl;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
@@ -112,6 +113,18 @@ public class ReactiveConnectionPoolTest {
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		test( context, assertThrown( PgException.class, verifyConnectivity( reactivePool ) )
 				.thenAccept( e -> assertThat( e.getMessage() ).contains( "bogus" ) )
+		);
+	}
+
+	@Test
+	public void configureWithUnreachableDatabase(VertxTestContext context) {
+		String url = getJdbcUrl().replaceAll( ":\\d+/", ":19191/" );
+		Map<String, Object> config = new HashMap<>();
+		config.put( URL, url );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
+		test( context, assertThrown( HibernateException.class, reactivePool.getConnection() )
+				.thenAccept( e -> assertThat( e.getMessage() )
+						.startsWith( "HR000092:" ) )
 		);
 	}
 
