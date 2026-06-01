@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.pool.impl;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.sql.ResultSet;
@@ -57,6 +58,8 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see ExternalSqlClientPool the implementation used in Quarkus
  */
 public abstract class SqlClientPool implements ReactiveConnectionPool {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	/**
 	 * @return the underlying Vert.x {@link Pool} for the current context.
@@ -131,7 +134,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		return completeFuture(
 				pool.getConnection().map( this::newConnection ),
 				ReactiveConnection::close
-		);
+		).handle( SqlClientPool::convertConnectionException );
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
@@ -139,7 +142,17 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 				pool.getConnection()
 						.map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
 				ReactiveConnection::close
-		);
+		).handle( SqlClientPool::convertConnectionException );
+	}
+
+	private static <T> T convertConnectionException(T result, Throwable throwable) {
+		if ( throwable == null ) {
+			return result;
+		}
+		if ( throwable instanceof IOException || throwable.getCause() instanceof IOException ) {
+			throw LOG.unableToOpenConnection( throwable );
+		}
+		return rethrow( throwable );
 	}
 
 	/**
