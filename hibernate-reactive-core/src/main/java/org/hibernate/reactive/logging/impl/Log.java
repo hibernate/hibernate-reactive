@@ -282,6 +282,9 @@ public interface Log extends BasicLogger {
 	@Message(id = 89, value = "Connection is closed")
 	IllegalStateException connectionIsClosed();
 
+	@Message(id = 92, value = "Unable to open a connection to the database")
+	HibernateException unableToOpenConnection(@Cause Throwable cause);
+
 	@Message(id = 90, value = "Live transaction detected while closing the connection: it will be roll backed")
 	IllegalStateException liveTransactionDetectedOnClose();
 
