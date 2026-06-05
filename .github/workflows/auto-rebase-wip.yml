@@ -31,13 +31,13 @@ jobs:
 
       - name: Determine WIP branch name
         id: wip-branch
+        env:
+          BASE_BRANCH: ${{ github.ref_name }}
         run: |
-          BASE_BRANCH="${{ github.ref_name }}"
-
           WIP_BRANCH="wip/$BASE_BRANCH"
 
-          echo "wip_branch=$WIP_BRANCH" >> $GITHUB_OUTPUT
-          echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
+          echo "wip_branch=$WIP_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "base_branch=$BASE_BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Fetch and rebase WIP branch
         env:
@@ -59,10 +59,10 @@ jobs:
           # Attempt rebase
           if git rebase "origin/$BASE_BRANCH"; then
             echo "✅ Rebase successful: $WIP_BRANCH rebased onto $BASE_BRANCH"
-            echo "rebase_status=success" >> $GITHUB_ENV
+            echo "rebase_status=success" >> "$GITHUB_ENV"
           else
             echo "❌ Rebase failed with conflicts"
-            echo "rebase_status=conflict" >> $GITHUB_ENV
+            echo "rebase_status=conflict" >> "$GITHUB_ENV"
             git rebase --abort
             exit 1
           fi
