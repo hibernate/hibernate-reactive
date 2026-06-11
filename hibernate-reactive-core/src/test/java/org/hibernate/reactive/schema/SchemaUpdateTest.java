@@ -24,7 +24,6 @@ import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.SchemaToolingSettings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
@@ -88,18 +87,13 @@ public class SchemaUpdateTest extends BaseReactiveTest {
 	@MethodSource("settings")
 	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testMissingColumnsCreation(final String strategy, final String type, VertxTestContext context) {
-		final Supplier<CompletionStage<?>> testSupplier = () -> setupSessionFactory( constructConfiguration( "drop", strategy, type ) )
-				.thenCompose( v -> getSessionFactory().withTransaction( SchemaUpdateTest::createTable ) )
-				.whenComplete( (u, throwable) -> factoryManager.stop() )
-				.thenCompose( vv -> setupSessionFactory( constructConfiguration( "update", strategy, type ) ) )
-				.thenCompose( u -> getSessionFactory().withSession( SchemaUpdateTest::checkAllColumnsExist ) );
-		if ( dbType() == SQLSERVER && type == null ) {
-			test( context, assertThrown( HibernateException.class, testSupplier.get() )
-						  .thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081: " ) ) );
-		}
-		else {
-			test( context, testSupplier.get() );
-		}
+		assertTest(
+				type, context, () -> setupSessionFactory( constructConfiguration( "drop", strategy, type ) )
+						.thenCompose( v -> getSessionFactory().withTransaction( SchemaUpdateTest::createTable ) )
+						.whenComplete( (u, throwable) -> factoryManager.stop() )
+						.thenCompose( vv -> setupSessionFactory( constructConfiguration( "update", strategy, type ) ) )
+						.thenCompose( u -> getSessionFactory().withSession( SchemaUpdateTest::checkAllColumnsExist ) )
+		);
 	}
 
 	/**
@@ -109,13 +103,22 @@ public class SchemaUpdateTest extends BaseReactiveTest {
 	@MethodSource("settings")
 	@Timeout(value = 10, timeUnit = MINUTES)
 	public void testWholeTableCreation(final String strategy, final String type, VertxTestContext context) {
-		final Supplier<CompletionStage<?>> testSupplier = () -> setupSessionFactory( constructConfiguration( "drop", strategy, type ) )
-				.whenComplete( (u, throwable) -> factoryManager.stop() )
-				.thenCompose( v -> setupSessionFactory( constructConfiguration( "update", strategy, type ) )
-						.thenCompose( vv -> getSessionFactory().withSession( SchemaUpdateTest::checkAllColumnsExist ) ) );
+		assertTest(
+				type, context, () -> setupSessionFactory( constructConfiguration( "drop", strategy, type ) )
+						.whenComplete( (u, throwable) -> factoryManager.stop() )
+						.thenCompose( v -> setupSessionFactory( constructConfiguration( "update", strategy, type ) )
+								.thenCompose( vv -> getSessionFactory().withSession( SchemaUpdateTest::checkAllColumnsExist ) ) )
+		);
+	}
+
+	// MSSQL does not support some operations, so we need to deal with it
+	private static void assertTest(String type, VertxTestContext context, Supplier<CompletionStage<?>> testSupplier) {
 		if ( dbType() == SQLSERVER && type == null ) {
 			test( context, assertThrown( HibernateException.class, testSupplier.get() )
-					.thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081: " ) ) );
+					// Because of an issue in Vert.x SQL client, we cannot infer the reason of the error.
+					// See https://github.com/eclipse-vertx/vertx-sql-client/issues/1672
+					//.thenAccept( e -> assertThat( e.getMessage() ).startsWith( "HR000081: " ) )
+			);
 		}
 		else {
 			test( context, testSupplier.get() );
