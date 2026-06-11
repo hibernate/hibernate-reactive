@@ -86,6 +86,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 				concreteDescriptor,
 				keyResult,
 				affectedByFilter,
+				fetchedAttribute.getMappedFetchOptions(),
 				creationState
 		);
 		this.isEnhancedForLazyLoading = concreteDescriptor.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();

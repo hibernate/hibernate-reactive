@@ -156,8 +156,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	private SessionCreationOptions options() {
 		return new SessionBuilderImpl( delegate ) {
 			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
+			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
+				return new SessionImpl( delegate, options );
 			}
 		};
 	}
@@ -165,8 +165,8 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	private SessionCreationOptions options(String tenantId) {
 		return new SessionBuilderImpl( delegate ) {
 			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
+			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
+				return new SessionImpl( delegate, options );
 			}
 
 			@Override
