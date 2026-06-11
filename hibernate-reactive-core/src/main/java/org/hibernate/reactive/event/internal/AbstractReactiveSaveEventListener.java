@@ -323,8 +323,7 @@ abstract class AbstractReactiveSaveEventListener<C> {
 				null,
 				LockMode.WRITE,
 				useIdentityColumn,
-				persister,
-				false
+				persister
 		);
 
 		if ( original.getLoadedState() != null ) {
