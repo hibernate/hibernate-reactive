@@ -5,25 +5,25 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:5.0.8}
-//DEPS com.ongres.scram:scram-client:3.2
-//DEPS io.vertx:vertx-db2-client:${vertx.version:5.0.8}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.0.8}
-//DEPS io.vertx:vertx-unit:${vertx.version:5.0.8}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:4.3.0.Final}
+//DEPS io.vertx:vertx-pg-client:${vertx.version:5.1.2}
+//DEPS com.ongres.scram:scram-client:3.3
+//DEPS io.vertx:vertx-db2-client:${vertx.version:5.1.2}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.1.2}
+//DEPS io.vertx:vertx-unit:${vertx.version:5.1.2}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:4.5.0.CR1}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:postgresql:1.21.4
-//DEPS org.testcontainers:mysql:1.21.4
-//DEPS org.testcontainers:db2:1.21.4
-//DEPS org.testcontainers:mariadb:1.21.4
-//DEPS org.testcontainers:cockroachdb:1.21.4
+//DEPS org.testcontainers:testcontainers-postgresql:2.0.5
+//DEPS org.testcontainers:testcontainers-mysql:2.0.5
+//DEPS org.testcontainers:testcontainers-db2:2.0.5
+//DEPS org.testcontainers:testcontainers-mariadb:2.0.5
+//DEPS org.testcontainers:testcontainers-cockroachdb:2.0.5
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
-//DEPS org.postgresql:postgresql:42.7.5
-//DEPS com.mysql:mysql-connector-j:9.6.0
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.3
+//DEPS org.postgresql:postgresql:42.7.11
+//DEPS com.mysql:mysql-connector-j:9.7.0
+//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.8
 //
 
 import java.util.function.Supplier;
@@ -49,12 +49,12 @@ import org.junit.runner.notification.Failure;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.testcontainers.containers.CockroachContainer;
-import org.testcontainers.containers.Db2Container;
+import org.testcontainers.cockroachdb.CockroachContainer;
+import org.testcontainers.db2.Db2Container;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.mariadb.MariaDBContainer;
+import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -228,11 +228,11 @@ public class ReactiveTest {
 	 * It's a wrapper around the testcontainers classes.
 	 */
 	enum Database {
-		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:17.5" ) ),
-		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:9.3.0" ) ),
-		DB2( () -> new Db2Container( "docker.io/icr.io/db2_community/db2:12.1.0.0" ).acceptLicense() ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:11.7.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v24.3.13" ) );
+		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:18.4" ) ),
+		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:9.7.0" ) ),
+		DB2( () -> new Db2Container( "icr.io/db2_community/db2:12.1.4.0" ).acceptLicense() ),
+		MARIADB( () -> new MariaDBContainer( "mariadb:12.3.2" ) ),
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.2.1" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 

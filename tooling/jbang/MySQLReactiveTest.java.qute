@@ -5,17 +5,17 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-mysql-client:$\{vertx.version:5.0.8}
-//DEPS io.vertx:vertx-unit:$\{vertx.version:5.0.8}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:4.3.0.Final}
+//DEPS io.vertx:vertx-mysql-client:$\{vertx.version:5.1.2}
+//DEPS io.vertx:vertx-unit:$\{vertx.version:5.1.2}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:4.5.0.CR1}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:mysql:1.21.4
-//DEPS org.slf4j:slf4j-simple:2.0.17
+//DEPS org.testcontainers:testcontainers-mysql:2.0.5
+//DEPS org.slf4j:slf4j-simple:2.0.18
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS com.mysql:mysql-connector-j:9.6.0
+//DEPS com.mysql:mysql-connector-j:9.7.0
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,9 +28,9 @@ import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -40,7 +40,7 @@ import org.junit.runner.notification.Failure;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,8 +71,7 @@ public class {baseName} {
 				.asCompatibleSubstituteFor( image );
 	}
 
-    @ClassRule
-    public final static MySQLContainer<?> database = new MySQLContainer<>( imageName( "container-registry.oracle.com", "mysql/community-server", "9.3.0" ).asCompatibleSubstituteFor( "mysql" ) );
+    public final static MySQLContainer database = new MySQLContainer( imageName( "container-registry.oracle.com", "mysql/community-server", "9.7.0" ).asCompatibleSubstituteFor( "mysql" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
@@ -145,6 +144,13 @@ public class {baseName} {
 								.invoke( foundEntity -> assertThat( foundEntity.getName() ).isEqualTo( entity.getName() ) ) ) )
 				.subscribe()
 				.with( res -> async.complete(), context::fail );
+	}
+
+	@AfterClass
+	public static void stopContainer() {
+		if ( database != null ) {
+			database.stop();
+		}
 	}
 
 	@After
