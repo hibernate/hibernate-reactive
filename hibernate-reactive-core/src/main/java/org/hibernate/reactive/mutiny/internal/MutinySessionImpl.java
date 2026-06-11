@@ -1,0 +1,627 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.mutiny.internal;
+
+import org.hibernate.CacheMode;
+import org.hibernate.Filter;
+import org.hibernate.FlushMode;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.graph.RootGraph;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
+import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.Identifier;
+import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
+import org.hibernate.reactive.mutiny.Mutiny.Query;
+import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
+import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.session.ReactiveQueryProducer;
+import org.hibernate.reactive.session.ReactiveSession;
+
+import io.smallrye.mutiny.Uni;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Attribute;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static org.hibernate.reactive.util.internal.CompletionStages.applyToAll;
+
+/**
+ * Implements the {@link Mutiny.Session} API. This delegating class is
+ * needed to avoid name clashes when implementing both
+ * {@code Session} and {@link org.hibernate.Session}.
+ */
+public class MutinySessionImpl implements Mutiny.Session {
+
+	private final ReactiveSession delegate;
+	private final MutinySessionFactoryImpl factory;
+
+	public MutinySessionImpl(ReactiveSession session, MutinySessionFactoryImpl factory) {
+		this.delegate = session;
+		this.factory = factory;
+	}
+
+	<T> Uni<T> uni(Supplier<CompletionStage<T>> stageSupplier) {
+		return factory.uni( stageSupplier );
+	}
+
+	@Override
+	public Uni<Void> flush() {
+//		checkOpen();
+		return uni( delegate::reactiveFlush );
+	}
+
+	@Override
+	public <T> Uni<T> fetch(T association) {
+		return uni( () -> delegate.reactiveFetch( association, false ) );
+	}
+
+	@Override
+	public <E, T> Uni<T> fetch(E entity, Attribute<E, T> field) {
+		return uni( () -> delegate.reactiveFetch( entity, field ) );
+	}
+
+	@Override
+	public <T> Uni<T> unproxy(T association) {
+		return uni( () -> delegate.reactiveFetch( association, true ) );
+	}
+
+	@Override
+	public <T> T getReference(Class<T> entityClass, Object id) {
+		//it's important that this method does not hit the database!
+		//TODO: how can we guarantee that?
+		return delegate.getReference( entityClass, id );
+	}
+
+	public ReactiveConnection getReactiveConnection() {
+		return delegate.getReactiveConnection();
+	}
+
+	@Override
+	public <T> T getReference(T entity) {
+		return delegate.getReference( delegate.getEntityClass( entity ), delegate.getEntityId( entity ) );
+	}
+
+	@Override
+	public LockMode getLockMode(Object entity) {
+		return delegate.getCurrentLockMode( entity );
+	}
+
+	@Override
+	public boolean contains(Object entity) {
+		return delegate.contains( entity );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createSelectionQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(String queryString) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(CriteriaUpdate<?> updateQuery) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( updateQuery ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(CriteriaDelete<?> deleteQuery) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( deleteQuery ), factory );
+	}
+
+	@Override
+	public MutationQuery createMutationQuery(JpaCriteriaInsert<?> insert) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveMutationQuery( insert ), factory  );
+	}
+
+	@Override
+	public MutationQuery createNativeMutationQuery(String sqlString) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ), factory );
+	}
+
+	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( typedQueryReference ), factory );
+	}
+
+	@Override @Deprecated
+	public <R> Query<R> createQuery(String queryString) {
+		return new MutinyQueryImpl<>( delegate.createReactiveQuery( queryString ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveSelectionQuery( criteriaQuery ), factory );
+	}
+
+	@Override
+	public <R> MutationQuery createQuery(CriteriaUpdate<R> criteriaUpdate) {
+		return new MutinyMutationQueryImpl<>(
+				delegate.createReactiveMutationQuery( criteriaUpdate ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> MutationQuery createQuery(CriteriaDelete<R> criteriaDelete) {
+		return new MutinyMutationQueryImpl<>(
+				delegate.createReactiveMutationQuery( criteriaDelete ),
+				factory
+		);
+	}
+
+	@Override
+	public <R> Query<R> createNamedQuery(String queryName) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNamedQuery( queryName ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNamedQuery( queryName, resultType ), factory );
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString ), factory );
+	}
+
+	@Override
+	public <R> Query<R> createNativeQuery(String queryString, AffectedEntities affectedEntities) {
+		return new MutinyQueryImpl<>( delegate.createReactiveNativeQuery( queryString, affectedEntities ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, Class<R> resultType, AffectedEntities affectedEntities) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultType, affectedEntities ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping ), factory );
+	}
+
+	@Override
+	public <R> SelectionQuery<R> createNativeQuery(String queryString, ResultSetMapping<R> resultSetMapping, AffectedEntities affectedEntities) {
+		return new MutinySelectionQueryImpl<>( delegate.createReactiveNativeQuery( queryString, resultSetMapping, affectedEntities ), factory );
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey) {
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey ) );
+	}
+
+	@Override
+	public <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
+		return uni( () -> delegate.reactiveFind( entityClass, ids ) );
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Identifier<T> id) {
+		return uni( () -> delegate.reactiveFind( entityClass, id.namedValues() ) );
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockMode lockMode) {
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, lockMode, null ) );
+	}
+
+	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		return Mutiny.Session.super.find( entityClass, id, lockModeType );
+	}
+
+	//	@Override
+	public <T> Uni<T> find(Class<T> entityClass, Object primaryKey, LockOptions lockOptions) {
+		return uni( () -> delegate.reactiveFind( entityClass, primaryKey, lockOptions, null ) );
+	}
+
+	@Override
+	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
+		Class<T> entityClass = ( (RootGraph<T>) entityGraph ).getGraphedType().getJavaType();
+		return uni( () -> delegate.reactiveFind( entityClass, id, (LockMode) null, entityGraph ) );
+	}
+
+	@Override
+	public Uni<Void> persist(Object entity) {
+		return uni( () -> delegate.reactivePersist( entity ) );
+	}
+
+	@Override
+	public Uni<Void> persist(String entityName, Object entity) {
+		return uni( () -> delegate.reactivePersist( entityName, entity ) );
+	}
+
+	@Override
+	public Uni<Void> persistAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactivePersist, entities ) );
+	}
+
+	@Override
+	public Uni<Void> persistMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactivePersist, entities.toArray() ) );
+	}
+
+	@Override
+	public Uni<Void> remove(Object entity) {
+		return uni( () -> delegate.reactiveRemove( entity ) );
+	}
+
+	@Override
+	public Uni<Void> removeAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactiveRemove, entities ) );
+	}
+
+	@Override
+	public Uni<Void> removeMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactiveRemove, entities.toArray() ) );
+	}
+
+	@Override
+	public <T> Uni<T> merge(T entity) {
+		return uni( () -> delegate.reactiveMerge( entity ) );
+	}
+
+	@Override
+	public final Uni<Void> mergeAll(Object... entities) {
+		return uni( () -> applyToAll( delegate::reactiveMerge, entities ) );
+	}
+
+	@Override
+	public Uni<Void> mergeMultiple(List<?> entities) {
+		return uni( () -> applyToAll( delegate::reactiveMerge, entities.toArray() ) );
+	}
+
+	@Override
+	public Uni<Void> refresh(Object entity) {
+		return uni( () -> delegate.reactiveRefresh( entity, LockOptions.NONE ) );
+	}
+
+	@Override
+	public Uni<Void> refresh(Object entity, LockMode lockMode) {
+		return uni( () -> delegate.reactiveRefresh( entity, lockMode ) );
+	}
+
+	@Override
+	public Uni<Void> refresh(Object entity, LockModeType lockModeType) {
+		return Mutiny.Session.super.refresh( entity, lockModeType );
+	}
+
+	//	@Override
+	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
+		return uni( () -> delegate.reactiveRefresh( entity, lockOptions ) );
+	}
+
+	@Override
+	public Uni<Void> refreshAll(Object... entities) {
+		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities ) );
+	}
+
+	@Override
+	public Uni<Void> refreshMultiple(List<?> entities) {
+		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities.toArray() ) );
+	}
+
+	@Override
+	public Uni<Void> lock(Object entity, LockMode lockMode) {
+		return uni( () -> delegate.reactiveLock( entity, lockMode ) );
+	}
+
+	@Override
+	public Uni<Void> lock(Object entity, LockModeType lockModeType) {
+		return Mutiny.Session.super.lock( entity, lockModeType );
+	}
+
+	//	@Override
+	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
+		return uni( () -> delegate.reactiveLock( entity, lockOptions ) );
+	}
+
+	@Override
+	public FlushMode getFlushMode() {
+        return switch (delegate.getHibernateFlushMode()) {
+            case MANUAL -> FlushMode.MANUAL;
+            case COMMIT -> FlushMode.COMMIT;
+            case AUTO -> FlushMode.AUTO;
+            case ALWAYS -> FlushMode.ALWAYS;
+        };
+	}
+
+	@Override
+	public Mutiny.Session setFlushMode(FlushMode flushMode) {
+		delegate.setHibernateFlushMode( switch ( flushMode ) {
+			case COMMIT -> org.hibernate.FlushMode.COMMIT;
+			case AUTO -> org.hibernate.FlushMode.AUTO;
+			case MANUAL -> org.hibernate.FlushMode.MANUAL;
+			case ALWAYS -> org.hibernate.FlushMode.ALWAYS;
+		} );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Session setFlushMode(FlushModeType flushModeType) {
+		return Mutiny.Session.super.setFlushMode( flushModeType );
+	}
+
+	@Override
+	public Mutiny.Session setDefaultReadOnly(boolean readOnly) {
+		delegate.setDefaultReadOnly( readOnly );
+		return this;
+	}
+
+	@Override
+	public boolean isDefaultReadOnly() {
+		return delegate.isDefaultReadOnly();
+	}
+
+	@Override
+	public Mutiny.Session setReadOnly(Object entityOrProxy, boolean readOnly) {
+		delegate.setReadOnly( entityOrProxy, readOnly );
+		return this;
+	}
+
+	@Override
+	public boolean isReadOnly(Object entityOrProxy) {
+		return delegate.isReadOnly( entityOrProxy );
+	}
+
+	public CacheMode getCacheMode() {
+		return delegate.getCacheMode();
+	}
+
+	public Mutiny.Session setCacheMode(CacheMode cacheMode) {
+		delegate.setCacheMode( cacheMode );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Session setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+		return Mutiny.Session.super.setCacheStoreMode( cacheStoreMode );
+	}
+
+	@Override
+	public Mutiny.Session setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+		return Mutiny.Session.super.setCacheRetrieveMode( cacheRetrieveMode );
+	}
+
+	@Override
+	public Mutiny.Session setBatchSize(Integer batchSize) {
+		delegate.setBatchSize( batchSize );
+		return this;
+	}
+
+	@Override
+	public Integer getBatchSize() {
+		return delegate.getBatchSize();
+	}
+
+	@Override
+	public Mutiny.Session detach(Object entity) {
+		delegate.detach( entity );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Session clear() {
+		delegate.clear();
+		return this;
+	}
+
+	@Override
+	public Mutiny.Session enableFetchProfile(String name) {
+		delegate.enableFetchProfile( name );
+		return this;
+	}
+
+	@Override
+	public Mutiny.Session disableFetchProfile(String name) {
+		delegate.disableFetchProfile( name );
+		return this;
+	}
+
+	@Override
+	public boolean isFetchProfileEnabled(String name) {
+		return delegate.isFetchProfileEnabled( name );
+	}
+
+	@Override
+	public Filter enableFilter(String filterName) {
+		return delegate.enableFilter( filterName );
+	}
+
+	@Override
+	public void disableFilter(String filterName) {
+		delegate.disableFilter( filterName );
+	}
+
+	@Override
+	public Filter getEnabledFilter(String filterName) {
+		return delegate.getEnabledFilter( filterName );
+	}
+
+	@Override
+	public int getFetchBatchSize() {
+		return delegate.getFetchBatchSize();
+	}
+
+	@Override
+	public Mutiny.Session setFetchBatchSize(int batchSize) {
+		delegate.setFetchBatchSize( batchSize );
+		return this;
+	}
+
+	@Override
+	public boolean isSubselectFetchingEnabled() {
+		return delegate.isSubselectFetchingEnabled();
+	}
+
+	@Override
+	public Mutiny.Session setSubselectFetchingEnabled(boolean enabled) {
+		delegate.setSubselectFetchingEnabled( enabled );
+		return this;
+	}
+
+	@Override
+	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+		return currentTransaction == null
+				? new Transaction<T>().execute( work )
+				: work.apply( currentTransaction );
+	}
+
+	private Transaction<?> currentTransaction;
+
+	@Override
+	public Mutiny.Transaction currentTransaction() {
+		return currentTransaction;
+	}
+
+	private class Transaction<T> implements Mutiny.Transaction {
+		boolean markedForRollback;
+
+		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
+			currentTransaction = this;
+			return begin().chain( () -> executeInTransaction( work ) ).eventually( () -> currentTransaction = null );
+		}
+
+		/**
+		 * Run the code assuming that a transaction has already started so that we can
+		 * differentiate an error starting a transaction (and therefore doesn't need to
+		 * roll back) and an error thrown by the work.
+		 */
+		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+			return Uni.createFrom()
+					.deferred( () -> work.apply( this ) )
+					// only flush() if the work completed with no exception
+					.call( this::flush )
+					.call( this::beforeCompletion )
+					// in the case of an exception or cancellation
+					// we need to roll back the transaction
+					.onFailure().call( this::rollback )
+					.onCancellation().call( this::rollback )
+					// finally, when there was no exception,
+					// commit or rollback the transaction
+					.call( () -> markedForRollback ? rollback() : commit() )
+					.call( this::afterCompletion );
+		}
+
+		Uni<Void> flush() {
+			return Uni.createFrom().completionStage( delegate.reactiveAutoflush() );
+		}
+
+		Uni<Void> begin() {
+			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
+		}
+
+		Uni<Void> rollback() {
+			return Uni.createFrom().completionStage( delegate.getReactiveConnection().rollbackTransaction() );
+		}
+
+		Uni<Void> commit() {
+			return Uni.createFrom().completionStage( delegate.getReactiveConnection().commitTransaction() );
+		}
+
+		private Uni<Void> beforeCompletion() {
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().beforeTransactionCompletion() );
+		}
+
+		private Uni<Void> afterCompletion() {
+			return Uni.createFrom().completionStage( delegate.getReactiveActionQueue().afterTransactionCompletion( !markedForRollback ) );
+		}
+
+		@Override
+		public void markForRollback() {
+			markedForRollback = true;
+		}
+
+		@Override
+		public boolean isMarkedForRollback() {
+			return markedForRollback;
+		}
+	}
+
+	@Override
+	public Uni<Void> close() {
+		return uni( delegate::reactiveClose );
+	}
+
+	@Override
+	public boolean isOpen() {
+		return delegate.isOpen();
+	}
+
+	@Override
+	public Mutiny.SessionFactory getFactory() {
+		return factory;
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return getFactory().getCriteriaBuilder();
+	}
+
+	@Override
+	public <T> ResultSetMapping<T> getResultSetMapping(Class<T> resultType, String mappingName) {
+		return delegate.getResultSetMapping( resultType, mappingName );
+	}
+
+	@Override
+	public <T> EntityGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+		return delegate.getEntityGraph( rootType, graphName );
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType) {
+		return delegate.createEntityGraph( rootType );
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+		return delegate.createEntityGraph( rootType, graphName );
+	}
+
+	public <T> T unwrap(Class<T> clazz) {
+		if ( ReactiveConnectionSupplier.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( this.delegate );
+		}
+		else if ( ReactiveSession.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( this.delegate );
+		}
+		else if ( ReactiveQueryProducer.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( this.delegate );
+		}
+		else if ( ReactiveSharedSessionContractImplementor.class.isAssignableFrom( clazz ) ) {
+			return clazz.cast( this.delegate );
+		}
+		throw new PersistenceException( "Cannot unwrap type " + clazz );
+	}
+
+}

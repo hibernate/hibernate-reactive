@@ -8,21 +8,16 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.sqm.mutation.internal.Handler;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.query.sqm.mutation.spi.MultiTableHandler;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 /**
- * @see org.hibernate.query.sqm.mutation.internal.Handler
+ * @see org.hibernate.query.sqm.mutation.spi.MultiTableHandler
  */
-public interface ReactiveHandler extends Handler {
+public interface ReactiveHandler extends MultiTableHandler {
 	Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	@Override
-	default int execute(DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
-	}
 
 	@Override
 	default int execute(JdbcParameterBindings jdbcParameterBindings, DomainQueryExecutionContext executionContext) {

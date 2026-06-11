@@ -24,30 +24,31 @@ import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
-import org.hibernate.engine.spi.ActionQueue;
+import org.hibernate.action.queue.spi.ActionQueue;
+import org.hibernate.engine.spi.ActionQueueLegacy;
 import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
 import org.hibernate.engine.spi.TransactionCompletionCallbacks;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.engine.impl.QueuedOperationCollectionAction;
-import org.hibernate.reactive.engine.impl.ReactiveCollectionRecreateAction;
-import org.hibernate.reactive.engine.impl.ReactiveCollectionRemoveAction;
-import org.hibernate.reactive.engine.impl.ReactiveCollectionUpdateAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityActionVetoException;
-import org.hibernate.reactive.engine.impl.ReactiveEntityDeleteAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityInsertAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityRegularInsertAction;
-import org.hibernate.reactive.engine.impl.ReactiveEntityUpdateAction;
-import org.hibernate.reactive.engine.impl.ReactiveOrphanRemovalAction;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.engine.internal.QueuedOperationCollectionAction;
+import org.hibernate.reactive.engine.internal.ReactiveCollectionRecreateAction;
+import org.hibernate.reactive.engine.internal.ReactiveCollectionRemoveAction;
+import org.hibernate.reactive.engine.internal.ReactiveCollectionUpdateAction;
+import org.hibernate.reactive.engine.internal.ReactiveEntityActionVetoException;
+import org.hibernate.reactive.engine.internal.ReactiveEntityDeleteAction;
+import org.hibernate.reactive.engine.internal.ReactiveEntityInsertAction;
+import org.hibernate.reactive.engine.internal.ReactiveEntityRegularInsertAction;
+import org.hibernate.reactive.engine.internal.ReactiveEntityUpdateAction;
+import org.hibernate.reactive.engine.internal.ReactiveOrphanRemovalAction;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * A reactive counterpart to {@link ActionQueue}, where DML
@@ -124,7 +125,7 @@ public class ReactiveActionQueue {
 				if ( instance.insertions == null ) {
 					//Special case of initialization
 					instance.insertions = instance.isOrderInsertsEnabled()
-							? new ExecutableList<>( ActionQueue.InsertActionSorter.INSTANCE )
+							? new ExecutableList<>( ActionQueueLegacy.InsertActionSorter.INSTANCE )
 							: new ExecutableList<>( false );
 				}
 			}

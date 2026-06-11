@@ -1,0 +1,104 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.event.internal;
+
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CompletionStage;
+
+import org.hibernate.FlushMode;
+import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionEventListenerManager;
+import org.hibernate.event.spi.AutoFlushEvent;
+import org.hibernate.event.spi.AutoFlushEventListener;
+import org.hibernate.event.spi.EventSource;
+import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.event.ReactiveAutoFlushEventListener;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.stat.spi.StatisticsImplementor;
+
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
+
+public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlushingEventListener
+		implements ReactiveAutoFlushEventListener, AutoFlushEventListener {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
+	@Override
+	public CompletionStage<Void> reactiveOnAutoFlush(AutoFlushEvent event) throws HibernateException {
+		final EventSource source = event.getSession();
+		final SessionEventListenerManager eventListenerManager = source.getEventListenerManager();
+
+		eventListenerManager.partialFlushStart();
+		CompletionStage<Void> autoFlushStage = voidFuture();
+		if ( flushMightBeNeeded( source ) ) {
+			// Need to get the number of collection removals before flushing to executions
+			// (because flushing to executions can add collection removal actions to the action queue).
+			final ReactiveActionQueue actionQueue = reactiveActionQueue( event );
+			final int oldSize = actionQueue.numberOfCollectionRemovals();
+
+			autoFlushStage = flushEverythingToExecutions( event )
+					.thenCompose( flushProcessingContext -> {
+						if ( flushIsReallyNeeded( event, source ) ) {
+							LOG.trace( "Need to execute flush" );
+							event.setFlushRequired( true );
+
+							return performExecutions( source )
+									.thenRun( () -> postFlush( source, flushProcessingContext ) )
+									.thenRun( () -> postPostFlush( source ) )
+									.thenRun( () -> {
+										final StatisticsImplementor statistics = source.getFactory().getStatistics();
+										if ( statistics.isStatisticsEnabled() ) {
+											statistics.flush();
+										}
+									} );
+						}
+						else {
+							LOG.trace( "Don't need to execute flush" );
+							event.setFlushRequired( false );
+							actionQueue.clearFromFlushNeededCheck( oldSize );
+							return voidFuture();
+						}
+					} );
+		}
+		return autoFlushStage.whenComplete( (v, x) -> {
+			clearFlushProcessing( source.getPersistenceContextInternal() );
+			source.getEventListenerManager()
+					.partialFlushEnd(
+							event.getNumberOfEntitiesProcessed(),
+							event.getNumberOfCollectionsProcessed()
+					);
+		} );
+	}
+
+	private ReactiveActionQueue reactiveActionQueue(AutoFlushEvent event) {
+		return event.getSession()
+				.unwrap( ReactiveSession.class )
+				.getReactiveActionQueue();
+	}
+
+	private boolean flushIsReallyNeeded(AutoFlushEvent event, final EventSource source) {
+		return source.getHibernateFlushMode() == FlushMode.ALWAYS
+			|| reactiveActionQueue( source ).areTablesToBeUpdated( event.getQuerySpaces() );
+	}
+
+	private ReactiveActionQueue reactiveActionQueue(EventSource source) {
+		return source.unwrap( ReactiveSession.class ).getReactiveActionQueue();
+	}
+
+	private boolean flushMightBeNeeded(final EventSource source) {
+		final PersistenceContext persistenceContext = source.getPersistenceContextInternal();
+		return !source.getHibernateFlushMode().lessThan( FlushMode.AUTO )
+			&& ( persistenceContext.getNumberOfManagedEntities() > 0
+				|| persistenceContext.getCollectionEntriesSize() > 0 );
+	}
+
+	@Override
+	public void onAutoFlush(AutoFlushEvent event) throws HibernateException {
+		throw new UnsupportedOperationException("use reactiveOnAutoFlush instead");
+	}
+}

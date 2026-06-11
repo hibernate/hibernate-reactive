@@ -21,7 +21,7 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;

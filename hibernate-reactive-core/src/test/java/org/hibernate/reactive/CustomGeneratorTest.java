@@ -30,7 +30,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -99,14 +99,13 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	@GenericGenerator(
-			name = "thousands",
-			type = Thousands.class,
-			parameters = @Parameter(name = "offset", value = "100")
-	)
 	public static class CustomId {
 		@Id
 		@GeneratedValue(generator = "thousands")
+		@GenericGenerator(
+				type = Thousands.class,
+				parameters = @Parameter(name = "offset", value = "100")
+		)
 		Integer id;
 		@Version
 		Integer version;

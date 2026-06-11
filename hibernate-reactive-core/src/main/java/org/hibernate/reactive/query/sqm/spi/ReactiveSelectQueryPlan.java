@@ -10,14 +10,14 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.ScrollMode;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.spi.ScrollableResultsImplementor;
+import org.hibernate.ScrollableResults;
 import org.hibernate.query.spi.SelectQueryPlan;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.sql.results.spi.ResultsConsumer;
 
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 
 /**
  * @see org.hibernate.query.spi.SelectQueryPlan
@@ -31,7 +31,7 @@ public interface ReactiveSelectQueryPlan<R> extends SelectQueryPlan<R> {
 	}
 
 	@Override
-	default	ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
+	default	ScrollableResults<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw make( Log.class, MethodHandles.lookup() )
 				.nonReactiveMethodCall( "<no alternative>" );
 	}

@@ -18,8 +18,8 @@ import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
 
 /**
  * @see org.hibernate.loader.ast.internal.MultiKeyLoadChunker

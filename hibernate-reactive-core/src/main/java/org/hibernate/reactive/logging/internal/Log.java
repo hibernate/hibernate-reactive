@@ -1,0 +1,355 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.logging.internal;
+
+
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+
+import org.hibernate.HibernateException;
+import org.hibernate.JDBCException;
+import org.hibernate.LazyInitializationException;
+import org.hibernate.cache.CacheException;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.id.IdentifierGenerationException;
+
+import org.jboss.logging.BasicLogger;
+import org.jboss.logging.annotations.Cause;
+import org.jboss.logging.annotations.FormatWith;
+import org.jboss.logging.annotations.LogMessage;
+import org.jboss.logging.annotations.Message;
+import org.jboss.logging.annotations.MessageLogger;
+
+import io.vertx.core.internal.ContextInternal;
+import jakarta.persistence.PersistenceException;
+
+import static org.jboss.logging.Logger.Level.DEBUG;
+import static org.jboss.logging.Logger.Level.ERROR;
+import static org.jboss.logging.Logger.Level.INFO;
+import static org.jboss.logging.Logger.Level.WARN;
+
+@MessageLogger(projectCode = "HR")
+public interface Log extends BasicLogger {
+
+	@LogMessage(level = INFO)
+	@Message(id = 1, value = "Hibernate Reactive version %s")
+	void startHibernateReactive(String version);
+
+	@LogMessage(level = INFO)
+	@Message(id = 2, value = "Vert.x not detected, creating a new instance")
+	void creatingVertxInstance();
+
+	@LogMessage(level = INFO)
+	@Message(id = 3, value = "Vert.x instance stopped")
+	void vertxInstanceStopped();
+
+	@LogMessage(level = INFO)
+	@Message(id = 11, value = "SQL Client URL [\u001b[34m%1$s\u001b[0m]")
+	void sqlClientUrl(String url);
+
+	@LogMessage(level = INFO)
+	@Message(id = 12, value = "Selected driver (\u001b[32m✔\u001b[0m) [\u001b[34m%1$s\u001b[0m]")
+	void selectedDriver(String driverName);
+
+	@LogMessage(level = INFO)
+	@Message(id = 13, value = "Detected driver (\u001b[31m✗\u001b[0m) [%1$s]")
+	void detectedDriver(String driverName);
+
+	@LogMessage(level = INFO)
+	@Message(id = 14, value = "Prepared statement cache disabled")
+	void preparedStatementCacheDisabled();
+
+	@LogMessage(level = INFO)
+	@Message(id = 15, value = "Prepared statement cache max size: %1$d")
+	void preparedStatementCacheMaxSize(Comparable<Integer> cacheMaxSize);
+
+	@LogMessage(level = INFO)
+	@Message(id = 16, value = "Prepared statement cache SQL limit: %1$d")
+	void preparedStatementCacheSQLLimit(Integer sqlLimit);
+
+	@LogMessage(level = INFO)
+	@Message(id = 17, value = "Using SQL client configuration [%1$s]")
+	void sqlClientConfiguration(String configClassName);
+
+	@LogMessage(level = INFO)
+	@Message(id = 18, value = "Instantiating reactive pool: %1$s")
+	void instantiatingReactivePool(@FormatWith(ClassFormatter.class) Class<?> implClass);
+
+	@Message(id = 19, value = "database username not specified (set the property 'jakarta.persistence.jdbc.user', or include it as a parameter in the connection URL)")
+	HibernateException databaseUsernameNotSpecified();
+
+	@LogMessage(level = WARN)
+	@Message(id = 21, value = "DDL command failed [%1$s]")
+	void ddlCommandFailed(String message);
+
+	@LogMessage(level = INFO)
+	@Message(id = 25, value = "Connection pool size: %1$d")
+	void connectionPoolSize(int poolSize);
+
+	@LogMessage(level = INFO)
+	@Message(id = 26, value = "Connection pool max wait queue size: %1$d")
+	void connectionPoolMaxWaitSize(Integer maxWaitQueueSize);
+
+	@LogMessage(level = INFO)
+	@Message(id = 27, value = "Connection pool idle timeout: %1$d ms")
+	void connectionPoolIdleTimeout(Integer idleTimeout);
+
+	@LogMessage(level = INFO)
+	@Message(id = 28, value = "Connection pool connection timeout: %1$d ms")
+	void connectionPoolTimeout(Integer connectTimeout);
+
+	@LogMessage(level = INFO)
+	@Message(id = 29, value = "Connection pool cleaner period: %1$d ms")
+	void connectionPoolCleanerPeriod(Integer poolCleanerPeriod);
+
+	@Message(id = 31, value = "More than one row with the given identifier was found: %1$s, for class: %2$s")
+	HibernateException moreThanOneRowWithTheGivenIdentifier(Object id, String entityName);
+
+	@Message(id = 32, value = "Could not instantiate SQL client pool configuration [%1$s]")
+	HibernateException couldNotInstantiatePoolConfiguration(String configClassName, @Cause Throwable error);
+
+	@Message(id = 33, value = "Unable to locate row for retrieval of generated properties: %1$s")
+	HibernateException unableToRetrieveGeneratedProperties(String infoString);
+
+	@Message(id = 34, value = "The database returned no natively generated identity value")
+	HibernateException noNativelyGeneratedValueReturned();
+
+	@Message(id = 35, value = "The database can only generate identifiers of type Long")
+	HibernateException nativelyGeneratedValueMustBeLong();
+
+	@Message(id = 356, value = "Wrong entity type!")
+	HibernateException wrongEntityType();
+
+	@Message(id = 36, value = "firstResult/maxResults specified with collection fetch. In memory pagination was about to be applied. Failing because 'Fail on pagination over collection fetch' is enabled.")
+	HibernateException firstOrMaxResultsFailedBecausePaginationOverCollectionIsEnabled();
+
+	@Message(id = 37, value = "Reactive sessions do not support transparent lazy fetching - use Session.fetch() (entity '%1$s' with id '%2$s' was not loaded)")
+	LazyInitializationException lazyInitializationException(String entityName, Object id);
+
+	@Message(id = 38, value = "Entity [%1$s] did not define a natural id")
+	HibernateException entityDidNotDefinedNaturalId(String entityName);
+
+	@Message(id = 39, value = "Flush during cascade is dangerous" )
+	HibernateException flushDuringCascadeIsDangerous();
+
+	@Message(id = 40, value = "An immutable natural identifier of entity %1$s was altered from %2$s to %3$s" )
+	HibernateException immutableNaturalIdentifierAltered(String entityName, String from, String to);
+
+	@Message(id = 41, value = "Identifier of an instance of %1$s was altered from %2$s to %3$s")
+	HibernateException identifierAltered(String entityName, Object id, Object oid);
+
+	@Message(id = 42, value = "Merge requested with id not matching id of passed entity")
+	HibernateException mergeRequestedIdNotMatchingIdOfPassedEntity();
+
+	@Message(id = 43, value = "Unable to locate persister: %1$s")
+	HibernateException unableToLocatePersister(String persister);
+
+	@Message(id = 44, value = "Invalid lock mode for lock()")
+	HibernateException invalidLockModeForLock();
+
+	@Message(id = 45, value = "Collection was evicted")
+	HibernateException collectionWasEvicted();
+
+	@Message(id = 46, value = "Unexpected batch size spread")
+	HibernateException unexpectedBatchSizeSpread();
+
+	@Message(id = 47, value = "Generated identifier smaller or equal to 0: %1$d")
+	HibernateException generatedIdentifierSmallerOrEqualThanZero(Long id);
+
+	@Message(id = 49, value = "Could not determine Dialect from connection URI: '%1$s' (specify a connection URI with scheme 'postgresql:', 'postgres:', 'mariadb:', 'mysql:', 'db2:', 'cockroachdb:', 'sqlserver:' or 'oracle:' )")
+	IllegalArgumentException couldNotDetermineDialectFromConnectionURI(String url);
+
+	@Message(id = 50, value = "SelectGenerator is not supported in Hibernate Reactive")
+	HibernateException selectGeneratorIsNotSupportedInHibernateReactive();
+
+	@Message(id = 51, value = "Cannot generate identifiers of type %1$S for: %2$s")
+	HibernateException cannotGenerateIdentifiersOfType(String simpleName, String entityName);
+
+	@Message(id = 52, value = "Generated identifier for %1$s too big to be assigned to a field of type %2$s: %3$s")
+	HibernateException generatedIdentifierTooBigForTheField(String entityName, String simpleName, Long id);
+
+	@Message(id = 53, value = "Could not locate EntityEntry immediately after two-phase load")
+	HibernateException couldNotLocateEntityEntryAfterTwoPhaseLoad();
+
+	@Message(id = 54, value = "Cannot recreate collection while filter is enabled: %1$s")
+	HibernateException cannotRecreateCollectionWhileFilterIsEnabled(String collectionInfoString);
+
+	@Message(id = 55, value = "Session closed")
+	LazyInitializationException sessionClosedLazyInitializationException();
+
+	@Message(id = 56, value = "Collection cannot be initialized: %1$s - Fetch the collection using 'Mutiny.fetch', 'Stage.fetch', or 'fetch join' in HQL")
+	LazyInitializationException collectionCannotBeInitializedlazyInitializationException(String role);
+
+	@LogMessage(level = ERROR)
+	@Message(id = 57, value = "Failed to execute statement [%1$s]: %2$s")
+	void failedToExecuteStatement(String sql, String s, @Cause Throwable t);
+
+	@Message(id = 58, value = "Impossible flush mode")
+	IllegalStateException impossibleFlushModeIllegalState();
+
+	@Message(id = 59, value = "Number of results is greater than number of batched parameters")
+	IllegalStateException numberOfResultsGreaterThanBatchedParameters();
+
+	@Message(id = 60, value = "Session is closed")
+	IllegalStateException sessionIsClosed();
+
+	@Message(id = 61, value = "Session is currently connecting to database")
+	IllegalStateException sessionIsConnectingToTheDatabase();
+
+	@Message(id = 62, value = "Updating immutable entity that is not in session yet!")
+	IllegalStateException updatingImmutableEntityThatsNotInTheSession();
+
+	@Message(id = 63, value = "Entity has status Status.DELETED but values != entry.getDeletedState")
+	IllegalStateException entityDeleteStateIllegal();
+
+	@Message(id = 64, value = "Number of return values [%1$s] did not match expected [%2$s]")
+	IllegalStateException unexpectedNumberOfReturnedValues(int length, int size);
+
+	@Message(id = 65, value = "No Vert.x context active")
+	IllegalStateException notVertxContextActive();
+
+	@Message(id = 66, value = "Unknown structure type")
+	IllegalStateException unknownStructureType();
+
+	@Message(id = 67, value= "Service not initialized")
+	IllegalStateException serviceNotInitialized();
+
+	@Message(id = 68, value = "This method should exclusively be invoked from a Vert.x EventLoop thread; currently running on thread '%1$s'")
+	IllegalStateException shouldBeInvokedInVertxEventLoopThread(String name);
+
+	@Message(id = 69, value = "Detected use of the reactive Session from a different Thread than the one which was used to open the reactive Session - this suggests an invalid integration; "
+			+ "original thread [%1$s]: '%2$s' current Thread [%3$s]: '%4$s'")
+	IllegalStateException detectedUsedOfTheSessionOnTheWrongThread(long expectedThreadId, String expectedThreadName, long currentThreadId, String currentThreadName);
+
+	@Message(id = 70, value = "Unable to locate persistence units")
+	PersistenceException unableToLocatePersistenceUnits(@Cause Throwable e);
+
+	@Message(id = 71, value= "No name provided and multiple persistence units found")
+	PersistenceException noNameProvidedAndMultiplePersistenceUnitsFound();
+
+	@Message(id = 72, value= "Cannot update an uninitialized proxy. Make sure to fetch the value before trying to update it: %1$s")
+	HibernateException uninitializedProxyUpdate(Object entity);
+
+	@Message(id = 73, value = "%1$s is an invalid identity type when using CockroachDB (entity %2$s) - CockroachDB might generates identifiers that are too big and won't always fit in a %1$s. java.lang.Long is valid replacement")
+	HibernateException invalidIdentifierTypeForCockroachDB(@FormatWith(ClassFormatter.class) Class<?> idType, String entityName);
+
+	@Message(id = 74, value = "ids for this class must be manually assigned before calling save(): %1$s")
+	IdentifierGenerationException idMustBeAssignedBeforeSave(String entityName);
+
+	@Message(id = 75, value = "Detected call to non reactive method. Alternative reactive method: `%1$s`")
+	HibernateException nonReactiveMethodCall(String alternativeMethod);
+
+	// A helper to keep track of places that still need to be done
+	@Message(id = 76, value = "This method has not been implemented yet")
+	HibernateException notYetImplemented();
+
+	@Message(id = 77, value = "Unable to execute post-insert id selection query: %1$s")
+	HibernateException unableToExecutePostInsertIdSelectionQuery(String selectSQL, @Cause Throwable e);
+
+	@Message(id = 78, value = "Unable to bind parameters for post-insert id selection query: %1$s")
+	HibernateException bindParametersForPostInsertIdSelectQueryError(String selectSQL, @Cause Throwable e);
+
+	@Message(id = 79, value = "The configuration property '%1$s' was not provided, or is in invalid format. This is required when using the default DefaultSqlClientPool: either provide the configuration setting or integrate with a different SqlClientPool implementation")
+	HibernateException blankConnectionString(String property);
+
+	@Message(id = 80, value = "No results were returned by the query (you can try running it with '.executeUpdate()'): %1$s")
+	HibernateException noResultException(String sql);
+
+	@Message(id = 81, value = "The Vert.x SQL client doesn't support the SQL XML data type. If it's the mapping of an array, you can also try setting the property `hibernate.type.preferred_array_jdbc_type`")
+	HibernateException unsupportedXmlType();
+
+	@Message(id = 83, value = "Unexpected request of a non reactive connection")
+	HibernateException unexpectedConnectionRequest();
+
+	@Message(id = 84, value = "The application requested a JDBC connection, but Hibernate Reactive doesn't use JDBC. This could be caused by a bug or the use of an unsupported feature in Hibernate Reactive")
+	SQLException notUsingJdbc();
+
+	@Message(id = 85, value = "Reactive sessions do not support transparent lazy fetching - use Stage.fetch() or Mutiny.fetch() (property '%1$S' of entity '%2$s' was not loaded)")
+	LazyInitializationException lazyFieldInitializationException(String fieldName, String entityName);
+
+	@LogMessage(level = ERROR)
+	@Message(id = 86, value = "Error closing reactive connection")
+	void errorClosingConnection(@Cause Throwable throwable);
+
+	@Message(id = 87, value = "Retrieved key was null, but to-one is not nullable : %s")
+	IllegalStateException notNullableToOneAssociationMissingKey(String toOneNavigablePath);
+
+	@Message(id = 88, value = "Expected to use the object %1$s on context %2$s but was %3$s")
+	HibernateException unexpectedContextDetected(Object obj, ContextInternal expectedContext, ContextInternal currentContext);
+
+	@Message(id = 89, value = "Connection is closed")
+	IllegalStateException connectionIsClosed();
+
+	@Message(id = 92, value = "Unable to open a connection to the database")
+	HibernateException unableToOpenConnection(@Cause Throwable cause);
+
+	@Message(id = 90, value = "Live transaction detected while closing the connection: it will be roll backed")
+	IllegalStateException liveTransactionDetectedOnClose();
+
+	@Message(id = 91, value = "Can't begin a new transaction as an active transaction is already associated to this connection")
+	IllegalStateException liveTransactionDetectedOnBeginTransaction();
+
+	@Message(id = 93, value = "Unexpected callback type: %1$s")
+	HibernateException nonReactiveCallback(@FormatWith(ClassFormatter.class) Class<?> aClass);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 104, value = "firstResult/maxResults specified with collection fetch; applying in memory!" )
+	void firstOrMaxResultsSpecifiedWithCollectionFetch();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
+	@Message(id = 114, value = "Handling transient entity in delete processing" )
+	void handlingTransientEntity();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 180, value = "FirstResult/maxResults specified on polymorphic query; applying in memory!")
+	void needsLimit();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 245, value = "Manipulation query [%s] resulted in [%s] split queries" )
+	void splitQueries(String sourceQuery, int length);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
+	@Message(value = "Could not find any META-INF/persistence.xml file in the classpath", id = 318)
+	void unableToFindPersistenceXmlInClasspath();
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = INFO)
+	@Message(id = 327, value = "Error performing load command")
+	void unableToLoadCommand(@Cause HibernateException e);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = ERROR)
+	@Message(id = 353, value = "Could not release a cache lock : %s" )
+	void unableToReleaseCacheLock(CacheException ce);
+
+	@LogMessage(level = WARN)
+	@Message(id = 400, value= "Changing dialect '%1$s' to '%2$s'")
+	void replacingDialect(Dialect from, Dialect to);
+
+	// Same method that exists in CoreMessageLogger
+	@LogMessage(level = WARN)
+	@Message(id = 447, value= "Explicit use of UPGRADE_SKIPLOCKED in lock() calls is not recommended; use normal UPGRADE locking instead")
+	void explicitSkipLockedLockCombo();
+
+	@LogMessage(level = WARN)
+	@Message(id = 448, value = "Warnings creating temp table : %s")
+	void warningsCreatingTempTable(SQLWarning warning);
+
+	@LogMessage(level = WARN)
+	@Message( id= 494, value = "Attempt to merge an uninitialized collection with queued operations; queued operations will be ignored: %s")
+	void ignoreQueuedOperationsOnMerge(String collectionInfoString);
+
+	// Same method in ORM
+	@LogMessage(level = DEBUG)
+	@Message(value = "JDBCException was thrown for a transaction marked for rollback. " +
+			" This is probably due to an operation failing fast due to the transaction being marked for rollback.",
+			id = 520)
+	void jdbcExceptionThrownWithTransactionRolledBack(@Cause JDBCException e);
+}

@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.query.results.ResultSetMapping;
+import org.hibernate.query.results.spi.ResultSetMapping;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
@@ -32,7 +32,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 
 import static java.util.Collections.emptyList;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanImpl<R> implements ReactiveNativeSelectQueryPlan<R> {
 

@@ -15,8 +15,8 @@ import org.hibernate.LockOptions;
 import org.hibernate.dialect.lock.spi.LockTimeoutType;
 import org.hibernate.dialect.lock.spi.LockingSupport;
 import org.hibernate.internal.util.collections.CollectionHelper;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveConnectionLockTimeoutStrategyBuilder;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveFollowOnLockingAction;
@@ -38,8 +38,8 @@ import org.hibernate.sql.exec.spi.PreAction;
 import org.hibernate.sql.exec.spi.SecondaryAction;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link JdbcSelectWithActions}
@@ -129,7 +129,7 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 
 		@SuppressWarnings("UnusedReturnValue")
 		@Override
-		public Builder setLoadedValuesCollectorFactory(LoadedValuesCollectorFactory loadedValuesCollectorFactory) {
+		public JdbcSelectWithActionsBuilder setLoadedValuesCollectorFactory(LoadedValuesCollectorFactory loadedValuesCollectorFactory) {
 			this.loadedValuesCollectorFactory = loadedValuesCollectorFactory;
 			return this;
 		}

@@ -22,20 +22,20 @@ import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.AttributeAnalysis;
+import org.hibernate.persister.entity.mutation.AttributeInclusionChecker;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
 import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link UpdateCoordinatorStandard}, but it cannot be shared between multiple update operations.
@@ -172,7 +172,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 							dirtyAttributeIndexes,
 							attributeUpdateability,
 							forceDynamicUpdate,
-							temporalExcludedUpdate
+							entityPersister().excludedFromTemporalVersioning( dirtyAttributeIndexes, hasDirtyCollection )
 					);
 
 					// doDynamicUpdate, doVersionUpdate, or doStaticUpdate will initialize the stage,
@@ -186,14 +186,14 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object entity,
 			Object[] currentValues,
 			SharedSessionContractImplementor session) {
-		final EntityMetamodel entityMetamodel = entityPersister().getEntityMetamodel();
-		if ( !entityMetamodel.hasPreUpdateGeneratedValues() ) {
+		final EntityPersister persister = entityPersister();
+		if ( !persister.hasPreUpdateGeneratedProperties() ) {
 			return completedFuture(EMPTY_INT_ARRAY);
 		}
 
 		CompletionStage<Void> result = voidFuture();
 
-		final Generator[] generators = entityMetamodel.getGenerators();
+		final Generator[] generators = persister.getGenerators();
 		if ( generators.length != 0 ) {
 			final int[] fieldsPreUpdateNeeded = new int[generators.length];
 
@@ -308,7 +308,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 			Object rowId,
 			Object[] values,
 			Object[] oldValues,
-			UpdateCoordinatorStandard.InclusionChecker dirtinessChecker,
+			AttributeInclusionChecker dirtinessChecker,
 			UpdateCoordinatorStandard.UpdateValuesAnalysisImpl valuesAnalysis,
 			SharedSessionContractImplementor session) {
 		this.updateResultStage = new CompletableFuture<>();

@@ -44,11 +44,11 @@ import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCH
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.trueFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.trueFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		implements ReactiveInitializer<EntityInitializerImpl.EntityInitializerData> {
@@ -464,8 +464,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							version,
 							lockModeToAcquire( data ),
 							true,
-							data.getConcreteDescriptor(),
-							false
+							data.getConcreteDescriptor()
 					);
 					data.getEntityHolder().setEntityEntry( entityEntry );
 

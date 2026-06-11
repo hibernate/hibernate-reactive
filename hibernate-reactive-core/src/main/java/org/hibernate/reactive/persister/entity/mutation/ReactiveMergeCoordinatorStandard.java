@@ -11,6 +11,7 @@ import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.DiscriminatorValue;
 import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.AttributeInclusionChecker;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.TableSet;
 import org.hibernate.sql.model.MutationOperation;
@@ -23,7 +24,7 @@ import org.hibernate.sql.model.ast.builder.TableUpdateBuilder;
 
 /**
  * @see org.hibernate.persister.entity.mutation.MergeCoordinatorStandard
- * @see org.hibernate.reactive.persister.entity.impl.ReactiveMergeCoordinatorStandardScopeFactory
+ * @see org.hibernate.reactive.persister.entity.internal.ReactiveMergeCoordinatorStandardScopeFactory
  */
 public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorStandard implements ReactiveScopedUpdateCoordinator {
 
@@ -74,8 +75,7 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 			|| attributeMetadata.isInsertable();
 	}
 
-	@Override
-	protected InclusionChecker createInclusionChecker(boolean[] attributeUpdateability) {
+	protected AttributeInclusionChecker createAttributeInclusionChecker(boolean[] attributeUpdateability) {
 		return (position, attribute) -> isInsertableOrUpdatable( attribute );
 	}
 
@@ -127,9 +127,9 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 			Object oldVersion,
 			Object[] oldValues,
 			int[] dirtyAttributeIndexes,
-			InclusionChecker inclusionChecker,
-			InclusionChecker lockingChecker,
-			InclusionChecker dirtinessChecker,
+			AttributeInclusionChecker inclusionChecker,
+			AttributeInclusionChecker lockingChecker,
+			AttributeInclusionChecker dirtinessChecker,
 			boolean restrictToTemporalExcluded,
 			Object rowId,
 			boolean forceDynamicUpdate,

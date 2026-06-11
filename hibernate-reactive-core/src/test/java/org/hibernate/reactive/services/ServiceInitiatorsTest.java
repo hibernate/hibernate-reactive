@@ -13,11 +13,13 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
+import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Useful to spot inconsistencies in the default ServiceInitiator lists
@@ -33,9 +35,9 @@ public class ServiceInitiatorsTest {
 	private static final Set<String> HR_INTENTIONALLY_OMITTED = Set.of( "org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformResolver" );
 
 	@Test
-	public void serviceInitiatorsAreUnique() {
-		Assert.assertEquals( HR_SERVICES.size(), ReactiveServiceInitiators.LIST.size() );
-		Assert.assertEquals( ORM_SERVICES.size(), StandardServiceInitiators.LIST.size() );
+	public void hrServiceInitiatorsAreUnique() {
+		assertThat( HR_SERVICES ).hasSameSizeAs( ReactiveServiceInitiators.LIST );
+		assertThat( ORM_SERVICES ).hasSameSizeAs( StandardServiceInitiators.LIST );
 	}
 
 	@Test

@@ -16,14 +16,15 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
-import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.provider.internal.ReactiveEntityManagerFactoryBuilder;
+import org.hibernate.reactive.provider.internal.ReactiveProviderChecker;
 
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.LoadState;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -187,6 +188,18 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 	@Override
 	public ProviderUtil getProviderUtil() {
 		return providerUtil;
+	}
+
+	@Override
+	public boolean generateSchema(PersistenceConfiguration persistenceConfiguration) {
+		// Not yet implemented for Hibernate Reactive
+		throw log.notYetImplemented();
+	}
+
+	@Override
+	public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+		// Hibernate Reactive does not perform bytecode enhancement
+		return null;
 	}
 
 }

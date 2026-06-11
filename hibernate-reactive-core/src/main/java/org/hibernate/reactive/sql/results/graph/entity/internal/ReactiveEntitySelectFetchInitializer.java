@@ -14,14 +14,15 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.FetchOptions;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.spi.NavigablePath;
@@ -33,7 +34,7 @@ import org.hibernate.sql.results.graph.InitializerParent;
 import org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer
@@ -78,6 +79,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 			EntityPersister concreteDescriptor,
 			DomainResult<?> keyResult,
 			boolean affectedByFilter,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		super(
 				parent,
@@ -86,6 +88,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 				concreteDescriptor,
 				keyResult,
 				affectedByFilter,
+				fetchOptions,
 				creationState
 		);
 		this.isEnhancedForLazyLoading = concreteDescriptor.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();

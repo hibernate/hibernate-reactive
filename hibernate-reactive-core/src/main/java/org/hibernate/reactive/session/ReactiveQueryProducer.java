@@ -21,6 +21,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import java.util.concurrent.CompletionStage;
 
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 /**
  * Executes queries in a non-blocking fashion.
  *
- * @see org.hibernate.query.QueryProducer
  * @see SharedSessionContractImplementor
  */
 @Incubating
@@ -72,12 +72,15 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	@Deprecated(forRemoval = true)
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName);
 
-	@Deprecated(forRemoval = true)
-	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass);
-
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType);
 
+	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, EntityGraph<R> resultGraph);
+
 	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria);
+
+	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaSelect<R> criteria);
+
+	<R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(TypedQueryReference<R> typedQueryReference);
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString);
 
@@ -87,13 +90,11 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<R> ReactiveMutationQuery<R> createReactiveMutationQuery(JpaCriteriaInsert<R> insert);
 
-	<R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString);
+	<R> ReactiveMutationQuery<R> createReactiveNativeMutationQuery(String sqlString);
 
-	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name);
+	<R> ReactiveSelectionQuery<R> createReactiveNamedSelectionQuery(String name, Class<R> resultType);
 
-	<R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String name, Class<R> resultType);
-
-	<R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String name);
+	<R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String name);
 
 	<R> ReactiveNativeQuery<R> createReactiveNativeQuery(String queryString, AffectedEntities affectedEntities);
 

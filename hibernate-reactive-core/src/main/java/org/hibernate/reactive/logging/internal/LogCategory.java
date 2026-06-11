@@ -1,0 +1,27 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.logging.internal;
+
+/**
+ * Log category to be used with {@link LoggerFactory#make(Class, LogCategory, java.lang.invoke.MethodHandles.Lookup)}.
+ */
+public final class LogCategory {
+
+	private final String name;
+
+	public LogCategory(String name) {
+		this.name = name;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
+}

@@ -11,7 +11,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.Query;
-import org.hibernate.query.QueryFlushMode;
+import jakarta.persistence.QueryFlushMode;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
@@ -19,7 +19,7 @@ import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import jakarta.persistence.Parameter;
 import org.hibernate.type.descriptor.java.JavaType;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * Implementation of SingleIdEntityLoader for cases where the application has

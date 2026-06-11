@@ -14,7 +14,7 @@ import java.util.function.Function;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.boot.TempTableDdlTransactionHandling;
+import org.hibernate.dialect.TempTableDdlTransactionHandling;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.temptable.TemporaryTable;
 import org.hibernate.dialect.temptable.TemporaryTableSessionUidColumn;
@@ -28,13 +28,13 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithTemporaryTableHelper;
 import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.mutation.spi.BeforeUseAction;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.TemporaryTableCreationWork;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.ast.SqlAstJoinType;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -46,9 +46,9 @@ import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import static org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.cleanTemporaryTableRows;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithTemporaryTableHelper

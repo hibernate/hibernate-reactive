@@ -8,7 +8,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.spi.AbstractDelegatingSessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
-import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
+import org.hibernate.reactive.session.internal.ReactiveSessionFactoryImpl;
 
 public class ReactiveSessionFactoryBuilder
 		extends AbstractDelegatingSessionFactoryBuilderImplementor<ReactiveSessionFactoryBuilder> {

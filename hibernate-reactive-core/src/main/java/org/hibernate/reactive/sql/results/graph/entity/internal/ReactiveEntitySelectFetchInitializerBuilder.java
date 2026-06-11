@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
+import org.hibernate.engine.spi.FetchOptions;
+
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.metamodel.internal.StandardEmbeddableInstantiator;
 import org.hibernate.metamodel.mapping.EmbeddableValuedModelPart;
@@ -35,6 +37,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 			NavigablePath navigablePath,
 			boolean selectByUniqueKey,
 			boolean affectedByFilter,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		final DomainResult<?> keyResult = originalKeyResult instanceof EmbeddableForeignKeyResultImpl
 				? new ReactiveEmbeddableForeignKeyResultImpl<>( (EmbeddableForeignKeyResultImpl<?>) originalKeyResult )
@@ -50,7 +53,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 					creationState
 			);
 		}
-		final BatchMode batchMode = determineBatchMode( entityPersister, parent, creationState );
+		final BatchMode batchMode = determineBatchMode( entityPersister, parent, fetchOptions, creationState );
 		switch ( batchMode ) {
 			case NONE:
 				return new ReactiveEntitySelectFetchInitializer<>(
@@ -60,6 +63,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
+						fetchOptions,
 						creationState
 				);
 			case BATCH_LOAD:
@@ -71,6 +75,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -82,6 +87,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -93,6 +99,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
+						fetchOptions,
 						creationState
 				);
 		}
@@ -103,8 +110,18 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 	public static BatchMode determineBatchMode(
 			EntityPersister entityPersister,
 			InitializerParent<?> parent,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
-		if ( !entityPersister.isBatchLoadable() ) {
+		if ( fetchOptions != null ) {
+			final Integer batchSize = fetchOptions.batchSize();
+			if ( batchSize != null && batchSize <= 1 ) {
+				return BatchMode.NONE;
+			}
+			if ( batchSize == null && !entityPersister.isBatchLoadable() ) {
+				return BatchMode.NONE;
+			}
+		}
+		else if ( !entityPersister.isBatchLoadable() ) {
 			return BatchMode.NONE;
 		}
 		if ( creationState.isDynamicInstantiation() ) {
