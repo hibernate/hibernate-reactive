@@ -200,7 +200,7 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 							)
 					);
 				}
-				final List<JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
+				final List<? extends JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
 				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
 				final JdbcParameter rowNumber = (JdbcParameter) parameterBinders.get( 1 );
 				final BasicEntityIdentifierMapping basicIdentifierMapping = (BasicEntityIdentifierMapping) identifierMapping;
@@ -354,7 +354,7 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			).thenCompose( unused -> {
 				final JdbcParameterBindings updateBindings = new JdbcParameterBindingsImpl( 2 );
 
-				final List<JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
+				final List<? extends JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
 						.getParameterBinders();
 				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
 				final JdbcParameter entityIdentity = (JdbcParameter) parameterBinders.get( 1 );
