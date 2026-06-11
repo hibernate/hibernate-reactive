@@ -26,6 +26,7 @@ public class ReactiveEntityFetchSelectImpl extends EntityFetchSelectImpl {
 				getNavigablePath(),
 				isSelectByUniqueKey(),
 				isAffectedByFilter(),
+				null,
 				creationState
 		);
 	}
