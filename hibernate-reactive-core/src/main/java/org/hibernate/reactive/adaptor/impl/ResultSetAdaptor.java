@@ -48,6 +48,7 @@ import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.desc.ColumnDescriptor;
 import io.vertx.sqlclient.impl.RowBase;
+import io.vertx.sqlclient.internal.RowDescriptorBase;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyList;
@@ -183,21 +184,8 @@ public class ResultSetAdaptor implements ResultSet {
 
 	private static class RowFromId extends RowBase {
 
-		private final List<String> columns;
-
 		public RowFromId(Collection<?> ids, String columnName) {
-			super( ids );
-			this.columns = List.of( requireNonNull( columnName ) );
-		}
-
-		@Override
-		public String getColumnName(int pos) {
-			return pos > 0 ? null : columns.get( pos );
-		}
-
-		@Override
-		public int getColumnIndex(String column) {
-			return columns.indexOf( column );
+			super( new RowDescriptorBase( new ColumnDescriptor[] { toColumnDescriptor( Object.class, columnName ) } ), ids );
 		}
 	}
 
