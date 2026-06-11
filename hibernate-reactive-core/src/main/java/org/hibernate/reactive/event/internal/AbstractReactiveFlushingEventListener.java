@@ -84,7 +84,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 		return preFlush( session, persistenceContext, flushProcessingContext )
 				.thenRun( () -> {
 					flushEverythingToExecutions( event, persistenceContext, session, flushProcessingContext );
-					clearFlushProcessing( persistenceContext );
+					// Don't clear flush processing here - it's needed for postFlush()
 				} );
 	}
 
