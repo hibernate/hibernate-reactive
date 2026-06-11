@@ -96,8 +96,7 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 							version,
 							LockMode.WRITE,
 							isExecuted(),
-							getPersister(),
-							isVersionIncrementDisabled()
+							getPersister()
 					);
 					entityHolder.setEntityEntry( entityEntry );
 					if ( isEarlyInsert() ) {
