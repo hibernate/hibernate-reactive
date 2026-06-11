@@ -253,7 +253,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		return delegate.getCollectionEntry( coll );
 	}
 
-	@Override
+	// @Override - Signature changed in ORM 8.0, keeping for backward compatibility
 	public EntityEntry addEntity(
 			Object entity,
 			Status status,
@@ -277,7 +277,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		);
 	}
 
-	@Override
+	// @Override - Signature changed in ORM 8.0, keeping for backward compatibility
 	public EntityEntry addEntry(
 			Object entity,
 			Status status,
@@ -826,5 +826,10 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			}
 		}
 		return voidFuture();
+	}
+
+	@Override
+	public void setCollectionFlushActionTracker(org.hibernate.engine.spi.CollectionFlushActionTracker tracker) {
+		delegate.setCollectionFlushActionTracker(tracker);
 	}
 }

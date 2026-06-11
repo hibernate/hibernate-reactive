@@ -168,4 +168,9 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	public void setTransientReferencesNullified() {
 		transientReferencesNullified = true;
 	}
+
+	@Override
+	public boolean isVersionIncrementDisabled() {
+		return super.isVersionIncrementDisabled();
+	}
 }
