@@ -40,6 +40,7 @@ public class ReactiveCircularFetchImpl extends CircularFetchImpl {
 				navigablePath,
 				selectByUniqueKey,
 				false,
+				null,
 				creationState
 		);
 	}

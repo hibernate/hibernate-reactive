@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.sql.results.graph.entity.internal;
 
+import org.hibernate.engine.spi.FetchOptions;
+
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.metamodel.internal.StandardEmbeddableInstantiator;
 import org.hibernate.metamodel.mapping.EmbeddableValuedModelPart;
@@ -35,6 +37,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 			NavigablePath navigablePath,
 			boolean selectByUniqueKey,
 			boolean affectedByFilter,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		final DomainResult<?> keyResult = originalKeyResult instanceof EmbeddableForeignKeyResultImpl
 				? new ReactiveEmbeddableForeignKeyResultImpl<>( (EmbeddableForeignKeyResultImpl<?>) originalKeyResult )
@@ -60,6 +63,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
+						fetchOptions,
 						creationState
 				);
 			case BATCH_LOAD:
@@ -71,7 +75,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
-							fetchedAttribute,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -83,7 +87,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
-							fetchedAttribute,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -95,7 +99,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
-						fetchedAttribute,
+						fetchOptions,
 						creationState
 				);
 		}

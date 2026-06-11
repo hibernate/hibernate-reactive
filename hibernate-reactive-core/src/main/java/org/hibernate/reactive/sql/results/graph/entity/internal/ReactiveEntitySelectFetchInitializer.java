@@ -14,6 +14,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
+import org.hibernate.engine.spi.FetchOptions;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
@@ -78,6 +79,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 			EntityPersister concreteDescriptor,
 			DomainResult<?> keyResult,
 			boolean affectedByFilter,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		super(
 				parent,
@@ -86,7 +88,7 @@ public class ReactiveEntitySelectFetchInitializer<Data extends EntitySelectFetch
 				concreteDescriptor,
 				keyResult,
 				affectedByFilter,
-				fetchedAttribute,
+				fetchOptions,
 				creationState
 		);
 		this.isEnhancedForLazyLoading = concreteDescriptor.getBytecodeEnhancementMetadata().isEnhancedForLazyLoading();
