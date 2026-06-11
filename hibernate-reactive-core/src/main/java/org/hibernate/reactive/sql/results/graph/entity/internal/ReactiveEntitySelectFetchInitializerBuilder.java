@@ -71,7 +71,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
-							fetchedAttribute.getMappedFetchOptions(),
+							fetchedAttribute,
 							creationState
 					);
 				}
@@ -83,7 +83,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
-							fetchedAttribute.getMappedFetchOptions(),
+							fetchedAttribute,
 							creationState
 					);
 				}
@@ -95,7 +95,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
-						fetchedAttribute.getMappedFetchOptions(),
+						fetchedAttribute,
 						creationState
 				);
 		}

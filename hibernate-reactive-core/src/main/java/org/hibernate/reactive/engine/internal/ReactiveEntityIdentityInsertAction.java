@@ -159,4 +159,9 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	public Object getRowId() {
 		return rowId;
 	}
+
+	@Override
+	public boolean isVersionIncrementDisabled() {
+		return super.isVersionIncrementDisabled();
+	}
 }
