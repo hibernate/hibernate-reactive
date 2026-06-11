@@ -31,7 +31,7 @@ import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLaziness
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.creation.internal.SessionCreationOptions;
+import org.hibernate.engine.creation.internal.options.StatefulOptions;
 import org.hibernate.engine.spi.EffectiveEntityGraph;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -166,7 +166,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
 
-	public ReactiveSessionImpl(SessionFactoryImpl delegate, SessionCreationOptions options, ReactiveConnection connection) {
+	public ReactiveSessionImpl(SessionFactoryImpl delegate, StatefulOptions options, ReactiveConnection connection) {
 		super( delegate, options );
 		InternalStateAssertions.assertUseOnEventLoop();
 		this.associatedWorkThread = Thread.currentThread();
@@ -198,8 +198,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
 	}
 
-	@Override
-	protected PersistenceContext createPersistenceContext(SessionCreationOptions options) {
+	protected PersistenceContext createPersistenceContext(StatefulOptions options) {
 		return new ReactivePersistenceContextAdapter( super.createPersistenceContext( options ) );
 	}
 
