@@ -410,7 +410,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
-		return this.getLazyLoadPlanByFetchGroup( getSubclassPropertyNameClosure() ).get(fetchGroup );
+		return this.getLazyLoadPlanByFetchGroup( subclassPropertyNameClosure ).get(fetchGroup );
 	}
 
 	@Override

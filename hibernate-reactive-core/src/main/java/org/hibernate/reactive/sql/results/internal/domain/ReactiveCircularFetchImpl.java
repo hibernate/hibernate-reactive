@@ -24,7 +24,6 @@ public class ReactiveCircularFetchImpl extends CircularFetchImpl {
 		super( original );
 	}
 
-	@Override
 	protected EntityInitializer<?> buildEntitySelectFetchInitializer(
 			InitializerParent<?> parent,
 			ToOneAttributeMapping fetchable,

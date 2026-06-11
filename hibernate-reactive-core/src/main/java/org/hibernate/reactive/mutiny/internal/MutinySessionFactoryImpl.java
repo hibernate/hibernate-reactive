@@ -170,8 +170,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	private SessionCreationOptions options() {
 		return new SessionBuilderImpl( delegate ) {
 			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
+			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
+				return new SessionImpl( delegate, options );
 			}
 		};
 	}
@@ -179,8 +179,8 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 	private SessionCreationOptions options(String tenantIdentifier) {
 		SessionBuilderImpl sessionBuilder = new SessionBuilderImpl( delegate ) {
 			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
+			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
+				return new SessionImpl( delegate, options );
 			}
 		};
 		return (SessionCreationOptions) sessionBuilder.tenantIdentifier( tenantIdentifier );
