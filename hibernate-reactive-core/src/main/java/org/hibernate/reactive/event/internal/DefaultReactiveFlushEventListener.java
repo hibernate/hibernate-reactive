@@ -38,12 +38,14 @@ public class DefaultReactiveFlushEventListener extends AbstractReactiveFlushingE
 			source.getEventListenerManager().flushStart();
 
 			return flushEverythingToExecutions( event )
-					.thenCompose( v -> performExecutions( source ) )
-					.thenRun( () -> postFlush( source ) )
-					.thenRun( () -> clearFlushProcessing( persistenceContext ) )
-					.whenComplete( (v, x) -> source
-							.getEventListenerManager()
-							.flushEnd( event.getNumberOfEntitiesProcessed(), event.getNumberOfCollectionsProcessed() ) )
+					.thenCompose( flushProcessingContext -> performExecutions( source )
+							.thenRun( () -> postFlush( source, flushProcessingContext ) )
+					)
+					.whenComplete( (v, x) -> {
+						clearFlushProcessing( persistenceContext );
+						source.getEventListenerManager()
+								.flushEnd( event.getNumberOfEntitiesProcessed(), event.getNumberOfCollectionsProcessed() );
+					} )
 					.thenRun( () -> {
 						postPostFlush( source );
 

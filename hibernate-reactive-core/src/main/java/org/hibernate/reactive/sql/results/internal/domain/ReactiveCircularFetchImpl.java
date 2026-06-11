@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.sql.results.internal.domain;
 
+import org.hibernate.engine.spi.FetchOptions;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityDelayedFetchInitializer;
@@ -24,6 +25,7 @@ public class ReactiveCircularFetchImpl extends CircularFetchImpl {
 		super( original );
 	}
 
+	@Override
 	protected EntityInitializer<?> buildEntitySelectFetchInitializer(
 			InitializerParent<?> parent,
 			ToOneAttributeMapping fetchable,
@@ -31,6 +33,7 @@ public class ReactiveCircularFetchImpl extends CircularFetchImpl {
 			DomainResult<?> keyResult,
 			NavigablePath navigablePath,
 			boolean selectByUniqueKey,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		return ReactiveEntitySelectFetchInitializerBuilder.createInitializer(
 				parent,
@@ -40,7 +43,7 @@ public class ReactiveCircularFetchImpl extends CircularFetchImpl {
 				navigablePath,
 				selectByUniqueKey,
 				false,
-				null,
+				fetchOptions,
 				creationState
 		);
 	}
