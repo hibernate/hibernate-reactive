@@ -227,8 +227,7 @@ public class DefaultReactiveDeleteEventListener
 								version,
 								LockMode.NONE,
 								true,
-								persister,
-								false
+								persister
 						);
 						persister.afterReassociate( entity, source );
 
