@@ -291,7 +291,7 @@ public interface Log extends BasicLogger {
 	@Message(id = 91, value = "Can't begin a new transaction as an active transaction is already associated to this connection")
 	IllegalStateException liveTransactionDetectedOnBeginTransaction();
 
-	@Message(id = 92, value = "Unexpected callback type: %1$s")
+	@Message(id = 93, value = "Unexpected callback type: %1$s")
 	HibernateException nonReactiveCallback(@FormatWith(ClassFormatter.class) Class<?> aClass);
 
 	// Same method that exists in CoreMessageLogger
