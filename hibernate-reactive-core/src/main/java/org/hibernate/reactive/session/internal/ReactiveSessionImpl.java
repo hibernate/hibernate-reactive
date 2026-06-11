@@ -165,6 +165,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private transient final ReactiveActionQueue reactiveActionQueue = new ReactiveActionQueue( this );
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
+	private PersistenceContext reactivePersistenceContext;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, StatefulOptions options, ReactiveConnection connection) {
 		super( delegate, options );
@@ -198,8 +199,18 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
 	}
 
-	protected PersistenceContext createPersistenceContext(StatefulOptions options) {
-		return new ReactivePersistenceContextAdapter( super.createPersistenceContext( options ) );
+	@Override
+	public PersistenceContext getPersistenceContextInternal() {
+		// Lazily wrap the ORM persistence context with the reactive adapter
+		if ( reactivePersistenceContext == null ) {
+			reactivePersistenceContext = new ReactivePersistenceContextAdapter( super.getPersistenceContextInternal() );
+		}
+		return reactivePersistenceContext;
+	}
+
+	@Override
+	public PersistenceContext getPersistenceContext() {
+		return getPersistenceContextInternal();
 	}
 
 	@Override
