@@ -30,6 +30,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 
 	private boolean executed;
 	private boolean transientReferencesNullified;
+	private final boolean isVersionIncrementDisabled;
 
 	public ReactiveEntityRegularInsertAction(
 			Object id,
@@ -39,7 +40,8 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			EntityPersister persister,
 			boolean isVersionIncrementDisabled,
 			EventSource session) {
-		super( id, state, instance, version, persister, isVersionIncrementDisabled, session );
+		super( id, state, instance, version, persister, session );
+		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
 	}
 
 	@Override
@@ -171,6 +173,6 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 
 	@Override
 	public boolean isVersionIncrementDisabled() {
-		return super.isVersionIncrementDisabled();
+		return isVersionIncrementDisabled;
 	}
 }

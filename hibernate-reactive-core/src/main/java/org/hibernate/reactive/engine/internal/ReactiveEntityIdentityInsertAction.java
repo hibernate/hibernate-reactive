@@ -31,6 +31,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	private boolean executed;
 	private boolean transientReferencesNullified;
 	private Object rowId;
+	private final boolean isVersionIncrementDisabled;
 
 	public ReactiveEntityIdentityInsertAction(
 			Object[] state,
@@ -39,7 +40,8 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			boolean isVersionIncrementDisabled,
 			EventSource session,
 			boolean isDelayed) {
-		super( state, instance, persister, isVersionIncrementDisabled, session, isDelayed );
+		super( state, instance, persister, session, isDelayed );
+		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
 	}
 
 	@Override
@@ -162,6 +164,6 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 
 	@Override
 	public boolean isVersionIncrementDisabled() {
-		return super.isVersionIncrementDisabled();
+		return isVersionIncrementDisabled;
 	}
 }
