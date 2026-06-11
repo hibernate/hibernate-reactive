@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.context.internal;
+package org.hibernate.reactive.context.impl;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

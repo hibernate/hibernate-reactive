@@ -7,6 +7,7 @@ package org.hibernate.reactive.context.internal;
 import java.lang.invoke.MethodHandles;
 
 import org.hibernate.reactive.context.Context;
+import org.hibernate.reactive.context.impl.ContextualDataStorage;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
