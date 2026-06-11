@@ -5,6 +5,7 @@
 package org.hibernate.reactive.persister.entity.internal;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -408,9 +409,14 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return reactiveDelegate.getReactiveUniqueKeyLoader( this, (SingularAttributeMapping) findByPath( attributeName ) );
 	}
 
+	private Map<String, ReactiveSingleIdArrayLoadPlan> reactiveLazyLoadPlanByFetchGroup;
+
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
-		return this.getLazyLoadPlanByFetchGroup( subclassPropertyNameClosure ).get(fetchGroup );
+		if ( reactiveLazyLoadPlanByFetchGroup == null ) {
+			reactiveLazyLoadPlanByFetchGroup = ReactiveAbstractEntityPersister.super.getLazyLoadPlanByFetchGroup( getPropertyNames() );
+		}
+		return reactiveLazyLoadPlanByFetchGroup.get( fetchGroup );
 	}
 
 	@Override
