@@ -53,7 +53,7 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 					creationState
 			);
 		}
-		final BatchMode batchMode = determineBatchMode( entityPersister, parent, creationState );
+		final BatchMode batchMode = determineBatchMode( entityPersister, parent, fetchOptions, creationState );
 		switch ( batchMode ) {
 			case NONE:
 				return new ReactiveEntitySelectFetchInitializer<>(
@@ -110,8 +110,18 @@ public class ReactiveEntitySelectFetchInitializerBuilder {
 	public static BatchMode determineBatchMode(
 			EntityPersister entityPersister,
 			InitializerParent<?> parent,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
-		if ( !entityPersister.isBatchLoadable() ) {
+		if ( fetchOptions != null ) {
+			final Integer batchSize = fetchOptions.batchSize();
+			if ( batchSize != null && batchSize <= 1 ) {
+				return BatchMode.NONE;
+			}
+			if ( batchSize == null && !entityPersister.isBatchLoadable() ) {
+				return BatchMode.NONE;
+			}
+		}
+		else if ( !entityPersister.isBatchLoadable() ) {
 			return BatchMode.NONE;
 		}
 		if ( creationState.isDynamicInstantiation() ) {

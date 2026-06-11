@@ -96,7 +96,9 @@ import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
+import org.hibernate.action.queue.spi.ActionQueue;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
+import org.hibernate.reactive.engine.internal.ReactiveCollectionActionRedirectingActionQueue;
 import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
 import org.hibernate.reactive.event.ReactiveFlushEventListener;
@@ -211,6 +213,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public PersistenceContext getPersistenceContext() {
 		return getPersistenceContextInternal();
+	}
+
+	@Override
+	protected ActionQueue createActionQueue() {
+		return new ReactiveCollectionActionRedirectingActionQueue( super.createActionQueue(), this, this );
 	}
 
 	@Override

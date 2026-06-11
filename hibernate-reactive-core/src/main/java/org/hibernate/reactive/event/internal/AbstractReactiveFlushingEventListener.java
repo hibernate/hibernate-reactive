@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.FlushEntityEvent;
@@ -76,15 +77,15 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * @param event The flush event.
 	 * @throws HibernateException Error flushing caches to execution queues.
 	 */
-	protected CompletionStage<Void> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
+	protected CompletionStage<FlushProcessingContext> flushEverythingToExecutions(FlushEvent event) throws HibernateException {
 		LOG.trace( "Flushing session" );
 		final EventSource session = event.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
 		final FlushProcessingContext flushProcessingContext = beginFlushProcessing( session, persistenceContext );
 		return preFlush( session, persistenceContext, flushProcessingContext )
-				.thenRun( () -> {
+				.thenApply( v -> {
 					flushEverythingToExecutions( event, persistenceContext, session, flushProcessingContext );
-					// Don't clear flush processing here - it's needed for postFlush()
+					return flushProcessingContext;
 				} );
 	}
 
@@ -319,7 +320,7 @@ public abstract class AbstractReactiveFlushingEventListener {
 	 * 2. rebuild the collection entries
 	 * 3. call Interceptor.postFlush()
 	 */
-	protected void postFlush(SessionImplementor session) throws HibernateException {
+	protected void postFlush(SessionImplementor session, FlushProcessingContext flushProcessingContext) throws HibernateException {
 
 		LOG.trace( "Post flush" );
 
@@ -332,20 +333,18 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		persistenceContext.forEachCollectionEntry(
 				(persistentCollection, collectionEntry) -> {
-					collectionEntry.postFlush( persistentCollection, persistenceContext.getCollectionFlushActionTracker() );
-					if ( collectionEntry.getLoadedPersister() == null ) {
-						//if the collection is dereferenced, unset its session reference and remove from the session cache
-						//iter.remove(); //does not work, since the entrySet is not backed by the set
-						persistentCollection.unsetSession( session );
-						persistenceContext.removeCollectionEntry( persistentCollection );
+					collectionEntry.postFlush( persistentCollection, flushProcessingContext );
+					final CollectionPersister loadedPersister = collectionEntry.getLoadedPersister();
+					final Object key = collectionEntry.getLoadedKey();
+					if ( loadedPersister != null && key != null ) {
+						//otherwise recreate the mapping between the collection and its key
+						final CollectionKey collectionKey = new CollectionKey( loadedPersister, key );
+						persistenceContext.addCollectionByKey( collectionKey, persistentCollection );
 					}
 					else {
-						//otherwise recreate the mapping between the collection and its key
-						final CollectionKey collectionKey = new CollectionKey(
-								collectionEntry.getLoadedPersister(),
-								collectionEntry.getLoadedKey()
-						);
-						persistenceContext.addCollectionByKey( collectionKey, persistentCollection );
+						//if the collection is dereferenced, unset its session reference and remove from the session cache
+						persistentCollection.unsetSession( session );
+						persistenceContext.removeCollectionEntry( persistentCollection );
 					}
 				}, true
 		);
