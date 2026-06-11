@@ -25,7 +25,7 @@ import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLaziness
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.creation.internal.SessionCreationOptions;
+import org.hibernate.engine.creation.internal.options.StatelessOptions;
 import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -180,7 +180,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private final PersistenceContext persistenceContext;
 	private final boolean connectionProvided;
 
-	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
+	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, StatelessOptions options, ReactiveConnection connection) {
 		super( factory, options );
 		connectionProvided = options.getConnection() != null;
 		reactiveConnection = connection;
@@ -194,7 +194,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	 */
 	private ReactiveStatelessSessionImpl(
 			SessionFactoryImpl factory,
-			SessionCreationOptions options,
+			StatelessOptions options,
 			ReactiveConnection connection,
 			PersistenceContext persistenceContext) {
 		super( factory, options );

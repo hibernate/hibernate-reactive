@@ -12,11 +12,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.Cache;
-import org.hibernate.engine.creation.internal.SessionBuilderImpl;
-import org.hibernate.engine.creation.internal.SessionCreationOptions;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.creation.internal.options.StatefulOptions;
+import org.hibernate.engine.creation.internal.options.StatelessOptions;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.internal.SessionImpl;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
@@ -84,7 +82,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 
 	@Override
 	public Stage.Session createSession(String tenantId) {
-		final SessionCreationOptions options = options();
+		final StatefulOptions options = options();
 		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		ReactiveSessionImpl sessionImpl = new ReactiveSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
 		return new StageSessionImpl( sessionImpl );
@@ -92,12 +90,12 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 
 	@Override
 	public Stage.StatelessSession createStatelessSession() {
-		return createStatelessSession( getTenantIdentifier( options() ) );
+		return createStatelessSession( getTenantIdentifier( statelessOptions() ) );
 	}
 
 	@Override
 	public Stage.StatelessSession createStatelessSession(String tenantId) {
-		final SessionCreationOptions options = options();
+		final StatelessOptions options = statelessOptions();
 		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		ReactiveStatelessSession sessionImpl = new ReactiveStatelessSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
 		return new StageStatelessSessionImpl( sessionImpl );
@@ -105,7 +103,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 
 	@Override
 	public CompletionStage<Stage.Session> openSession() {
-		SessionCreationOptions options = options();
+		StatefulOptions options = options();
 		return connection( getTenantIdentifier( options ) )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveSessionImpl( delegate, options, connection ) ) )
@@ -122,7 +120,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 
 	@Override
 	public CompletionStage<Stage.StatelessSession> openStatelessSession() {
-		SessionCreationOptions options = options();
+		StatelessOptions options = statelessOptions();
 		return connection( getTenantIdentifier( options ) )
 				.thenCompose( connection -> create( connection,
 						() -> new ReactiveStatelessSessionImpl( delegate, options, connection ) ) )
@@ -133,7 +131,7 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 	public CompletionStage<Stage.StatelessSession> openStatelessSession(String tenantId) {
 		return connection( tenantId )
 				.thenCompose( connection -> create( connection,
-						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), connection ) ) )
+						() -> new ReactiveStatelessSessionImpl( delegate, statelessOptions( tenantId ), connection ) ) )
 				.thenApply( StageStatelessSessionImpl::new );
 	}
 
@@ -153,27 +151,24 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		}
 	}
 
-	private SessionCreationOptions options() {
-		return new SessionBuilderImpl( delegate ) {
-			@Override
-			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
-				return new SessionImpl( delegate, options );
-			}
-		};
+	private StatefulOptions options() {
+		return new StatefulOptions( delegate );
 	}
 
-	private SessionCreationOptions options(String tenantId) {
-		return new SessionBuilderImpl( delegate ) {
-			@Override
-			protected SessionImplementor createSession(org.hibernate.engine.creation.internal.SessionCreationOptions options) {
-				return new SessionImpl( delegate, options );
-			}
+	private StatefulOptions options(String tenantId) {
+		StatefulOptions options = new StatefulOptions( delegate );
+		options.tenantIdentifier( tenantId );
+		return options;
+	}
 
-			@Override
-			public Object getTenantIdentifierValue() {
-				return tenantId;
-			}
-		};
+	private StatelessOptions statelessOptions() {
+		return new StatelessOptions( delegate );
+	}
+
+	private StatelessOptions statelessOptions(String tenantId) {
+		StatelessOptions options = new StatelessOptions( delegate );
+		options.tenantIdentifier( tenantId );
+		return options;
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
@@ -332,7 +327,13 @@ public class StageSessionFactoryImpl implements Stage.SessionFactory, Implemento
 		return delegate.getCriteriaBuilder();
 	}
 
-	private String getTenantIdentifier(SessionCreationOptions options) {
+	private String getTenantIdentifier(StatefulOptions options) {
+		return options.getTenantIdentifierValue() == null
+				? null
+				: delegate.getTenantIdentifierJavaType().toString( options.getTenantIdentifierValue() );
+	}
+
+	private String getTenantIdentifier(StatelessOptions options) {
 		return options.getTenantIdentifierValue() == null
 				? null
 				: delegate.getTenantIdentifierJavaType().toString( options.getTenantIdentifierValue() );
