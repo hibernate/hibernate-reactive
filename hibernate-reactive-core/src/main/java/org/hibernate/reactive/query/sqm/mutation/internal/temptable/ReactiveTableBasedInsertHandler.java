@@ -8,7 +8,6 @@ import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -47,7 +46,6 @@ import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
-import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.type.descriptor.ValueBinder;
 
@@ -200,10 +198,10 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 							)
 					);
 				}
-				final List<? extends JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
-				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
-				final JdbcParameter rowNumber = (JdbcParameter) parameterBinders.get( 1 );
-				final BasicEntityIdentifierMapping basicIdentifierMapping = (BasicEntityIdentifierMapping) identifierMapping;
+				var parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
+				var rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
+				var rowNumber = (JdbcParameter) parameterBinders.get( 1 );
+				var basicIdentifierMapping = (BasicEntityIdentifierMapping) identifierMapping;
 
 				if ( !rowNumberStartsAtOne ) {
 					return ReactiveExecuteWithTemporaryTableHelper.loadInsertedRowNumbers(
@@ -354,10 +352,10 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			).thenCompose( unused -> {
 				final JdbcParameterBindings updateBindings = new JdbcParameterBindingsImpl( 2 );
 
-				final List<? extends JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
+				var parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
 						.getParameterBinders();
-				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
-				final JdbcParameter entityIdentity = (JdbcParameter) parameterBinders.get( 1 );
+				var rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
+				var entityIdentity = (JdbcParameter) parameterBinders.get( 1 );
 				return loop(entityTableToRootIdentity.entrySet(), entry -> {
 					JdbcMapping jdbcMapping = basicIdentifierMapping.getJdbcMapping();
 					updateBindings.addBinding(

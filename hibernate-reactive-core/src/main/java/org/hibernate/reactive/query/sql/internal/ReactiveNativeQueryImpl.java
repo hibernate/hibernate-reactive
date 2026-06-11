@@ -558,7 +558,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockOptions(LockOptions lockOptions) {
-		// setLockOptions removed in ORM 8 from NativeQueryImpl - apply individual settings
 		getQueryOptions().getLockOptions().setLockMode( lockOptions.getLockMode() );
 		return this;
 	}
@@ -582,7 +581,6 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public ReactiveNativeQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
-		// setLockMode(String, LockMode) removed in ORM 8 from NativeQueryImpl
 		getQueryOptions().getLockOptions().setAliasSpecificLockMode( alias, lockMode );
 		return this;
 	}
