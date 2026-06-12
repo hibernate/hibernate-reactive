@@ -22,6 +22,7 @@ import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.impl.CompletionStages.CompletionStageHandler;
 
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.json.JsonArray;
@@ -39,7 +40,6 @@ import io.vertx.sqlclient.Tuple;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
 
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
@@ -67,6 +67,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	// if we execute it every time, we will have several useless messages in the log
 	private boolean closed = false;
 
+	private Throwable connectionError;
+
 	SqlClientConnection(
 			SqlConnection connection,
 			Pool pool,
@@ -74,11 +76,25 @@ public class SqlClientConnection implements ReactiveConnection {
 			SqlExceptionHelper sqlExceptionHelper,
 			ContextInternal connectionContext) {
 		this.connectionContext = connectionContext;
+		this.connection = connection;
+		this.connection.exceptionHandler( this::onConnectionError );
 		this.pool = pool;
 		this.sqlStatementLogger = sqlStatementLogger;
-		this.connection = connection;
 		this.sqlExceptionHelper = sqlExceptionHelper;
 		LOG.tracef( "Connection created for %1$s associated to context %2$s: ", connection, connectionContext );
+	}
+
+	private void onConnectionError(Throwable throwable) {
+		if ( connectionError == null ) {
+			// This is the original cause of the error, the one we are interested
+			LOG.tracef( "Connection error received for %s: %s", connection, throwable.getMessage() );
+			connectionError = throwable;
+		}
+		else {
+			// Subsequent errors are probably caused by the first one, I think we can skip them
+			// I'm not sure if this is actually something that can happen
+			LOG.tracef( "The connection has already failed, ignoring error %s", connection, throwable.getMessage() );
+		}
 	}
 
 	@Override
@@ -117,7 +133,8 @@ public class SqlClientConnection implements ReactiveConnection {
 	public <T> CompletionStage<T> selectIdentifier(String sql, Object[] paramValues, Class<T> idClass) {
 		translateNulls( paramValues );
 		return preparedQuery( sql, Tuple.wrap( paramValues ) )
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) )
 				.thenApply( rowSet -> {
 					for ( Row row : rowSet ) {
 						return row.get( idClass, 0 );
@@ -162,22 +179,30 @@ public class SqlClientConnection implements ReactiveConnection {
 	public CompletionStage<Void> executeUnprepared(String sql) {
 		feedback( sql );
 		return client().query( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) )
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) )
 				.thenCompose( CompletionStages::voidFuture );
+	}
+
+	private <T> CompletionStage<T> convertException(String sql, CompletionStageHandler<T, Throwable> handler) {
+		if ( handler.hasFailed() ) {
+			return failedFuture( convertException( sql, handler.getThrowable() ) );
+		}
+		return handler.getResultAsCompletionStage();
 	}
 
 	/**
 	 * Similar to {@link org.hibernate.exception.internal.SQLExceptionTypeDelegate#convert(SQLException, String, String)}
 	 */
-	private <T> T convertException(T rows, String sql, Throwable sqlException) {
-		if ( sqlException == null ) {
-			return rows;
-		}
+	private Throwable convertException(String sql, Throwable sqlException) {
 		if ( sqlException instanceof DatabaseException de ) {
-			sqlException = sqlExceptionHelper
+			return sqlExceptionHelper
 					.convert( new SQLException( de.getMessage(), de.getSqlState(), de.getErrorCode() ), "error executing SQL statement", sql );
 		}
-		return rethrow( sqlException );
+		if ( connectionError != null ) {
+			return connectionError;
+		}
+		return sqlException;
 	}
 
 	@Override
@@ -322,31 +347,39 @@ public class SqlClientConnection implements ReactiveConnection {
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters) {
 		feedback( sql );
 		return client().preparedQuery( sql ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) );
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql, Tuple parameters, PrepareOptions options) {
 		feedback( sql );
 		return client().preparedQuery( sql, options ).execute( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) );
+
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryBatch(String sql, List<Tuple> parameters) {
 		feedback( sql );
 		return client().preparedQuery( sql ).executeBatch( parameters ).toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) );
+
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQuery(String sql) {
 		feedback( sql );
 		return client().preparedQuery( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) );
+
 	}
 
 	public CompletionStage<RowSet<Row>> preparedQueryOutsideTransaction(String sql) {
 		feedback( sql );
 		return pool.preparedQuery( sql ).execute().toCompletionStage()
-				.handle( (rows, throwable) -> convertException( rows, sql, throwable ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> convertException( sql, handler ) );
 	}
 
 	private void feedback(String sql) {
