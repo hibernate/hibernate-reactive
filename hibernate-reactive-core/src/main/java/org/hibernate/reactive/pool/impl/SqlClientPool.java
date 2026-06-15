@@ -296,6 +296,12 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 		}
 
 		@Override
+		public Object currentTransactionId() {
+			ReactiveConnection reactiveConnection = connectionFuture.getNow( null );
+			return reactiveConnection != null ? reactiveConnection.currentTransactionId() : null;
+		}
+
+		@Override
 		public DatabaseMetadata getDatabaseMetadata() {
 			if ( closed ) {
 				throw LOG.connectionIsClosed();
