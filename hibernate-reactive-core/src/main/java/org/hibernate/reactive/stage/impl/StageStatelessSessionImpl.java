@@ -12,6 +12,8 @@ import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.reactive.session.impl.CurrentTransaction;
+import org.hibernate.reactive.session.impl.ExecutableTransaction;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.stage.Stage.MutationQuery;
 import org.hibernate.reactive.stage.Stage.Query;
@@ -190,9 +192,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <T> CompletionStage<T> withTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
-		return currentTransaction == null
-				? new Transaction<T>().execute( work )
-				: work.apply( currentTransaction );
+		return transactionState().execute( work, InternalTransaction<T>::new );
 	}
 
 	@Override
@@ -217,22 +217,29 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		return getFactory().getCriteriaBuilder();
 	}
 
-	private Transaction<?> currentTransaction;
+	private CurrentTransaction<Stage.Transaction> transactionState;
+
+	private CurrentTransaction<Stage.Transaction> transactionState() {
+		if ( transactionState == null ) {
+			transactionState = new CurrentTransaction<>( delegate.getReactiveConnection() );
+		}
+		return transactionState;
+	}
 
 	@Override
 	public Stage.Transaction currentTransaction() {
-		return currentTransaction;
+		return transactionState().get();
 	}
 
-	private class Transaction<T> implements Stage.Transaction {
+	private class InternalTransaction<R> implements Stage.Transaction, ExecutableTransaction<Stage.Transaction, CompletionStage<R>> {
 		boolean rollback;
 		Throwable error;
 
-		CompletionStage<T> execute(Function<Stage.Transaction, CompletionStage<T>> work) {
-			currentTransaction = this;
+		@Override
+		public CompletionStage<R> execute(Function<Stage.Transaction, CompletionStage<R>> work, Runnable cleanup) {
 			return begin()
 					.thenCompose( v -> executeInTransaction( work ) )
-					.whenComplete( (t, x) -> currentTransaction = null );
+					.whenComplete( (t, x) -> cleanup.run() );
 		}
 
 		/**
@@ -240,7 +247,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 		 * differentiate an error starting a transaction (and therefore doesn't need to rollback)
 		 * and an error thrown by the work.
 		 */
-		CompletionStage<T> executeInTransaction(Function<Stage.Transaction, CompletionStage<T>> work) {
+		CompletionStage<R> executeInTransaction(Function<Stage.Transaction, CompletionStage<R>> work) {
 			return voidFuture()
 					.thenCompose( v -> work.apply( this ) )
 					// have to capture the error here and pass it along,
@@ -267,7 +274,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 			return rollback ? c.rollbackTransaction() : c.commitTransaction();
 		}
 
-		<R> R processError(R result, Throwable e) {
+		<E> E processError(E result, Throwable e) {
 			if ( e != null ) {
 				rollback = true;
 				if ( error == null ) {
