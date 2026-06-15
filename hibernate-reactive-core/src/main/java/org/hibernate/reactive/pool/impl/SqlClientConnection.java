@@ -108,6 +108,13 @@ public class SqlClientConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public Object currentTransactionId() {
+		// The Vert.x Transaction object has stable identity for a given
+		// transaction and changes when a new transaction is started.
+		return connection.transaction();
+	}
+
+	@Override
 	public CompletionStage<Integer> update(String sql, Object[] paramValues) {
 		translateNulls( paramValues );
 		return update( sql, Tuple.wrap( paramValues ) );
