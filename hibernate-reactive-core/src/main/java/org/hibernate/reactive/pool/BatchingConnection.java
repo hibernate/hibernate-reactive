@@ -57,6 +57,11 @@ public class BatchingConnection implements ReactiveConnection {
 	}
 
 	@Override
+	public Object currentTransactionId() {
+		return delegate.currentTransactionId();
+	}
+
+	@Override
 	public ReactiveConnection withBatchSize(int batchSize) {
 		if ( batchSize <= 1 ) {
 			return delegate;

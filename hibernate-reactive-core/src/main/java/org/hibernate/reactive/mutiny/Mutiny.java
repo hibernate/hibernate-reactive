@@ -1517,7 +1517,10 @@ public interface Mutiny {
 		 * if any.
 		 *
 		 * @return the {@link Transaction}, or null if no transaction
-		 * was started using {@link #withTransaction(Function)}.
+		 * is active. Returns a non-null value both when a transaction
+		 * was started via {@link #withTransaction(Function)} and when
+		 * a transaction was started externally on the underlying
+		 * connection (for example, by a framework-level connection pool).
 		 *
 		 * @see #withTransaction(Function)
 		 * @see SessionFactory#withTransaction(BiFunction)
@@ -1905,7 +1908,10 @@ public interface Mutiny {
 		 * if any.
 		 *
 		 * @return the {@link Transaction}, or null if no transaction
-		 * was started using {@link #withTransaction(Function)}.
+		 * is active. Returns a non-null value both when a transaction
+		 * was started via {@link #withTransaction(Function)} and when
+		 * a transaction was started externally on the underlying
+		 * connection (for example, by a framework-level connection pool).
 		 *
 		 * @see #withTransaction(Function)
 		 * @see SessionFactory#withTransaction(BiFunction)
