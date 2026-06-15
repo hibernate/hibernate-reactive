@@ -31,6 +31,21 @@ public interface ReactiveConnection {
 
 	boolean isTransactionInProgress();
 
+	/**
+	 * Returns an opaque identifier for the current transaction, or {@code null}
+	 * if no transaction is in progress. The returned object must have stable
+	 * identity ({@code ==}) for the lifetime of a single transaction, and must
+	 * differ (by identity) across distinct transactions on the same connection.
+	 * <p>
+	 * This is used by {@link org.hibernate.reactive.session.impl.CurrentTransaction}
+	 * to detect when the underlying connection has cycled to a new external
+	 * transaction, so that cached state (e.g. {@code markedForRollback}) is
+	 * not carried over from a previous transaction.
+	 */
+	default Object currentTransactionId() {
+		return null;
+	}
+
 	@FunctionalInterface
 	interface Expectation {
 		void verifyOutcome(int rowCount, int batchPosition, String sql);
