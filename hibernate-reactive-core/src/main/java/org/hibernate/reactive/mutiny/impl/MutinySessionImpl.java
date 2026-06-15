@@ -24,6 +24,8 @@ import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.impl.CurrentTransaction;
+import org.hibernate.reactive.session.impl.ExecutableTransaction;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.CacheRetrieveMode;
@@ -495,24 +497,29 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		return currentTransaction == null
-				? new Transaction<T>().execute( work )
-				: work.apply( currentTransaction );
+		return transactionState().execute( work, InternalTransaction<T>::new );
 	}
 
-	private Transaction<?> currentTransaction;
+	private CurrentTransaction<Mutiny.Transaction> transactionState;
+
+	private CurrentTransaction<Mutiny.Transaction> transactionState() {
+		if ( transactionState == null ) {
+			transactionState = new CurrentTransaction<>( delegate.getReactiveConnection() );
+		}
+		return transactionState;
+	}
 
 	@Override
 	public Mutiny.Transaction currentTransaction() {
-		return currentTransaction;
+		return transactionState().get();
 	}
 
-	private class Transaction<T> implements Mutiny.Transaction {
+	private class InternalTransaction<R> implements Mutiny.Transaction, ExecutableTransaction<Mutiny.Transaction, Uni<R>> {
 		boolean markedForRollback;
 
-		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
-			currentTransaction = this;
-			return begin().chain( () -> executeInTransaction( work ) ).eventually( () -> currentTransaction = null );
+		@Override
+		public Uni<R> execute(Function<Mutiny.Transaction, Uni<R>> work, Runnable cleanup) {
+			return begin().chain( () -> executeInTransaction( work ) ).eventually( cleanup );
 		}
 
 		/**
@@ -520,7 +527,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		 * differentiate an error starting a transaction (and therefore doesn't need to
 		 * roll back) and an error thrown by the work.
 		 */
-		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+		Uni<R> executeInTransaction(Function<Mutiny.Transaction, Uni<R>> work) {
 			return Uni.createFrom()
 					.deferred( () -> work.apply( this ) )
 					// only flush() if the work completed with no exception

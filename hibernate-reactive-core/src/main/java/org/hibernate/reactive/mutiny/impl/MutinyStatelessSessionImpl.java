@@ -15,6 +15,8 @@ import org.hibernate.reactive.mutiny.Mutiny.SelectionQuery;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
+import org.hibernate.reactive.session.impl.CurrentTransaction;
+import org.hibernate.reactive.session.impl.ExecutableTransaction;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
@@ -291,28 +293,31 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 
 	@Override
 	public <T> Uni<T> withTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
-		return currentTransaction == null ? new Transaction<T>().execute( work ) : work.apply( currentTransaction );
+		return transactionState().execute( work, InternalTransaction<T>::new );
 	}
 
-	private Transaction<?> currentTransaction;
+	private CurrentTransaction<Mutiny.Transaction> transactionState;
+
+	private CurrentTransaction<Mutiny.Transaction> transactionState() {
+		if ( transactionState == null ) {
+			transactionState = new CurrentTransaction<>( delegate.getReactiveConnection() );
+		}
+		return transactionState;
+	}
 
 	@Override
 	public Mutiny.Transaction currentTransaction() {
-		return currentTransaction;
+		return transactionState().get();
 	}
 
-	private class Transaction<T> implements Mutiny.Transaction {
+	private class InternalTransaction<R> implements Mutiny.Transaction, ExecutableTransaction<Mutiny.Transaction, Uni<R>> {
 		boolean rollback;
 
-		/**
-		 * Execute the given work in a new transaction. Called only
-		 * when no existing transaction was active.
-		 */
-		Uni<T> execute(Function<Mutiny.Transaction, Uni<T>> work) {
-			currentTransaction = this;
+		@Override
+		public Uni<R> execute(Function<Mutiny.Transaction, Uni<R>> work, Runnable cleanup) {
 			return begin()
 					.chain( () -> executeInTransaction( work ) )
-					.eventually( () -> currentTransaction = null );
+					.eventually( cleanup );
 		}
 
 		/**
@@ -321,7 +326,7 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 		 * (which therefore does not need to trigger rollback) from an
 		 * error thrown by the work (which does).
 		 */
-		Uni<T> executeInTransaction(Function<Mutiny.Transaction, Uni<T>> work) {
+		Uni<R> executeInTransaction(Function<Mutiny.Transaction, Uni<R>> work) {
 			return Uni.createFrom().deferred( () -> work.apply( this ) )
 					// in the case of an exception or cancellation
 					// we need to roll back the transaction
