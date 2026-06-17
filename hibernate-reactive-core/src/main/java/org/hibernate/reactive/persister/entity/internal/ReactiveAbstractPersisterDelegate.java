@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import org.hibernate.FetchMode;
+import org.hibernate.engine.FetchStyle;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.FetchTiming;
 import org.hibernate.engine.spi.CascadeStyle;
@@ -316,7 +316,7 @@ public class ReactiveAbstractPersisterDelegate {
 			ManagedMappingType declaringType,
 			PropertyAccess propertyAccess,
 			CascadeStyle cascadeStyle,
-			FetchMode fetchMode,
+			FetchStyle fetchStyle,
 			MappingModelCreationProcess creationProcess) {
 		return MappingModelCreationHelper
 				.buildPluralAttributeMapping(
@@ -327,7 +327,7 @@ public class ReactiveAbstractPersisterDelegate {
 						declaringType,
 						propertyAccess,
 						cascadeStyle,
-						fetchMode,
+						fetchStyle,
 						creationProcess,
 						ReactivePluralAttributeMapping::new
 				);

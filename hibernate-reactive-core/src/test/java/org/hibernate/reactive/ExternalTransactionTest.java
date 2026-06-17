@@ -8,11 +8,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.session.impl.ExternalTransaction;
+import org.hibernate.reactive.session.internal.ExternalTransaction;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
 
 import org.junit.jupiter.api.Test;
 

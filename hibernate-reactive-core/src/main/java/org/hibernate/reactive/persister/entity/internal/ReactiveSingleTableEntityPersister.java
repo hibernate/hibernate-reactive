@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import org.hibernate.FetchMode;
+import org.hibernate.engine.FetchStyle;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -173,7 +173,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			ManagedMappingType declaringType,
 			PropertyAccess propertyAccess,
 			CascadeStyle cascadeStyle,
-			FetchMode fetchMode,
+			FetchStyle fetchStyle,
 			MappingModelCreationProcess creationProcess) {
 		return reactiveDelegate.buildPluralAttributeMapping(
 				attrName,
@@ -183,7 +183,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 				declaringType,
 				propertyAccess,
 				cascadeStyle,
-				fetchMode,
+				fetchStyle,
 				creationProcess
 		);
 	}

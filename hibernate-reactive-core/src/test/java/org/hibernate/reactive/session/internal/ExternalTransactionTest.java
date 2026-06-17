@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.session.impl;
+package org.hibernate.reactive.session.internal;
 
 import java.sql.ResultSet;
 import java.util.List;

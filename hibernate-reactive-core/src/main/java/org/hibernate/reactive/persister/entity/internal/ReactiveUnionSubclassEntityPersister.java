@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 
-import org.hibernate.FetchMode;
+import org.hibernate.engine.FetchStyle;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -144,7 +144,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 			ManagedMappingType declaringType,
 			PropertyAccess propertyAccess,
 			CascadeStyle cascadeStyle,
-			FetchMode fetchMode,
+			FetchStyle fetchStyle,
 			MappingModelCreationProcess creationProcess) {
 		return reactiveDelegate.buildPluralAttributeMapping(
 				attrName,
@@ -154,7 +154,7 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 				declaringType,
 				propertyAccess,
 				cascadeStyle,
-				fetchMode,
+				fetchStyle,
 				creationProcess
 		);
 	}
