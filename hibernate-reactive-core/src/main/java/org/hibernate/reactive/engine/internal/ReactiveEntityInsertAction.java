@@ -43,7 +43,6 @@ public interface ReactiveEntityInsertAction extends ReactiveExecutable, Comparab
 	EntityPersister getPersister();
 
 	boolean isExecuted();
-	boolean isVersionIncrementDisabled();
 	boolean areTransientReferencesNullified();
 	void setTransientReferencesNullified();
 	EntityKey getEntityKey();

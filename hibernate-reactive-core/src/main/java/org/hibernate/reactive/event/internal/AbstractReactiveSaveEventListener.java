@@ -426,13 +426,13 @@ abstract class AbstractReactiveSaveEventListener<C> {
 		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
 			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
-					values, entity, persister, false, source, shouldDelayIdentityInserts
+					values, entity, persister, source, shouldDelayIdentityInserts
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}
 		else {
 			final ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
-					id, values, entity, getVersion( values, persister ), persister, false, source
+					id, values, entity, getVersion( values, persister ), persister, source
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}

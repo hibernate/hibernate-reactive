@@ -20,6 +20,7 @@ import org.hibernate.LockMode;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.CollectionEntry;
+import org.hibernate.engine.spi.CollectionFlushActionTracker;
 import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
@@ -253,7 +254,6 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		return delegate.getCollectionEntry( coll );
 	}
 
-	// @Override - Signature changed in ORM 8.0, keeping for backward compatibility
 	@Override
 	public EntityEntry addEntity(
 			Object entity,
@@ -264,7 +264,6 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			LockMode lockMode,
 			boolean existsInDatabase,
 			EntityPersister persister) {
-		// ORM 8.0 removed disableVersionIncrement parameter
 		return delegate.addEntity(
 				entity,
 				status,
@@ -277,7 +276,6 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		);
 	}
 
-	// @Override - Signature changed in ORM 8.0, keeping for backward compatibility
 	@Override
 	public EntityEntry addEntry(
 			Object entity,
@@ -289,7 +287,6 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			LockMode lockMode,
 			boolean existsInDatabase,
 			EntityPersister persister) {
-		// Note: disableVersionIncrement parameter was removed in ORM 8.0
 		return delegate.addEntry(
 				entity,
 				status,
@@ -829,12 +826,12 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	}
 
 	@Override
-	public void setCollectionFlushActionTracker(org.hibernate.engine.spi.CollectionFlushActionTracker tracker) {
-		delegate.setCollectionFlushActionTracker(tracker);
+	public void setCollectionFlushActionTracker(CollectionFlushActionTracker tracker) {
+		delegate.setCollectionFlushActionTracker( tracker );
 	}
 
 	@Override
-	public org.hibernate.engine.spi.CollectionFlushActionTracker getCollectionFlushActionTracker() {
+	public CollectionFlushActionTracker getCollectionFlushActionTracker() {
 		return delegate.getCollectionFlushActionTracker();
 	}
 }
