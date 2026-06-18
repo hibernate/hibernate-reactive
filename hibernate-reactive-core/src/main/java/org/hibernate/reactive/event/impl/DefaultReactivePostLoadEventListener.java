@@ -9,8 +9,6 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PostLoadEvent;
 import org.hibernate.event.spi.PostLoadEventListener;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.ReactiveEntityIncrementVersionProcess;
 import org.hibernate.reactive.engine.impl.ReactiveEntityVerifyVersionProcess;
@@ -25,19 +23,13 @@ import org.hibernate.reactive.session.ReactiveSession;
  * @author Gavin King
  * @author Steve Ebersole
  */
-public class DefaultReactivePostLoadEventListener implements PostLoadEventListener, CallbackRegistryConsumer {
-	private CallbackRegistry callbackRegistry;
-
-	@Override
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		this.callbackRegistry = callbackRegistry;
-	}
+public class DefaultReactivePostLoadEventListener implements PostLoadEventListener {
 
 	@Override
 	public void onPostLoad(PostLoadEvent event) {
 		final Object entity = event.getEntity();
 
-		callbackRegistry.postLoad( entity );
+		event.getPersister().getEntityCallbacks().postLoad( entity );
 
 		final EventSource session = event.getSession();
  		final EntityEntry entry = session.getPersistenceContextInternal().getEntry( entity );

@@ -20,6 +20,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.internal.PostDeleteEventListenerStandardImpl;
+import org.hibernate.event.jpa.spi.EntityCallbacks;
 import org.hibernate.event.service.spi.EventListenerGroups;
 import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteContext;
@@ -27,8 +28,6 @@ import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.EmptyInterceptor;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.jpa.event.spi.CallbackType;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -61,17 +60,11 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * A reactive {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
  */
 public class DefaultReactiveDeleteEventListener
-		implements DeleteEventListener, ReactiveDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
+		implements DeleteEventListener, ReactiveDeleteEventListener, JpaBootstrapSensitive {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private CallbackRegistry callbackRegistry;
 	private boolean jpaBootstrap;
-
-	@Override
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		this.callbackRegistry = callbackRegistry;
-	}
 
 	@Override
 	public void wasJpaBootstrap(boolean wasJpaBootstrap) {
@@ -278,7 +271,7 @@ public class DefaultReactiveDeleteEventListener
 			Object id,
 			Object version,
 			EntityEntry entry) {
-		callbackRegistry.preRemove( entity );
+		persister.getEntityCallbacks().preRemove( entity );
 		return deleteEntity(
 				source,
 				entity,
@@ -320,9 +313,9 @@ public class DefaultReactiveDeleteEventListener
 	}
 
 	private boolean hasRegisteredRemoveCallbacks(EntityPersister persister) {
-		final Class<?> mappedClass = persister.getMappedClass();
-		return callbackRegistry.hasRegisteredCallbacks( mappedClass, CallbackType.PRE_REMOVE )
-				|| callbackRegistry.hasRegisteredCallbacks( mappedClass, CallbackType.POST_REMOVE );
+		final EntityCallbacks entityCallbacks = persister.getEntityCallbacks();
+		return entityCallbacks.hasRegisteredCallbacks( CallbackType.PRE_REMOVE )
+				|| entityCallbacks.hasRegisteredCallbacks(  CallbackType.POST_REMOVE );
 	}
 
 	/**

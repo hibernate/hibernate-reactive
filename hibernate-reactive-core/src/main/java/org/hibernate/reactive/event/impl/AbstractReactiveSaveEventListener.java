@@ -26,8 +26,6 @@ import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.impl.Cascade;
@@ -62,15 +60,9 @@ import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
  * @see DefaultReactivePersistOnFlushEventListener
  * @see DefaultReactiveMergeEventListener
  */
-abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryConsumer {
+abstract class AbstractReactiveSaveEventListener<C> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	private CallbackRegistry callbackRegistry;
-
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		this.callbackRegistry = callbackRegistry;
-	}
 
 	/**
 	 * Prepares the save call using the given requested id.
@@ -89,8 +81,6 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			String entityName,
 			C context,
 			EventSource source) {
-		callbackRegistry.preCreate( entity );
-
 		return reactivePerformSave(
 				entity,
 				requestedId,
@@ -225,7 +215,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		// call this after generation of an id,
 		// but before we retrieve an assigned id
-		callbackRegistry.preCreate( entity );
+		persister.getEntityCallbacks().preCreate( entity );
 
 		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 		processIfManagedEntity( entity, managedEntity -> managedEntity.$$_hibernate_setUseTracker( true ) );
