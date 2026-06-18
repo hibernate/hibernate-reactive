@@ -14,16 +14,17 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.criteria.internal.NamedCriteriaQueryMementoImpl;
 import org.hibernate.query.hql.internal.NamedHqlQueryMementoImpl;
 import org.hibernate.query.hql.spi.SqmQueryImplementor;
+import org.hibernate.query.named.NamedNativeQueryMemento;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.sqm.SqmSelectionQuery;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
+import org.hibernate.query.named.NamedSqmQueryMemento;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 
 /**
- * @see org.hibernate.query.sql.spi.NamedNativeQueryMemento
+ * @see NamedNativeQueryMemento
  */
 public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> {
 
