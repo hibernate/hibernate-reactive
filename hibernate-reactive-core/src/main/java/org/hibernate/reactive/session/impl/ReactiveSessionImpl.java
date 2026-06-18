@@ -60,11 +60,12 @@ import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
+import org.hibernate.internal.find.LoadAccessContext;
+import org.hibernate.internal.find.StatefulLoadAccessContext;
 import org.hibernate.jpa.spi.NativeQueryTupleTransformer;
 import org.hibernate.loader.LoaderLogging;
 import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.loader.internal.IdentifierLoadAccessImpl;
-import org.hibernate.loader.internal.LoadAccessContext;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
 import org.hibernate.persister.entity.EntityPersister;
@@ -74,16 +75,12 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
 import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.hql.spi.SqmQueryImplementor;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
-import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.QueryImplementor;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
 import org.hibernate.query.sqm.tree.SqmStatement;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
@@ -128,7 +125,6 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQueryReference;
-import jakarta.persistence.criteria.CommonAbstractCriteria;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -417,10 +413,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
 			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
 		}
-		else if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
-			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
-		}
 		else {
 			@SuppressWarnings("unchecked")
 			// this cast is fine because of all our impls of TypedQueryReference return Class<R>
@@ -610,11 +602,6 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		catch (RuntimeException e) {
 			throw convertNamedQueryException( e );
 		}
-	}
-
-	private void checksBeforeQueryCreation() {
-		checkOpen();
-		checkTransactionSynchStatus();
 	}
 
 	protected <T> ReactiveNativeQueryImpl<T> createReactiveNativeQueryImplementor(Class<T> resultType, NamedNativeQueryMemento<?> memento) {
@@ -1372,7 +1359,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private class ReactiveIdentifierLoadAccessImpl<T> extends IdentifierLoadAccessImpl<CompletionStage<T>> {
 
-		public ReactiveIdentifierLoadAccessImpl(LoadAccessContext context, EntityPersister entityPersister) {
+		public ReactiveIdentifierLoadAccessImpl(StatefulLoadAccessContext context, EntityPersister entityPersister) {
 			super(context, entityPersister);
 		}
 

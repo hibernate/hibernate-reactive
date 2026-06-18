@@ -4,8 +4,11 @@
  */
 package org.hibernate.reactive.query.internal;
 
+import jakarta.persistence.Statement;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQuery;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.hibernate.HibernateException;
@@ -13,16 +16,17 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.procedure.spi.NamedCallableQueryMemento;
+import org.hibernate.query.named.NamedMutationMemento;
 import org.hibernate.query.named.NamedObjectRepository;
 import org.hibernate.query.named.NamedQueryMemento;
 import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.named.NamedSelectionMemento;
 import org.hibernate.query.spi.QueryEngine;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
-import org.hibernate.query.sqm.spi.NamedSqmQueryMemento;
+import org.hibernate.query.named.NamedNativeQueryMemento;
+import org.hibernate.query.named.NamedSqmQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedSqmQueryMemento;
 
-import jakarta.persistence.Query;
 import jakarta.persistence.TypedQueryReference;
 
 public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository {
@@ -38,14 +42,8 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 		return delegate.getNamedQueries( resultType );
 	}
 
-	@Override
-	public NamedSqmQueryMemento<?> getSqmQueryMemento(String queryName) {
-		return wrapSqmQueryMemento( delegate.getSqmQueryMemento( queryName ) );
-	}
-
-	@Override
-	public void registerNamedQuery(String name, Query query) {
-		delegate.registerNamedQuery( name, query );
+	public void forEachNamedQuery(BiConsumer<String,? super TypedQueryReference<?>> action){
+		delegate.forEachNamedQuery( action );
 	}
 
 	@Override
@@ -54,28 +52,38 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 	}
 
 	@Override
-	public void visitSqmQueryMementos(Consumer<NamedSqmQueryMemento<?>> action) {
-		delegate.visitSqmQueryMementos( action );
+	public Map<String, StatementReference> getNamedMutations() {
+		return delegate.getNamedMutations();
 	}
 
 	@Override
-	public void registerSqmQueryMemento(String name, NamedSqmQueryMemento descriptor) {
-		delegate.registerSqmQueryMemento( name, descriptor );
+	public void forEachNamedMutation(BiConsumer<String,? super StatementReference> action) {
+		delegate.forEachNamedMutation( action );
 	}
 
 	@Override
-	public NamedNativeQueryMemento<?> getNativeQueryMemento(String queryName) {
-		return wrapNativeQueryMemento( delegate.getNativeQueryMemento( queryName ) );
+	public StatementReference registerNamedMutation(String name, Statement statement){
+		return delegate.registerNamedMutation( name, statement );
 	}
 
 	@Override
-	public void visitNativeQueryMementos(Consumer<NamedNativeQueryMemento<?>> action) {
-		delegate.visitNativeQueryMementos( action );
+	public <R> NamedQueryMemento<R> findQueryMementoByName(String name, boolean includeProcedureCalls){
+		return delegate.findQueryMementoByName( name, includeProcedureCalls );
 	}
 
 	@Override
-	public void registerNativeQueryMemento(String name, NamedNativeQueryMemento descriptor) {
-		delegate.registerNativeQueryMemento( name, descriptor );
+	public <R> NamedQueryMemento<R> getQueryMementoByName(String name, boolean includeProcedureCalls){
+		return delegate.findQueryMementoByName( name, includeProcedureCalls );
+	}
+
+	@Override
+	public <R> NamedSelectionMemento<R> getSelectionQueryMemento(String name){
+		return delegate.getSelectionQueryMemento( name );
+	}
+
+	@Override
+	public <R> NamedMutationMemento<R> getMutationQueryMemento(String name){
+		return delegate.getMutationQueryMemento( name );
 	}
 
 	@Override

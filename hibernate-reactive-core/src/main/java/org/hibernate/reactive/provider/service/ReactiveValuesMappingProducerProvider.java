@@ -5,7 +5,7 @@
 package org.hibernate.reactive.provider.service;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.query.results.ResultSetMapping;
+import org.hibernate.query.results.spi.ResultSetMapping;
 import org.hibernate.query.results.internal.ResultSetMappingImpl;
 import org.hibernate.reactive.sql.results.ReactiveResultSetMapping;
 import org.hibernate.reactive.sql.results.internal.ReactiveStandardValuesMappingProducer;
