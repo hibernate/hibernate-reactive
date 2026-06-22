@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.sql.results.internal.RowTransformerArrayImpl;
 import org.hibernate.sql.results.spi.RowTransformer;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * @see org.hibernate.sql.results.internal.RowTransformerArrayImpl

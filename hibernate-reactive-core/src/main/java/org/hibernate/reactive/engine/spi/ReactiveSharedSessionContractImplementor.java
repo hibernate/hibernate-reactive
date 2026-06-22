@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.PersistenceContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
 
 /**
  * @see org.hibernate.engine.spi.SharedSessionContractImplementor

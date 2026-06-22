@@ -26,7 +26,7 @@ import org.hibernate.id.insert.AbstractReturningDelegate;
 import org.hibernate.id.insert.AbstractSelectingDelegate;
 import org.hibernate.id.insert.UniqueKeySelectingDelegate;
 import org.hibernate.reactive.annotations.DisabledFor;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 import org.hibernate.sql.model.MutationType;

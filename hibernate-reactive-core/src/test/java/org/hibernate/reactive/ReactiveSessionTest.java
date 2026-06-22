@@ -12,12 +12,12 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockMode;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
-import org.hibernate.reactive.mutiny.impl.MutinyStatelessSessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinyStatelessSessionImpl;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
+import org.hibernate.reactive.stage.internal.StageStatelessSessionImpl;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import jakarta.persistence.metamodel.EntityType;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class ReactiveSessionTest extends BaseReactiveTest {
@@ -139,7 +139,7 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 
 	protected void assertConnectionIsLazy(ReactiveConnection connection) {
 		assertThat( connection.getClass().getName() )
-				.isEqualTo( org.hibernate.reactive.pool.impl.SqlClientPool.class.getName() + "$ProxyConnection" );
+				.isEqualTo( org.hibernate.reactive.pool.internal.SqlClientPool.class.getName() + "$ProxyConnection" );
 	}
 
 	@Test
