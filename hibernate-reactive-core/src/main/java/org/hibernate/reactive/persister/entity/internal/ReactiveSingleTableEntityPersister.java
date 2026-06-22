@@ -5,11 +5,12 @@
 package org.hibernate.reactive.persister.entity.internal;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import org.hibernate.FetchMode;
+import org.hibernate.engine.FetchStyle;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -172,7 +173,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 			ManagedMappingType declaringType,
 			PropertyAccess propertyAccess,
 			CascadeStyle cascadeStyle,
-			FetchMode fetchMode,
+			FetchStyle fetchStyle,
 			MappingModelCreationProcess creationProcess) {
 		return reactiveDelegate.buildPluralAttributeMapping(
 				attrName,
@@ -182,7 +183,7 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 				declaringType,
 				propertyAccess,
 				cascadeStyle,
-				fetchMode,
+				fetchStyle,
 				creationProcess
 		);
 	}
@@ -379,11 +380,6 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
-	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "loadEntityIdByNaturalId" );
-	}
-
-	@Override
 	public Object loadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session) {
 		return loadByUniqueKey( propertyName, uniqueKey, null, session );
 	}
@@ -413,9 +409,14 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 		return reactiveDelegate.getReactiveUniqueKeyLoader( this, (SingularAttributeMapping) findByPath( attributeName ) );
 	}
 
+	private Map<String, ReactiveSingleIdArrayLoadPlan> reactiveLazyLoadPlanByFetchGroup;
+
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
-		return this.getLazyLoadPlanByFetchGroup( getSubclassPropertyNameClosure() ).get(fetchGroup );
+		if ( reactiveLazyLoadPlanByFetchGroup == null ) {
+			reactiveLazyLoadPlanByFetchGroup = ReactiveAbstractEntityPersister.super.getLazyLoadPlanByFetchGroup( getPropertyNames() );
+		}
+		return reactiveLazyLoadPlanByFetchGroup.get( fetchGroup );
 	}
 
 	@Override

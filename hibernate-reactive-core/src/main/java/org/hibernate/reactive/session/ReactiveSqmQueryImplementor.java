@@ -11,15 +11,14 @@ import java.util.Date;
 import java.util.Map;
 
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
-import org.hibernate.query.named.NameableQuery;
-import org.hibernate.query.sqm.tree.SqmStatement;
+import org.hibernate.query.named.spi.NameableQuery;
+import org.hibernate.query.sqm.tree.spi.SqmStatement;
 import org.hibernate.reactive.query.ReactiveQueryImplementor;
 
 import jakarta.persistence.FlushModeType;
@@ -73,10 +72,6 @@ public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setResultListTransformer(ResultListTransformer<R> transformer);
-
-
-	@Override
-	ReactiveSqmQueryImplementor<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveSqmQueryImplementor<R> setMaxResults(int maxResult);

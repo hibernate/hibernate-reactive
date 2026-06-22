@@ -41,6 +41,7 @@ import jakarta.persistence.FindOption;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.QueryFlushMode;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -301,18 +302,10 @@ public interface Mutiny {
 		CacheMode getCacheMode();
 
 		/**
-		 * Set the current {@link FlushMode} in effect while this query is
+		 * Set the current {@link QueryFlushMode} in effect while this query is
 		 * being executed.
 		 */
-		SelectionQuery<R> setFlushMode(FlushMode flushMode);
-
-		/**
-		 * Set the current {@link FlushModeType} in effect while this query is
-		 * being executed.
-		 */
-		default SelectionQuery<R> setFlushMode(FlushModeType flushModeType) {
-			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
-		}
+		SelectionQuery<R> setFlushMode(QueryFlushMode flushMode);
 
 		/**
 		 * Obtain the {@link FlushMode} in effect for this query. By default,
@@ -440,13 +433,7 @@ public interface Mutiny {
 		}
 
 		@Override
-		Query<R> setFlushMode(FlushMode flushMode);
-
-		@Override
-		default Query<R> setFlushMode(FlushModeType flushModeType) {
-			SelectionQuery.super.setFlushMode( flushModeType );
-			return this;
-		}
+		Query<R> setFlushMode(QueryFlushMode flushMode);
 
 		@Override
 		Query<R> setLockMode(LockMode lockMode);
@@ -519,7 +506,7 @@ public interface Mutiny {
 		 *
 		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
 		 */
-		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
+		<R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link MutationQuery} for the given HQL/JPQL

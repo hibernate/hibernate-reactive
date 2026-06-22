@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Objects;
 
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.usertype.UserType;
 
 public class BigDecimalAsString implements UserType<BigDecimal> {
@@ -38,18 +38,19 @@ public class BigDecimalAsString implements UserType<BigDecimal> {
 	}
 
 	@Override
-	public BigDecimal nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner) throws SQLException {
+	public BigDecimal nullSafeGet(ResultSet rs, int position, WrapperOptions options) throws SQLException {
 		String string = rs.getString( position );
 		return string == null || rs.wasNull() ? null : new BigDecimal( string );
 	}
 
 	@Override
-	public void nullSafeSet(PreparedStatement st, BigDecimal value, int index, SharedSessionContractImplementor session) throws SQLException {
+	public void nullSafeSet(PreparedStatement st, BigDecimal value, int position, WrapperOptions options)
+			throws SQLException {
 		if ( value == null ) {
-			st.setNull( index, Types.VARCHAR );
+			st.setNull( position, Types.VARCHAR );
 		}
 		else {
-			st.setString( index, value.toString() );
+			st.setString( position, value.toString() );
 		}
 	}
 
