@@ -102,6 +102,7 @@ else {
 	}
 	tasks.withType( Javadoc ).configureEach {
 		options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().split( ' ' ).toList().findAll( { !it.isEmpty() } ) )
+		options.addBooleanOption('-no-fonts', true)
 	}
 	tasks.test {
 		// Configure JVM Options
