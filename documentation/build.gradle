@@ -69,13 +69,14 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 	maxMemory = '512m'
 	destinationDir = javadocDir
 	configure( options ) {
+		def rootThemeDir = project.layout.buildDirectory.dir("unpacked-theme").get().dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk25")
+
 		overview = project.file( 'src/main/javadoc/overview.html' )
 		windowTitle = 'Hibernate Reactive API documentation'
 		docTitle = "Hibernate Reactive API documentation ($project.version)"
 		bottom = "Copyright &copy; $inceptionYear-$currentYear <a href=\"http://redhat.com\">Red Hat, Inc</a>. All Rights Reserved."
 		// Pick the styles for the JDK that is used to "build" the Javadocs:
-		stylesheetFile = rootProject.layout.buildDirectory.dir("unpacked-theme").get()
-				.dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk21").file("stylesheet.css").asFile
+		stylesheetFile = rootThemeDir.file("stylesheet.css").asFile
 		use = true
 		options.encoding = 'UTF-8'
 
@@ -89,8 +90,14 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 				"https://docs.hibernate.org/orm/" + ormMinorVersion + "/javadocs/"
 		]
 
+		tags(
+				'apiNote:a:API Note:'
+		)
+		header = "<div id=\"toggleContainer\"></div>"
+
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
 		options.addBooleanOption('-no-fonts', true)
+		options.addStringOption( '-add-script', rootThemeDir.dir('resources').file('theme-switch.js').asFile.absolutePath)
 
 		if ( gradle.ext.javaToolchainEnabled ) {
 			options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().
