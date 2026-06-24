@@ -44,13 +44,18 @@ jar {
 }
 
 javadoc {
+	def rootThemeDir = project.layout.buildDirectory.dir("unpacked-theme").get().dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk25")
+
     if(JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption('html5', true)
     }
     options.addBooleanOption('-no-fonts', true)
     options.addStringOption('Xdoclint:none', '-quiet')
-    options.stylesheetFile = rootProject.layout.buildDirectory.dir("unpacked-theme").get()
-            .dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk21").file("stylesheet.css").asFile
+    options.stylesheetFile = rootThemeDir.file("stylesheet.css").asFile
+	options.addStringOption( '-add-script', rootThemeDir.dir('resources').file('theme-switch.js').asFile.absolutePath)
+
+	options.tags('apiNote:a:API Note:')
+	options.header = '<div id="toggleContainer"></div>'
 
     dependsOn 'unpackTheme'
 }
