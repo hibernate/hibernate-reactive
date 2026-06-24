@@ -35,11 +35,7 @@ rootProject.subprojects { subproject ->
 // Prepare the theme for Javadocs/Asciidoc
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 tasks.register('unpackTheme', Copy) {
-	def unpackDir = rootProject.layout.buildDirectory.dir("unpacked-theme")
-
-	onlyIf {
-		!unpackDir.get().asFile.exists()
-	}
+	def unpackDir = project.layout.buildDirectory.dir("unpacked-theme")
 	destinationDir = unpackDir.get().asFile
 
 	def zipFile = configurations.themezip.singleFile
@@ -94,6 +90,7 @@ def aggregateJavadocsTask = tasks.register( 'aggregateJavadocs', Javadoc ) {
 		]
 
 		options.addStringOption( 'Xdoclint:none', '-quiet' )
+		options.addBooleanOption('-no-fonts', true)
 
 		if ( gradle.ext.javaToolchainEnabled ) {
 			options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().
