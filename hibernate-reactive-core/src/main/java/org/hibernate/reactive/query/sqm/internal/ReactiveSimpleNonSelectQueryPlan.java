@@ -10,7 +10,7 @@ import org.hibernate.query.sqm.internal.CacheableSqmInterpretation;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SimpleNonSelectQueryPlan;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
