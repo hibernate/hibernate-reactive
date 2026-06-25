@@ -19,6 +19,7 @@ import org.hibernate.reactive.session.internal.ExecutableTransaction;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -117,6 +118,11 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	@Override
 	public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
 		return new MutinyMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ), factory );
+	}
+
+	@Override
+	public Mutiny.MutationQuery createStatement(StatementReference statementReference) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveStatement( statementReference ), factory );
 	}
 
 	@Override

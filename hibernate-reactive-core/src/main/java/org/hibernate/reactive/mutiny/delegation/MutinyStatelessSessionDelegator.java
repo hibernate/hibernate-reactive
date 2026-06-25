@@ -17,6 +17,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -176,6 +177,10 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 
 	public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
 		return delegate().createNativeMutationQuery( sqlString );
+	}
+
+	public Mutiny.MutationQuery createStatement(StatementReference statementReference) {
+		return delegate().createStatement( statementReference );
 	}
 
 	public Uni<Void> refresh(Object entity) {
