@@ -6,9 +6,8 @@ package org.hibernate.reactive.id.enhanced;
 
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.id.IntegralDataTypeHolder;
 import org.hibernate.id.enhanced.AccessCallback;
 
 public interface ReactiveAccessCallback extends AccessCallback {
-	CompletionStage<IntegralDataTypeHolder> getNextReactiveValue();
+	CompletionStage<Long> getNextReactiveValue();
 }

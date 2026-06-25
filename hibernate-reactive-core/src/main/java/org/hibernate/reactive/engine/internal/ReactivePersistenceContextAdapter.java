@@ -20,6 +20,7 @@ import org.hibernate.LockMode;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.CollectionEntry;
+import org.hibernate.engine.spi.CollectionFlushActionTracker;
 import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
@@ -47,6 +48,7 @@ import org.hibernate.sql.results.spi.LoadContexts;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -133,6 +135,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 		SessionImplementor session = (SessionImplementor) getSession();
 		final EntityKey key = session.generateEntityKey( id, persister );
 		final Object cached = getEntitySnapshotsByKey() == null ? null : getEntitySnapshotsByKey().get( key );
+
 		if ( cached != null ) {
 			return completedFuture( cached == NO_ROW ? null : (Object[]) cached );
 		}
@@ -260,8 +263,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			Object version,
 			LockMode lockMode,
 			boolean existsInDatabase,
-			EntityPersister persister,
-			boolean disableVersionIncrement) {
+			EntityPersister persister) {
 		return delegate.addEntity(
 				entity,
 				status,
@@ -270,8 +272,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 				version,
 				lockMode,
 				existsInDatabase,
-				persister,
-				disableVersionIncrement
+				persister
 		);
 	}
 
@@ -285,8 +286,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			Object version,
 			LockMode lockMode,
 			boolean existsInDatabase,
-			EntityPersister persister,
-			boolean disableVersionIncrement) {
+			EntityPersister persister) {
 		return delegate.addEntry(
 				entity,
 				status,
@@ -296,8 +296,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 				version,
 				lockMode,
 				existsInDatabase,
-				persister,
-				disableVersionIncrement
+				persister
 		);
 	}
 
@@ -751,11 +750,8 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	/**
 	 * Reactive version of {@link org.hibernate.engine.internal.StatefulPersistenceContext#postLoad(JdbcValuesSourceProcessingState, Consumer)}
 	 */
-	public CompletionStage<Void> reactivePostLoad(
-			JdbcValuesSourceProcessingState processingState,
-			Consumer<EntityHolder> holderConsumer) {
-		final ReactiveCallbackImpl callback = (ReactiveCallbackImpl) processingState
-				.getExecutionContext().getCallback();
+	public CompletionStage<Void> reactivePostLoad(JdbcValuesSourceProcessingState processingState, Consumer<EntityHolder> holderConsumer) {
+		final Callback callback = processingState.getExecutionContext().getCallback();
 		return processHolders(
 				holderConsumer,
 				processingState.getLoadingEntityHolders(),
@@ -776,7 +772,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			List<EntityHolder> loadingEntityHolders,
 			EventListenerGroup<PostLoadEventListener> listenerGroup,
 			PostLoadEvent postLoadEvent,
-			ReactiveCallbackImpl callback) {
+			Callback callback) {
 		if ( loadingEntityHolders != null ) {
 			return loop( loadingEntityHolders,
 						 holder -> processLoadedEntityHolder(
@@ -798,7 +794,7 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 			EntityHolder holder,
 			EventListenerGroup<PostLoadEventListener> listenerGroup,
 			PostLoadEvent postLoadEvent,
-			ReactiveCallbackImpl callback,
+			Callback callback,
 			Consumer<EntityHolder> holderConsumer) {
 		if ( holderConsumer != null ) {
 			holderConsumer.accept( holder );
@@ -817,12 +813,25 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 						.setPersister( holder.getDescriptor() );
 				listenerGroup.fireEventOnEachListener( postLoadEvent, PostLoadEventListener::onPostLoad	);
 				if ( callback != null ) {
-					return callback
-							.invokeReactiveLoadActions( holder.getEntity(), holder.getDescriptor(), getSession() )
-							.thenAccept( v -> holder.resetEntityInitialier() );
+					if ( callback instanceof ReactiveCallbackImpl reactiveCallback) {
+						return reactiveCallback
+								.invokeReactiveLoadActions( holder.getEntity(), holder.getDescriptor(), getSession() )
+								.thenRun( holder::resetEntityInitialier );
+					}
+					return failedFuture( LOG.nonReactiveCallback( callback.getClass() ) );
 				}
 			}
 		}
 		return voidFuture();
+	}
+
+	@Override
+	public void setCollectionFlushActionTracker(CollectionFlushActionTracker tracker) {
+		delegate.setCollectionFlushActionTracker( tracker );
+	}
+
+	@Override
+	public CollectionFlushActionTracker getCollectionFlushActionTracker() {
+		return delegate.getCollectionFlushActionTracker();
 	}
 }

@@ -99,14 +99,13 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	@GenericGenerator(
-			name = "thousands",
-			type = Thousands.class,
-			parameters = @Parameter(name = "offset", value = "100")
-	)
 	public static class CustomId {
 		@Id
 		@GeneratedValue(generator = "thousands")
+		@GenericGenerator(
+				type = Thousands.class,
+				parameters = @Parameter(name = "offset", value = "100")
+		)
 		Integer id;
 		@Version
 		Integer version;

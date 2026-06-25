@@ -22,7 +22,6 @@ import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.internal.PostDeleteEventListenerStandardImpl;
 import org.hibernate.event.jpa.spi.EntityCallbacks;
 import org.hibernate.event.service.spi.EventListenerGroups;
-import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -60,16 +59,9 @@ import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
  * A reactive {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
  */
 public class DefaultReactiveDeleteEventListener
-		implements DeleteEventListener, ReactiveDeleteEventListener, JpaBootstrapSensitive {
+		implements DeleteEventListener, ReactiveDeleteEventListener {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	private boolean jpaBootstrap;
-
-	@Override
-	public void wasJpaBootstrap(boolean wasJpaBootstrap) {
-		this.jpaBootstrap = wasJpaBootstrap;
-	}
 
 	/**
 	 * Handle the given delete event.
@@ -235,8 +227,7 @@ public class DefaultReactiveDeleteEventListener
 								version,
 								LockMode.NONE,
 								true,
-								persister,
-								false
+								persister
 						);
 						persister.afterReassociate( entity, source );
 
@@ -315,7 +306,7 @@ public class DefaultReactiveDeleteEventListener
 	private boolean hasRegisteredRemoveCallbacks(EntityPersister persister) {
 		final EntityCallbacks entityCallbacks = persister.getEntityCallbacks();
 		return entityCallbacks.hasRegisteredCallbacks( CallbackType.PRE_REMOVE )
-				|| entityCallbacks.hasRegisteredCallbacks(  CallbackType.POST_REMOVE );
+				|| entityCallbacks.hasRegisteredCallbacks( CallbackType.POST_REMOVE );
 	}
 
 	/**
@@ -327,7 +318,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param event The event.
 	 */
 	protected void performDetachedEntityDeletionCheck(DeleteEvent event) {
-		if ( jpaBootstrap ) {
+		if ( event.getSession().getFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
 			disallowDeletionOfDetached( event );
 		}
 		// ok in normal Hibernate usage to delete a detached entity; JPA however
