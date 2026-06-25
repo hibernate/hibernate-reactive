@@ -24,7 +24,11 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaUpdate;
+
+import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import org.hibernate.LockMode;
 
 
 /**
@@ -44,6 +48,22 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 
 	CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable);
+
+	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph);
+
+	<T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids);
+
+	default <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id) {
+		return reactiveFind( entityClass, id, (LockMode) null, null );
+	}
+
+	default <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
+		return reactiveFind( entityClass, id );
+	}
+
+	default <T> CompletionStage<List<T>> reactiveGet(Class<T> entityClass, Object... ids) {
+		return reactiveFind( entityClass, ids );
+	}
 
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
 
