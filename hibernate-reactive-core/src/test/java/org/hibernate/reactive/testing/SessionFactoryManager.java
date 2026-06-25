@@ -11,7 +11,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Managed the creation of a {@link SessionFactory} that can shared among tests.

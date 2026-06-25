@@ -13,8 +13,8 @@ import org.hibernate.engine.jdbc.mutation.TableInclusionChecker;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleBatched;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -23,7 +23,7 @@ import org.hibernate.sql.model.PreparableMutationOperation;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
 public class ReactiveMutationExecutorSingleBatched extends MutationExecutorSingleBatched implements

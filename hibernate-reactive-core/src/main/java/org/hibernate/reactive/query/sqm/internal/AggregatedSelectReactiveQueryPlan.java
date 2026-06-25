@@ -14,8 +14,8 @@ import org.hibernate.query.spi.Limit;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 
 import static java.util.Collections.emptyList;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
 
 /**
  * @see org.hibernate.query.sqm.internal.AggregatedSelectQueryPlanImpl

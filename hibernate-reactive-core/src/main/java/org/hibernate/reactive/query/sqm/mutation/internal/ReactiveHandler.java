@@ -9,8 +9,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.mutation.internal.Handler;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 /**
