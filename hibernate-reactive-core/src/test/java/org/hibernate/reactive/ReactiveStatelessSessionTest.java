@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
@@ -30,6 +31,7 @@ import jakarta.persistence.criteria.Root;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -304,6 +306,46 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )
 		) );
+	}
+
+	@Test
+	public void testFindReturnsNullForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.find( GuineaPig.class, -999 )
+				.thenAccept( result -> assertThat( result ).isNull() ) )
+		);
+	}
+
+	@Test
+	public void testGetThrowsForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss ->
+				assertThrown( EntityNotFoundException.class, ss.get( GuineaPig.class, -999 ) )
+						.thenAccept( e -> assertThat( e.getMessage() )
+								.contains( GuineaPig.class.getName() )
+								.contains( "-999" ) ) )
+		);
+	}
+
+	@Test
+	public void testGetReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.get( GuineaPig.class, pig.getId() ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testFindReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.find( GuineaPig.class, pig.getId() ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
 	}
 
 	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
