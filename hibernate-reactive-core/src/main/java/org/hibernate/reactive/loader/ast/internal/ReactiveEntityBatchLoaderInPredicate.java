@@ -13,7 +13,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
@@ -52,8 +51,8 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 			int domainBatchSize,
 			int sqlBatchSize,
 			EntityMappingType entityDescriptor,
-			SessionFactoryImplementor sessionFactory) {
-		super( entityDescriptor, sessionFactory );
+			LoadQueryInfluencers loadQueryInfluencers) {
+		super( entityDescriptor, loadQueryInfluencers );
 		this.domainBatchSize = domainBatchSize;
 		this.sqlBatchSize = sqlBatchSize;
 
@@ -67,9 +66,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 		}
 
 		final EntityIdentifierMapping identifierMapping = getLoadable().getIdentifierMapping();
-
 		final int expectedNumberOfParameters = identifierMapping.getJdbcTypeCount() * sqlBatchSize;
-
 		final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder( expectedNumberOfParameters );
 		sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
@@ -78,8 +75,8 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 				identifierMapping,
 				null,
 				sqlBatchSize,
-				new LoadQueryInfluencers( sessionFactory ),
-				LockOptions.NONE,
+				loadQueryInfluencers,
+				new LockOptions(),
 				jdbcParametersBuilder::add,
 				new SqlAliasBaseManager(),
 				sessionFactory

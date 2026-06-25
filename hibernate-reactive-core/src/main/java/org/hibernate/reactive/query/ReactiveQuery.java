@@ -12,7 +12,6 @@ import java.util.Map;
 
 import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.query.ParameterMetadata;
@@ -415,9 +414,6 @@ public interface ReactiveQuery<R> extends ReactiveSelectionQuery<R>, ReactiveMut
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// covariant overrides - CommonQueryContract
-
-	@Override
-	ReactiveQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveQuery<R> setCacheable(boolean cacheable);

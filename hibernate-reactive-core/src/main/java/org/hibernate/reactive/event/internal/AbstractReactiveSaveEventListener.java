@@ -25,6 +25,7 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
+import org.hibernate.id.GenericGeneratorGeneration;
 import org.hibernate.id.IdentifierGenerationException;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -132,8 +133,9 @@ abstract class AbstractReactiveSaveEventListener<C> {
 			// go ahead and generate id, and then set it to
 			// the entity instance, so it will be available
 			// to the entity in the @PrePersist callback
-			if ( generator instanceof ReactiveIdentifierGenerator ) {
-				return generateId( entity, source, (ReactiveIdentifierGenerator<?>) generator, persister )
+			final ReactiveIdentifierGenerator<?> reactiveGenerator = unwrapReactiveGenerator( generator );
+			if ( reactiveGenerator != null ) {
+				return generateId( entity, source, reactiveGenerator, persister )
 						.thenCompose( gid -> {
 							if ( gid == SHORT_CIRCUIT_INDICATOR ) {
 								source.getIdentifier( entity );
@@ -162,6 +164,19 @@ abstract class AbstractReactiveSaveEventListener<C> {
 		final Object id =  castToIdentifierType( generatedId, persister );
 		final boolean delayIdentityInserts = !source.isTransactionInProgress() && !requiresImmediateIdAccess && generatedOnExecution;
 		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, delayIdentityInserts );
+	}
+
+	private static ReactiveIdentifierGenerator<?> unwrapReactiveGenerator(Generator generator) {
+		if ( generator instanceof ReactiveIdentifierGenerator ) {
+			return (ReactiveIdentifierGenerator<?>) generator;
+		}
+		if ( generator instanceof GenericGeneratorGeneration ) {
+			final Generator delegate = ( (GenericGeneratorGeneration) generator ).getDelegate();
+			if ( delegate instanceof ReactiveIdentifierGenerator ) {
+				return (ReactiveIdentifierGenerator<?>) delegate;
+			}
+		}
+		return null;
 	}
 
 	private CompletionStage<Object> generateId(
@@ -323,8 +338,7 @@ abstract class AbstractReactiveSaveEventListener<C> {
 				null,
 				LockMode.WRITE,
 				useIdentityColumn,
-				persister,
-				false
+				persister
 		);
 
 		if ( original.getLoadedState() != null ) {
@@ -412,13 +426,13 @@ abstract class AbstractReactiveSaveEventListener<C> {
 		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
 			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
-					values, entity, persister, false, source, shouldDelayIdentityInserts
+					values, entity, persister, source, shouldDelayIdentityInserts
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}
 		else {
 			final ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
-					id, values, entity, getVersion( values, persister ), persister, false, source
+					id, values, entity, getVersion( values, persister ), persister, source
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.hibernate.Timeouts;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.spi.QueryOptions;
@@ -98,8 +99,9 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
 		try {
-			if ( executionContext.getQueryOptions().getTimeout() != null ) {
-				preparedStatement.setQueryTimeout( executionContext.getQueryOptions().getTimeout() );
+			final jakarta.persistence.Timeout timeout = executionContext.getQueryOptions().getTimeout();
+			if ( Timeouts.isRealTimeout( timeout ) ) {
+				preparedStatement.setQueryTimeout( Timeouts.getTimeoutInSeconds( timeout ) );
 			}
 
 			// bind parameters

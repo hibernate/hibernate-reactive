@@ -46,13 +46,17 @@ public final class QueuedOperationCollectionAction extends CollectionAction impl
 
 		// TODO: It would be nice if this could be done safely by CollectionPersister#processQueuedOps;
 		//       Can't change the SPI to do this though.
-		( (AbstractPersistentCollection<?>) getCollection() ).clearOperationQueue();
+		final AbstractPersistentCollection<?> collection = (AbstractPersistentCollection<?>) getCollection();
+		collection.clearOperationQueue();
 
 		// The other CollectionAction types call CollectionEntry#afterAction, which
 		// clears the dirty flag. We don't want to call CollectionEntry#afterAction unless
 		// there is no other CollectionAction that will be executed on the same collection.
 		final CollectionEntry ce = getSession().getPersistenceContextInternal().getCollectionEntry( getCollection() );
-		if ( !ce.isDoremove() && !ce.isDoupdate() && !ce.isDorecreate() ) {
+		final var collectionFlushActionTracker =
+				getSession().getPersistenceContextInternal().getCollectionFlushActionTracker();
+		if ( collectionFlushActionTracker == null
+				|| !collectionFlushActionTracker.hasQueuedCollectionAction( getCollection() ) ) {
 			ce.afterAction( getCollection() );
 		}
 		return voidFuture();

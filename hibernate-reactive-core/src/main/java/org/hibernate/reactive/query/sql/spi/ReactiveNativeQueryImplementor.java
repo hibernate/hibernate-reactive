@@ -12,16 +12,15 @@ import java.util.Map;
 
 import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
-import org.hibernate.query.named.NameableQuery;
+import org.hibernate.query.named.spi.NameableQuery;
 import org.hibernate.query.results.internal.dynamic.DynamicResultBuilderEntityStandard;
-import org.hibernate.query.sql.spi.NamedNativeQueryMemento;
+import org.hibernate.query.named.spi.NamedNativeQueryMemento;
 import org.hibernate.reactive.query.ReactiveNativeQuery;
 import org.hibernate.reactive.query.ReactiveQueryImplementor;
 
@@ -113,9 +112,6 @@ public interface ReactiveNativeQueryImplementor<R> extends ReactiveNativeQuery<R
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setHint(String hintName, Object value);
-
-	@Override
-	ReactiveNativeQueryImplementor<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveNativeQueryImplementor<R> setFlushMode(FlushModeType flushMode);

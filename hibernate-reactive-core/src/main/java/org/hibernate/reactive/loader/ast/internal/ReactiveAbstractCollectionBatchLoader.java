@@ -85,8 +85,9 @@ public abstract class ReactiveAbstractCollectionBatchLoader implements ReactiveC
 					persistenceContext,
 					entry.getLoadedPersister(),
 					collection,
-					collectionKey,
-					true
+					collectionKey.getKey(),
+					true,
+					jakarta.persistence.CacheStoreMode.USE
 			);
 		}
 

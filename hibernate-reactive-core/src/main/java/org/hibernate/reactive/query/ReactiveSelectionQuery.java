@@ -6,7 +6,6 @@ package org.hibernate.reactive.query;
 
 import jakarta.persistence.metamodel.Type;
 import org.hibernate.CacheMode;
-import org.hibernate.FlushMode;
 import org.hibernate.Incubating;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
@@ -65,9 +64,6 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	@Override
 	ReactiveSelectionQuery<R> setFlushMode(FlushModeType flushMode);
-
-	@Override
-	ReactiveSelectionQuery<R> setHibernateFlushMode(FlushMode flushMode);
 
 	@Override
 	ReactiveSelectionQuery<R> setTimeout(int timeout);

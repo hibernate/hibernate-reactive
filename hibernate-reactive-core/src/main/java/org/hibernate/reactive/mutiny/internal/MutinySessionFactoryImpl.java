@@ -12,11 +12,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.hibernate.Cache;
-import org.hibernate.engine.creation.internal.SessionBuilderImpl;
-import org.hibernate.engine.creation.internal.SessionCreationOptions;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.creation.internal.options.StatefulOptions;
+import org.hibernate.engine.creation.internal.options.StatelessOptions;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.internal.SessionImpl;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.context.Context;
@@ -96,7 +94,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public Mutiny.Session createSession(String tenantId) {
-		final SessionCreationOptions options = options();
+		final StatefulOptions options = options();
 		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		ReactiveSession sessionImpl = new ReactiveSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
 		return new MutinySessionImpl( sessionImpl, this );
@@ -104,12 +102,12 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public Mutiny.StatelessSession createStatelessSession() {
-		return createStatelessSession( getTenantIdentifier( options() ) );
+		return createStatelessSession( getTenantIdentifier( statelessOptions() ) );
 	}
 
 	@Override
 	public Mutiny.StatelessSession createStatelessSession(String tenantId) {
-		final SessionCreationOptions options = options();
+		final StatelessOptions options = statelessOptions();
 		ReactiveConnectionPool pool = delegate.getServiceRegistry().getService( ReactiveConnectionPool.class );
 		ReactiveStatelessSession sessionImpl = new ReactiveStatelessSessionImpl( delegate, options, pool.getProxyConnection( tenantId ) );
 		return new MutinyStatelessSessionImpl( sessionImpl, this );
@@ -117,7 +115,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public Uni<Mutiny.Session> openSession() {
-		SessionCreationOptions options = options();
+		StatefulOptions options = options();
 		return uni( () -> connection( getTenantIdentifier( options ) ) )
 				.chain( reactiveConnection -> create(
 						reactiveConnection,
@@ -148,7 +146,7 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 
 	@Override
 	public Uni<Mutiny.StatelessSession> openStatelessSession() {
-		SessionCreationOptions options = options();
+		StatelessOptions options = statelessOptions();
 		return uni( () -> connection( getTenantIdentifier( options ) ) )
 				.chain( reactiveConnection -> create(
 						reactiveConnection,
@@ -162,28 +160,29 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		return uni( () -> connection( tenantId ) )
 				.chain( reactiveConnection -> create(
 						reactiveConnection,
-						() -> new ReactiveStatelessSessionImpl( delegate, options( tenantId ), reactiveConnection )
+						() -> new ReactiveStatelessSessionImpl( delegate, statelessOptions( tenantId ), reactiveConnection )
 				) )
 				.map( s -> new MutinyStatelessSessionImpl( s, this ) );
 	}
 
-	private SessionCreationOptions options() {
-		return new SessionBuilderImpl( delegate ) {
-			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
-			}
-		};
+	private StatefulOptions options() {
+		return new StatefulOptions( delegate );
 	}
 
-	private SessionCreationOptions options(String tenantIdentifier) {
-		SessionBuilderImpl sessionBuilder = new SessionBuilderImpl( delegate ) {
-			@Override
-			protected SessionImplementor createSession() {
-				return new SessionImpl( delegate, this );
-			}
-		};
-		return (SessionCreationOptions) sessionBuilder.tenantIdentifier( tenantIdentifier );
+	private StatefulOptions options(String tenantIdentifier) {
+		StatefulOptions options = new StatefulOptions( delegate );
+		options.tenantIdentifier( tenantIdentifier );
+		return options;
+	}
+
+	private StatelessOptions statelessOptions() {
+		return new StatelessOptions( delegate );
+	}
+
+	private StatelessOptions statelessOptions(String tenantIdentifier) {
+		StatelessOptions options = new StatelessOptions( delegate );
+		options.tenantIdentifier( tenantIdentifier );
+		return options;
 	}
 
 	private CompletionStage<ReactiveConnection> connection(String tenantId) {
@@ -329,7 +328,12 @@ public class MutinySessionFactoryImpl implements Mutiny.SessionFactory, Implemen
 		return delegate.isOpen();
 	}
 
-	private String getTenantIdentifier(SessionCreationOptions options) {
+	private String getTenantIdentifier(StatefulOptions options) {
+		return options.getTenantIdentifierValue() == null ? null : delegate.getTenantIdentifierJavaType().toString(
+				options.getTenantIdentifierValue() );
+	}
+
+	private String getTenantIdentifier(StatelessOptions options) {
 		return options.getTenantIdentifierValue() == null ? null : delegate.getTenantIdentifierJavaType().toString(
 				options.getTenantIdentifierValue() );
 	}

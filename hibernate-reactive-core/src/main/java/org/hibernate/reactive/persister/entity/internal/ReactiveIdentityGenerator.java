@@ -38,7 +38,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 			return new ReactiveGetGeneratedKeysDelegate( persister, false, INSERT );
 		}
 		else if ( persister.getNaturalIdentifierProperties() != null
-				&& !persister.getEntityMetamodel().isNaturalIdentifierInsertGenerated() ) {
+				&& !persister.isNaturalIdentifierInsertGenerated() ) {
 			return new ReactiveUniqueKeySelectingDelegate( persister, getNaturalIdPropertyNames( persister ), INSERT );
 		}
 		else {

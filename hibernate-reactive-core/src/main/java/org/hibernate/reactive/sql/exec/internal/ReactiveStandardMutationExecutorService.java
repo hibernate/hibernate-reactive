@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
+import org.hibernate.engine.jdbc.mutation.spi.JdbcValueBindingsFactory;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
@@ -68,6 +69,16 @@ public class ReactiveStandardMutationExecutorService implements MutationExecutor
 		}
 
 		return new ReactiveMutationExecutorStandard( operationGroup, batchKeySupplier, batchSizeToUse, session );
+	}
+
+	@Override
+	public MutationExecutor createExecutor(
+			BatchKeyAccess batchKeySupplier,
+			MutationOperationGroup operationGroup,
+			JdbcValueBindingsFactory bindingsFactory,
+			SharedSessionContractImplementor session) {
+		// For now, delegate to the existing method (ignoring bindingsFactory)
+		return createExecutor( batchKeySupplier, operationGroup, session );
 	}
 
 	private static GeneratedValuesMutationDelegate generatedValuesDelegate(MutationOperationGroup operationGroup) {

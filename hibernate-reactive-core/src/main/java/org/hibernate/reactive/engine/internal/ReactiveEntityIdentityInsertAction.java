@@ -28,7 +28,6 @@ import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
  */
 public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertAction implements ReactiveEntityInsertAction {
 
-	private final boolean isVersionIncrementDisabled;
 	private boolean executed;
 	private boolean transientReferencesNullified;
 	private Object rowId;
@@ -37,11 +36,9 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 			Object[] state,
 			Object instance,
 			EntityPersister persister,
-			boolean isVersionIncrementDisabled,
 			EventSource session,
 			boolean isDelayed) {
-		super( state, instance, persister, isVersionIncrementDisabled, session, isDelayed );
-		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
+		super( state, instance, persister, session, isDelayed );
 	}
 
 	@Override
@@ -137,7 +134,7 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	}
 
 	@Override
-	protected void markExecuted() {
+	public void markExecuted() {
 		super.markExecuted();
 		executed = true;
 	}
@@ -145,11 +142,6 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	@Override
 	public boolean isExecuted() {
 		return executed;
-	}
-
-	@Override
-	public boolean isVersionIncrementDisabled() {
-		return isVersionIncrementDisabled;
 	}
 
 	@Override
@@ -166,4 +158,5 @@ public class ReactiveEntityIdentityInsertAction extends EntityIdentityInsertActi
 	public Object getRowId() {
 		return rowId;
 	}
+
 }

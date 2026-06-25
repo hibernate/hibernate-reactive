@@ -291,7 +291,7 @@ public class QueryTest extends BaseReactiveTest {
 		CriteriaBuilder builder = getSessionFactory().getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = builder.createQuery( Tuple.class );
 		Root<Book> b = query.from( Book.class );
-		Join<Object, Object> a = b.join( "author" );
+		Join<Book, ?> a = b.join( "author" );
 		query.orderBy( builder.asc( b.get( "isbn" ) ) );
 		query.multiselect( b.get( "title" ).alias( "t" ), a.get( "name" ).alias( "n" ) );
 		query.where( a.get( "name" ).in( "Neal Stephenson", "William Gibson" ) );

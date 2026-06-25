@@ -6,7 +6,7 @@ package org.hibernate.reactive.types;
 
 import io.vertx.core.json.JsonObject;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.usertype.UserType;
 
 import java.io.Serializable;
@@ -39,7 +39,7 @@ public class Json implements UserType<JsonObject> {
 	}
 
 	@Override
-	public JsonObject nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner) throws SQLException {
+	public JsonObject nullSafeGet(ResultSet rs, int position, WrapperOptions options) throws SQLException {
 		Object rsObject = rs.getObject( position );
 		// Currently Vertx does not return JsonObject type from MariaDb so adding type check to convert the String value
 		if ( rsObject instanceof String ) {
@@ -49,7 +49,8 @@ public class Json implements UserType<JsonObject> {
 	}
 
 	@Override
-	public void nullSafeSet(PreparedStatement st, JsonObject value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+	public void nullSafeSet(PreparedStatement st, JsonObject value, int index, WrapperOptions options)
+			throws SQLException {
 		if ( value == null ) {
 			st.setNull( index, Types.OTHER );
 		}
