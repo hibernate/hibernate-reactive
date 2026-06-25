@@ -146,6 +146,56 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testStatelessSessionFind(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.find( GuineaPig.class, pig.id ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionFindMultiple(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		GuineaPig c = new GuineaPig( "C" );
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insertMultiple( List.of( a, b, c ) )
+						.thenCompose( v -> ss.find( GuineaPig.class, a.id, c.id ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( c, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.findMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.close() ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionGetMultipleWithList(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insertMultiple( List.of( a, b ) )
+						.thenCompose( v -> ss.getMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.close() ) )
+		);
+	}
+
+	@Test
 	public void testStatelessSessionCriteria(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
 
