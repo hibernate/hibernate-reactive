@@ -61,6 +61,34 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
 		return delegate().find( entityClass, ids );
 	}
 
+	public <T> Uni<List<T>> findMultiple(Class<T> entityClass, List<?> ids) {
+		return delegate().findMultiple( entityClass, ids );
+	}
+
+	public <T> Uni<T> get(Class<T> entityClass, Object id) {
+		return delegate().get( entityClass, id );
+	}
+
+	public <T> Uni<List<T>> get(Class<T> entityClass, Object... ids) {
+		return delegate().get( entityClass, ids );
+	}
+
+	public <T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
+		return delegate().get( entityClass, id, lockMode );
+	}
+
+	public <T> Uni<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		return delegate().get( entityClass, id, lockModeType );
+	}
+
+	public <T> Uni<T> get(EntityGraph<T> entityGraph, Object id) {
+		return delegate().get( entityGraph, id );
+	}
+
+	public <T> Uni<List<T>> getMultiple(Class<T> entityClass, List<?> ids) {
+		return delegate().getMultiple( entityClass, ids );
+	}
+
 	public <R> Mutiny.SelectionQuery<R> createNamedQuery(String queryName, Class<R> resultType) {
 		return delegate().createNamedQuery( queryName, resultType );
 	}

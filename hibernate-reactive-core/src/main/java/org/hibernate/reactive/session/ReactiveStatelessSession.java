@@ -27,6 +27,21 @@ import java.util.concurrent.CompletionStage;
 @Incubating
 public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
+	@Override
+	default <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+		return reactiveGet( entityClass, id, lockMode, fetchGraph );
+	}
+
+	@Override
+	default <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id) {
+		return reactiveGet( entityClass, id );
+	}
+
+	@Override
+	default <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
+		return reactiveGet( entityClass, ids );
+	}
+
 	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
 	<T> CompletionStage<List<T>> reactiveGet(Class<T> entityClass, Object... id);
