@@ -11,6 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.LockMode;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.query.range.Range;
+import org.hibernate.query.restriction.Restriction;
+import org.hibernate.query.specification.MutationSpecification;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +24,11 @@ import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.Table;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.criteria.Root;
 import jakarta.persistence.Version;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
@@ -455,6 +462,51 @@ public class MutinySessionTest extends BaseReactiveTest {
 					session.getFactory().getStatistics().isStatisticsEnabled();
 					return Uni.createFrom().voidItem();
 				} )
+		);
+	}
+
+	@Test
+	public void testSessionCreateStatementFromHql(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( 10, "Aloi" );
+		GuineaPig xavier = new GuineaPig( 20, "Xavier" );
+		StatementReference deleteByName = MutationSpecification
+				.create( GuineaPig.class, "delete from GuineaPig" )
+				.restrict( Restriction.restrict( GuineaPig.class, "name", Range.singleValue( "Aloi" ) ) )
+				.reference();
+
+		test( context, getMutinySessionFactory().withTransaction( (session, tx) -> session
+				.persistAll( aloi, xavier )
+				.chain( v -> session.flush() )
+				.chain( v -> session.createStatement( deleteByName ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.invoke( v -> session.clear() )
+				.chain( v -> session.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
+				.invoke( list -> assertThat( list ).containsExactly( xavier ) ) )
+		);
+	}
+
+	@Test
+	public void testSessionCreateStatementFromCriteria(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( 10, "Aloi" );
+		GuineaPig xavier = new GuineaPig( 20, "Xavier" );
+
+		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
+		CriteriaUpdate<GuineaPig> criteriaUpdate = cb.createCriteriaUpdate( GuineaPig.class );
+		Root<GuineaPig> root = criteriaUpdate.from( GuineaPig.class );
+		criteriaUpdate.set( "name", "Bob" );
+		criteriaUpdate.where( cb.equal( root.get( "name" ), "Aloi" ) );
+		StatementReference updateByName = MutationSpecification.create( criteriaUpdate ).reference();
+
+		test( context, getMutinySessionFactory().withTransaction( (session, tx) -> session
+				.persistAll( aloi, xavier )
+				.chain( v -> session.flush() )
+				.chain( v -> session.createStatement( updateByName ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.invoke( v -> session.clear() )
+				.chain( v -> session.find( GuineaPig.class, aloi.getId() ) )
+				.invoke( p -> assertThat( p.getName() ).isEqualTo( "Bob" ) )
+				.chain( v -> session.find( GuineaPig.class, xavier.getId() ) )
+				.invoke( p -> assertThat( p.getName() ).isEqualTo( "Xavier" ) ) )
 		);
 	}
 
