@@ -6,7 +6,7 @@ package org.hibernate.reactive.boot.spi;
 
 import org.hibernate.boot.spi.AbstractDelegatingMetadata;
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.query.named.NamedObjectRepository;
+import org.hibernate.query.named.spi.NamedObjectRepository;
 import org.hibernate.reactive.query.internal.ReactiveNamedObjectRepositoryImpl;
 
 public class ReactiveMetadataImplementor extends AbstractDelegatingMetadata {

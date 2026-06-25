@@ -19,7 +19,7 @@ import org.hibernate.loader.ast.internal.LoaderSqlAstCreationState;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.ComparisonOperator;
-import org.hibernate.query.sqm.sql.FromClauseIndex;
+import org.hibernate.query.sqm.sql.spi.FromClauseIndex;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
