@@ -37,7 +37,7 @@ public interface ReactiveConnection {
 	 * identity ({@code ==}) for the lifetime of a single transaction, and must
 	 * differ (by identity) across distinct transactions on the same connection.
 	 * <p>
-	 * This is used by {@link org.hibernate.reactive.session.impl.CurrentTransaction}
+	 * This is used by {@link org.hibernate.reactive.session.internal.CurrentTransaction}
 	 * to detect when the underlying connection has cycled to a new external
 	 * transaction, so that cached state (e.g. {@code markedForRollback}) is
 	 * not carried over from a previous transaction.

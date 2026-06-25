@@ -10,7 +10,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.collection.mutation.CollectionMutationTarget;
 import org.hibernate.persister.collection.mutation.RemoveCoordinatorNoOp;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class ReactiveRemoveCoordinatorNoOp extends RemoveCoordinatorNoOp implements ReactiveRemoveCoordinator {
 

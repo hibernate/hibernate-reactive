@@ -32,7 +32,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 
 import static java.util.Collections.emptyList;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 public class ReactiveNativeSelectQueryPlanImpl<R> extends NativeSelectQueryPlanImpl<R> implements ReactiveNativeSelectQueryPlan<R> {
 

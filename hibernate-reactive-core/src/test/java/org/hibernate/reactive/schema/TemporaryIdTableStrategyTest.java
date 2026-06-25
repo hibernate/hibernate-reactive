@@ -19,7 +19,7 @@ import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.EnabledFor;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**

@@ -8,8 +8,8 @@ import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.exec.spi.ReactivePostAction;
 import org.hibernate.reactive.sql.exec.spi.ReactivePreAction;
