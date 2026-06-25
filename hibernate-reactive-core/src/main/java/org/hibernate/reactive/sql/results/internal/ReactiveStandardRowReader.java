@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.spi.EntityKey;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
@@ -25,9 +25,9 @@ import org.hibernate.sql.results.spi.RowTransformer;
 import org.hibernate.type.descriptor.java.JavaType;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
 
 
