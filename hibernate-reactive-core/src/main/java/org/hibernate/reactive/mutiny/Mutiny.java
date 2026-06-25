@@ -42,6 +42,7 @@ import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import jakarta.persistence.QueryFlushMode;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -564,6 +565,17 @@ public interface Mutiny {
 		 * @see org.hibernate.query.QueryProducer#createNativeMutationQuery(String)
 		 */
 		MutationQuery createNativeMutationQuery(String sqlString);
+
+		/**
+		 * Create a {@link MutationQuery} from the given {@link StatementReference}.
+		 *
+		 * @param statementReference the statement reference
+		 *
+		 * @return The {@link MutationQuery} instance for manipulation and execution
+		 *
+		 * @see org.hibernate.query.QueryProducer#createStatement(StatementReference)
+		 */
+		MutationQuery createStatement(StatementReference statementReference);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
