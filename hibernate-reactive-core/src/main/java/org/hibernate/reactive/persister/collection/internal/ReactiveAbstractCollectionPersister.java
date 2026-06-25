@@ -11,7 +11,7 @@ import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderNamedQuery;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSingleKey;
 import org.hibernate.reactive.pool.ReactiveConnection;
