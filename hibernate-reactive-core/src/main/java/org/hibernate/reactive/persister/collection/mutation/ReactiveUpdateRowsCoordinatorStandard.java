@@ -17,7 +17,7 @@ import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
-import org.hibernate.persister.collection.mutation.CollectionMutationTarget;
+import org.hibernate.persister.collection.AbstractCollectionPersister;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
@@ -40,7 +40,7 @@ public class ReactiveUpdateRowsCoordinatorStandard extends UpdateRowsCoordinator
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 	private final RowMutationOperations rowMutationOperations;
 
-	public ReactiveUpdateRowsCoordinatorStandard(CollectionMutationTarget mutationTarget, RowMutationOperations rowMutationOperations, SessionFactoryImplementor sessionFactory) {
+	public ReactiveUpdateRowsCoordinatorStandard(AbstractCollectionPersister mutationTarget, RowMutationOperations rowMutationOperations, SessionFactoryImplementor sessionFactory) {
 		super( mutationTarget, rowMutationOperations, sessionFactory );
 		this.rowMutationOperations = rowMutationOperations;
 	}

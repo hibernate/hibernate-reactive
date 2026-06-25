@@ -4,7 +4,6 @@
  */
 package org.hibernate.reactive.provider.internal;
 
-import java.lang.reflect.Type;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -52,7 +51,10 @@ import org.hibernate.type.descriptor.jdbc.ObjectNullAsBinaryTypeJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
+import org.hibernate.type.Type;
 import org.hibernate.type.descriptor.sql.DdlType;
+import org.hibernate.engine.jdbc.Size;
+import org.hibernate.metamodel.mapping.SqlExpressible;
 import org.hibernate.type.descriptor.sql.spi.DdlTypeRegistry;
 import org.hibernate.type.spi.TypeConfiguration;
 
@@ -219,27 +221,18 @@ public class ReactiveTypeContributor implements TypeContributor {
 		}
 
 		@Override
-		public String getRawTypeName() {
+		@SuppressWarnings("deprecation")
+		public String[] getRawTypeNames() {
+			return new String[] { "json" };
+		}
+
+		@Override
+		public String getCastTypeName(Size columnSize, SqlExpressible type, DdlTypeRegistry ddlTypeRegistry) {
 			return "json";
 		}
 
 		@Override
-		public String getTypeName(Long size, Integer precision, Integer scale) {
-			return "json";
-		}
-
-		@Override
-		public String getCastTypeName(JdbcType jdbcType, JavaType<?> javaType) {
-			return "json";
-		}
-
-		@Override
-		public String getCastTypeName(
-				JdbcType jdbcType,
-				JavaType<?> javaType,
-				Long length,
-				Integer precision,
-				Integer scale) {
+		public String getTypeName(Size columnSize, Type type, DdlTypeRegistry ddlTypeRegistry) {
 			return "json";
 		}
 	}
@@ -257,7 +250,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 		}
 
 		@Override
-		public Type getJavaType() {
+		public java.lang.reflect.Type getJavaType() {
 			return JsonObject.class;
 		}
 

@@ -464,8 +464,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							version,
 							lockModeToAcquire( data ),
 							true,
-							data.getConcreteDescriptor(),
-							false
+							data.getConcreteDescriptor()
 					);
 					data.getEntityHolder().setEntityEntry( entityEntry );
 

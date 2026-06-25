@@ -42,13 +42,13 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 			final int oldSize = actionQueue.numberOfCollectionRemovals();
 
 			autoFlushStage = flushEverythingToExecutions( event )
-					.thenCompose( v -> {
+					.thenCompose( flushProcessingContext -> {
 						if ( flushIsReallyNeeded( event, source ) ) {
 							LOG.trace( "Need to execute flush" );
 							event.setFlushRequired( true );
 
 							return performExecutions( source )
-									.thenRun( () -> postFlush( source ) )
+									.thenRun( () -> postFlush( source, flushProcessingContext ) )
 									.thenRun( () -> postPostFlush( source ) )
 									.thenRun( () -> {
 										final StatisticsImplementor statistics = source.getFactory().getStatistics();
@@ -65,11 +65,14 @@ public class DefaultReactiveAutoFlushEventListener extends AbstractReactiveFlush
 						}
 					} );
 		}
-		return autoFlushStage.whenComplete( (v, x) -> source.getEventListenerManager()
-				.partialFlushEnd(
-						event.getNumberOfEntitiesProcessed(),
-						event.getNumberOfCollectionsProcessed()
-				) );
+		return autoFlushStage.whenComplete( (v, x) -> {
+			clearFlushProcessing( source.getPersistenceContextInternal() );
+			source.getEventListenerManager()
+					.partialFlushEnd(
+							event.getNumberOfEntitiesProcessed(),
+							event.getNumberOfCollectionsProcessed()
+					);
+		} );
 	}
 
 	private ReactiveActionQueue reactiveActionQueue(AutoFlushEvent event) {

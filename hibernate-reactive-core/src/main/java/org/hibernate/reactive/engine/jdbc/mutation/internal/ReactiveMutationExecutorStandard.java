@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
-import org.hibernate.engine.jdbc.batch.spi.Batch;
+import org.hibernate.engine.jdbc.batch.spi.StaleStateMapper;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
@@ -158,7 +158,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 	protected void performBatchedOperations(
 			ValuesAnalysis valuesAnalysis,
 			TableInclusionChecker inclusionChecker,
-			Batch.StaleStateMapper staleStateMapper) {
+			StaleStateMapper staleStateMapper) {
 		throw LOG.nonReactiveMethodCall( "performReactiveBatchedOperations" );
 	}
 

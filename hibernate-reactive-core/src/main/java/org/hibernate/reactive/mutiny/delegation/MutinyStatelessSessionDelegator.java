@@ -97,9 +97,9 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().refreshAll( batchSize, entities );
 	}
 
-	public <R> Mutiny.Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		return delegate().createQuery( typedQueryReference );
-	}
+    public <R> Mutiny.SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        return delegate().createQuery(typedQueryReference);
+    }
 
 	public <R> Mutiny.SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
 		return delegate().createQuery( queryString, resultType );

@@ -17,9 +17,9 @@ import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.model.MutationTarget;
 import org.hibernate.sql.model.TableMapping;
 import org.hibernate.sql.model.ValuesAnalysis;
 import org.hibernate.sql.model.internal.OptionalTableUpdate;
@@ -39,7 +39,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	private final OptionalTableUpdate upsert;
 
 	public ReactiveOptionalTableUpdateOperation(
-			MutationTarget<?> mutationTarget,
+			EntityMutationTarget mutationTarget,
 			OptionalTableUpdate upsert,
 			SessionFactoryImplementor factory) {
 		super( mutationTarget, upsert, factory );

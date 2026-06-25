@@ -16,14 +16,14 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.procedure.spi.NamedCallableQueryMemento;
-import org.hibernate.query.named.NamedMutationMemento;
-import org.hibernate.query.named.NamedObjectRepository;
-import org.hibernate.query.named.NamedQueryMemento;
-import org.hibernate.query.named.NamedResultSetMappingMemento;
-import org.hibernate.query.named.NamedSelectionMemento;
+import org.hibernate.query.named.spi.NamedMutationMemento;
+import org.hibernate.query.named.spi.NamedObjectRepository;
+import org.hibernate.query.named.spi.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedResultSetMappingMemento;
+import org.hibernate.query.named.spi.NamedSelectionMemento;
 import org.hibernate.query.spi.QueryEngine;
-import org.hibernate.query.named.NamedNativeQueryMemento;
-import org.hibernate.query.named.NamedSqmQueryMemento;
+import org.hibernate.query.named.spi.NamedNativeQueryMemento;
+import org.hibernate.query.named.spi.NamedSqmQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedNativeQueryMemento;
 import org.hibernate.reactive.query.sql.spi.ReactiveNamedSqmQueryMemento;
 
@@ -73,7 +73,7 @@ public class ReactiveNamedObjectRepositoryImpl implements NamedObjectRepository 
 
 	@Override
 	public <R> NamedQueryMemento<R> getQueryMementoByName(String name, boolean includeProcedureCalls){
-		return delegate.findQueryMementoByName( name, includeProcedureCalls );
+		return delegate.getQueryMementoByName( name, includeProcedureCalls );
 	}
 
 	@Override

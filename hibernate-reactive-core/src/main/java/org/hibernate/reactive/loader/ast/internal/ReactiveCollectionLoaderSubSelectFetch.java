@@ -116,7 +116,7 @@ public class ReactiveCollectionLoaderSubSelectFetch extends CollectionLoaderSubS
 	private void initializeSubCollection(PersistenceContext persistenceContext, PersistentCollection<?> c) {
 		if ( !c.wasInitialized() ) {
 			c.initializeEmptyCollection( getLoadable().getCollectionDescriptor() );
-			ResultsHelper.finalizeCollectionLoading( persistenceContext, getLoadable().getCollectionDescriptor(), c, c.getKey(), true );
+			ResultsHelper.finalizeCollectionLoading( persistenceContext, getLoadable().getCollectionDescriptor(), c, c.getKey(), true, jakarta.persistence.CacheStoreMode.USE );
 		}
 	}
 }

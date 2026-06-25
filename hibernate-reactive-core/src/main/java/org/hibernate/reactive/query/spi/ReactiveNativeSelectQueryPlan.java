@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.hibernate.ScrollMode;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
-import org.hibernate.query.spi.ScrollableResultsImplementor;
+import org.hibernate.ScrollableResults;
 import org.hibernate.query.sql.spi.NativeSelectQueryPlan;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
@@ -32,7 +32,7 @@ public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan<
 	 */
 	@Override
 	@Deprecated
-	default ScrollableResultsImplementor<T> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
+	default ScrollableResults<T> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw LOG.nonReactiveMethodCall( "<no alternative>" );
 	}
 }
