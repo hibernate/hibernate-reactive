@@ -33,6 +33,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -140,6 +141,11 @@ public class MutinySessionImpl implements Mutiny.Session {
 	@Override
 	public MutationQuery createNativeMutationQuery(String sqlString) {
 		return new MutinyMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ), factory );
+	}
+
+	@Override
+	public MutationQuery createStatement(StatementReference statementReference) {
+		return new MutinyMutationQueryImpl<>( delegate.createReactiveStatement( statementReference ), factory );
 	}
 
 	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
