@@ -1,0 +1,313 @@
+= Migration Guide: Hibernate Reactive 4.x to 5.0
+:toc: left
+:toclevels: 3
+
+This guide covers the breaking changes in Hibernate Reactive 5.0 and how to migrate your application from 4.x.
+
+Hibernate Reactive 5.0 targets **Hibernate ORM 8.0** and **Vert.x 5.1**.
+
+[[dependency-changes]]
+== Dependency changes
+
+[cols="1,1,1", options="header"]
+|===
+| Dependency
+| 4.x
+| 5.0
+
+| Hibernate ORM
+| 7.0.x
+| 8.0.x
+
+| Vert.x SQL Client
+| 5.0.x
+| 5.1.x
+|===
+
+[[package-renames]]
+== Package renames: `.impl` to `.internal`
+
+All `org.hibernate.reactive.\*.impl` sub-packages have been renamed to
+`org.hibernate.reactive.*.internal`, aligning with Hibernate ORM conventions.
+
+This is a bulk rename.
+Any direct import of a class from an `.impl` package must be updated to `.internal`.
+
+The most commonly imported classes affected are:
+
+[cols="1,1", options="header"]
+|===
+| Old import
+| New import
+
+| `o.h.reactive.pool.impl.SqlClientPoolConfiguration`
+| `o.h.reactive.pool.internal.SqlClientPoolConfiguration`
+
+| `o.h.reactive.pool.impl.DefaultSqlClientPool`
+| `o.h.reactive.pool.internal.DefaultSqlClientPool`
+
+| `o.h.reactive.pool.impl.DefaultSqlClientPoolConfiguration`
+| `o.h.reactive.pool.internal.DefaultSqlClientPoolConfiguration`
+
+| `o.h.reactive.pool.impl.ExternalSqlClientPool`
+| `o.h.reactive.pool.internal.ExternalSqlClientPool`
+
+| `o.h.reactive.vertx.impl.ProvidedVertxInstance`
+| `o.h.reactive.vertx.internal.ProvidedVertxInstance`
+
+| `o.h.reactive.vertx.impl.DefaultVertxInstance`
+| `o.h.reactive.vertx.internal.DefaultVertxInstance`
+
+| `o.h.reactive.mutiny.impl.MutinySessionImpl`
+| `o.h.reactive.mutiny.internal.MutinySessionImpl`
+
+| `o.h.reactive.stage.impl.StageSessionImpl`
+| `o.h.reactive.stage.internal.StageSessionImpl`
+
+| `o.h.reactive.provider.impl.ReactiveServiceInitiators`
+| `o.h.reactive.provider.internal.ReactiveServiceInitiators`
+|===
+
+TIP: A project-wide find-and-replace of `org.hibernate.reactive.(\w+)\.impl` to
+`org.hibernate.reactive.$1.internal` will cover most cases.
+
+[[flush-mode]]
+== `FlushMode` replaced by `QueryFlushMode` on queries
+
+The `setFlushMode(FlushMode)` and `setFlushMode(FlushModeType)` methods on
+`SelectionQuery` and `Query` (in both the `Mutiny` and `Stage` APIs) have been
+replaced by a single method accepting `jakarta.persistence.QueryFlushMode`:
+
+[source,java]
+----
+// Before (4.x)
+session.createQuery("from Book", Book.class)
+    .setFlushMode(FlushMode.MANUAL)
+
+// After (5.0)
+session.createQuery("from Book", Book.class)
+    .setFlushMode(QueryFlushMode.NO_FLUSH)
+----
+
+The `setHibernateFlushMode(FlushMode)` method has been removed from all reactive
+query interfaces (`ReactiveSelectionQuery`, `ReactiveMutationQuery`, `ReactiveQuery`,
+`ReactiveNativeQuery`).
+
+NOTE: `Session.setFlushMode(FlushMode)` is *unchanged* — this only affects query-level
+flush mode settings.
+
+[[create-query-typed]]
+== `createQuery(TypedQueryReference)` return type narrowed
+
+`Session.createQuery(TypedQueryReference)` now returns `SelectionQuery<R>` instead
+of `Query<R>`.
+
+[source,java]
+----
+// Before (4.x)
+Query<Book> query = session.createQuery(Book_.findAll);
+
+// After (5.0)
+SelectionQuery<Book> query = session.createQuery(Book_.findAll);
+----
+
+[[query-producer-renames]]
+== `ReactiveQueryProducer` method renames
+
+Several methods on `ReactiveQueryProducer` (the SPI for creating reactive queries)
+have been renamed for consistency:
+
+[cols="1,1", options="header"]
+|===
+| Old name (4.x)
+| New name (5.0)
+
+| `createNativeReactiveMutationQuery(String)`
+| `createReactiveNativeMutationQuery(String)`
+
+| `createNamedReactiveSelectionQuery(String, Class)`
+| `createReactiveNamedSelectionQuery(String, Class)`
+
+| `createNamedReactiveMutationQuery(String)`
+| `createReactiveNamedMutationQuery(String)`
+|===
+
+The deprecated method `createReactiveNativeQuery(String, String, Class)` has been removed.
+
+[[current-transaction]]
+== `currentTransaction()` detects external transactions
+
+`Session.currentTransaction()` (on both `Mutiny.Session` and `Stage.Session`) now
+returns a non-null `Transaction` when a transaction was started externally on the
+underlying connection (e.g., by a framework-level connection pool), not only when
+started via `withTransaction()`.
+
+Code that uses `currentTransaction() == null` to test whether a session-managed
+transaction is active should be aware that it may now return an `ExternalTransaction`
+instance in framework-managed scenarios.
+
+[[reactive-access-callback]]
+== `ReactiveAccessCallback.getNextReactiveValue()` return type
+
+The return type changed from `CompletionStage<IntegralDataTypeHolder>` to
+`CompletionStage<Long>`, following the removal of `IntegralDataTypeHolder` in ORM 8.
+
+[source,java]
+----
+// Before (4.x)
+CompletionStage<IntegralDataTypeHolder> getNextReactiveValue();
+
+// After (5.0)
+CompletionStage<Long> getNextReactiveValue();
+----
+
+[[reactive-connection]]
+== `ReactiveConnection` SPI: new `currentTransactionId()` method
+
+A new default method `currentTransactionId()` has been added to the
+`ReactiveConnection` interface.
+Custom `ReactiveConnection` implementations will compile without changes
+(it defaults to returning `null`), but should consider overriding it to support
+external transaction detection.
+
+[[named-query-mementos]]
+== Named query memento SPI changes
+
+`ReactiveNamedSqmQueryMemento` and `ReactiveNamedNativeQueryMemento` had significant
+API changes following ORM 8.0 refactoring:
+
+* Several getter methods removed (`getResultType()`, `getFirstResult()`,
+  `getMaxResults()`, `getLockOptions()`, `getCacheable()`, `getCacheRegion()`,
+  `getCacheMode()`, `getReadOnly()`, `getFetchSize()`).
+* `getParameterTypes()` renamed to `getAnticipatedParameterTypes()`.
+* `Integer getTimeout()` changed to `Timeout getTimeout()` (using `jakarta.persistence.Timeout`).
+* `toSelectionQuery()` signature changed.
+
+These are SPI classes — only custom query memento implementations are affected.
+
+[[orm-class-relocations]]
+== ORM 8.0 class relocations
+
+Several Hibernate ORM classes have moved packages.
+If your code imports them directly, update the imports:
+
+[cols="1,1", options="header"]
+|===
+| Old location
+| New location
+
+| `org.hibernate.query.sql.spi.NamedNativeQueryMemento`
+| `org.hibernate.query.named.spi.NamedNativeQueryMemento`
+
+| `org.hibernate.query.sqm.spi.NamedSqmQueryMemento`
+| `org.hibernate.query.named.spi.NamedSqmQueryMemento`
+
+| `org.hibernate.query.named.NamedObjectRepository`
+| `org.hibernate.query.named.spi.NamedObjectRepository`
+
+| `org.hibernate.query.named.NamedResultSetMappingMemento`
+| `org.hibernate.query.named.spi.NamedResultSetMappingMemento`
+
+| `org.hibernate.query.sqm.tree.select.SqmSelectStatement`
+| `org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement`
+
+| `org.hibernate.query.sqm.tree.delete.SqmDeleteStatement`
+| `org.hibernate.query.sqm.tree.spi.delete.SqmDeleteStatement`
+
+| `org.hibernate.query.sqm.tree.update.SqmUpdateStatement`
+| `org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement`
+
+| `org.hibernate.query.sqm.tree.insert.SqmInsertStatement`
+| `org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement`
+
+| `org.hibernate.query.sqm.tree.SqmStatement`
+| `org.hibernate.query.sqm.tree.spi.SqmStatement`
+
+| `org.hibernate.query.sqm.sql.FromClauseIndex`
+| `org.hibernate.query.sqm.sql.spi.FromClauseIndex`
+
+| `org.hibernate.query.results.ResultSetMapping`
+| `org.hibernate.query.results.spi.ResultSetMapping`
+
+| `org.hibernate.query.QueryLogging`
+| `org.hibernate.query.internal.QueryLogging`
+
+| `org.hibernate.FetchMode` (engine)
+| `org.hibernate.engine.FetchStyle`
+
+| `org.hibernate.OrderingMode`
+| `org.hibernate.FindMultipleOption.OrderingMode`
+
+| `org.hibernate.RemovalsMode`
+| `org.hibernate.FindMultipleOption.RemovalsMode`
+
+| `org.hibernate.SessionCheckMode`
+| `org.hibernate.FindMultipleOption.SessionCheckMode`
+|===
+
+[[usertype]]
+== `UserType` method signatures
+
+Following ORM 8.0, `UserType` method signatures have changed:
+
+[source,java]
+----
+// Before (4.x)
+T nullSafeGet(ResultSet rs, int position,
+    SharedSessionContractImplementor session, Object owner);
+void nullSafeSet(PreparedStatement st, T value, int index,
+    SharedSessionContractImplementor session);
+
+// After (5.0)
+T nullSafeGet(ResultSet rs, int position, WrapperOptions options);
+void nullSafeSet(PreparedStatement st, T value, int index,
+    WrapperOptions options);
+----
+
+[[callback-registry]]
+== `CallbackRegistryConsumer` removed
+
+`org.hibernate.jpa.event.spi.CallbackRegistryConsumer` has been removed in ORM 8.0.
+Event listeners that implemented this interface should use
+`EntityPersister.getEntityCallbacks()` instead.
+
+[[find-get-query-producer]]
+== `find()` and `get()` moved to `QueryProducer`
+
+The `find()` methods (previously on `Session` only) and `get()` methods (previously
+on `StatelessSession` only) have been moved up to `QueryProducer`, the common ancestor
+of both `Session` and `StatelessSession`.
+This means both `find()` and `get()` are now available on both session types.
+
+Additionally, `get()` no longer simply aliases `find()`.
+It now throws `jakarta.persistence.EntityNotFoundException` when the entity is not found,
+matching the behavior of Hibernate ORM's `get()`:
+
+[source,java]
+----
+// find() returns null when the entity doesn't exist (unchanged)
+GuineaPig pig = session.find(GuineaPig.class, id);  // null if not found
+
+// get() now throws EntityNotFoundException when the entity doesn't exist
+GuineaPig pig = session.get(GuineaPig.class, id);    // throws if not found
+----
+
+If your code was calling `StatelessSession.get()` and handling null results,
+switch to `find()` or add a try/catch for `EntityNotFoundException`.
+
+[[deleted-classes]]
+== Deleted internal classes
+
+The following internal classes have been removed and replaced:
+
+[cols="1,1", options="header"]
+|===
+| Deleted class
+| Replacement
+
+| `ReactiveSqmQueryImpl`
+| `ReactiveMutationQueryImpl` + `ReactiveSelectionQueryImpl`
+
+| `ReactiveSqmSelectionQueryImpl`
+| `ReactiveSelectionQueryImpl`
+|===
