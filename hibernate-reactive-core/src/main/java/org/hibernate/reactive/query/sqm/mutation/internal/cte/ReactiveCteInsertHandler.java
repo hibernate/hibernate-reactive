@@ -9,7 +9,7 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertHandler;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
+import org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
@@ -33,11 +33,6 @@ public class ReactiveCteInsertHandler extends CteInsertHandler implements Reacti
 			DomainQueryExecutionContext context,
 			MutableObject<JdbcParameterBindings> firstJdbcParameterBindingsConsumer) {
 		super( cteTable, sqmStatement, domainParameterXref, context, firstJdbcParameterBindingsConsumer );
-	}
-
-	@Override
-	public int execute(DomainQueryExecutionContext executionContext) {
-		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 	}
 
 	@Override

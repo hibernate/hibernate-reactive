@@ -24,7 +24,8 @@ import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.action.spi.Executable;
 import org.hibernate.cache.CacheException;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
-import org.hibernate.engine.spi.ActionQueue;
+import org.hibernate.action.queue.spi.ActionQueue;
+import org.hibernate.engine.spi.ActionQueueLegacy;
 import org.hibernate.engine.spi.ComparableExecutable;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.ExecutableList;
@@ -124,7 +125,7 @@ public class ReactiveActionQueue {
 				if ( instance.insertions == null ) {
 					//Special case of initialization
 					instance.insertions = instance.isOrderInsertsEnabled()
-							? new ExecutableList<>( ActionQueue.InsertActionSorter.INSTANCE )
+							? new ExecutableList<>( ActionQueueLegacy.InsertActionSorter.INSTANCE )
 							: new ExecutableList<>( false );
 				}
 			}

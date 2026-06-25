@@ -30,7 +30,7 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
-import static org.hibernate.sql.results.graph.embeddable.EmbeddableLoadingLogger.EMBEDDED_LOAD_LOGGER;
+import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
 import static org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer.BATCH_PROPERTY;
 
 public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
@@ -169,7 +169,7 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 									return voidFuture();
 								}
 								return doCreateCompositeInstance( data )
-										.thenAccept( v -> EMBEDDED_LOAD_LOGGER.debugf(
+										.thenAccept( v -> LOADING_LOGGER.debugf(
 												"Created composite instance [%s]",
 												getNavigablePath()
 										) );
@@ -177,7 +177,7 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 		}
 
 		return doCreateCompositeInstance( data )
-				.thenAccept( v -> EMBEDDED_LOAD_LOGGER.debugf( "Created composite instance [%s]", getNavigablePath() ) );
+				.thenAccept( v -> LOADING_LOGGER.debugf( "Created composite instance [%s]", getNavigablePath() ) );
 
 	}
 

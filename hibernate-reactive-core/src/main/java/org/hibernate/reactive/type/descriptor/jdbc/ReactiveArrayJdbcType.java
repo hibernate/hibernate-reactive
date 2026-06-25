@@ -62,22 +62,20 @@ public class ReactiveArrayJdbcType implements JdbcType {
 	}
 
 	@Override
-	public <T> JavaType<T> getJdbcRecommendedJavaTypeMapping(
+	public JavaType<?> getRecommendedJavaType(
 			Integer precision,
 			Integer scale,
 			TypeConfiguration typeConfiguration) {
 		final JavaType<?> elementJavaType =
-				elementJdbcType.getJdbcRecommendedJavaTypeMapping( precision, scale, typeConfiguration );
+				elementJdbcType.getRecommendedJavaType( precision, scale, typeConfiguration );
 		final var javaType =
 				typeConfiguration.getJavaTypeRegistry()
 						.resolveDescriptor( newInstance( elementJavaType.getJavaTypeClass(), 0 ).getClass() );
 		if ( javaType instanceof BasicPluralType<?, ?> ) {
-			//noinspection unchecked
-			return (JavaType<T>) javaType;
+			return javaType;
 		}
 		else {
-			//noinspection unchecked
-			return (JavaType<T>) javaType.createJavaType(
+			return javaType.createJavaType(
 					new ParameterizedTypeImpl( javaType.getJavaTypeClass(), new Type[0], null ),
 					typeConfiguration
 			);
@@ -150,7 +148,7 @@ public class ReactiveArrayJdbcType implements JdbcType {
 				final Class<?> elementJdbcJavaTypeClass;
 				if ( preferredJavaTypeClass == null ) {
 					elementJdbcJavaTypeClass = underlyingJdbcType
-							.getJdbcRecommendedJavaTypeMapping( null, null, typeConfiguration )
+							.getRecommendedJavaType( null, null, typeConfiguration )
 							.getJavaTypeClass();
 				}
 				else {

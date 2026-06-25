@@ -26,10 +26,9 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 	public <T> EntityBatchLoader<T> createEntityBatchLoader(
 			int domainBatchSize,
 			EntityMappingType entityDescriptor,
-			LoadQueryInfluencers loadQueryInfluencers) {
-		SessionFactoryImplementor factory = loadQueryInfluencers.getSessionFactory();
+			LoadQueryInfluencers influencers) {
+		final SessionFactoryImplementor factory = influencers.getSessionFactory();
 		final Dialect dialect = factory.getJdbcServices().getDialect();
-
 		// NOTE : don't use the EntityIdentifierMapping here because it will not be known until later
 		final Type identifierType = entityDescriptor.getEntityPersister().getIdentifierType();
 		final int idColumnCount = identifierType.getColumnSpan( factory.getRuntimeMetamodels() );
@@ -38,13 +37,13 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 				&& MultiKeyLoadHelper.supportsSqlArrayType( dialect )
 				&& identifierType instanceof BasicType ) {
 			// we can use a single ARRAY parameter to send all the ids
-			return (EntityBatchLoader<T>) new ReactiveEntityBatchLoaderArrayParam<>( domainBatchSize, entityDescriptor, factory );
+			return (EntityBatchLoader<T>) new ReactiveEntityBatchLoaderArrayParam<>( domainBatchSize, entityDescriptor, influencers );
 		}
 
 		final int optimalBatchSize = dialect
 				.getBatchLoadSizingStrategy()
 				.determineOptimalBatchLoadSize( idColumnCount, domainBatchSize, false );
-		return (EntityBatchLoader<T>) new ReactiveEntityBatchLoaderInPredicate<>( domainBatchSize, optimalBatchSize, entityDescriptor, factory );
+		return (EntityBatchLoader<T>) new ReactiveEntityBatchLoaderInPredicate<>( domainBatchSize, optimalBatchSize, entityDescriptor, influencers );
 	}
 
 	@Override
