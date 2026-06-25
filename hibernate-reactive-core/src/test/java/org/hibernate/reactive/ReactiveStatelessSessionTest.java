@@ -8,6 +8,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.hibernate.query.range.Range;
+import org.hibernate.query.restriction.Restriction;
+import org.hibernate.query.specification.MutationSpecification;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.junit5.Timeout;
@@ -16,6 +19,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -226,6 +230,49 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 						.thenCompose( v -> ss.createQuery( delete ).executeUpdate() )
 						.thenAccept( rows -> assertThat( rows ).isEqualTo( 1 ) )
 						.thenCompose( v -> ss.close() ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateStatementFromHql(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( "Aloi" );
+		GuineaPig xavier = new GuineaPig( "Xavier" );
+		StatementReference deleteByName = MutationSpecification
+				.create( GuineaPig.class, "delete from GuineaPig" )
+				.restrict( Restriction.restrict( GuineaPig.class, "name", Range.singleValue( "Aloi" ) ) )
+				.reference();
+
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insertMultiple( List.of( aloi, xavier ) )
+				.thenCompose( v -> ss.createStatement( deleteByName ).executeUpdate() )
+				.thenAccept( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.thenCompose( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
+				.thenAccept( list -> assertThat( list ).containsExactly( xavier ) )
+				.thenCompose( v -> ss.delete( xavier ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateStatementFromCriteria(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( "Aloi" );
+		GuineaPig xavier = new GuineaPig( "Xavier" );
+
+		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
+		CriteriaUpdate<GuineaPig> criteriaUpdate = cb.createCriteriaUpdate( GuineaPig.class );
+		Root<GuineaPig> root = criteriaUpdate.from( GuineaPig.class );
+		criteriaUpdate.set( "name", "Bob" );
+		criteriaUpdate.where( cb.equal( root.get( "name" ), "Aloi" ) );
+		StatementReference updateByName = MutationSpecification.create( criteriaUpdate ).reference();
+
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insertMultiple( List.of( aloi, xavier ) )
+				.thenCompose( v -> ss.createStatement( updateByName ).executeUpdate() )
+				.thenAccept( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.thenCompose( v -> ss.get( GuineaPig.class, aloi.id ) )
+				.thenAccept( p -> assertThat( p.getName() ).isEqualTo( "Bob" ) )
+				.thenCompose( v -> ss.get( GuineaPig.class, xavier.id ) )
+				.thenAccept( p -> assertThat( p.getName() ).isEqualTo( "Xavier" ) )
+				.thenCompose( v -> ss.deleteMultiple( List.of( aloi, xavier ) ) ) )
 		);
 	}
 
