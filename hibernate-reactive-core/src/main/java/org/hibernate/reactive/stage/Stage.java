@@ -37,6 +37,7 @@ import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.stat.Statistics;
 
 import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
@@ -815,6 +816,213 @@ public interface Stage {
 		 * @since 3
 		 */
 		CriteriaBuilder getCriteriaBuilder();
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, or {@code null} if there is no such
+		 * persistent instance.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see jakarta.persistence.EntityManager#find(Class, Object)
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockMode}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockMode the requested {@link LockMode}
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class, Object)
+		 */
+		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
+
+		/**
+		 * Asynchronously return the persistent instance of the given entity
+		 * class with the given identifier, requesting the given {@link LockModeType}.
+		 *
+		 * @param entityClass The entity type
+		 * @param id an identifier
+		 * @param lockModeType the requested {@link LockModeType}
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class, Object)
+		 */
+		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return find( entityClass, id, convertToLockMode( lockModeType ) );
+		}
+
+		/**
+		 * Asynchronously return the persistent instance with the given
+		 * identifier of an entity class, using the given {@link EntityGraph}
+		 * as a fetch plan.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 *                    and associations to be fetched
+		 * @param id an identifier
+		 *
+		 * @return a persistent instance or null via a {@code CompletionStage}
+		 *
+		 * @see #find(Class, Object)
+		 */
+		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
+
+		/**
+		 * Asynchronously return the persistent instances of the given entity
+		 * class with the given identifiers, or null if there is no such
+		 * persistent instance.
+		 *
+		 * @param entityClass The entity type
+		 * @param ids the identifiers
+		 *
+		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
+		 *
+		 * @see org.hibernate.Session#findMultiple(Class, List, FindOption...)
+		 */
+		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
+
+		/**
+		 * Asynchronously return the persistent instances of the given entity
+		 * class with the given identifiers supplied as a list.
+		 *
+		 * @param entityClass The entity type
+		 * @param ids the identifiers
+		 *
+		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
+		 *
+		 * @see org.hibernate.Session#findMultiple(Class, List, FindOption...)
+		 */
+		default <T> CompletionStage<List<T>> findMultiple(Class<T> entityClass, List<?> ids) {
+			return find( entityClass, ids.toArray() );
+		}
+
+		/**
+		 * Retrieve a row, throwing {@link EntityNotFoundException} if
+		 * the entity is not found.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code CompletionStage}
+		 *
+		 * @throws EntityNotFoundException if the entity is not found
+		 *
+		 * @see #find(Class, Object)
+		 * @see jakarta.persistence.EntityHandler#get(Class, Object)
+		 */
+		default <T> CompletionStage<T> get(Class<T> entityClass, Object id) {
+			return find( entityClass, id )
+					.thenApply( result -> requireNonNull( result, entityClass, id ) );
+		}
+
+		/**
+		 * Retrieve multiple rows.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code CompletionStage}
+		 *
+		 * @see #find(Class, Object...)
+		 */
+		default <T> CompletionStage<List<T>> get(Class<T> entityClass, Object... ids) {
+			return find( entityClass, ids );
+		}
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode, throwing
+		 * {@link EntityNotFoundException} if the entity is not found.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockMode The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code CompletionStage}
+		 *
+		 * @throws EntityNotFoundException if the entity is not found
+		 *
+		 * @see #find(Class, Object, LockMode)
+		 * @see jakarta.persistence.EntityHandler#get(Class, Object)
+		 */
+		default <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
+			return find( entityClass, id, lockMode )
+					.thenApply( result -> requireNonNull( result, entityClass, id ) );
+		}
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode, throwing
+		 * {@link EntityNotFoundException} if the entity is not found.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockModeType The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code CompletionStage}
+		 *
+		 * @throws EntityNotFoundException if the entity is not found
+		 *
+		 * @see #find(Class, Object, LockMode)
+		 */
+		default <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return get( entityClass, id, convertToLockMode( lockModeType ) );
+		}
+
+		/**
+		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan,
+		 * throwing {@link EntityNotFoundException} if the entity is not found.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 *                    and associations to be fetched
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code CompletionStage}
+		 *
+		 * @throws EntityNotFoundException if the entity is not found
+		 *
+		 * @see #find(EntityGraph, Object)
+		 */
+		default <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
+			return find( entityGraph, id )
+					.thenApply( result -> requireNonNull( result, id ) );
+		}
+
+		private static <T> T requireNonNull(T result, Class<?> entityClass, Object id) {
+			if ( result == null ) {
+				throw new EntityNotFoundException(
+						"Entity " + entityClass.getName() + " with identifier " + id + " not found" );
+			}
+			return result;
+		}
+
+		private static <T> T requireNonNull(T result, Object id) {
+			if ( result == null ) {
+				throw new EntityNotFoundException( "Entity with identifier " + id + " not found" );
+			}
+			return result;
+		}
+
+		/**
+		 * Retrieve multiple rows, with the given identifiers supplied as a list.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code CompletionStage}
+		 *
+		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
+		 */
+		default <T> CompletionStage<List<T>> getMultiple(Class<T> entityClass, List<?> ids) {
+			return get( entityClass, ids.toArray() );
+		}
 	}
 
 	/**
@@ -841,83 +1049,6 @@ public interface Stage {
 	 * @see org.hibernate.Session
 	 */
     non-sealed interface Session extends QueryProducer {
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, or {@code null} if there is no such
-		 * persistent instance. If the instance is already associated with
-		 * the session, return the associated instance. This method never
-		 * returns an uninitialized instance.
-		 *
-		 * <pre>
-		 * {@code session.find(Book.class, id).thenAccept(book -> print(book.getTitle()));}
-		 * </pre>
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see jakarta.persistence.EntityManager#find(Class, Object)
-		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id);
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, requesting the given {@link LockMode}.
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 * @param lockMode the requested {@link LockMode}
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see #find(Class,Object)
-		 * @see #lock(Object, LockMode) this discussion of lock modes
-		 */
-		<T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode);
-
-		/**
-		 * Asynchronously return the persistent instance of the given entity
-		 * class with the given identifier, requesting the given {@link LockModeType}.
-		 *
-		 * @param entityClass The entity type
-		 * @param id an identifier
-		 * @param lockModeType the requested {@link LockModeType}
-		 *
-		 * @return a persistent instance or null via a {@code CompletionStage}
-		 *
-		 * @see #find(Class,Object)
-		 * @see #lock(Object, LockMode) this discussion of lock modes
-		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return find( entityClass, id, convertToLockMode(lockModeType) );
-		}
-
-		 /**
-		 * Asynchronously return the persistent instance with the given
-		 * identifier of an entity class, using the given {@link EntityGraph}
-		 * as a fetch plan.
-		 *
-		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
-		 * @param id an identifier
-		 *
-		 * @see #find(Class,Object)
-		 */
-		<T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id);
-
-		/**
-		 * Asynchronously return the persistent instances of the given entity
-		 * class with the given identifiers, or null if there is no such
-		 * persistent instance.
-		 *
-		 * @param entityClass The entity type
-		 * @param ids the identifiers
-		 *
-		 * @return a list of persistent instances and nulls via a {@code CompletionStage}
-		 */
-		<T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids);
 
 		/**
 		 * Asynchronously return the persistent instance of the given entity
@@ -1564,181 +1695,6 @@ public interface Stage {
 	 * @see org.hibernate.StatelessSession
 	 */
     non-sealed interface StatelessSession extends QueryProducer {
-
-		/**
-		 * Retrieve a row.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Object)
-		 */
-		<T> CompletionStage<T> get(Class<T> entityClass, Object id);
-
-		/**
-		 * Retrieve multiple rows.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param ids The ids of the entities to retrieve
-		 *
-		 * @return a list of detached entity instances, via a {@code Uni}
-		 *
-		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
-		 */
-		<T> CompletionStage<List<T>> get(Class<T> entityClass, Object... ids);
-
-		/**
-		 * Retrieve a row, obtaining the specified lock mode.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 * @param lockMode The lock mode to apply to the entity
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
-		 */
-		<T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode);
-
-		/**
-		 * Retrieve a row, obtaining the specified lock mode.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 * @param lockModeType The lock mode to apply to the entity
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#get(Class, Object, LockMode)
-		 */
-		default <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return get( entityClass, id, convertToLockMode(lockModeType) );
-		}
-
-		/**
-		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
-		 *
-		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
-		 * @param id The id of the entity to retrieve
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 */
-		<T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id);
-
-		/**
-		 * Retrieve multiple rows, with the given identifiers supplied as a list.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param ids The ids of the entities to retrieve
-		 *
-		 * @return a list of detached entity instances, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
-		 */
-		default <T> CompletionStage<List<T>> getMultiple(Class<T> entityClass, List<?> ids) {
-			return get( entityClass, ids.toArray() );
-		}
-
-		/**
-		 * Retrieve a row, returning {@code null} if the row does not exist.
-		 * <p>
-		 * Equivalent to {@link #get(Class, Object)} for a stateless session,
-		 * since there is no persistence context.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#find(Class, Object)
-		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id) {
-			return get( entityClass, id );
-		}
-
-		/**
-		 * Retrieve multiple rows.
-		 * <p>
-		 * Equivalent to {@link #get(Class, Object...)} for a stateless session.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param ids The ids of the entities to retrieve
-		 *
-		 * @return a list of detached entity instances, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#findMultiple(Class, List)
-		 */
-		default <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
-			return get( entityClass, ids );
-		}
-
-		/**
-		 * Retrieve a row, obtaining the specified lock mode.
-		 * <p>
-		 * Equivalent to {@link #get(Class, Object, LockMode)} for a stateless session.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 * @param lockMode The lock mode to apply to the entity
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#find(Class, Object)
-		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode) {
-			return get( entityClass, id, lockMode );
-		}
-
-		/**
-		 * Retrieve a row, obtaining the specified lock mode.
-		 * <p>
-		 * Equivalent to {@link #get(Class, Object, LockModeType)} for a stateless session.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param id The id of the entity to retrieve
-		 * @param lockModeType The lock mode to apply to the entity
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#find(Class, Object)
-		 */
-		default <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
-			return get( entityClass, id, lockModeType );
-		}
-
-		/**
-		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
-		 * <p>
-		 * Equivalent to {@link #get(EntityGraph, Object)} for a stateless session.
-		 *
-		 * @param entityGraph an {@link EntityGraph} specifying the entity
-		 *                    and associations to be fetched
-		 * @param id The id of the entity to retrieve
-		 *
-		 * @return a detached entity instance, via a {@code CompletionStage}
-		 *
-		 * @see #get(EntityGraph, Object)
-		 */
-		default <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
-			return get( entityGraph, id );
-		}
-
-		/**
-		 * Retrieve multiple rows, with the given identifiers supplied as a list.
-		 *
-		 * @param entityClass The class of the entity to retrieve
-		 * @param ids The ids of the entities to retrieve
-		 *
-		 * @return a list of detached entity instances, via a {@code CompletionStage}
-		 *
-		 * @see org.hibernate.StatelessSession#findMultiple(Class, List)
-		 */
-		default <T> CompletionStage<List<T>> findMultiple(Class<T> entityClass, List<?> ids) {
-			return get( entityClass, ids.toArray() );
-		}
 
 		/**
 		 * Insert a row.
