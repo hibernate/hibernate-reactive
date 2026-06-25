@@ -35,6 +35,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -136,6 +137,11 @@ public class StageSessionImpl implements Stage.Session {
 	@Override
 	public MutationQuery createNativeMutationQuery(String sqlString) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ) );
+	}
+
+	@Override
+	public MutationQuery createStatement(StatementReference statementReference) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveStatement( statementReference ) );
 	}
 
 	@Override

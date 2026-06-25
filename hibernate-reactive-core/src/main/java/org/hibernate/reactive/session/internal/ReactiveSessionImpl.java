@@ -78,6 +78,8 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.named.spi.NamedNativeQueryMemento;
 import org.hibernate.query.named.spi.NamedResultSetMappingMemento;
 import org.hibernate.query.named.spi.NamedSqmQueryMemento;
+import org.hibernate.query.specification.MutationSpecification;
+import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.sqm.spi.SqmStatementAccess;
 import org.hibernate.query.spi.HqlInterpretation;
@@ -129,8 +131,10 @@ import org.hibernate.reactive.util.internal.CompletionStages;
 
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQueryReference;
+import jakarta.persistence.criteria.CriteriaStatement;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaSelect;
@@ -802,6 +806,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				memento -> memento.toMutationQuery( this ),
 				memento -> memento.toMutationQuery( this )
 		).asMutationQuery();
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R> ReactiveMutationQuery<R> createReactiveStatement(StatementReference statementReference) {
+		checksBeforeQueryCreation();
+		if ( statementReference instanceof MutationSpecificationImpl<?> specification ) {
+			final CriteriaStatement<?> criteriaStatement = specification.buildCriteria( getCriteriaBuilder() );
+			return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) criteriaStatement, this );
+		}
+		if ( statementReference instanceof MutationSpecification<?> specification ) {
+			final CriteriaStatement<?> criteriaStatement = specification.buildCriteria( getCriteriaBuilder() );
+			return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) criteriaStatement, this );
+		}
+		final ReactiveMutationQuery<R> query = createReactiveNamedMutationQuery( statementReference.getName() );
+		statementReference.getHints().forEach( query::setHint );
+		return query;
 	}
 
 	@Override
