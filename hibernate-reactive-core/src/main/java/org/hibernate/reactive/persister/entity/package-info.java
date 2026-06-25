@@ -5,6 +5,6 @@
 /**
  * Reactive entity persisters.
  *
- * @see org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister
+ * @see org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister
  */
 package org.hibernate.reactive.persister.entity;

@@ -25,11 +25,11 @@ import org.hibernate.sql.results.graph.embeddable.EmbeddableResultGraphNode;
 import org.hibernate.sql.results.graph.embeddable.internal.EmbeddableInitializerImpl;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
 import static org.hibernate.sql.results.graph.embeddable.EmbeddableLoadingLogger.EMBEDDED_LOAD_LOGGER;
 import static org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer.BATCH_PROPERTY;
 

@@ -7,7 +7,7 @@ package org.hibernate.reactive.sql.results.internal;
 import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.engine.FetchTiming;
 import org.hibernate.metamodel.mapping.EntityValuedModelPart;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonAggregatedIdentifierMappingFetch;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityAssembler;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityInitializerImpl;
@@ -24,7 +24,7 @@ import org.hibernate.sql.results.graph.embeddable.internal.NonAggregatedIdentifi
 import org.hibernate.sql.results.graph.entity.internal.EntityResultImpl;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 public class ReactiveEntityResultImpl extends EntityResultImpl {
 	private static final Log LOG = make( Log.class, lookup() );

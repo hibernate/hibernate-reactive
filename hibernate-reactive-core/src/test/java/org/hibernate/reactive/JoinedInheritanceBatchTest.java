@@ -23,7 +23,7 @@ import java.util.concurrent.CompletionStage;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 public class JoinedInheritanceBatchTest extends BaseReactiveTest {

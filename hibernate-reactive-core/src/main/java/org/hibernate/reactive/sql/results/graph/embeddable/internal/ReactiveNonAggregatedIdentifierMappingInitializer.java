@@ -18,8 +18,8 @@ import org.hibernate.sql.results.graph.embeddable.internal.NonAggregatedIdentifi
 import org.hibernate.sql.results.graph.entity.internal.EntityFetchJoinedImpl;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class ReactiveNonAggregatedIdentifierMappingInitializer extends NonAggregatedIdentifierMappingInitializer
 		implements ReactiveInitializer<NonAggregatedIdentifierMappingInitializer.NonAggregatedIdentifierMappingInitializerData> {

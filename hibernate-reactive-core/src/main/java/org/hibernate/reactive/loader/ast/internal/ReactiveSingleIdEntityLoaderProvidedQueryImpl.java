@@ -19,7 +19,7 @@ import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import jakarta.persistence.Parameter;
 import org.hibernate.type.descriptor.java.JavaType;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * Implementation of SingleIdEntityLoader for cases where the application has

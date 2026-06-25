@@ -32,7 +32,7 @@ import static jakarta.persistence.CascadeType.REFRESH;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * This test uses a complicated model that requires Hibernate to delay

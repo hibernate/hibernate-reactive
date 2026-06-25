@@ -8,14 +8,14 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
-import org.hibernate.reactive.mutiny.impl.MutinyStatelessSessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinyStatelessSessionImpl;
 import org.hibernate.reactive.pool.BatchingConnection;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.pool.impl.SqlClientConnection;
+import org.hibernate.reactive.pool.internal.SqlClientConnection;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.stage.impl.StageStatelessSessionImpl;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
+import org.hibernate.reactive.stage.internal.StageStatelessSessionImpl;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +26,8 @@ import io.vertx.junit5.VertxTestContext;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout(value = 10, timeUnit = MINUTES)
@@ -83,7 +83,7 @@ public class BatchingConnectionTest extends ReactiveSessionTest {
 			actualConnection = connection;
 		}
 		assertThat( actualConnection.getClass().getName() )
-				.isEqualTo( org.hibernate.reactive.pool.impl.SqlClientPool.class.getName() + "$ProxyConnection" );
+				.isEqualTo( org.hibernate.reactive.pool.internal.SqlClientPool.class.getName() + "$ProxyConnection" );
 	}
 
 	@Test

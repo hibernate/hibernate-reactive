@@ -18,8 +18,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import org.hibernate.reactive.adaptor.impl.ArrayAdaptor;
-import org.hibernate.reactive.adaptor.impl.ResultSetAdaptor;
+import org.hibernate.reactive.adaptor.internal.ArrayAdaptor;
+import org.hibernate.reactive.adaptor.internal.ResultSetAdaptor;
 import org.hibernate.type.BasicPluralType;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;

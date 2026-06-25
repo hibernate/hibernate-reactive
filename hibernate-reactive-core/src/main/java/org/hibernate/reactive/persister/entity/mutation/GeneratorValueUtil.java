@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive.persister.entity.mutation;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 import java.util.concurrent.CompletionStage;
 
@@ -13,11 +13,11 @@ import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
 import org.hibernate.reactive.tuple.MutinyGenerator;
 import org.hibernate.reactive.tuple.StageGenerator;
 

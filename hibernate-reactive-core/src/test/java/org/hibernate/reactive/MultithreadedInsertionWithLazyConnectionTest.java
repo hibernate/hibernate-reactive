@@ -16,7 +16,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
 
 import org.junit.jupiter.api.AfterEach;
@@ -44,9 +44,9 @@ import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * This is a multi-threaded stress test, intentionally consuming some time

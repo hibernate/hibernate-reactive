@@ -17,14 +17,14 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
+import org.hibernate.reactive.engine.internal.ReactiveCallbackImpl;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.resource.jdbc.spi.JdbcSessionContext;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -37,8 +37,8 @@ import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.spi.TypeConfiguration;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 
 public class ReactiveDeferredResultSetAccess extends DeferredResultSetAccess implements ReactiveResultSetAccess {
 

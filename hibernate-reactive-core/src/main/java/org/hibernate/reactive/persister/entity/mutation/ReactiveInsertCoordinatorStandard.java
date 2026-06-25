@@ -34,8 +34,8 @@ import org.hibernate.persister.entity.mutation.InsertCoordinator;
 import org.hibernate.persister.entity.mutation.InsertCoordinatorStandard;
 import org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.InsertValuesAnalysis;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.ast.builder.MutationGroupBuilder;
@@ -46,8 +46,8 @@ import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see InsertCoordinatorStandard

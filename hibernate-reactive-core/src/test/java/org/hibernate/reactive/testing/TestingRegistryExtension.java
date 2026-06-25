@@ -19,7 +19,7 @@ import org.hibernate.engine.jdbc.env.spi.QualifiedObjectNameFormatter;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.vertx.VertxInstance;
-import org.hibernate.reactive.vertx.impl.ProvidedVertxInstance;
+import org.hibernate.reactive.vertx.internal.ProvidedVertxInstance;
 import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceBinding;

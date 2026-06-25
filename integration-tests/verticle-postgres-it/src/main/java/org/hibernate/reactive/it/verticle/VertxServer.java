@@ -10,7 +10,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
@@ -23,7 +23,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 
 /**

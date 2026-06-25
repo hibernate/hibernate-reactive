@@ -30,12 +30,12 @@ import org.hibernate.loader.internal.CacheLoadHelper.PersistenceContextEntry;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
@@ -47,10 +47,10 @@ import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static org.hibernate.event.spi.LoadEventListener.GET;
 import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSessionCache;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
 
 /**
  * @see org.hibernate.loader.ast.internal.MultiIdEntityLoaderInPredicate

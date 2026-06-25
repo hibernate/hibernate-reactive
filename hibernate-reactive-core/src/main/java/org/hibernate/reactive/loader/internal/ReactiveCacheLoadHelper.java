@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.loader.internal.CacheLoadHelper.PersistenceContextEntry.EntityStatus.MANAGED;
 import static org.hibernate.reactive.loader.ast.internal.ReactiveLoaderHelper.upgradeLock;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * A reactive implementation of {@link  CacheLoadHelper}

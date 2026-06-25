@@ -11,14 +11,14 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
 import org.hibernate.spi.NavigablePath;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.InitializerParent;
 import org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchInitializer;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see org.hibernate.sql.results.graph.entity.internal.EntitySelectFetchByUniqueKeyInitializer

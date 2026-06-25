@@ -23,7 +23,7 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
+import org.hibernate.reactive.engine.internal.ReactiveCallbackImpl;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;

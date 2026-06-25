@@ -16,7 +16,7 @@ import org.hibernate.sql.results.graph.entity.internal.EntityAssembler;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.java.JavaType;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * @see org.hibernate.sql.results.graph.entity.internal.EntityAssembler

@@ -13,8 +13,8 @@ import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.mapping.internal.SimpleNaturalIdMapping;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSimpleNaturalIdLoader;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 public class ReactiveSimpleNaturalIdMapping extends SimpleNaturalIdMapping {
 

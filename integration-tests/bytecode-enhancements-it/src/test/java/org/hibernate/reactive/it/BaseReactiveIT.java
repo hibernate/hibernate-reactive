@@ -18,7 +18,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -36,8 +36,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Similar to BaseReactiveTest in the hibernate-reactive-core.

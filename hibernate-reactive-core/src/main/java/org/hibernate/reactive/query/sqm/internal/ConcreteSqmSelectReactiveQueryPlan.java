@@ -23,7 +23,7 @@ import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.ast.tree.expression.Expression;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
@@ -33,7 +33,7 @@ import org.hibernate.sql.results.internal.TupleMetadata;
 import org.hibernate.sql.results.spi.RowTransformer;
 
 import static java.util.Collections.emptyList;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * Standard Hibernate implementation of SelectQueryPlan for SQM-backed

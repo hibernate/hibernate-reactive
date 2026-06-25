@@ -30,7 +30,7 @@ import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

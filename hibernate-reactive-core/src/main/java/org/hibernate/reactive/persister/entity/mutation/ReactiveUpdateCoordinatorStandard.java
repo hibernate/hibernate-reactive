@@ -33,9 +33,9 @@ import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link UpdateCoordinatorStandard}, but it cannot be shared between multiple update operations.

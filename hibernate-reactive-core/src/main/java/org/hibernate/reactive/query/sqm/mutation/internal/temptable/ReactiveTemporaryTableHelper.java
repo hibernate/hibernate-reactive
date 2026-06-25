@@ -15,14 +15,14 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
 
 /**
  * @see org.hibernate.dialect.temptable.TemporaryTableHelper

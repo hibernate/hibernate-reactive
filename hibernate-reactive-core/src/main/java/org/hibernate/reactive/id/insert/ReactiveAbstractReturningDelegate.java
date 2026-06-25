@@ -21,17 +21,17 @@ import org.hibernate.id.insert.AbstractReturningDelegate;
 import org.hibernate.id.insert.Binder;
 import org.hibernate.metamodel.mapping.BasicValuedModelPart;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.sql.ast.tree.expression.ColumnReference;
 import org.hibernate.sql.model.ast.MutatingTableReference;
 import org.hibernate.type.Type;
 
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.getActualGeneratedModelPart;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 public abstract class ReactiveAbstractReturningDelegate extends AbstractReturningDelegate implements ReactiveInsertGeneratedIdentifierDelegate {
 	private static final Log LOG = make( Log.class, MethodHandles.lookup() );

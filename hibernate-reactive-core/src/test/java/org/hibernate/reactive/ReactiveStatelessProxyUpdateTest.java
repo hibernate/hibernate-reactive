@@ -10,7 +10,7 @@ import java.util.function.IntFunction;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LazyInitializationException;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * there is no guarantee about this working otherwise.
  * </p>
  *
- * @see org.hibernate.reactive.session.impl.ReactiveStatelessSessionImpl#reactiveUpdate(Object)
+ * @see org.hibernate.reactive.session.internal.ReactiveStatelessSessionImpl#reactiveUpdate(Object)
  * @see ReactiveStatelessSessionTest
  */
 @Timeout(value = 10, timeUnit = MINUTES)

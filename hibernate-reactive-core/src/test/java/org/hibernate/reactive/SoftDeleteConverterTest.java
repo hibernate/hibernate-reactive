@@ -23,7 +23,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
  * Tests @SoftDelete annotation with different converter types and strategies.

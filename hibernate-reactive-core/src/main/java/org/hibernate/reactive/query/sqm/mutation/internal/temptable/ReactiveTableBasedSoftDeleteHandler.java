@@ -14,11 +14,11 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedSoftDeleteHandler;
 import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
 import org.hibernate.sql.ast.tree.insert.InsertSelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
@@ -31,7 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 public class ReactiveTableBasedSoftDeleteHandler extends TableBasedSoftDeleteHandler implements ReactiveHandler {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );

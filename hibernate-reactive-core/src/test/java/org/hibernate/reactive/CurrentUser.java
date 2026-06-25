@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import io.smallrye.mutiny.Uni;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

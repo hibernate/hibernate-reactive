@@ -20,7 +20,7 @@ import org.hibernate.generator.EventType;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.id.insert.ReactiveUniqueKeySelectingDelegate;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.testing.SqlStatementTracker;
 import org.hibernate.sql.model.MutationType;

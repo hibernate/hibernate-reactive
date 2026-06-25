@@ -21,13 +21,13 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
  * Tests @SoftDelete annotation with TABLE_PER_CLASS inheritance strategy.
