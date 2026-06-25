@@ -1,3 +1,9 @@
 #2855 Update license header via Spotless
 bb5a14ea7ee701c1cfd600b5c68570a4118efcd1
 ae5194614d48477630c3348426584e62dec54d67
+
+#3794 Rename .impl packages to .internal
+1a81bda0cbc4d15aa3373292c17ec1f84ffe2d4a
+
+#3794 Fix ORM 8.0 package relocations to .spi subpackages
+8fc89c7d054267dab64bb2f5b948973edf42c26d
