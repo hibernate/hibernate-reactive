@@ -75,6 +75,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 				getSessionFactory()
 		);
 
+		// FIXME: Checck if ORM has this variable
 		final var sqlAliasBaseGenerator = new SqlAliasBaseManager();
 
 		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );

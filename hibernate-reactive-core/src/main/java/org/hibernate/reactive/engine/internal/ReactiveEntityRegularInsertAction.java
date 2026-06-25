@@ -28,7 +28,6 @@ import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
  */
 public class ReactiveEntityRegularInsertAction extends EntityInsertAction implements ReactiveEntityInsertAction {
 
-	private final boolean isVersionIncrementDisabled;
 	private boolean executed;
 	private boolean transientReferencesNullified;
 
@@ -38,10 +37,8 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 			Object instance,
 			Object version,
 			EntityPersister persister,
-			boolean isVersionIncrementDisabled,
 			EventSource session) {
-		super( id, state, instance, version, persister, isVersionIncrementDisabled, session );
-		this.isVersionIncrementDisabled = isVersionIncrementDisabled;
+		super( id, state, instance, version, persister, session );
 	}
 
 	@Override
@@ -146,7 +143,7 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	}
 
 	@Override
-	protected void markExecuted() {
+	public void markExecuted() {
 		super.markExecuted();
 		executed = true;
 	}
@@ -162,11 +159,6 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	}
 
 	@Override
-	public boolean isVersionIncrementDisabled() {
-		return isVersionIncrementDisabled;
-	}
-
-	@Override
 	public boolean areTransientReferencesNullified() {
 		return transientReferencesNullified;
 	}
@@ -175,4 +167,5 @@ public class ReactiveEntityRegularInsertAction extends EntityInsertAction implem
 	public void setTransientReferencesNullified() {
 		transientReferencesNullified = true;
 	}
+
 }

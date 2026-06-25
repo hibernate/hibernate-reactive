@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.internal.EntityBatchLoaderArrayParam;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
@@ -49,8 +48,8 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 	public ReactiveEntityBatchLoaderArrayParam(
 			int domainBatchSize,
 			EntityMappingType entityDescriptor,
-			SessionFactoryImplementor sessionFactory) {
-		super( entityDescriptor, sessionFactory );
+			LoadQueryInfluencers loadQueryInfluencers) {
+		super( entityDescriptor, loadQueryInfluencers );
 		this.domainBatchSize = domainBatchSize;
 
 		if ( MULTI_KEY_LOAD_LOGGER.isDebugEnabled() ) {
@@ -73,8 +72,8 @@ public class ReactiveEntityBatchLoaderArrayParam<T> extends ReactiveSingleIdEnti
 		sqlAst = LoaderSelectBuilder.createSelectBySingleArrayParameter(
 				getLoadable(),
 				identifierMapping,
-				new LoadQueryInfluencers( sessionFactory ),
-				LockOptions.NONE,
+				loadQueryInfluencers,
+				new LockOptions(),
 				jdbcParameter,
 				new SqlAliasBaseManager(),
 				sessionFactory

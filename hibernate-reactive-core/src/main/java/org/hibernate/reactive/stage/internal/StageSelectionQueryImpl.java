@@ -19,9 +19,9 @@ import org.hibernate.reactive.stage.Stage.SelectionQuery;
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.QueryFlushMode;
 
 public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	private final ReactiveSelectionQuery<T> delegate;
@@ -47,12 +47,12 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 
 	@Override
 	public FlushMode getFlushMode() {
-		return delegate.getHibernateFlushMode();
+		return delegate.getEffectiveFlushMode();
 	}
 
 	@Override
-	public SelectionQuery<T> setFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
+	public SelectionQuery<T> setFlushMode(QueryFlushMode flushMode) {
+		delegate.setQueryFlushMode( flushMode );
 		return this;
 	}
 
@@ -82,12 +82,6 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	@Override
 	public CompletionStage<T> getSingleResultOrNull() {
 		return delegate.getReactiveSingleResultOrNull();
-	}
-
-	@Override
-	public SelectionQuery<T> setFlushMode(FlushModeType flushMode) {
-		delegate.setFlushMode( flushMode );
-		return this;
 	}
 
 	@Override

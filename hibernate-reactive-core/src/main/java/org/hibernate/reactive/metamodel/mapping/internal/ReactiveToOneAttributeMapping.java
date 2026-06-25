@@ -14,6 +14,7 @@ import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFe
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityDelayedFetchImpl;
 import org.hibernate.reactive.sql.results.internal.domain.ReactiveCircularFetchImpl;
 import org.hibernate.spi.NavigablePath;
+import org.hibernate.sql.ast.tree.from.TableGroup;
 import org.hibernate.sql.ast.tree.from.TableGroupProducer;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
@@ -34,6 +35,40 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 	}
 
 	@Override
+	protected EntityFetch buildEntityFetchSelect(
+			FetchParent fetchParent,
+			ToOneAttributeMapping fetchedAttribute,
+			NavigablePath navigablePath,
+			DomainResult<?> keyResult,
+			boolean selectByUniqueKey,
+			boolean affectedByFilter,
+			DomainResultCreationState creationState) {
+		return new ReactiveEntityFetchSelectImpl(
+				(EntityFetchSelectImpl) super.buildEntityFetchSelect(
+						fetchParent, fetchedAttribute, navigablePath,
+						keyResult, selectByUniqueKey, affectedByFilter, creationState
+				)
+		);
+	}
+
+	@Override
+	protected EntityFetch buildEntityFetchJoined(
+			FetchParent fetchParent,
+			ToOneAttributeMapping fetchedAttribute,
+			TableGroup tableGroup,
+			DomainResult<?> keyResult,
+			boolean affectedByFilter,
+			NavigablePath navigablePath,
+			DomainResultCreationState creationState) {
+		return new ReactiveEntityFetchJoinedImpl(
+				(EntityFetchJoinedImpl) super.buildEntityFetchJoined(
+						fetchParent, fetchedAttribute, tableGroup,
+						keyResult, affectedByFilter, navigablePath, creationState
+				)
+		);
+	}
+
+	@Override
 	public EntityFetch generateFetch(
 			FetchParent fetchParent,
 			NavigablePath fetchablePath,
@@ -41,7 +76,7 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 			boolean selected,
 			String resultVariable,
 			DomainResultCreationState creationState) {
-		EntityFetch entityFetch = super.generateFetch(
+		return super.generateFetch(
 				fetchParent,
 				fetchablePath,
 				fetchTiming,
@@ -49,13 +84,6 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 				resultVariable,
 				creationState
 		);
-		if ( entityFetch instanceof EntityFetchJoinedImpl ) {
-			return new ReactiveEntityFetchJoinedImpl( (EntityFetchJoinedImpl) entityFetch );
-		}
-		if ( entityFetch instanceof EntityFetchSelectImpl ) {
-			return new ReactiveEntityFetchSelectImpl( (EntityFetchSelectImpl) entityFetch );
-		}
-		return entityFetch;
 	}
 
 	@Override
