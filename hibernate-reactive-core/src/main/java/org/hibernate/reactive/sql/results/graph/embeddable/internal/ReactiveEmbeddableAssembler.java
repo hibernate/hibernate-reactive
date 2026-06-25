@@ -15,7 +15,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 
 import java.util.concurrent.CompletionStage;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * @see org.hibernate.sql.results.graph.embeddable.internal.EmbeddableAssembler

@@ -57,7 +57,7 @@ public interface Settings extends AvailableSettings {
 	String POOL_CLEANER_PERIOD = "hibernate.vertx.pool.cleaner_period";
 
 	/**
-	 * Specifies a {@link org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration} class.
+	 * Specifies a {@link org.hibernate.reactive.pool.internal.SqlClientPoolConfiguration} class.
 	 */
 	String SQL_CLIENT_POOL_CONFIG = "hibernate.vertx.pool.configuration_class";
 

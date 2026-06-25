@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hibernate.HibernateException;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPoolConfiguration;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;

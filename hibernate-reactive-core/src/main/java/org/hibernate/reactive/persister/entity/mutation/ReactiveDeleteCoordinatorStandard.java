@@ -17,17 +17,17 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.DeleteCoordinatorStandard;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.sql.model.MutationOperation;
 import org.hibernate.sql.model.MutationOperationGroup;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.identifiedResultsCheck;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard implements ReactiveDeleteCoordinator {
 

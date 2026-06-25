@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
 import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
  * This is a multi-threaded stress test, intentionally consuming some time.
