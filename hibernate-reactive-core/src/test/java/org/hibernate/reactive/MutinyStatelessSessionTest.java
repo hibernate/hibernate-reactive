@@ -135,6 +135,56 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testStatelessSessionFind(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.chain( v -> ss.find( GuineaPig.class, pig.id ) )
+				.invoke( p -> assertThatPigsAreEqual( pig, p ) )
+				.chain( v -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionFindMultiple(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		GuineaPig c = new GuineaPig( "C" );
+		test( context, getMutinySessionFactory().openStatelessSession()
+				.chain( ss -> ss.insertMultiple( List.of( a, b, c ) )
+						.chain( v -> ss.find( GuineaPig.class, a.id, c.id ) )
+						.invoke( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( c, list.get( 1 ) );
+						} )
+						.chain( v -> ss.findMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.invoke( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.chain( v -> ss.close() ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionGetMultipleWithList(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		test( context, getMutinySessionFactory().openStatelessSession()
+				.chain( ss -> ss.insertMultiple( List.of( a, b ) )
+						.chain( v -> ss.getMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.invoke( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.chain( v -> ss.close() ) )
+		);
+	}
+
+	@Test
 	public void testStatelessSessionCriteria(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
 		GuineaPig mate = new GuineaPig("Aloina");
