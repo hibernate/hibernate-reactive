@@ -1652,6 +1652,118 @@ public interface Mutiny {
 		<T> Uni<T> get(EntityGraph<T> entityGraph, Object id);
 
 		/**
+		 * Retrieve multiple rows, with the given identifiers supplied as a list.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#getMultiple(Class, List)
+		 */
+		default <T> Uni<List<T>> getMultiple(Class<T> entityClass, List<?> ids) {
+			return get( entityClass, ids.toArray() );
+		}
+
+		/**
+		 * Retrieve a row, returning {@code null} if the row does not exist.
+		 * <p>
+		 * Equivalent to {@link #get(Class, Object)} for a stateless session,
+		 * since there is no persistence context.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#find(Class, Object)
+		 */
+		default <T> Uni<T> find(Class<T> entityClass, Object id) {
+			return get( entityClass, id );
+		}
+
+		/**
+		 * Retrieve multiple rows.
+		 * <p>
+		 * Equivalent to {@link #get(Class, Object...)} for a stateless session.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#findMultiple(Class, List)
+		 */
+		default <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
+			return get( entityClass, ids );
+		}
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode.
+		 * <p>
+		 * Equivalent to {@link #get(Class, Object, LockMode)} for a stateless session.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockMode The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#find(Class, Object)
+		 */
+		default <T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode) {
+			return get( entityClass, id, lockMode );
+		}
+
+		/**
+		 * Retrieve a row, obtaining the specified lock mode.
+		 * <p>
+		 * Equivalent to {@link #get(Class, Object, LockModeType)} for a stateless session.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param id The id of the entity to retrieve
+		 * @param lockModeType The lock mode to apply to the entity
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#find(Class, Object)
+		 */
+		default <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+			return get( entityClass, id, lockModeType );
+		}
+
+		/**
+		 * Retrieve a row, using the given {@link EntityGraph} as a fetch plan.
+		 * <p>
+		 * Equivalent to {@link #get(EntityGraph, Object)} for a stateless session.
+		 *
+		 * @param entityGraph an {@link EntityGraph} specifying the entity
+		 * and associations to be fetched
+		 * @param id The id of the entity to retrieve
+		 *
+		 * @return a detached entity instance, via a {@code Uni}
+		 *
+		 * @see #get(EntityGraph, Object)
+		 */
+		default <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
+			return get( entityGraph, id );
+		}
+
+		/**
+		 * Retrieve multiple rows, with the given identifiers supplied as a list.
+		 *
+		 * @param entityClass The class of the entity to retrieve
+		 * @param ids The ids of the entities to retrieve
+		 *
+		 * @return a list of detached entity instances, via a {@code Uni}
+		 *
+		 * @see org.hibernate.StatelessSession#findMultiple(Class, List)
+		 */
+		default <T> Uni<List<T>> findMultiple(Class<T> entityClass, List<?> ids) {
+			return get( entityClass, ids.toArray() );
+		}
+
+		/**
 		 * Insert a row.
 		 *
 		 * @param entity a new transient instance
