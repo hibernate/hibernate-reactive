@@ -51,18 +51,18 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(Class<T> entityClass, Object id) {
-		return delegate.reactiveGet( entityClass, id );
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object id) {
+		return delegate.reactiveFind( entityClass, id );
 	}
 
 	@Override
-	public <T> CompletionStage<List<T>> get(Class<T> entityClass, Object... ids) {
-		return delegate.reactiveGet( entityClass, ids );
+	public <T> CompletionStage<List<T>> find(Class<T> entityClass, Object... ids) {
+		return delegate.reactiveFind( entityClass, ids );
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-		return delegate.reactiveGet( entityClass, id, lockMode, null );
+	public <T> CompletionStage<T> find(Class<T> entityClass, Object id, LockMode lockMode) {
+		return delegate.reactiveFind( entityClass, id, lockMode, null );
 	}
 
 	@Override
@@ -299,9 +299,9 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <T> CompletionStage<T> get(EntityGraph<T> entityGraph, Object id) {
+	public <T> CompletionStage<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
-		return delegate.reactiveGet( entityClass, id, null, entityGraph );
+		return delegate.reactiveFind( entityClass, id, null, entityGraph );
 	}
 
 	@Override @Deprecated
