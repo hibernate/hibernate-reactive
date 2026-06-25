@@ -10,8 +10,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.Test;
 

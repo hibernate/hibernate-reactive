@@ -13,7 +13,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
+import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 
 import org.junit.Assert;

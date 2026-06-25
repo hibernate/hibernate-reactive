@@ -9,7 +9,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.total;
+import static org.hibernate.reactive.util.internal.CompletionStages.total;
 
 /**
  * @see org.hibernate.query.sqm.internal.AggregatedNonSelectQueryPlanImpl

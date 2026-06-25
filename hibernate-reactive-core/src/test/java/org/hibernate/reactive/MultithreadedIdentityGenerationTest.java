@@ -21,10 +21,10 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
+import org.hibernate.reactive.session.internal.ReactiveSessionFactoryImpl;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.reactive.vertx.VertxInstance;
 
 import org.junit.jupiter.api.AfterAll;

@@ -17,7 +17,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 
 public class ReactiveStandardValuesMappingProducer extends JdbcValuesMappingProducerStandard implements JdbcValuesMappingProducer, ReactiveValuesMappingProducer {

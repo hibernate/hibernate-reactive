@@ -13,12 +13,12 @@ import org.hibernate.metamodel.mapping.ForeignKeyDescriptor;
 import org.hibernate.metamodel.mapping.TableDetails;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.session.impl.ReactiveSessionImpl;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.session.internal.ReactiveSessionImpl;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.ast.tree.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.lock.EntityDetails;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.Hibernate.isEmpty;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 
 /**
  * Reactive version of {@link TableLock}

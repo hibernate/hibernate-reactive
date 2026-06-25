@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive.type.descriptor.jdbc;
 
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -19,7 +19,7 @@ import java.sql.SQLException;
 import java.sql.SQLXML;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 /**
  * @see org.hibernate.type.descriptor.jdbc.XmlArrayJdbcType

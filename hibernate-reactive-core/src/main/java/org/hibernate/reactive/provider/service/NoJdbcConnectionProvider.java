@@ -5,13 +5,13 @@
 package org.hibernate.reactive.provider.service;
 
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 /**
  * A dummy Hibernate {@link ConnectionProvider} throws an

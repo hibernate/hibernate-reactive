@@ -25,7 +25,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 import static io.vertx.core.Future.all;
 import static java.lang.Integer.parseInt;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 public class WorldVerticle extends AbstractVerticle {
 

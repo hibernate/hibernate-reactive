@@ -48,9 +48,9 @@ import static org.hibernate.internal.util.collections.CollectionHelper.isEmpty;
 import static org.hibernate.loader.ast.internal.MultiKeyLoadHelper.resolveArrayJdbcMapping;
 import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSessionCache;
 import static org.hibernate.reactive.loader.ast.internal.ReactiveLoaderHelper.loadByArrayParameter;
-import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see org.hibernate.loader.ast.internal.MultiIdEntityLoaderArrayParam

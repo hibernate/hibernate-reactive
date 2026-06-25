@@ -11,9 +11,9 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.loader.ast.spi.CollectionLoader;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 public interface ReactiveCollectionLoader extends CollectionLoader {
 

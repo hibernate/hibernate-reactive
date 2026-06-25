@@ -11,8 +11,8 @@ import org.hibernate.ScrollMode;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.ScrollableResultsImplementor;
 import org.hibernate.query.sql.spi.NativeSelectQueryPlan;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 
 public interface ReactiveNativeSelectQueryPlan<T> extends NativeSelectQueryPlan<T>, ReactiveSelectQueryPlan<T> {

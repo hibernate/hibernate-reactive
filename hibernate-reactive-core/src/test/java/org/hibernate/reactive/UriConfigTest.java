@@ -8,7 +8,7 @@ import java.net.URI;
 
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
-import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.internal.SqlClientPoolConfiguration;
 import org.hibernate.reactive.provider.Settings;
 
 import org.junit.jupiter.api.Assertions;

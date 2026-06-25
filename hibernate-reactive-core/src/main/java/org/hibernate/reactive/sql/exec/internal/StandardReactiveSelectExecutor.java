@@ -19,7 +19,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.TupleTransformer;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
