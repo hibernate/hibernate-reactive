@@ -8,6 +8,9 @@ import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
+import org.hibernate.query.range.Range;
+import org.hibernate.query.restriction.Restriction;
+import org.hibernate.query.specification.MutationSpecification;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -220,6 +223,49 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 						.chain( v -> ss.createQuery( delete ).executeUpdate() )
 						.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
 						.chain( v -> ss.close() ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateStatementFromHql(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( "Aloi" );
+		GuineaPig xavier = new GuineaPig( "Xavier" );
+		StatementReference deleteByName = MutationSpecification
+				.create( GuineaPig.class, "delete from GuineaPig" )
+				.restrict( Restriction.restrict( GuineaPig.class, "name", Range.singleValue( "Aloi" ) ) )
+				.reference();
+
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.insertMultiple( List.of( aloi, xavier ) )
+				.chain( v -> ss.createStatement( deleteByName ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.chain( v -> ss.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList() )
+				.invoke( list -> assertThat( list ).containsExactly( xavier ) )
+				.chain( v -> ss.delete( xavier ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateStatementFromCriteria(VertxTestContext context) {
+		GuineaPig aloi = new GuineaPig( "Aloi" );
+		GuineaPig xavier = new GuineaPig( "Xavier" );
+
+		CriteriaBuilder cb = getSessionFactory().getCriteriaBuilder();
+		CriteriaUpdate<GuineaPig> criteriaUpdate = cb.createCriteriaUpdate( GuineaPig.class );
+		Root<GuineaPig> root = criteriaUpdate.from( GuineaPig.class );
+		criteriaUpdate.set( "name", "Bob" );
+		criteriaUpdate.where( cb.equal( root.get( "name" ), "Aloi" ) );
+		StatementReference updateByName = MutationSpecification.create( criteriaUpdate ).reference();
+
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.insertMultiple( List.of( aloi, xavier ) )
+				.chain( v -> ss.createStatement( updateByName ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) )
+				.chain( v -> ss.get( GuineaPig.class, aloi.id ) )
+				.invoke( p -> assertThat( p.getName() ).isEqualTo( "Bob" ) )
+				.chain( v -> ss.get( GuineaPig.class, xavier.id ) )
+				.invoke( p -> assertThat( p.getName() ).isEqualTo( "Xavier" ) )
+				.chain( v -> ss.deleteMultiple( List.of( aloi, xavier ) ) ) )
 		);
 	}
 
