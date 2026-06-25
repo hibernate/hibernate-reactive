@@ -43,6 +43,7 @@ public class ReactiveEntitySelectFetchByUniqueKeyInitializer
 				concreteDescriptor,
 				keyResult,
 				affectedByFilter,
+				null,
 				creationState
 		);
 		this.fetchedAttribute = fetchedAttribute;

@@ -12,14 +12,20 @@ import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
+import org.hibernate.FindMultipleOption.OrderingMode;
+import org.hibernate.FindMultipleOption.RemovalsMode;
+import org.hibernate.FindMultipleOption.SessionCheckMode;
 import org.hibernate.SessionException;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.loader.ast.spi.MultiIdLoadOptions;
 import org.hibernate.UnknownEntityTypeException;
 import org.hibernate.UnresolvableObjectException;
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.creation.internal.SessionCreationOptions;
+import org.hibernate.engine.creation.internal.options.StatelessOptions;
 import org.hibernate.engine.spi.CollectionEntry;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.PersistenceContext;
@@ -42,21 +48,24 @@ import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
 import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
-import org.hibernate.query.hql.spi.SqmQueryImplementor;
-import org.hibernate.query.named.NamedResultSetMappingMemento;
+import org.hibernate.query.named.spi.NamedNativeQueryMemento;
+import org.hibernate.query.named.spi.NamedSqmQueryMemento;
+import org.hibernate.query.sqm.spi.SqmStatementAccess;
+import org.hibernate.query.named.spi.NamedResultSetMappingMemento;
 import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryImplementor;
+import org.hibernate.query.MutationQuery;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
-import org.hibernate.query.sqm.tree.SqmStatement;
-import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
-import org.hibernate.query.sqm.tree.select.SqmQueryGroup;
-import org.hibernate.query.sqm.tree.select.SqmQuerySpec;
-import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
-import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.SqmStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
+import org.hibernate.query.sqm.tree.spi.delete.SqmDeleteStatement;
+import org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement;
+import org.hibernate.query.sqm.tree.spi.select.SqmQueryGroup;
+import org.hibernate.query.sqm.tree.spi.select.SqmQuerySpec;
+import org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement;
+import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
@@ -73,10 +82,9 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmQueryImpl;
-import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveMutationQueryImpl;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.util.internal.CompletionStages.Completable;
 import org.hibernate.stat.spi.StatisticsImplementor;
@@ -87,6 +95,7 @@ import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CommonAbstractCriteria;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import static java.lang.Boolean.TRUE;
@@ -128,13 +137,50 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	private static final Log LOG = make( Log.class, lookup() );
 
+	private static final MultiIdLoadOptions STATELESS_MULTI_ID_LOAD_OPTIONS = new MultiIdLoadOptions() {
+		@Override
+		public SessionCheckMode getSessionCheckMode() {
+			return SessionCheckMode.DISABLED;
+		}
+
+		@Override
+		public boolean isSecondLevelCacheCheckingEnabled() {
+			return false;
+		}
+
+		@Override
+		public Boolean getReadOnly(SessionImplementor session) {
+			return true;
+		}
+
+		@Override
+		public RemovalsMode getRemovalsMode() {
+			return RemovalsMode.EXCLUDE;
+		}
+
+		@Override
+		public OrderingMode getOrderingMode() {
+			return OrderingMode.ORDERED;
+		}
+
+		@Override
+		public LockOptions getLockOptions() {
+			return LockOptions.NONE;
+		}
+
+		@Override
+		public Integer getBatchSize() {
+			return null;
+		}
+	};
+
 	private final LoadQueryInfluencers influencers;
 	private final ReactiveConnection reactiveConnection;
 	private final ReactiveStatelessSessionImpl batchingHelperSession;
 	private final PersistenceContext persistenceContext;
 	private final boolean connectionProvided;
 
-	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
+	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, StatelessOptions options, ReactiveConnection connection) {
 		super( factory, options );
 		connectionProvided = options.getConnection() != null;
 		reactiveConnection = connection;
@@ -148,7 +194,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	 */
 	private ReactiveStatelessSessionImpl(
 			SessionFactoryImpl factory,
-			SessionCreationOptions options,
+			StatelessOptions options,
 			ReactiveConnection connection,
 			PersistenceContext persistenceContext) {
 		super( factory, options );
@@ -229,7 +275,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		System.arraycopy( ids, 0, sids, 0, ids.length );
 
 		return getEntityPersister( entityClass.getName() )
-				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
+				.reactiveMultiLoad( sids, this, STATELESS_MULTI_ID_LOAD_OPTIONS )
 				.whenComplete( (list, e) -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
@@ -955,27 +1001,52 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		checksBeforeQueryCreation();
 		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
 			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, specification.getResultType(), this );
+			return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) query, specification.getResultType(), this );
 		}
 		if ( typedQueryReference instanceof MutationSpecificationImpl<?> specification ) {
 			final CommonAbstractCriteria query = specification.buildCriteria( getCriteriaBuilder() );
-			return new ReactiveSqmQueryImpl<>( (SqmStatement<R>) query, (Class<R>) specification.getResultType(), this );
+			return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) query, this );
 		}
 		@SuppressWarnings("unchecked")
 		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
 		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
-		ReactiveQueryImplementor<R> query = (ReactiveQueryImplementor<R>) buildNamedQuery(
-				typedQueryReference.getName(),
-				memento -> createSqmQueryImplementor( resultType, memento ),
-				memento -> createNativeQueryImplementor( resultType, memento )
-		);
+		final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( typedQueryReference.getName(), resultType );
 		typedQueryReference.getHints().forEach( query::setHint );
 		return query;
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString) {
-		return createReactiveQuery( queryString, null );
+	@SuppressWarnings("unchecked")
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString) {
+		checksBeforeQueryCreation();
+		try {
+			final HqlInterpretation<?> interpretation = interpretHql( queryString, null );
+			if ( interpretation.getSqmStatement() instanceof SqmSelectStatement ) {
+				return buildReactiveHqlSelectionQuery( queryString, interpretation, null );
+			}
+			else {
+				final ReactiveMutationQueryImpl<R> mutationQuery =
+						new ReactiveMutationQueryImpl<>( queryString, (HqlInterpretation<R>) interpretation, null, this );
+				applyQuerySettingsAndHints( mutationQuery );
+				mutationQuery.setComment( queryString );
+				return mutationQuery;
+			}
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw getExceptionConverter().convert( e );
+		}
+	}
+
+	private <R> ReactiveQuery<R> buildReactiveHqlSelectionQuery(
+			String queryString,
+			HqlInterpretation<?> interpretation,
+			Class<R> expectedResultType) {
+		final ReactiveSelectionQueryImpl<R> selectionQuery =
+				new ReactiveSelectionQueryImpl<>( queryString, interpretation, expectedResultType, this );
+		applyQuerySettingsAndHints( selectionQuery );
+		selectionQuery.setComment( queryString );
+		return selectionQuery;
 	}
 
 	@Override
@@ -993,7 +1064,9 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 				}
 			}
 
-			return createReactiveCriteriaQuery( selectStatement, criteriaQuery.getResultType() );
+			final ReactiveSelectionQueryImpl<R> selectionQuery = new ReactiveSelectionQueryImpl<>( selectStatement, criteriaQuery.getResultType(), this );
+			applyQuerySettingsAndHints( selectionQuery );
+			return selectionQuery;
 		}
 		catch (RuntimeException e) {
 			if ( getSessionFactory().getSessionFactoryOptions().getJpaCompliance().isJpaTransactionComplianceEnabled() ) {
@@ -1004,7 +1077,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private <T> ReactiveQuery<T> createReactiveCriteriaQuery(SqmStatement<T> criteria, Class<T> resultType) {
-		final ReactiveSqmQueryImpl<T> query = new ReactiveSqmQueryImpl<>( criteria, resultType, this );
+		final ReactiveMutationQueryImpl<T> query = new ReactiveMutationQueryImpl<>( (SqmDmlStatement<T>) criteria, this );
 		applyQuerySettingsAndHints( query );
 		return query;
 	}
@@ -1012,7 +1085,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	@Override
 	public void prepareForQueryExecution(boolean requiresTxn) {
 		checkOpen();
-		checkTransactionSynchStatus();
 
 		// FIXME: this does not work at the moment
 //		if ( requiresTxn && !isTransactionInProgress() ) {
@@ -1029,34 +1101,19 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <R> ReactiveSqmQueryImplementor<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
-		try {
-			final HqlInterpretation<?> interpretation = interpretHql( queryString, expectedResultType );
-			final ReactiveSqmQueryImpl<R> query =
-					new ReactiveSqmQueryImpl<>( queryString, interpretation, expectedResultType, this );
-			applyQuerySettingsAndHints( query );
-			query.setComment( queryString );
-
-			return query;
-		}
-		catch (RuntimeException e) {
-			markForRollbackOnly();
-			throw getExceptionConverter().convert( e );
-		}
+	public <R> ReactiveQuery<R> createReactiveQuery(String queryString, Class<R> expectedResultType) {
+		return buildReactiveHqlSelectionQuery(
+				queryString,
+				interpretHql( queryString, expectedResultType ),
+				expectedResultType
+		);
 	}
 
 	@Override
 	public <R> ReactiveNativeQueryImplementor<R> createReactiveNativeQuery(String sqlString) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
-			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, null, this);
+			final ReactiveNativeQueryImpl<R> query = new ReactiveNativeQueryImpl<>( sqlString, this);
 			if ( isEmpty( query.getComment() ) ) {
 				query.setComment( "dynamic native SQL query" );
 			}
@@ -1102,10 +1159,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override @Deprecated(forRemoval = true)
 	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(String sqlString, String resultSetMappingName) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			if ( isNotEmpty( resultSetMappingName ) ) {
 				final NamedResultSetMappingMemento resultSetMappingMemento = getFactory().getQueryEngine()
@@ -1127,15 +1181,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 	}
 
-	@Override @Deprecated(forRemoval = true)
-	public <R> ReactiveNativeQuery<R> createReactiveNativeQuery(
-			String sqlString,
-			String resultSetMappingName,
-			Class<R> resultClass) {
-		final ReactiveNativeQuery<R> query = createReactiveNativeQuery( sqlString, resultSetMappingName );
-		handleTupleResultType( resultClass, query );
-		return query;
-	}
+
 
 	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, Class<R> resultType) {
@@ -1143,10 +1189,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private <R> ReactiveSelectionQuery<R> interpretAndCreateSelectionQuery(String hql, Class<R> resultType) {
-		checkOpen();
-		pulseTransactionCoordinator();
-		delayedAfterCompletion();
-
+		checksBeforeQueryCreation();
 		try {
 			final HqlInterpretation<?> interpretation = interpretHql( hql, resultType );
 			checkSelectionQuery( hql, interpretation );
@@ -1159,8 +1202,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private <R> ReactiveSelectionQuery<R> createSelectionQuery(String hql, Class<R> resultType, HqlInterpretation<?> interpretation) {
-		final ReactiveSqmSelectionQueryImpl<R> query =
-				new ReactiveSqmSelectionQueryImpl<>( hql, interpretation, resultType, this );
+		final ReactiveSelectionQueryImpl<R> query = new ReactiveSelectionQueryImpl<>( hql, interpretation, resultType, this );
 		if ( resultType != null ) {
 			checkResultType( resultType, query );
 		}
@@ -1170,17 +1212,49 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
+		final Class<R> resultType = resultGraph.getGraphedType().getJavaType();
+		checksBeforeQueryCreation();
+		try {
+			final HqlInterpretation<?> interpretation = interpretHql( hqlString, resultType );
+			checkSelectionQuery( hqlString, interpretation );
+			return createSelectionQuery( hqlString, resultType, interpretation );
+		}
+		catch (RuntimeException e) {
+			markForRollbackOnly();
+			throw e;
+		}
+	}
+
+	@Override
 	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaQuery<R> criteria) {
 		SqmUtil.verifyIsSelectStatement( (SqmStatement<R>) criteria, null );
-		return new ReactiveSqmSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
+		return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) criteria, criteria.getResultType(), this );
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(CriteriaSelect<R> criteria) {
+		return createReactiveSelectionQuery( (CriteriaQuery<R>) criteria );
+	}
+
+	@Override
+	public <R> ReactiveSelectionQuery<R> createReactiveSelectionQuery(TypedQueryReference<R> typedQueryReference) {
+		checkOpen();
+		if ( typedQueryReference instanceof SelectionSpecificationImpl<R> specification ) {
+			final CriteriaQuery<R> query = specification.buildCriteria( getCriteriaBuilder() );
+			final Class<R> resultType = specification.getResultType();
+			return new ReactiveSelectionQueryImpl<>( (SqmSelectStatement<R>) query, resultType, this );
+		}
+		// Fall back to createReactiveQuery for named queries
+		return createReactiveQuery( typedQueryReference );
 	}
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveMutationQuery(String hqlString) {
-		final QueryImplementor<?> query = createQuery( hqlString );
-		final SqmStatement<R> sqmStatement = ( (SqmQueryImplementor<R>) query ).getSqmStatement();
-		checkMutationQuery( hqlString, sqmStatement );
-		return new ReactiveSqmQueryImpl<>( sqmStatement, null, this );
+		final MutationQuery query = createMutationQuery( hqlString );
+		final SqmStatement<R> sqmStatement = ( (SqmStatementAccess<R>) query ).getSqmStatement();
+		SqmUtil.verifyIsNonSelectStatement( sqmStatement, hqlString );
+		return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) sqmStatement, this );
 	}
 
 	@Override
@@ -1217,50 +1291,124 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName) {
-		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName, null );
-	}
-
-	@Override
-	public <R> ReactiveMutationQuery<R> createNamedReactiveMutationQuery(String queryName) {
+	public <R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String queryName) {
 		return (ReactiveMutationQuery<R>) buildNamedQuery(
 				queryName,
-				memento -> createSqmQueryImplementor( queryName, memento ),
-				memento -> createNativeQueryImplementor( queryName, memento )
-		);
+				memento -> memento.toMutationQuery( this ),
+				memento -> memento.toMutationQuery( this )
+		).asMutationQuery();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public  <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName) {
 		checksBeforeQueryCreation();
 		try {
-			return (ReactiveQueryImplementor<R>) buildNamedQuery(
-					queryName,
-					this::createSqmQueryImplementor,
-					this::createNativeQueryImplementor
-			);
+			final var memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( queryName, false );
+			if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
+				return createReactiveMutationQueryImplementorFromMemento( sqmMemento );
+			}
+			else if ( memento instanceof NamedNativeQueryMemento<?> nativeMemento ) {
+				return createReactiveNativeQueryImplementorNoResultType( (NamedNativeQueryMemento<R>) nativeMemento );
+			}
+			else {
+				throw new UnknownNamedQueryException( queryName );
+			}
 		}
 		catch (RuntimeException e) {
 			throw convertNamedQueryException( e );
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private <T> ReactiveQueryImplementor<T> createReactiveMutationQueryImplementorFromMemento(NamedSqmQueryMemento<?> memento) {
+		final String hqlString = memento.getHqlString();
+		final HqlInterpretation<T> interpretation = interpretHql( hqlString, null );
+		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement<?> sqmSelectStatement ) {
+			final SqmSelectStatement<T> typedStatement = (SqmSelectStatement<T>) sqmSelectStatement;
+			final Class<T> resultType = typedStatement.getResultType();
+			final ReactiveSelectionQueryImpl<T> selectionQuery = new ReactiveSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			if ( isEmpty( selectionQuery.getComment() ) ) {
+				selectionQuery.setComment( hqlString );
+			}
+			applyQuerySettingsAndHints( selectionQuery );
+			return selectionQuery;
+		}
+		// DML named query - create reactive mutation query directly from HQL interpretation
+		final ReactiveMutationQueryImpl<T> dmlQuery =
+				new ReactiveMutationQueryImpl<>( hqlString, interpretation, null, this );
+		if ( isEmpty( dmlQuery.getComment() ) ) {
+			dmlQuery.setComment( hqlString );
+		}
+		applyQuerySettingsAndHints( dmlQuery );
+		return dmlQuery;
+	}
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public <R> ReactiveQueryImplementor<R> createReactiveNamedQuery(String queryName, Class<R> resultType) {
 		checksBeforeQueryCreation();
 		if ( resultType == null ) {
 			throw new IllegalArgumentException( "Result class is null" );
 		}
 		try {
-			return (ReactiveQueryImplementor<R>) buildNamedQuery(
-					queryName,
-					memento -> createSqmQueryImplementor( resultType, memento ),
-					memento -> createNativeQueryImplementor( resultType, memento )
-			);
+			final var memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( queryName, false );
+			if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
+				return createReactiveMutationQueryImplementor( resultType, (NamedSqmQueryMemento<R>) sqmMemento );
+			}
+			else if ( memento instanceof NamedNativeQueryMemento<?> nativeMemento ) {
+				return createReactiveNativeQueryImplementor( resultType, (NamedNativeQueryMemento<R>) nativeMemento );
+			}
+			else {
+				throw new UnknownNamedQueryException( queryName );
+			}
 		}
 		catch (RuntimeException e) {
 			throw convertNamedQueryException( e );
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> ReactiveQueryImplementor<T> createReactiveMutationQueryImplementor(Class<T> resultType, NamedSqmQueryMemento<?> memento) {
+		final String hqlString = memento.getHqlString();
+		final HqlInterpretation<T> interpretation = interpretHql( hqlString, resultType );
+		if ( interpretation.getSqmStatement() instanceof SqmSelectStatement<?> ) {
+			final ReactiveSelectionQueryImpl<T> selectionQuery = new ReactiveSelectionQueryImpl<>( hqlString, interpretation, resultType, this );
+			if ( resultType != null ) {
+				checkResultType( resultType, selectionQuery );
+			}
+			if ( isEmpty( selectionQuery.getComment() ) ) {
+				selectionQuery.setComment( hqlString );
+			}
+			applyQuerySettingsAndHints( selectionQuery );
+			return selectionQuery;
+		}
+		// DML named query - create reactive mutation query directly from HQL interpretation
+		final ReactiveMutationQueryImpl<T> dmlQuery = new ReactiveMutationQueryImpl<>( hqlString, interpretation, resultType, this );
+		if ( isEmpty( dmlQuery.getComment() ) ) {
+			dmlQuery.setComment( hqlString );
+		}
+		applyQuerySettingsAndHints( dmlQuery );
+		return dmlQuery;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> ReactiveNativeQueryImpl<T> createReactiveNativeQueryImplementor(Class<T> resultType, NamedNativeQueryMemento<?> memento) {
+		final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( (NamedNativeQueryMemento<T>) memento, resultType, this );
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic native SQL query" );
+		}
+		applyQuerySettingsAndHints( query );
+		return query;
+	}
+
+	private <T> ReactiveNativeQueryImpl<T> createReactiveNativeQueryImplementorNoResultType(NamedNativeQueryMemento<T> memento) {
+		final ReactiveNativeQueryImpl<T> query = new ReactiveNativeQueryImpl<>( memento, this );
+		if ( isEmpty( query.getComment() ) ) {
+			query.setComment( "dynamic native SQL query" );
+		}
+		applyQuerySettingsAndHints( query );
+		return query;
 	}
 
 	private RuntimeException convertNamedQueryException(RuntimeException e) {
@@ -1279,17 +1427,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	@Override
-	public <R> ReactiveSelectionQuery<R> createNamedReactiveSelectionQuery(String queryName, Class<R> expectedResultType) {
+	public <R> ReactiveSelectionQuery<R> createReactiveNamedSelectionQuery(String queryName, Class<R> expectedResultType) {
 		return (ReactiveSelectionQuery<R>) createNamedSelectionQuery( queryName , expectedResultType );
 	}
 
-	private void checksBeforeQueryCreation() {
+	@Override
+	protected void checksBeforeQueryCreation() {
 		checkOpen();
-		checkTransactionSynchStatus();
 	}
 
 	@Override
-	public <R> ReactiveMutationQuery<R> createNativeReactiveMutationQuery(String sqlString) {
+	public <R> ReactiveMutationQuery<R> createReactiveNativeMutationQuery(String sqlString) {
 		final ReactiveNativeQueryImplementor<R> query = createReactiveNativeQuery( sqlString );
 		if ( query.isSelectQuery() == TRUE ) {
 			throw new IllegalMutationQueryException( "Expecting a native mutation query, but found `" + sqlString + "`" );

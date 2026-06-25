@@ -12,7 +12,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.JDBCException;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
@@ -62,11 +61,6 @@ public class ReactiveDirectResultSetAccess extends DirectResultSetAccess impleme
 	@Override
 	public int getResultCountEstimate() {
 		return super.getResultCountEstimate();
-	}
-
-	@Override
-	public <J> BasicType<J> resolveType(int position, JavaType<J> explicitJavaType, SessionFactoryImplementor sessionFactory) {
-		return super.resolveType( position, explicitJavaType, sessionFactory );
 	}
 
 	@Override
