@@ -55,24 +55,24 @@ public class MutinyStatelessSessionImpl implements Mutiny.StatelessSession {
 	}
 
 	@Override
-	public <T> Uni<T> get(Class<T> entityClass, Object id) {
-		return uni( () -> delegate.reactiveGet( entityClass, id ) );
+	public <T> Uni<T> find(Class<T> entityClass, Object id) {
+		return uni( () -> delegate.reactiveFind( entityClass, id ) );
 	}
 
 	@Override
-	public <T> Uni<List<T>> get(Class<T> entityClass, Object... ids) {
-		return uni( () -> delegate.reactiveGet( entityClass, ids ) );
+	public <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
+		return uni( () -> delegate.reactiveFind( entityClass, ids ) );
 	}
 
 	@Override
-	public <T> Uni<T> get(Class<T> entityClass, Object id, LockMode lockMode) {
-		return uni( () -> delegate.reactiveGet( entityClass, id, lockMode, null ) );
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode) {
+		return uni( () -> delegate.reactiveFind( entityClass, id, lockMode, null ) );
 	}
 
 	@Override
-	public <T> Uni<T> get(EntityGraph<T> entityGraph, Object id) {
+	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
 		Class<T> entityClass = ( (RootGraphImplementor<T>) entityGraph ).getGraphedType().getJavaType();
-		return uni( () -> delegate.reactiveGet( entityClass, id, null, entityGraph ) );
+		return uni( () -> delegate.reactiveFind( entityClass, id, null, entityGraph ) );
 	}
 
 	@Override
