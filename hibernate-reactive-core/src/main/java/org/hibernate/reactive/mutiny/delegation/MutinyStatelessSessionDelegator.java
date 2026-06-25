@@ -89,6 +89,34 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().get( entityClass, id, lockModeType );
 	}
 
+	public <T> Uni<List<T>> getMultiple(Class<T> entityClass, List<?> ids) {
+		return delegate().getMultiple( entityClass, ids );
+	}
+
+	public <T> Uni<T> find(Class<T> entityClass, Object id) {
+		return delegate().find( entityClass, id );
+	}
+
+	public <T> Uni<List<T>> find(Class<T> entityClass, Object... ids) {
+		return delegate().find( entityClass, ids );
+	}
+
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockMode lockMode) {
+		return delegate().find( entityClass, id, lockMode );
+	}
+
+	public <T> Uni<T> find(Class<T> entityClass, Object id, LockModeType lockModeType) {
+		return delegate().find( entityClass, id, lockModeType );
+	}
+
+	public <T> Uni<T> find(EntityGraph<T> entityGraph, Object id) {
+		return delegate().find( entityGraph, id );
+	}
+
+	public <T> Uni<List<T>> findMultiple(Class<T> entityClass, List<?> ids) {
+		return delegate().findMultiple( entityClass, ids );
+	}
+
 	public Uni<Void> update(Object entity) {
 		return delegate().update( entity );
 	}
