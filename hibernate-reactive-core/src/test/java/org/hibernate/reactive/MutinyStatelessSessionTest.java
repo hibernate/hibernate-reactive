@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -297,6 +298,46 @@ public class MutinyStatelessSessionTest extends BaseReactiveTest {
 							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )
 		) );
+	}
+
+	@Test
+	public void testFindReturnsNullForNonExistentEntity(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.find( GuineaPig.class, -999 )
+				.invoke( result -> assertThat( result ).isNull() ) )
+		);
+	}
+
+	@Test
+	public void testGetThrowsForNonExistentEntity(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withStatelessSession( ss ->
+				assertThrown( EntityNotFoundException.class, ss.get( GuineaPig.class, -999 ) )
+						.invoke( e -> assertThat( e.getMessage() )
+								.contains( GuineaPig.class.getName() )
+								.contains( "-999" ) ) )
+		);
+	}
+
+	@Test
+	public void testGetReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.chain( () -> ss.get( GuineaPig.class, pig.id ) )
+				.invoke( p -> assertThatPigsAreEqual( pig, p ) )
+				.chain( () -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testFindReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getMutinySessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.chain( () -> ss.find( GuineaPig.class, pig.id ) )
+				.invoke( p -> assertThatPigsAreEqual( pig, p ) )
+				.chain( () -> ss.delete( pig ) ) )
+		);
 	}
 
 	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.Id;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
@@ -1113,6 +1114,52 @@ public class ReactiveSessionTest extends BaseReactiveTest {
 						)
 						// Both sessions are closed now
 						.thenAccept( v -> assertThat( getSessionFactory().getCurrentStatelessSession() ).isNull() )
+		);
+	}
+
+	@Test
+	public void reactiveFindReturnsNullForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withSession( session ->
+				session.find( GuineaPig.class, -999 )
+						.thenAccept( result -> assertThat( result ).isNull() ) )
+		);
+	}
+
+	@Test
+	public void reactiveGetThrowsForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withSession( session ->
+				assertThrown( EntityNotFoundException.class, session.get( GuineaPig.class, -999 ) )
+						.thenAccept( e -> assertThat( e.getMessage() )
+								.contains( GuineaPig.class.getName() )
+								.contains( "-999" ) ) )
+		);
+	}
+
+	@Test
+	public void reactiveGetReturnsExistingEntity(VertxTestContext context) {
+		final GuineaPig expectedPig = new GuineaPig( 5, "Aloi" );
+		test( context, populateDB()
+				.thenCompose( v -> getSessionFactory().withSession( session ->
+						session.get( GuineaPig.class, expectedPig.getId() )
+								.thenAccept( actualPig -> assertThatPigsAreEqual( expectedPig, actualPig ) ) ) )
+		);
+	}
+
+	@Test
+	public void reactiveStatelessSessionFindReturnsNullForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss ->
+				ss.find( GuineaPig.class, -999 )
+						.thenAccept( result -> assertThat( result ).isNull() ) )
+		);
+	}
+
+	@Test
+	public void reactiveStatelessSessionGetThrowsForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss ->
+				assertThrown( EntityNotFoundException.class, ss.get( GuineaPig.class, -999 ) )
+						.thenAccept( e -> assertThat( e.getMessage() )
+								.contains( GuineaPig.class.getName() )
+								.contains( "-999" ) ) )
 		);
 	}
 
