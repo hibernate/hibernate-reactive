@@ -11,8 +11,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.Query;
-import org.hibernate.query.QueryFlushMode;
-import org.hibernate.query.named.NamedQueryMemento;
+import jakarta.persistence.QueryFlushMode;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 
