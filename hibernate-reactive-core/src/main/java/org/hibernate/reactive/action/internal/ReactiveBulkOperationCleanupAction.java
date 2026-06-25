@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.hibernate.action.internal.BulkOperationCleanupAction;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.reactive.session.ReactiveSession;
 
 /**

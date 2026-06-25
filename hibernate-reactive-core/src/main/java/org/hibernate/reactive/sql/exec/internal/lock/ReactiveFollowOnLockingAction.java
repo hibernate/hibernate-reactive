@@ -49,7 +49,6 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostAction()" );
 	}
 
-
 	protected ReactiveFollowOnLockingAction(
 			LockMode lockMode,
 			Timeout lockTimeout,
