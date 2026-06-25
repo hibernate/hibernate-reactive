@@ -19,6 +19,7 @@ import org.hibernate.reactive.stage.Stage.Query;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -341,6 +342,11 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	@Override
 	public MutationQuery createNativeMutationQuery(String sqlString) {
 		return new StageMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ) );
+	}
+
+	@Override
+	public MutationQuery createStatement(StatementReference statementReference) {
+		return new StageMutationQueryImpl<>( delegate.createReactiveStatement( statementReference ) );
 	}
 
 	@Override
