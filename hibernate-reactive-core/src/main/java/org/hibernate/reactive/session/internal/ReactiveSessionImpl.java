@@ -1621,6 +1621,11 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			return orderingMode;
 		}
 
+		@Override
+		public boolean isRefreshSession() {
+			return cacheMode == CacheMode.REFRESH_SESSION;
+		}
+
 		public ReactiveMultiIdentifierLoadAccessImpl<T> enableReturnOfDeletedEntities(boolean enabled) {
 			this.removalsMode = enabled ? RemovalsMode.INCLUDE : RemovalsMode.REPLACE;
 			return this;
