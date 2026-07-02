@@ -172,6 +172,11 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		}
 
 		@Override
+		public boolean isRefreshSession() {
+			return false;
+		}
+
+		@Override
 		public Integer getBatchSize() {
 			return null;
 		}
