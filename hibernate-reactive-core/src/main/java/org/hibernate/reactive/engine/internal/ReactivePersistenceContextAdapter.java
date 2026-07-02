@@ -24,6 +24,7 @@ import org.hibernate.engine.spi.CollectionFlushActionTracker;
 import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
+import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.ManagedEntity;
