@@ -38,11 +38,17 @@ repositories {
 	mavenCentral()
 }
 
+configurations {
+	themezip
+}
+
 dependencies {
 	// JUnit Jupiter
 	testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
 	testRuntimeOnly(libs.org.junit.jupiter.junit.jupiter.engine)
 	testRuntimeOnly(libs.org.junit.platform.junit.platform.launcher)
+
+	themezip "${libs.org.hibernate.infra.hibernate.asciidoctor.theme.get()}@zip"
 }
 
 ext.publishScript = rootProject.rootDir.absolutePath + '/publish.gradle'
@@ -100,10 +106,6 @@ else {
 	tasks.withType( JavaCompile ).configureEach {
 		options.forkOptions.jvmArgs.addAll( getProperty( 'toolchain.compiler.jvmargs' ).toString().split( ' ' ) )
 	}
-	tasks.withType( Javadoc ).configureEach {
-		options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().split( ' ' ).toList().findAll( { !it.isEmpty() } ) )
-		options.addBooleanOption('-no-fonts', true)
-	}
 	tasks.test {
 		// Configure JVM Options
 		jvmArgs(getProperty('toolchain.launcher.jvmargs').toString().split(' '))
@@ -118,14 +120,44 @@ else {
 			logger.lifecycle "Compiling with '${javaCompiler.get().metadata.installationPath}'"
 		}
 	}
-	tasks.withType( Javadoc ).configureEach {
-		doFirst {
-			logger.lifecycle "Generating javadoc with '${javadocTool.get().metadata.installationPath}'"
-		}
-	}
 	tasks.test {
 		doFirst {
 			logger.lifecycle "Testing with '${javaLauncher.get().metadata.installationPath}'"
 		}
 	}
+}
+
+tasks.register('unpackTheme', Copy) {
+	def unpackDir = project.layout.buildDirectory.dir("unpacked-theme")
+	destinationDir = unpackDir.get().asFile
+
+	def zipFile = configurations.themezip.singleFile
+	from zipTree(zipFile)
+
+	dependsOn configurations.themezip
+}
+
+tasks.withType( Javadoc ).configureEach {
+	def themeJdkDir = gradle.ext.javadocJdkVersion >= 25 ? "jdk25" : "jdk21"
+	def rootThemeDir = project.layout.buildDirectory.dir("unpacked-theme").get()
+			.dir("hibernate-asciidoctor-theme").dir("javadoc").dir(themeJdkDir)
+
+	options.addBooleanOption('html5', true)
+	options.addStringOption('Xdoclint:none', '-quiet')
+	options.stylesheetFile = rootThemeDir.file("stylesheet.css").asFile
+	if (gradle.ext.javadocJdkVersion >= 25) {
+		options.addBooleanOption('-no-fonts', true)
+		options.addStringOption('-add-script', rootThemeDir.dir('resources').file('theme-switch.js').asFile.absolutePath)
+		options.tags('apiNote:a:API Note:')
+		options.header = '<div id="toggleContainer"></div>'
+	}
+
+	if ( gradle.ext.javaToolchainEnabled ) {
+		options.setJFlags( getProperty( 'toolchain.javadoc.jvmargs' ).toString().split( ' ' ).toList().findAll( { !it.isEmpty() } ) )
+		doFirst {
+			logger.lifecycle "Generating javadoc with '${javadocTool.get().metadata.installationPath}'"
+		}
+	}
+
+	dependsOn 'unpackTheme'
 }

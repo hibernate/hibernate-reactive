@@ -139,6 +139,8 @@ else {
 logger.lifecycle "Java versions for main code: " + gradle.ext.javaVersions.main
 logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 
+gradle.ext.javadocJdkVersion = gradle.ext.javaVersions.main.compiler.asInt()
+
 include 'hibernate-reactive-core'
 include 'session-example'
 include 'native-sql-example'
