@@ -10,14 +10,6 @@ java {
     withSourcesJar()
 }
 
-configurations {
-	themezip
-}
-
-dependencies {
-	themezip "${libs.org.hibernate.infra.hibernate.asciidoctor.theme.get()}@zip"
-}
-
 def moduleNameBase = project.name.startsWith( 'hibernate-' ) ? name.drop( 'hibernate-'.length() ): name
 def moduleName = "org.hibernate.$moduleNameBase".replace('-','.')
 
@@ -41,23 +33,6 @@ jar {
 			include "LICENSE"
 		})
 	}
-}
-
-javadoc {
-	def rootThemeDir = project.layout.buildDirectory.dir("unpacked-theme").get().dir("hibernate-asciidoctor-theme").dir("javadoc").dir("jdk25")
-
-    if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
-    }
-    options.addBooleanOption('-no-fonts', true)
-    options.addStringOption('Xdoclint:none', '-quiet')
-    options.stylesheetFile = rootThemeDir.file("stylesheet.css").asFile
-	options.addStringOption( '-add-script', rootThemeDir.dir('resources').file('theme-switch.js').asFile.absolutePath)
-
-	options.tags('apiNote:a:API Note:')
-	options.header = '<div id="toggleContainer"></div>'
-
-    dependsOn 'unpackTheme'
 }
 
 publishing {
@@ -114,16 +89,6 @@ publishing {
             credentials(PasswordCredentials)
         }
     }
-}
-
-tasks.register('unpackTheme', Copy) {
-	def unpackDir = project.layout.buildDirectory.dir("unpacked-theme")
-	destinationDir = unpackDir.get().asFile
-
-	def zipFile = configurations.themezip.singleFile
-	from zipTree(zipFile)
-
-	dependsOn configurations.themezip
 }
 
 tasks.register("releasePrepare") {
