@@ -25,6 +25,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
+import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.NaturalIdResolutions;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
@@ -511,6 +512,11 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	@Override
 	public Map.Entry<Object, EntityEntry>[] reentrantSafeEntityEntries() {
 		return delegate.reentrantSafeEntityEntries();
+	}
+
+	@Override
+	public ManagedEntity[] reentrantSafeManagedEntities() {
+		return delegate.reentrantSafeManagedEntities();
 	}
 
 	@Override
