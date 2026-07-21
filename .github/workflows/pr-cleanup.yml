@@ -1,0 +1,14 @@
+name: PR cleanup
+
+on:
+  pull_request_target:
+    types: [ closed ]
+
+permissions: { }
+
+jobs:
+  cleanup:
+    uses: hibernate/.github/.github/workflows/pr-cleanup.yml@main
+    permissions:
+      pull-requests: write
+    secrets: inherit

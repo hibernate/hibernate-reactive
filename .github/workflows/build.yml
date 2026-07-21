@@ -141,6 +141,14 @@ jobs:
         with:
           name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
+      - name: Upload Develocity build scan data
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-scan-data-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
+          path: ~/.gradle/build-scan-data
+          retention-days: 1
+        continue-on-error: true
 
   test_dbs:
     name: Test with ${{ matrix.db }}
@@ -211,6 +219,23 @@ jobs:
             ./**/build/jacoco/*.exec
             ./**/build/classes/
             ./**/build/generated/
+      - name: Upload Develocity build scan data
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-scan-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
+          path: ~/.gradle/build-scan-data
+          retention-days: 1
+        continue-on-error: true
+
+      - name: Upload docs preview
+        # we need to limit it to just one job execution:
+        if: matrix.db == 'PostgreSQL'
+        uses: hibernate/.github/actions/build-docs-preview@197125e1a0e9624349ef9e8157dad8ab707f3da0 # main
+        with:
+          dist-path: 'documentation/build/asciidoc'
+          src-paths: |
+            documentation/src
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
@@ -359,6 +384,14 @@ jobs:
         with:
           name: reports-java${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
+      - name: Upload Develocity build scan data
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-scan-data-jdk-${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
+          path: ~/.gradle/build-scan-data
+          retention-days: 1
+        continue-on-error: true
 
   prepare-sonar-bundle:
     name: Prepare build bundle for Sonar scanner

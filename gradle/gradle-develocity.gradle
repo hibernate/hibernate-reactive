@@ -1,0 +1,48 @@
+static def isJenkins() {
+    return System.getenv('JENKINS_URL') != null
+}
+
+static def isGitHubActions() {
+    return System.getenv('GITHUB_ACTIONS') != null
+}
+
+static def isGenericCi() {
+    return System.getenv('CI') != null || System.getProperty('CI') != null
+}
+
+static def getSetting(String name) {
+    return java.util.Optional.ofNullable(
+            System.getenv(name) ?: System.getProperty(name)
+    )
+}
+
+ext {
+    isCiEnvironment = isJenkins() || isGitHubActions() || isGenericCi()
+    populateRemoteBuildCache = getSetting('POPULATE_REMOTE_GRADLE_CACHE').orElse('false').toBoolean()
+    useRemoteCache = !getSetting('DISABLE_REMOTE_GRADLE_CACHE').orElse('false').toBoolean()
+}
+
+develocity {
+    server = 'https://develocity.commonhaus.dev'
+
+    buildScan {
+        capture {
+            fileFingerprints = true
+        }
+        publishing.onlyIf { it.authenticated }
+
+        obfuscation {
+            ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0" } }
+        }
+
+        uploadInBackground = !settings.ext.isCiEnvironment
+
+        tag "jdk-${gradle.ext.javaVersions.test.launcher}"
+
+        def db = settings.ext.find('db')
+        if ( db ) {
+            tag db
+            value 'database', db
+        }
+    }
+}

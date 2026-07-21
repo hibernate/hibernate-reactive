@@ -11,6 +11,11 @@ pluginManagement {
     includeBuild 'local-build-plugins'
 }
 
+plugins {
+    id 'com.gradle.develocity' version '4.5.0'
+    id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.7.0'
+}
+
 // Conditionally include local hibernate-orm build when path is specified
 // Usage: ./gradlew build -PlocalHibernateOrmPath=../hibernate-orm
 // Or add "localHibernateOrmPath = ../hibernate-orm" to gradle.properties
@@ -164,5 +169,20 @@ for ( project in rootProject.children ) {
 for ( project in rootProject.children ) {
     if ( project.name.endsWith( "-it" ) ) {
         project.projectDir = file( "integration-tests/${project.name}" )
+    }
+}
+
+apply from: file( 'gradle/gradle-develocity.gradle' )
+
+buildCache {
+    local {
+        // do not use local build cache for CI jobs, period!
+        enabled = !settings.ext.isCiEnvironment
+    }
+    remote(develocity.buildCache) {
+        enabled = settings.ext.useRemoteCache
+        // Check access key presence to avoid build cache errors on PR builds when access key is not present
+        def accessKey = System.getenv("DEVELOCITY_ACCESS_KEY")
+        push = settings.ext.populateRemoteBuildCache && accessKey
     }
 }
