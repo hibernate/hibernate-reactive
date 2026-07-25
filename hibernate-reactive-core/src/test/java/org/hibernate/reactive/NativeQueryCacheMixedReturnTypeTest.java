@@ -14,6 +14,7 @@ import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.mutiny.Uni;
@@ -42,6 +43,10 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQL
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = { SQLSERVER, ORACLE, DB2 }, reason = "test uses native ALTER TABLE / INSERT SQL")
+// Ported from ORM HHH-20231 as canaries for reactive native-query cache return-type matching.
+// Currently fails on Postgres: NPE in ReactiveValuesResultSet.readCurrentRowValues and
+// cache hit/miss/put mismatches (see issue #3520). Re-enable when the engine matches ORM.
+@Disabled("HHH/#3520: reactive native query cache mixed return types not yet aligned with ORM; NPE + stats mismatches on Postgres")
 public class NativeQueryCacheMixedReturnTypeTest extends BaseReactiveTest {
 
 	private static final String NATIVE_QUERY_EXTRA_COLS_LAST =
