@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.id.internal;
 
+import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
@@ -37,6 +38,11 @@ public class EmulatedSequenceReactiveIdentifierGenerator extends TableReactiveId
 		// I don't think this is correct because the Optimizer is not reactive, but tests will fail for MySQL if
 		// we don't return something (See tests running insert-select update queries with MySQL).
 		return generator.getOptimizer();
+	}
+
+	@Override
+	public void registerExportables(Database database) {
+		generator.registerExportables( database );
 	}
 
 	@Override
