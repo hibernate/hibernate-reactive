@@ -98,3 +98,15 @@ tasks.register("releasePrepare") {
 	// Create all the published artifacts (i.e. jars) and move them to the staging directory (for JReleaser):
 	dependsOn publishAllPublicationsToStagingRepository
 }
+
+// Reduce the size of per-module javadoc jars published to Maven Central.
+// These options are intentionally NOT in hr-java-library.gradle,
+// so that the aggregated javadoc published to docs.hibernate.org is unaffected.
+tasks.withType(Javadoc).configureEach {
+	exclude '**/spi/**'
+	configure( options ) {
+		addStringOption('-override-methods', 'summary')
+		use = false
+		noTree = true
+	}
+}
