@@ -12,6 +12,8 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.Page;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.stage.Stage.SelectionQuery;
@@ -236,5 +238,10 @@ public class StageSelectionQueryImpl<T> implements SelectionQuery<T> {
 	public SelectionQuery<T> setComment(String comment) {
 		delegate.setComment( comment );
 		return this;
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<T>> getReactiveKeyedResultList(KeyedPage<T> page) {
+		return delegate.getReactiveKeyedResultList( page );
 	}
 }

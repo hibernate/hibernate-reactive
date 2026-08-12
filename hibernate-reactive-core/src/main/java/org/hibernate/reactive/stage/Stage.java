@@ -24,6 +24,8 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.internal.util.FlushModeTypeHelper;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.Page;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
@@ -401,6 +403,9 @@ public interface Stage {
 
 		@Override
 		SelectionQuery<R> setComment(String comment);
+
+		@Incubating
+		CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page);
 	}
 
 	interface MutationQuery extends AbstractQuery {
