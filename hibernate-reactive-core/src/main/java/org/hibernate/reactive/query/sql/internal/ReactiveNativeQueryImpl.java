@@ -26,6 +26,8 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -115,6 +117,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	@Override
 	public CompletionStage<Long> getReactiveResultCount() {
 		throw LOG.notYetImplemented();
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page) {
+		// Key-based pagination is not supported for native queries in Hibernate ORM either.
+		throw new UnsupportedOperationException("native queries do not support key-based pagination");
 	}
 
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
