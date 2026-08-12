@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.query.Order;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.query.Page.first;
 import static org.hibernate.query.Page.page;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Test the combination of filters, max results, first result, and {@link org.hibernate.query.Page}.
@@ -164,6 +166,75 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testReactiveKeyedPagination(VertxTestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> {
+					var query = session.createSelectionQuery(
+							"from FamousPerson p where p.status = :status order by p.name, p.id",
+							FamousPerson.class
+					);
+					final var firstPage = first( 2 ).keyedBy( List.of(
+							Order.asc( FamousPerson.class, "name" ),
+							Order.asc( FamousPerson.class, "id" )
+					) );
+					return query.setParameter( "status", Status.LIVING )
+							.getReactiveKeyedResultList( firstPage )
+							.thenCompose( firstResults -> {
+								assertThat( firstResults.getResultList() ).containsExactly( margaret, rebeccaActress );
+								assertThat( firstResults.getKeyList() ).hasSize( 2 );
+								assertThat( firstResults.isFirstPage() ).isTrue();
+								assertThat( firstResults.isLastPage() ).isFalse();
+								assertThat( firstResults.getPreviousPage() ).isNull();
+								return query.getReactiveKeyedResultList( firstResults.getNextPage() )
+										.thenAccept( secondResults -> {
+											assertThat( secondResults.getResultList() ).containsExactly( rebeccaSinger );
+											assertThat( secondResults.getKeyList() ).hasSize( 1 );
+											assertThat( secondResults.isFirstPage() ).isFalse();
+											assertThat( secondResults.isLastPage() ).isTrue();
+											assertThat( secondResults.getPreviousPage() ).isNotNull();
+										} );
+							} );
+				} )
+		);
+	}
+
+	@Test
+	public void testReactiveKeyedPaginationWithNoResults(VertxTestContext context) {
+		test( context, openSession()
+				.thenCompose( session -> session.createSelectionQuery(
+						"from FamousPerson p where p.name = :name order by p.name, p.id",
+						FamousPerson.class
+				)
+						.setParameter( "name", "Nobody" )
+						.getReactiveKeyedResultList( first( 2 ).keyedBy( List.of(
+								Order.asc( FamousPerson.class, "name" ),
+								Order.asc( FamousPerson.class, "id" )
+						) ) ) )
+				.thenAccept( results -> {
+					assertThat( results.getResultList() ).isEmpty();
+					assertThat( results.getKeyList() ).isEmpty();
+					assertThat( results.isFirstPage() ).isTrue();
+					assertThat( results.isLastPage() ).isTrue();
+					assertThat( results.getNextPage() ).isNull();
+					assertThat( results.getPreviousPage() ).isNull();
+				} )
+		);
+	}
+
+	@Test
+	public void testReactiveKeyedPaginationWithNativeQueryThrows(VertxTestContext context) {
+		test( context, assertThrown( UnsupportedOperationException.class, openSession()
+				.thenCompose( session -> session.createNativeQuery(
+						"select * from FamousPerson order by id",
+						FamousPerson.class
+				)
+						.getReactiveKeyedResultList( first( 2 ).keyedBy( Order.asc( FamousPerson.class, "id" ) ) ) ) )
+				.thenAccept( error -> assertThat( error )
+						.hasMessage( "native queries do not support key-based pagination" ) )
+		);
+	}
+
+	@Test
 	public void testMaxResultsWithStageAndPage(VertxTestContext context) {
 		test( context, enableFilter( openSession(), FamousPerson.IS_ALIVE_FILTER )
 				.thenCompose( session -> session.createNamedQuery( FamousPerson.FIND_ALL_QUERY )
@@ -180,6 +251,77 @@ public class FilterWithPaginationTest extends BaseReactiveTest {
 						.setMaxResults( 2 )
 						.getResultList() )
 				.invoke( list -> assertThat( list ).containsExactly( margaret, rebeccaActress ) )
+		);
+	}
+
+	@Test
+	public void testReactiveKeyedPaginationWithMutiny(VertxTestContext context) {
+		test( context, openMutinySession()
+				.chain( session -> {
+					var query = session.createSelectionQuery(
+							"from FamousPerson p where p.status = :status order by p.name, p.id",
+							FamousPerson.class
+					);
+					final var firstPage = first( 2 ).keyedBy( List.of(
+							Order.asc( FamousPerson.class, "name" ),
+							Order.asc( FamousPerson.class, "id" )
+					) );
+					return Uni.createFrom().completionStage( query.setParameter( "status", Status.LIVING )
+							.getReactiveKeyedResultList( firstPage ) )
+							.chain( firstResults -> {
+								assertThat( firstResults.getResultList() ).containsExactly( margaret, rebeccaActress );
+								assertThat( firstResults.getKeyList() ).hasSize( 2 );
+								assertThat( firstResults.isFirstPage() ).isTrue();
+								assertThat( firstResults.isLastPage() ).isFalse();
+								assertThat( firstResults.getPreviousPage() ).isNull();
+								return Uni.createFrom().completionStage( query.getReactiveKeyedResultList( firstResults.getNextPage() ) )
+										.invoke( secondResults -> {
+											assertThat( secondResults.getResultList() ).containsExactly( rebeccaSinger );
+											assertThat( secondResults.getKeyList() ).hasSize( 1 );
+											assertThat( secondResults.isFirstPage() ).isFalse();
+											assertThat( secondResults.isLastPage() ).isTrue();
+											assertThat( secondResults.getPreviousPage() ).isNotNull();
+										} );
+							} );
+				} )
+		);
+	}
+
+	@Test
+	public void testReactiveKeyedPaginationWithNoResultsMutiny(VertxTestContext context) {
+		test( context, openMutinySession().chain( session -> Uni.createFrom()
+						.completionStage(
+								session.createSelectionQuery(
+												"from FamousPerson p where p.name = :name order by p.name, p.id",
+												FamousPerson.class
+										)
+										.setParameter( "name", "Nobody" )
+										.getReactiveKeyedResultList( first( 2 ).keyedBy(
+												List.of(
+														Order.asc( FamousPerson.class, "name" ),
+														Order.asc( FamousPerson.class, "id" )
+												) ) ) ) )
+				.invoke( results -> {
+					assertThat( results.getResultList() ).isEmpty();
+					assertThat( results.getKeyList() ).isEmpty();
+					assertThat( results.isFirstPage() ).isTrue();
+					assertThat( results.isLastPage() ).isTrue();
+					assertThat( results.getNextPage() ).isNull();
+					assertThat( results.getPreviousPage() ).isNull();
+				} )
+		);
+	}
+
+	@Test
+	public void testReactiveKeyedPaginationWithNativeQueryThrowsMutiny(VertxTestContext context) {
+		test( context, assertThrown( UnsupportedOperationException.class, openMutinySession()
+				.chain( session -> Uni.createFrom().completionStage( session.createNativeQuery(
+						"select * from FamousPerson order by id",
+						FamousPerson.class
+				)
+						.getReactiveKeyedResultList( first( 2 ).keyedBy( Order.asc( FamousPerson.class, "id" ) ) ) ) ) )
+				.invoke( error -> assertThat( error )
+						.hasMessage( "native queries do not support key-based pagination" ) )
 		);
 	}
 
