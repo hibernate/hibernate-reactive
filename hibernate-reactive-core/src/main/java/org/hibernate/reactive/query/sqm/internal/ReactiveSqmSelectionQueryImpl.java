@@ -13,6 +13,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.QueryLogging;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
@@ -21,6 +23,7 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.query.sqm.internal.AbstractSqmSelectionQuery;
 import org.hibernate.query.sqm.internal.SqmSelectionQueryImpl;
 import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.hibernate.reactive.query.spi.ReactiveAbstractSelectionQuery;
@@ -73,6 +76,13 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 			SharedSessionContractImplementor session) {
 		super( criteria, expectedResultType, session );
 		this.selectionQueryDelegate = createSelectionQueryDelegate( session );
+	}
+
+	public <E> ReactiveSqmSelectionQueryImpl(
+			AbstractSqmSelectionQuery<?> original,
+			KeyedPage<E> keyedPage) {
+		super( original, keyedPage );
+		this.selectionQueryDelegate = createSelectionQueryDelegate( original.getSession() );
 	}
 
 	private ReactiveAbstractSelectionQuery<R> createSelectionQueryDelegate(SharedSessionContractImplementor session) {
@@ -226,6 +236,11 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	public CompletionStage<Long> getReactiveResultCount() {
 		return selectionQueryDelegate
 				.getReactiveResultsCount( getSqmStatement().createCountQuery(), this );
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage) {
+		return selectionQueryDelegate.getReactiveKeyedResultList( keyedPage, this );
 	}
 
 	@Override
