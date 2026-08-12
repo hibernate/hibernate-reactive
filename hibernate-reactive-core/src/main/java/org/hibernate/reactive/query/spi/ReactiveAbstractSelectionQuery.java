@@ -20,13 +20,17 @@ import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.query.sqm.internal.AbstractSqmSelectionQuery;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
+import org.hibernate.query.sqm.internal.KeyedResult;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.spi.InterpretationsKeySource;
 import org.hibernate.query.sqm.tree.SqmStatement;
@@ -36,6 +40,7 @@ import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.query.sqm.internal.AggregatedSelectReactiveQueryPlan;
 import org.hibernate.reactive.query.sqm.internal.ConcreteSqmSelectReactiveQueryPlan;
+import org.hibernate.reactive.query.sqm.internal.ReactiveSqmSelectionQueryImpl;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.sql.results.spi.ReactiveSingleResultConsumer;
 import org.hibernate.sql.exec.spi.Callback;
@@ -216,6 +221,21 @@ public class ReactiveAbstractSelectionQuery<R> {
 		final var options = getQueryOptions();
 		return getSession().getLoadQueryInfluencers()
 				.adjustFetchProfiles( options.getDisabledFetchProfiles(), options.getEnabledFetchProfiles() );
+	}
+
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage, AbstractSqmSelectionQuery original) {
+		var reactiveSqmSelectionQuery = new ReactiveSqmSelectionQueryImpl<KeyedResult<R>>( original, keyedPage );
+		return reactiveSqmSelectionQuery.reactiveList()
+				.thenApply( results -> {
+					final int pageSize = keyedPage.getPage().getSize();
+					return new KeyedResultList<>(
+							KeyedResult.collectResults( results, pageSize, keyedPage.getKeyInterpretation() ),
+							KeyedResult.collectKeys( results, pageSize ),
+							keyedPage,
+							original.nextPage( keyedPage, results ),
+							original.previousPage( keyedPage, results )
+					);
+				} );
 	}
 
 	private void handleException(Throwable e) {

@@ -12,6 +12,8 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.Page;
 import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.stage.Stage;
@@ -242,5 +244,10 @@ public class StageQueryImpl<R> implements Query<R> {
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
 		return delegate.executeReactiveUpdate();
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page) {
+		return delegate.getReactiveKeyedResultList( page );
 	}
 }

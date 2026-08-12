@@ -9,6 +9,8 @@ import org.hibernate.FlushMode;
 import org.hibernate.LockMode;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.spi.RootGraphImplementor;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.Page;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Query;
@@ -245,6 +247,11 @@ public class MutinyQueryImpl<R> implements Query<R> {
 	public Query<R> setComment(String comment) {
 		delegate.setComment( comment );
 		return this;
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page) {
+		return delegate.getReactiveKeyedResultList( page );
 	}
 
 	@Override
