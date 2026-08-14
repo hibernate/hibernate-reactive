@@ -21,6 +21,7 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.query.Page.page;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -179,6 +180,41 @@ public class HQLQueryParameterNamedLimitTest extends BaseReactiveTest {
 						.setMaxResults( 2 )
 						.getResultList()
 						.thenAccept( results -> assertThat( results ).containsExactly( rye, almond ) )
+				)
+		);
+	}
+
+	@Test
+	public void testSetPageWithStage(VertxTestContext context) {
+		test( context, openSession()
+				.thenCompose( s -> s
+						.createSelectionQuery( "from Flour order by id", Flour.class )
+						.setPage( page( 1, 1 ) )
+						.getSingleResult()
+						.thenAccept( result -> assertEquals( rye, result ) )
+						.thenCompose( v -> s
+								.createSelectionQuery( "from Flour order by id", Flour.class )
+								.setPage( page( 2, 1 ) )
+								.getResultList()
+								.thenAccept( results -> assertThat( results ).containsExactly( almond ) )
+						)
+				)
+		);
+	}
+
+	@Test
+	public void testSetPageWithMutiny(VertxTestContext context) {
+		test( context, openMutinySession()
+				.chain( s -> s
+						.createSelectionQuery( "from Flour order by id", Flour.class )
+						.setPage( page( 1, 1 ) )
+						.getSingleResult()
+						.invoke( result -> assertEquals( rye, result ) )
+						.chain( () -> s
+								.createSelectionQuery( "from Flour order by id", Flour.class )
+								.setPage( page( 2, 1 ) )
+								.getResultList()
+								.invoke( results -> assertThat( results ).containsExactly( almond ) ) )
 				)
 		);
 	}
