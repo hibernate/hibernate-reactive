@@ -29,6 +29,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -249,6 +250,118 @@ public class LazyOneToManyAssociationWithFetchTest extends BaseReactiveTest {
 						} )
 		);
 
+	}
+
+	@Test
+	public void selectionQueryEnableFetchProfileWithStage(VertxTestContext context) {
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
+
+		test( context, openSession()
+				.thenCompose( s -> s.persist( goodOmens )
+						.thenCompose( v -> s.persist( neilGaiman ) )
+						.thenCompose( v -> s.persist( terryPratchett ) )
+						.thenCompose( v -> s.flush() )
+				)
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.createSelectionQuery( "from Tome b where b.id=?1", Book.class )
+						.enableFetchProfile( "withAuthors" )
+						.setParameter( 1, goodOmens.getId() )
+						.getSingleResult() )
+				.thenAccept( book -> {
+					assertTrue( Hibernate.isInitialized( book.getAuthors() ) );
+					assertTrue( book.getAuthors().contains( neilGaiman ) );
+					assertTrue( book.getAuthors().contains( terryPratchett ) );
+				} )
+		);
+	}
+
+	@Test
+	public void selectionQueryDisableFetchProfileWithStage(VertxTestContext context) {
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
+
+		// The fetch profile is enabled on the session, but disabled on the query:
+		// the query-scoped disable must win, so the association stays uninitialized.
+		test( context, openSession()
+				.thenCompose( s -> s.persist( goodOmens )
+						.thenCompose( v -> s.persist( neilGaiman ) )
+						.thenCompose( v -> s.persist( terryPratchett ) )
+						.thenCompose( v -> s.flush() )
+				)
+				.thenCompose( v -> openSession() )
+				.thenCompose( s -> s.enableFetchProfile( "withAuthors" )
+						.createSelectionQuery( "from Tome b where b.id=?1", Book.class )
+						.disableFetchProfile( "withAuthors" )
+						.setParameter( 1, goodOmens.getId() )
+						.getSingleResult() )
+				.thenAccept( book -> assertFalse( Hibernate.isInitialized( book.getAuthors() ) ) )
+		);
+	}
+
+	@Test
+	public void selectionQueryEnableFetchProfileWithMutiny(VertxTestContext context) {
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
+
+		test( context, openMutinySession()
+				.chain( s -> s.persistAll( goodOmens, neilGaiman, terryPratchett )
+						.chain( s::flush ) )
+				.chain( v -> openMutinySession() )
+				.chain( s -> s.createSelectionQuery( "from Tome b where b.id=?1", Book.class )
+						.enableFetchProfile( "withAuthors" )
+						.setParameter( 1, goodOmens.getId() )
+						.getSingleResult() )
+				.invoke( book -> {
+					assertTrue( Hibernate.isInitialized( book.getAuthors() ) );
+					assertTrue( book.getAuthors().contains( neilGaiman ) );
+					assertTrue( book.getAuthors().contains( terryPratchett ) );
+				} )
+		);
+	}
+
+	@Test
+	public void selectionQueryDisableFetchProfileWithMutiny(VertxTestContext context) {
+		final Book goodOmens = new Book(
+				7242353,
+				"Good Omens: The Nice and Accurate Prophecies of Agnes Nutter, Witch"
+		);
+		final Author neilGaiman = new Author( 21426321, "Neil Gaiman", goodOmens );
+		final Author terryPratchett = new Author( 2132511, "Terry Pratchett", goodOmens );
+		goodOmens.getAuthors().add( neilGaiman );
+		goodOmens.getAuthors().add( terryPratchett );
+
+		// The fetch profile is enabled on the session, but disabled on the query:
+		// the query-scoped disable must win, so the association stays uninitialized.
+		test( context, openMutinySession()
+				.chain( s -> s.persistAll( goodOmens, neilGaiman, terryPratchett )
+						.chain( s::flush ) )
+				.chain( v -> openMutinySession() )
+				.chain( s -> s.enableFetchProfile( "withAuthors" )
+						.createSelectionQuery( "from Tome b where b.id=?1", Book.class )
+						.disableFetchProfile( "withAuthors" )
+						.setParameter( 1, goodOmens.getId() )
+						.getSingleResult() )
+				.invoke( book -> assertFalse( Hibernate.isInitialized( book.getAuthors() ) ) )
+		);
 	}
 
 	@Test
