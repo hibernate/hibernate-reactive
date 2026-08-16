@@ -854,4 +854,9 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	public ReactiveNativeQueryImpl<R> enableFetchProfile(String profileName) {
 		throw new UnsupportedOperationException( "A native SQL query cannot use fetch profiles" );
 	}
+
+	@Override
+	public ReactiveNativeQueryImpl<R> disableFetchProfile(String profileName) {
+		throw new UnsupportedOperationException( "A native SQL query cannot use fetch profiles" );
+	}
 }

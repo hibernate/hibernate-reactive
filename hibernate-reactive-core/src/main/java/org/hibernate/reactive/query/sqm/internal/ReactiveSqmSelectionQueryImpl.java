@@ -610,4 +610,10 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 		selectionQueryDelegate.enableFetchProfile( profileName );
 		return this;
 	}
+
+	@Override
+	public ReactiveSqmSelectionQueryImpl<R> disableFetchProfile(String profileName) {
+		selectionQueryDelegate.disableFetchProfile( profileName );
+		return this;
+	}
 }

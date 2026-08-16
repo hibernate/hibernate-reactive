@@ -371,6 +371,12 @@ public interface Stage {
 		 */
 		SelectionQuery<R> enableFetchProfile(String profileName);
 
+		/**
+		 * Disable a {@linkplain org.hibernate.annotations.FetchProfile fetch
+		 * profile} which will not be in effect during execution of this query.
+		 */
+		SelectionQuery<R> disableFetchProfile(String profileName);
+
 		@Override
 		SelectionQuery<R> setParameter(int parameter, Object argument);
 

@@ -76,6 +76,12 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public Stage.SelectionQuery<R> disableFetchProfile(String profileName) {
+		delegate.disableFetchProfile( profileName );
+		return this;
+	}
+
+	@Override
 	public CompletionStage<R> getSingleResult() {
 		return delegate.getReactiveSingleResult();
 	}

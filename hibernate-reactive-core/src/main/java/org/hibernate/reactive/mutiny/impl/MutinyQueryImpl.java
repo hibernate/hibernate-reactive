@@ -84,6 +84,12 @@ public class MutinyQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public Query<R> disableFetchProfile(String profileName) {
+		delegate.disableFetchProfile( profileName );
+		return this;
+	}
+
+	@Override
 	public Uni<R> getSingleResult() {
 		return uni( delegate::getReactiveSingleResult );
 	}
