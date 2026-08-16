@@ -127,6 +127,8 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	ReactiveSelectionQuery<R> enableFetchProfile(String profileName);
 
+	ReactiveSelectionQuery<R> disableFetchProfile(String profileName);
+
 	@Override
 	ReactiveSelectionQuery<R> setParameter(String name, Object value);
 

@@ -238,4 +238,10 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 		delegate.enableFetchProfile( profileName );
 		return this;
 	}
+
+	@Override
+	public SelectionQuery<R> disableFetchProfile(String profileName) {
+		delegate.disableFetchProfile( profileName );
+		return this;
+	}
 }

@@ -8,7 +8,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -19,12 +18,12 @@ import java.util.stream.Stream;
 import org.hibernate.HibernateException;
 import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
-import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
+import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -44,7 +43,6 @@ import org.hibernate.sql.results.internal.TupleMetadata;
 
 import jakarta.persistence.NoResultException;
 
-import static java.util.Collections.emptySet;
 
 /**
  * Emulate {@link org.hibernate.query.spi.AbstractSelectionQuery}.
@@ -71,8 +69,6 @@ public class ReactiveAbstractSelectionQuery<R> {
 
 	private final Supplier<Class<?>> getResultType;
 	private final Supplier<String> getQueryString;
-
-	private Set<String> fetchProfiles;
 
 	private final Supplier<CompletionStage<Void>> beforeQuery;
 
@@ -199,7 +195,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public CompletionStage<List<R>> reactiveList() {
-		final Set<String> profiles = applyProfiles();
+		final var profiles = applyProfiles();
 		return beforeQuery.get()
 				.thenCompose( v -> doReactiveList() )
 				.handle( (list, error) -> {
@@ -212,27 +208,14 @@ public class ReactiveAbstractSelectionQuery<R> {
 				} );
 	}
 
-	private void unapplyProfiles(Set<String> profiles) {
-		for ( String profile : profiles) {
-			session.getLoadQueryInfluencers().disableFetchProfile( profile );
-		}
+	private void unapplyProfiles(HashSet<String> profiles) {
+		getSession().getLoadQueryInfluencers().setEnabledFetchProfileNames( profiles );
 	}
 
-	private Set<String> applyProfiles() {
-		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
-		if ( fetchProfiles != null ) {
-			final Set<String> profiles = new HashSet<>( fetchProfiles.size() );
-			for ( String profile : fetchProfiles ) {
-				if ( !loadQueryInfluencers.isFetchProfileEnabled( profile ) ) {
-					loadQueryInfluencers.enableFetchProfile( profile );
-					profiles.add( profile );
-				}
-			}
-			return profiles;
-		}
-		else {
-			return emptySet();
-		}
+	private HashSet<String> applyProfiles() {
+		final var options = getQueryOptions();
+		return getSession().getLoadQueryInfluencers()
+				.adjustFetchProfiles( options.getDisabledFetchProfiles(), options.getEnabledFetchProfiles() );
 	}
 
 	private void handleException(Throwable e) {
@@ -303,8 +286,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 		);
 	}
 
-	private QueryOptions getQueryOptions() {
-		return queryOptionsSupplier.get();
+	private MutableQueryOptions getQueryOptions() {
+		return (MutableQueryOptions) queryOptionsSupplier.get();
 	}
 
 	private SharedSessionContractImplementor getSession() {
@@ -364,10 +347,11 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public void enableFetchProfile(String profileName) {
-		if ( fetchProfiles == null ) {
-			fetchProfiles = new HashSet<>();
-		}
-		fetchProfiles.add( profileName );
+		getQueryOptions().enableFetchProfile( profileName );
+	}
+
+	public void disableFetchProfile(String profileName) {
+		getQueryOptions().disableFetchProfile( profileName );
 	}
 
 	public Callback getCallback() {
