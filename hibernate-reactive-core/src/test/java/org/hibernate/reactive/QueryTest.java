@@ -759,6 +759,30 @@ public class QueryTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testQueryPlanCacheableWithStage(VertxTestContext context) {
+		test( context, openSession()
+				.thenAccept( s -> {
+					var query = s.createSelectionQuery( "from Author", Author.class );
+					assertThat( query.isQueryPlanCacheable() ).isTrue();
+					query.setQueryPlanCacheable( false );
+					assertThat( query.isQueryPlanCacheable() ).isFalse();
+				} )
+		);
+	}
+
+	@Test
+	public void testQueryPlanCacheableWithMutiny(VertxTestContext context) {
+		test( context, openMutinySession()
+				.invoke( s -> {
+					var query = s.createSelectionQuery( "from Author", Author.class );
+					assertThat( query.isQueryPlanCacheable() ).isTrue();
+					query.setQueryPlanCacheable( false );
+					assertThat( query.isQueryPlanCacheable() ).isFalse();
+				} )
+		);
+	}
+
 	@NamedNativeQuery(
 			name = SQL_NAMED_QUERY,
 			resultClass = Object[].class,
