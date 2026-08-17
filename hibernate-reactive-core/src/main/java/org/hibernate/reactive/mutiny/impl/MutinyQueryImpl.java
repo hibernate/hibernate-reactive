@@ -179,6 +179,17 @@ public class MutinyQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public boolean isQueryPlanCacheable() {
+		return delegate.isQueryPlanCacheable();
+	}
+
+	@Override
+	public Mutiny.SelectionQuery<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		delegate.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
+	@Override
 	public String getCacheRegion() {
 		return delegate.getCacheRegion();
 	}

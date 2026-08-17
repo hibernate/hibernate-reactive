@@ -250,6 +250,19 @@ public interface Stage {
 		boolean isCacheable();
 
 		/**
+		 * Should the query plan of this query be stored in the query
+		 * plan cache?
+		 */
+		boolean isQueryPlanCacheable();
+
+		/**
+		 * Enable/disable query plan caching for this query.
+		 *
+		 * @see #isQueryPlanCacheable()
+		 */
+		SelectionQuery<R> setQueryPlanCacheable(boolean queryPlanCacheable);
+
+		/**
 		 * Set the name of the cache region in which to store this
 		 * query result set if {@link #setCacheable(boolean)
 		 * caching is enabled}.
