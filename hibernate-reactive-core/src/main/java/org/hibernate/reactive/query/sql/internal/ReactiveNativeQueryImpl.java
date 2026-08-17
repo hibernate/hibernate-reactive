@@ -499,6 +499,12 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	@Override
+	public ReactiveNativeQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		super.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
+	@Override
 	public ReactiveNativeQueryImpl<R> setCacheRegion(String cacheRegion) {
 		super.setCacheRegion( cacheRegion );
 		return this;

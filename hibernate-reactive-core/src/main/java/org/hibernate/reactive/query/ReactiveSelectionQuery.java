@@ -101,6 +101,10 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	ReactiveSelectionQuery<R> setCacheable(boolean cacheable);
 
+	boolean isQueryPlanCacheable();
+
+	ReactiveSelectionQuery<R> setQueryPlanCacheable(boolean queryPlanCacheable);
+
 	String getCacheRegion();
 
 	ReactiveSelectionQuery<R> setCacheRegion(String cacheRegion);

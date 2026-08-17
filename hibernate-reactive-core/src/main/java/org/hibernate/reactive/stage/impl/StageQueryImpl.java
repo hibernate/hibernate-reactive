@@ -171,6 +171,17 @@ public class StageQueryImpl<R> implements Query<R> {
 	}
 
 	@Override
+	public boolean isQueryPlanCacheable() {
+		return delegate.isQueryPlanCacheable();
+	}
+
+	@Override
+	public Stage.SelectionQuery<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		delegate.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
+	@Override
 	public String getCacheRegion() {
 		return delegate.getCacheRegion();
 	}

@@ -602,6 +602,12 @@ public class ReactiveSqmQueryImpl<R> extends SqmQueryImpl<R> implements Reactive
 	}
 
 	@Override
+	public ReactiveSqmQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		super.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
+	@Override
 	public ReactiveSqmQueryImpl<R> setCacheRegion(String cacheRegion) {
 		super.setCacheRegion( cacheRegion );
 		return this;

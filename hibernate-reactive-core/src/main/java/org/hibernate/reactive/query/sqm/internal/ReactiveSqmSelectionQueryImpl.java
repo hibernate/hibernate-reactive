@@ -305,6 +305,12 @@ public class ReactiveSqmSelectionQueryImpl<R> extends SqmSelectionQueryImpl<R> i
 	}
 
 	@Override
+	public ReactiveSqmSelectionQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		super.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
+	@Override
 	public ReactiveSqmSelectionQueryImpl<R> setCacheRegion(String regionName) {
 		super.setCacheRegion( regionName );
 		return this;
