@@ -42,6 +42,10 @@ public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	<T> CompletionStage<T> reactiveFetch(T association, boolean unproxy);
 
+	default <T> CompletionStage<T> internalReactiveFetch(T association, boolean unproxy) {
+		return reactiveFetch( association, unproxy );
+	}
+
 	CompletionStage<Object> reactiveInternalLoad(String entityName, Object id, boolean eager, boolean nullable);
 
 	<T> EntityGraph<T> createEntityGraph(Class<T> entity);
