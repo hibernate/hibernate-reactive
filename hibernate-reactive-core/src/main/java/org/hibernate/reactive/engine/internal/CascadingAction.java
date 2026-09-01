@@ -17,7 +17,7 @@ import org.hibernate.type.Type;
 /**
  * A {@link Stage.Session reactive session} operation that may
  * be cascaded from a parent entity to its children. A non-blocking counterpart
- * to {@link org.hibernate.engine.spi.CascadingAction}.
+ * to {@link org.hibernate.cascade.spi.CascadingAction}.
  *
  * @see CascadingActions
  * @author Gavin King
@@ -92,5 +92,5 @@ public interface CascadingAction<C> {
 	 */
 	boolean performOnLazyProperty();
 
-	org.hibernate.engine.spi.CascadingAction<C> delegate();
+	org.hibernate.cascade.spi.CascadingAction<C> delegate();
 }
