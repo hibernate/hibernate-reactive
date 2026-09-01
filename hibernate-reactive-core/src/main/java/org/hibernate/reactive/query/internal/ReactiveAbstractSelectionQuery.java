@@ -8,7 +8,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -161,10 +160,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 				} );
 	}
 
-	private void unapplyProfiles(Set<String> profiles) {
-		for ( String profile : profiles ) {
-			session.getLoadQueryInfluencers().disableFetchProfile( profile );
-		}
+	private void unapplyProfiles(HashSet<String> profiles) {
+		getSession().getLoadQueryInfluencers().setEnabledFetchProfileNames( profiles );
 	}
 
 	private HashSet<String> applyProfiles() {
