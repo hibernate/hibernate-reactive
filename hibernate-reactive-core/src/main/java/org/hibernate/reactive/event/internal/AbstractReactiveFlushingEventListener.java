@@ -291,6 +291,12 @@ public abstract class AbstractReactiveFlushingEventListener {
 					}
 				}, true );
 
+		// Register collection mutations (creates/removes/updates) queued during the flush entity phase.
+		// This calls addCollectionMutation() on the session's ActionQueue, which our
+		// ReactiveCollectionActionRedirectingActionQueue intercepts and redirects
+		// to the ReactiveActionQueue.
+		flushProcessingContext.registerCollectionMutationInputs();
+
 		// Schedule queued operations for uninitialized collections
 		LOG.trace( "Scheduling collection queued operations" );
 
