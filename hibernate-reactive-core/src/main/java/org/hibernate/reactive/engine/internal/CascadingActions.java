@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Internal;
-import org.hibernate.LockOptions;
 import org.hibernate.TransientObjectException;
 import org.hibernate.TransientPropertyValueException;
 import org.hibernate.engine.spi.EntityEntry;
@@ -51,7 +50,7 @@ public class CascadingActions {
 	/**
 	 * @see org.hibernate.Session#remove(Object)
 	 */
-	public static final CascadingAction<DeleteContext> REMOVE = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.REMOVE ) {
+	public static final CascadingAction<DeleteContext> REMOVE = new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.REMOVE ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -71,7 +70,7 @@ public class CascadingActions {
 	/**
 	 * @see org.hibernate.Session#persist(Object)
 	 */
-	public static final CascadingAction<PersistContext> PERSIST = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.PERSIST ) {
+	public static final CascadingAction<PersistContext> PERSIST = new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.PERSIST ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -90,7 +89,7 @@ public class CascadingActions {
 	 *
 	 * @see org.hibernate.Session#persist(Object)
 	 */
-	public static final CascadingAction<PersistContext> PERSIST_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.PERSIST_ON_FLUSH ) {
+	public static final CascadingAction<PersistContext> PERSIST_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.PERSIST_ON_FLUSH ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -154,7 +153,7 @@ public class CascadingActions {
 	};
 
 	@Internal
-	public static final CascadingAction<Void> CHECK_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.CHECK_ON_FLUSH ) {
+	public static final CascadingAction<Void> CHECK_ON_FLUSH = new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.CHECK_ON_FLUSH ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -209,7 +208,7 @@ public class CascadingActions {
 	 * @see org.hibernate.Session#merge(Object)
 	 */
 	public static final CascadingAction<MergeContext> MERGE =
-			new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.MERGE ) {
+			new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.MERGE ) {
 				@Override
 				public CompletionStage<Void> cascade(
 						EventSource session,
@@ -227,7 +226,7 @@ public class CascadingActions {
 	/**
 	 * @see org.hibernate.Session#refresh(Object)
 	 */
-	public static final CascadingAction<RefreshContext> REFRESH = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.REFRESH ) {
+	public static final CascadingAction<RefreshContext> REFRESH = new BaseCascadingAction<>( org.hibernate.cascade.spi.CascadingActions.REFRESH ) {
 		@Override
 		public CompletionStage<Void> cascade(
 				EventSource session,
@@ -241,27 +240,10 @@ public class CascadingActions {
 		}
 	};
 
-	/**
-	 * @see org.hibernate.Session#lock(Object, org.hibernate.LockMode)
-	 */
-	public static final CascadingAction<LockOptions> LOCK = new BaseCascadingAction<>( org.hibernate.engine.spi.CascadingActions.LOCK ) {
-		@Override
-		public CompletionStage<Void> cascade(
-				EventSource session,
-				Object child,
-				String entityName,
-				LockOptions context,
-				boolean isCascadeDeleteEnabled)
-				throws HibernateException {
-			LOG.tracev( "Cascading to lock: {0}", entityName );
-			return session.unwrap( ReactiveSession.class ).reactiveLock( child, context );
-		}
-	};
-
 	public abstract static class BaseCascadingAction<C> implements CascadingAction<C> {
-		private final org.hibernate.engine.spi.CascadingAction<C> delegate;
+		private final org.hibernate.cascade.spi.CascadingAction<C> delegate;
 
-		BaseCascadingAction(org.hibernate.engine.spi.CascadingAction<C> delegate) {
+		BaseCascadingAction(org.hibernate.cascade.spi.CascadingAction<C> delegate) {
 			this.delegate = delegate;
 		}
 
@@ -276,7 +258,7 @@ public class CascadingActions {
 		}
 
 		@Override
-		public org.hibernate.engine.spi.CascadingAction<C> delegate() {
+		public org.hibernate.cascade.spi.CascadingAction<C> delegate() {
 			return delegate;
 		}
 
