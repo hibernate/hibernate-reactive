@@ -108,13 +108,13 @@ jobs:
           key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: 17
@@ -165,13 +165,13 @@ jobs:
           key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
 
         with:
           distribution: 'temurin'
@@ -285,7 +285,7 @@ jobs:
           release: ${{ matrix.java.java_version_numeric }}
       - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
         if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java.java_version_numeric }}
@@ -295,14 +295,14 @@ jobs:
         run: echo "path=${JAVA_HOME}" >> $GITHUB_OUTPUT
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: 11
           check-latest: true
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: 17
