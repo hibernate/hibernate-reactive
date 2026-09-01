@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 import org.hibernate.engine.FetchStyle;
 import org.hibernate.LockOptions;
 import org.hibernate.engine.FetchTiming;
-import org.hibernate.engine.spi.CascadeStyle;
+import org.hibernate.cascade.spi.CascadeStyle;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;

@@ -12,7 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
-import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.cascade.spi.CascadePoint;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
