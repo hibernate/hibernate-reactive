@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.cascade.spi.CascadePoint;
 import org.hibernate.engine.internal.Collections;
 import org.hibernate.engine.internal.FlushProcessingContext;
 import org.hibernate.engine.spi.CollectionKey;
@@ -223,7 +223,6 @@ public abstract class AbstractReactiveFlushingEventListener {
 
 		LOG.debug( "Dirty checking collections" );
 		persistenceContext.forEachCollectionEntry( (pc, ce) -> {
-			flushProcessingContext.beginCollectionFlush( pc );
 			ce.preFlush( pc );
 		}, true );
 	}
