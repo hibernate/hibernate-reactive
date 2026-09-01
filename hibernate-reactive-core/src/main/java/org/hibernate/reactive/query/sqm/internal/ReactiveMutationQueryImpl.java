@@ -331,6 +331,21 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		return this;
 	}
 
+	@Override
+	public ReactiveMutationQueryImpl<R> disableFetchProfile(String profileName) {
+		return this;
+	}
+
+	@Override
+	public boolean isQueryPlanCacheable() {
+		return false;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		return this;
+	}
+
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// ReactiveSelectionQuery — stubs (not applicable for DML queries)
 

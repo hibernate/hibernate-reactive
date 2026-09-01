@@ -23,6 +23,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.QueryInterpretationCache;
+import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
