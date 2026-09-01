@@ -675,6 +675,18 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 		return this;
 	}
 
+	@Override
+	public ReactiveSelectionQueryImpl<R> disableFetchProfile(String profileName) {
+		super.disableFetchProfile( profileName );
+		return this;
+	}
+
+	@Override
+	public ReactiveSelectionQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
+		super.setQueryPlanCacheable( queryPlanCacheable );
+		return this;
+	}
+
 	// ReactiveQueryImplementor methods
 
 	@Override

@@ -25,6 +25,7 @@ import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.QueryInterpretationCache;
+import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.internal.AbstractSqmSelectionQuery;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
