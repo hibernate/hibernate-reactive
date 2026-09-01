@@ -12,16 +12,15 @@ import org.hibernate.HibernateException;
 import org.hibernate.PropertyValueException;
 import org.hibernate.Session;
 import org.hibernate.action.internal.BulkOperationCleanupAction;
-import org.hibernate.action.internal.CollectionRecreateAction;
-import org.hibernate.action.internal.CollectionRemoveAction;
-import org.hibernate.action.internal.CollectionUpdateAction;
 import org.hibernate.action.internal.EntityDeleteAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.hibernate.action.internal.EntityInsertAction;
 import org.hibernate.action.internal.EntityUpdateAction;
 import org.hibernate.action.internal.OrphanRemovalAction;
-import org.hibernate.action.internal.QueuedOperationCollectionAction;
 import org.hibernate.action.queue.spi.ActionQueue;
+import org.hibernate.action.queue.spi.ActionQueueCheckpoint;
+import org.hibernate.action.queue.spi.CollectionMutationInput;
+import org.hibernate.action.queue.spi.CollectionTransition;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.TransactionCompletionCallbacksImplementor;
 import org.hibernate.event.spi.EventSource;
@@ -55,41 +54,85 @@ public class ReactiveCollectionActionRedirectingActionQueue implements ActionQue
 	}
 
 	@Override
-	public void addAction(CollectionRecreateAction action) {
-		reactiveActionQueue().addAction(
-				new ReactiveCollectionRecreateAction(
-						action.getCollection(),
-						action.getPersister(),
-						action.getKey(),
-						session
-				)
-		);
-	}
-
-	@Override
-	public void addAction(CollectionRemoveAction action) {
-		reactiveActionQueue().addAction(
-				new ReactiveCollectionRemoveAction(
-						action.getCollection(),
-						action.getPersister(),
-						action.getKey(),
-						action.isEmptySnapshot(),
-						session
-				)
-		);
-	}
-
-	@Override
-	public void addAction(CollectionUpdateAction action) {
-		reactiveActionQueue().addAction(
-				new ReactiveCollectionUpdateAction(
-						action.getCollection(),
-						action.getPersister(),
-						action.getKey(),
-						action.isEmptySnapshot(),
-						session
-				)
-		);
+	public void addCollectionMutation(CollectionMutationInput input) {
+		final CollectionTransition transition = input.transition();
+		switch ( transition ) {
+			case CREATE:
+				reactiveActionQueue().addAction(
+						new ReactiveCollectionRecreateAction(
+								input.collection(),
+								input.currentEndpoint().persister(),
+								input.currentEndpoint().key(),
+								session
+						)
+				);
+				break;
+			case REMOVE:
+				if ( input.collection() != null ) {
+					reactiveActionQueue().addAction(
+							new ReactiveCollectionRemoveAction(
+									input.collection(),
+									input.loadedEndpoint().persister(),
+									input.loadedEndpoint().key(),
+									input.emptySnapshot(),
+									session
+							)
+					);
+				}
+				else {
+					reactiveActionQueue().addAction(
+							new ReactiveCollectionRemoveAction(
+									input.loadedEndpoint().persister(),
+									input.loadedEndpoint().key(),
+									session
+							)
+					);
+				}
+				break;
+			case UPDATE:
+				reactiveActionQueue().addAction(
+						new ReactiveCollectionUpdateAction(
+								input.collection(),
+								input.currentEndpoint().persister(),
+								input.currentEndpoint().key(),
+								input.emptySnapshot(),
+								session
+						)
+				);
+				break;
+			case REMOVE_AND_CREATE:
+				if ( input.collection() != null ) {
+					reactiveActionQueue().addAction(
+							new ReactiveCollectionRemoveAction(
+									input.collection(),
+									input.loadedEndpoint().persister(),
+									input.loadedEndpoint().key(),
+									input.emptySnapshot(),
+									session
+							)
+					);
+				}
+				else {
+					reactiveActionQueue().addAction(
+							new ReactiveCollectionRemoveAction(
+									input.loadedEndpoint().persister(),
+									input.loadedEndpoint().key(),
+									session
+							)
+					);
+				}
+				reactiveActionQueue().addAction(
+						new ReactiveCollectionRecreateAction(
+								input.collection(),
+								input.currentEndpoint().persister(),
+								input.currentEndpoint().key(),
+								session
+						)
+				);
+				break;
+			case NONE:
+				break;
+		}
 	}
 
 	// --- Delegate all other methods ---
@@ -121,11 +164,6 @@ public class ReactiveCollectionActionRedirectingActionQueue implements ActionQue
 
 	@Override
 	public void addAction(OrphanRemovalAction action) {
-		delegate.addAction( action );
-	}
-
-	@Override
-	public void addAction(QueuedOperationCollectionAction action) {
 		delegate.addAction( action );
 	}
 
@@ -265,8 +303,13 @@ public class ReactiveCollectionActionRedirectingActionQueue implements ActionQue
 	}
 
 	@Override
-	public void clearFromFlushNeededCheck(int previousCollectionRemovalSize) {
-		delegate.clearFromFlushNeededCheck( previousCollectionRemovalSize );
+	public ActionQueueCheckpoint checkpoint() {
+		return delegate.checkpoint();
+	}
+
+	@Override
+	public void restore(ActionQueueCheckpoint checkpoint) {
+		delegate.restore( checkpoint );
 	}
 
 	@Override
