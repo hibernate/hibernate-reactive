@@ -160,10 +160,10 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.setParameter( 1, "asimple" )
 												.getResultList()
 												.thenAccept( list -> Assertions.assertThat( list ).containsExactlyInAnyOrder(
-														"CREATE INDEX i_asimple_avalue_astringvalue ON postgres.public.asimple USING btree (avalue ASC, astringvalue DESC)",
-														"CREATE INDEX i_asimple_avalue_data ON postgres.public.asimple USING btree (avalue DESC, data ASC)",
-														"CREATE UNIQUE INDEX asimple_pkey ON postgres.public.asimple USING btree (id ASC)",
-														"CREATE UNIQUE INDEX u_asimple_astringvalue ON postgres.public.asimple USING btree (astringvalue ASC)"
+														"CREATE INDEX i_asimple_avalue_astringvalue ON public.asimple USING btree (avalue ASC, astringvalue DESC)",
+														"CREATE INDEX i_asimple_avalue_data ON public.asimple USING btree (avalue DESC, data ASC)",
+														"CREATE UNIQUE INDEX asimple_pkey ON public.asimple USING btree (id ASC)",
+														"CREATE UNIQUE INDEX u_asimple_astringvalue ON public.asimple USING btree (astringvalue ASC)"
 												) )
 										)
 										.thenCompose( v -> s.createNativeQuery( indexDefinitionQuery, String.class )
@@ -171,7 +171,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 assertEquals(
-																			 "CREATE UNIQUE INDEX aother_pkey ON postgres.public.aother USING btree (id1 ASC, id2 ASC)",
+																			 "CREATE UNIQUE INDEX aother_pkey ON public.aother USING btree (id1 ASC, id2 ASC)",
 																			 result
 																	 )
 												)
@@ -181,7 +181,7 @@ public abstract class SchemaUpdateCockroachDBTestBase extends BaseReactiveTest {
 												.getSingleResult()
 												.thenAccept( result ->
 																	 assertEquals(
-																			 "CREATE UNIQUE INDEX aanother_pkey ON postgres.public.aanother USING btree (id ASC)",
+																			 "CREATE UNIQUE INDEX aanother_pkey ON public.aanother USING btree (id ASC)",
 																			 result
 																	 )
 												)
