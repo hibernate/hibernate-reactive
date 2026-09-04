@@ -131,18 +131,36 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool) {
-		return completeFuture(
+		CompletableFuture<ReactiveConnection> inner = completeFuture(
 				pool.getConnection().map( this::newConnection ),
 				ReactiveConnection::close
-		).handle( SqlClientPool::convertConnectionException );
+		);
+		CompletableFuture<ReactiveConnection> outer = inner.handle( SqlClientPool::convertConnectionException );
+		// Propagate cancellation of the outer stage back to the inner future so that
+		// the isCancelled() check in completeFuture's onComplete callback is triggered.
+		outer.whenComplete( (r, t) -> {
+			if ( outer.isCancelled() ) {
+				inner.cancel( false );
+			}
+		} );
+		return outer;
 	}
 
 	private CompletionStage<ReactiveConnection> getConnectionFromPool(Pool pool, SqlExceptionHelper sqlExceptionHelper) {
-		return completeFuture(
+		CompletableFuture<ReactiveConnection> inner = completeFuture(
 				pool.getConnection()
 						.map( sqlConnection -> newConnection( sqlConnection, sqlExceptionHelper ) ),
 				ReactiveConnection::close
-		).handle( SqlClientPool::convertConnectionException );
+		);
+		CompletableFuture<ReactiveConnection> outer = inner.handle( SqlClientPool::convertConnectionException );
+		// Propagate cancellation of the outer stage back to the inner future so that
+		// the isCancelled() check in completeFuture's onComplete callback is triggered.
+		outer.whenComplete( (r, t) -> {
+			if ( outer.isCancelled() ) {
+				inner.cancel( false );
+			}
+		} );
+		return outer;
 	}
 
 	private static <T> T convertConnectionException(T result, Throwable throwable) {
@@ -211,7 +229,7 @@ public abstract class SqlClientPool implements ReactiveConnectionPool {
 	/**
 	 * @param onCancellation invoke when converted {@link java.util.concurrent.CompletionStage} cancellation.
 	 */
-	private <T> CompletionStage<T> completeFuture(Future<T> future, Consumer<T> onCancellation) {
+	private <T> CompletableFuture<T> completeFuture(Future<T> future, Consumer<T> onCancellation) {
 		final CompletableFuture<T> completableFuture = new CompletableFuture<>();
 		future.onComplete( ar -> {
 			if ( ar.succeeded() ) {
