@@ -1,7 +1,7 @@
 [versions]
 asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
-checkerFrameworkVersion = "4.2.2"
+checkerFrameworkVersion = "4.2.3"
 hibernateAsciidoctorExtensionsVersion = "3.2.1.Final"
 hibernateAsciidoctorThemeVersion = "6.1.3.Final"
 hibernateOrmVersion = "7.4.7.Final"
@@ -63,6 +63,6 @@ org-hibernate-infra-hibernate-asciidoctor-extensions = { group = "org.hibernate.
 org-hibernate-infra-hibernate-asciidoctor-theme = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-theme", version.ref = "hibernateAsciidoctorThemeVersion" }
 
 [plugins]
-com-diffplug-spotless = { id = "com.diffplug.spotless", version = "8.10.1" }
+com-diffplug-spotless = { id = "com.diffplug.spotless", version = "8.10.2" }
 org-asciidoctor-jvm-convert = { id = "org.asciidoctor.jvm.convert", version = "4.0.5" }
 org-hibernate-orm = { id = "org.hibernate.orm", version.ref = "hibernateOrmGradlePluginVersion" }
