@@ -674,7 +674,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				if ( session == null ) {
 					throw LOG.sessionClosedLazyInitializationException();
 				}
-				return ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( entity, false );
+				return ReactiveQueryExecutorLookup.extract( session ).internalReactiveFetch( entity, false );
 			}
 			else {
 				return completedFuture( entity );

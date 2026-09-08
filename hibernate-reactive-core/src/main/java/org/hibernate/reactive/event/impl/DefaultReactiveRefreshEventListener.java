@@ -84,7 +84,7 @@ public class DefaultReactiveRefreshEventListener
 			throw new IllegalArgumentException( "Unmanaged instance passed to refresh()" );
 		}
 		return ( (ReactiveQueryProducer) source )
-				.reactiveFetch( event.getObject(), true )
+				.internalReactiveFetch( event.getObject(), true )
 				.thenCompose( entity -> reactiveOnRefresh( event, refreshedAlready, entity ) );
 	}
 

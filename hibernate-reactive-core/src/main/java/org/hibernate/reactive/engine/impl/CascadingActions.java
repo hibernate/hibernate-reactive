@@ -63,7 +63,7 @@ public class CascadingActions {
 			final ReactiveSession reactiveSession = session.unwrap( ReactiveSession.class );
 			//TODO: force-fetching it here circumvents the unloaded-delete optimization
 			//      so we don't actually want to do this
-			return reactiveSession.reactiveFetch( child, true )
+			return reactiveSession.internalReactiveFetch( child, true )
 					.thenCompose( c -> reactiveSession.reactiveRemove( entityName, c, isCascadeDeleteEnabled, context ) );
 		}
 	};

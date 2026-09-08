@@ -133,6 +133,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private final ReactiveStatelessSessionImpl batchingHelperSession;
 	private final PersistenceContext persistenceContext;
 	private final boolean connectionProvided;
+	private CompletionStage<Void> previousOperation = voidFuture();
 
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
 		super( factory, options );
@@ -186,6 +187,13 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		// FIXME: We should check the threads like we do in ReactiveSessionImpl
 	}
 
+	private <T> CompletionStage<T> serialized(Supplier<CompletionStage<T>> operation) {
+		final CompletionStage<T> result = previousOperation
+				.thenCompose( ignored -> operation.get() );
+		previousOperation = result.handle( (v, e) -> null );
+		return result;
+	}
+
 	@Override
 	public Dialect getDialect() {
 		return getJdbcServices().getDialect();
@@ -213,39 +221,41 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
-		return reactiveGet( entityClass.getName(), id, LockMode.NONE, null );
+		return serialized( () -> doReactiveGet( entityClass.getName(), id, LockMode.NONE, null ) );
 	}
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveGet(Class<T> entityClass, Object... ids) {
-		checkOpen();
-		for (Object id : ids) {
-			if ( id == null ) {
-				return failedFuture( new IllegalArgumentException( "Null id" ) );
+		return serialized( () -> {
+			checkOpen();
+			for ( Object id : ids ) {
+				if ( id == null ) {
+					return failedFuture( new IllegalArgumentException( "Null id" ) );
+				}
 			}
-		}
 
-		Object[] sids = new Object[ids.length];
-		System.arraycopy( ids, 0, sids, 0, ids.length );
+			Object[] sids = new Object[ids.length];
+			System.arraycopy( ids, 0, sids, 0, ids.length );
 
-		return getEntityPersister( entityClass.getName() )
-				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
-				.whenComplete( (list, e) -> {
-					if ( getPersistenceContext().isLoadFinished() ) {
-						getPersistenceContext().clear();
-					}
-				} )
-				.thenApply( list -> (List<T>) list );
+			return getEntityPersister( entityClass.getName() )
+					.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
+					.whenComplete( (list, e) -> {
+						if ( getPersistenceContext().isLoadFinished() ) {
+							getPersistenceContext().clear();
+						}
+					} )
+					.thenApply( list -> (List<T>) list );
+		} );
 	}
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(String entityName, Object id) {
-		return reactiveGet( entityName, id, LockMode.NONE, null );
+		return serialized( () -> doReactiveGet( entityName, id, LockMode.NONE, null ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
-		return reactiveGet( entityClass.getName(), id, lockMode, fetchGraph );
+		return serialized( () -> doReactiveGet( entityClass.getName(), id, lockMode, fetchGraph ) );
 	}
 
 	@Override
@@ -255,6 +265,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
+		return serialized( () -> doReactiveGet( entityName, id, lockMode, fetchGraph ) );
+	}
+
+	private <T> CompletionStage<T> doReactiveGet(String entityName, Object id, LockMode lockMode, EntityGraph<T> fetchGraph) {
 		checkOpen();
 
 		// differs from core, because core doesn't let us pass an EntityGraph
@@ -295,18 +309,20 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveInsert(Object entity) {
-		checkOpen();
-		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		final Object[] state = persister.getValues( entity );
-		return reactiveInsert( entity, state, persister )
-				.thenCompose( id -> recreateCollections( entity, id, persister ) )
-				.thenAccept( id -> {
-					firePostInsert( entity, id, state, persister );
-					final StatisticsImplementor statistics = getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.insertEntity( persister.getEntityName() );
-					}
-				} );
+		return serialized( () -> {
+			checkOpen();
+			final ReactiveEntityPersister persister = getEntityPersister( null, entity );
+			final Object[] state = persister.getValues( entity );
+			return reactiveInsert( entity, state, persister )
+					.thenCompose( id -> recreateCollections( entity, id, persister ) )
+					.thenAccept( id -> {
+						firePostInsert( entity, id, state, persister );
+						final StatisticsImplementor statistics = getFactory().getStatistics();
+						if ( statistics.isStatisticsEnabled() ) {
+							statistics.insertEntity( persister.getEntityName() );
+						}
+					} );
+		} );
 	}
 
 	private static class Loop {
@@ -453,35 +469,35 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveDelete(Object entity) {
-		checkOpen();
-		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		final Object id = persister.getIdentifier( entity, this );
-		final Object version = persister.getVersion( entity );
-		if ( firePreDelete( entity, id, persister ) ) {
-			return voidFuture();
-		}
+		return serialized( () -> {
+			checkOpen();
+			final ReactiveEntityPersister persister = getEntityPersister( null, entity );
+			final Object id = persister.getIdentifier( entity, this );
+			final Object version = persister.getVersion( entity );
+			if ( firePreDelete( entity, id, persister ) ) {
+				return voidFuture();
+			}
 
-		getInterceptor().onDelete( entity, id, persister.getPropertyNames(), persister.getPropertyTypes() );
-		return removeCollections( entity, id, persister )
-				.thenCompose( v -> {
-					final Object ck = lockCacheItem( id, version, persister );
-					final EventMonitor eventMonitor = getEventMonitor();
-					final DiagnosticEvent event = eventMonitor.beginEntityDeleteEvent();
-					// try-block
-					return supplyStage( () -> persister.deleteReactive( id, version, entity, this ) )
-							// finally-block
-							.whenComplete( (unused, throwable) -> eventMonitor
-									.completeEntityDeleteEvent( event, id, persister.getEntityName(), throwable != null, this )
-							)
-							.thenAccept( unused -> removeCacheItem( ck, persister ) );
-				} )
-				.thenAccept( v -> {
-					firePostDelete( entity, id, persister );
-					final StatisticsImplementor statistics = getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.deleteEntity( persister.getEntityName() );
-					}
-				} );
+			getInterceptor().onDelete( entity, id, persister.getPropertyNames(), persister.getPropertyTypes() );
+			return removeCollections( entity, id, persister )
+					.thenCompose( v -> {
+						final Object ck = lockCacheItem( id, version, persister );
+						final EventMonitor eventMonitor = getEventMonitor();
+						final DiagnosticEvent event = eventMonitor.beginEntityDeleteEvent();
+						return supplyStage( () -> persister.deleteReactive( id, version, entity, this ) )
+								.whenComplete( (unused, throwable) -> eventMonitor
+										.completeEntityDeleteEvent( event, id, persister.getEntityName(), throwable != null, this )
+								)
+								.thenAccept( unused -> removeCacheItem( ck, persister ) );
+					} )
+					.thenAccept( v -> {
+						firePostDelete( entity, id, persister );
+						final StatisticsImplementor statistics = getFactory().getStatistics();
+						if ( statistics.isStatisticsEnabled() ) {
+							statistics.deleteEntity( persister.getEntityName() );
+						}
+					} );
+		} );
 	}
 
 	private CompletionStage<Void> removeCollections(Object entity, Object id, EntityPersister persister) {
@@ -518,15 +534,17 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveUpdate(Object entity) {
-		checkOpen();
-		if ( entity instanceof HibernateProxy proxy ) {
-			final LazyInitializer hibernateLazyInitializer = proxy.getHibernateLazyInitializer();
-			return hibernateLazyInitializer.isUninitialized()
-					? failedFuture( LOG.uninitializedProxyUpdate( entity.getClass() ) )
-					: executeReactiveUpdate( hibernateLazyInitializer.getImplementation() );
-		}
+		return serialized( () -> {
+			checkOpen();
+			if ( entity instanceof HibernateProxy proxy ) {
+				final LazyInitializer hibernateLazyInitializer = proxy.getHibernateLazyInitializer();
+				return hibernateLazyInitializer.isUninitialized()
+						? failedFuture( LOG.uninitializedProxyUpdate( entity.getClass() ) )
+						: executeReactiveUpdate( hibernateLazyInitializer.getImplementation() );
+			}
 
-		return executeReactiveUpdate( entity );
+			return executeReactiveUpdate( entity );
+		} );
 	}
 
 	/**
@@ -607,15 +625,15 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity) {
-		return reactiveRefresh( bestGuessEntityName( entity ), entity, LockMode.NONE );
+		return serialized( () -> doReactiveRefresh( bestGuessEntityName( entity ), entity, LockMode.NONE ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockMode lockMode) {
-		return reactiveRefresh( bestGuessEntityName( entity ), entity, lockMode );
+		return serialized( () -> doReactiveRefresh( bestGuessEntityName( entity ), entity, lockMode ) );
 	}
 
-	private CompletionStage<Void> reactiveRefresh(String entityName, Object entity, LockMode lockMode) {
+	private CompletionStage<Void> doReactiveRefresh(String entityName, Object entity, LockMode lockMode) {
 		checkOpen();
 		final ReactiveEntityPersister persister = getEntityPersister( entityName, entity );
 		final Object id = persister.getIdentifier( entity, this );
@@ -655,105 +673,118 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	 */
 	@Override
 	public CompletionStage<Void> reactiveUpsert(Object entity) {
-		checkOpen();
-		final ReactiveEntityPersister persister = getEntityPersister( null, entity );
-		final Object id = idToUpsert( entity, persister );
-		final Object[] state = persister.getValues( entity );
-		if ( firePreUpsert( entity, id, state, persister ) ) {
-			return voidFuture();
-		}
-		getInterceptor().onUpsert( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
-		final Object oldVersion = versionToUpsert( entity, persister, state );
-		final Object ck = lockCacheItem( id, oldVersion, persister );
-		final EventMonitor eventMonitor = getEventMonitor();
-		final DiagnosticEvent event = eventMonitor.beginEntityUpsertEvent();
-		return supplyStage( () -> persister
-				.mergeReactive( id, state, null, false, null, oldVersion, entity, null, this ) )
-				.whenComplete( (v, throwable) -> eventMonitor
-						.completeEntityUpsertEvent( event, id, persister.getEntityName(), throwable != null, this )
-				)
-				.thenAccept( v -> {
-					removeCacheItem( ck, persister );
-					final StatisticsImplementor statistics = getFactory().getStatistics();
-					if ( statistics.isStatisticsEnabled() ) {
-						statistics.upsertEntity( persister.getEntityName() );
+		return serialized( () -> {
+			checkOpen();
+			final ReactiveEntityPersister persister = getEntityPersister( null, entity );
+			final Object id = idToUpsert( entity, persister );
+			final Object[] state = persister.getValues( entity );
+			if ( firePreUpsert( entity, id, state, persister ) ) {
+				return voidFuture();
+			}
+			getInterceptor().onUpsert( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() );
+			final Object oldVersion = versionToUpsert( entity, persister, state );
+			final Object ck = lockCacheItem( id, oldVersion, persister );
+			final EventMonitor eventMonitor = getEventMonitor();
+			final DiagnosticEvent event = eventMonitor.beginEntityUpsertEvent();
+			return supplyStage( () -> persister
+					.mergeReactive( id, state, null, false, null, oldVersion, entity, null, this ) )
+					.whenComplete( (v, throwable) -> eventMonitor
+							.completeEntityUpsertEvent( event, id, persister.getEntityName(), throwable != null, this )
+					)
+					.thenAccept( v -> {
+						removeCacheItem( ck, persister );
+						final StatisticsImplementor statistics = getFactory().getStatistics();
+						if ( statistics.isStatisticsEnabled() ) {
+							statistics.upsertEntity( persister.getEntityName() );
 					}
 				} )
 				.thenCompose( v -> removeAndRecreateCollections( entity, id, persister ) )
 				.thenAccept( v -> firePostUpsert( entity, id, state, persister ) );
+		} );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveUpsertAll(int batchSize, Object... entities) {
-		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
-		batchingHelperSession.setJdbcBatchSize( batchSize );
-		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveUpsert )
-				.thenCompose( v -> connection.executeBatch() )
-				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		return serialized( () -> {
+			final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+			batchingHelperSession.setJdbcBatchSize( batchSize );
+			final ReactiveConnection connection = batchingConnection( batchSize );
+			return loop( entities, batchingHelperSession::reactiveUpsert )
+					.thenCompose( v -> connection.executeBatch() )
+					.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		} );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveInsertAll(Object... entities) {
-		return loop( entities, batchingHelperSession::reactiveInsert )
-				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+		return serialized( () -> loop( entities, batchingHelperSession::reactiveInsert )
+				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveInsertAll(int batchSize, Object... entities) {
-		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
-		batchingHelperSession.setJdbcBatchSize( batchSize );
-		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveInsert )
-				.thenCompose( v -> connection.executeBatch() )
-				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		return serialized( () -> {
+			final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+			batchingHelperSession.setJdbcBatchSize( batchSize );
+			final ReactiveConnection connection = batchingConnection( batchSize );
+			return loop( entities, batchingHelperSession::reactiveInsert )
+					.thenCompose( v -> connection.executeBatch() )
+					.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		} );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveUpdateAll(Object... entities) {
-		return loop( entities, batchingHelperSession::reactiveUpdate )
-				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+		return serialized( () -> loop( entities, batchingHelperSession::reactiveUpdate )
+				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveUpdateAll(int batchSize, Object... entities) {
-		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
-		batchingHelperSession.setJdbcBatchSize( batchSize );
-		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveUpdate )
-				.thenCompose( v -> connection.executeBatch() )
-				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		return serialized( () -> {
+			final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+			batchingHelperSession.setJdbcBatchSize( batchSize );
+			final ReactiveConnection connection = batchingConnection( batchSize );
+			return loop( entities, batchingHelperSession::reactiveUpdate )
+					.thenCompose( v -> connection.executeBatch() )
+					.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		} );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveDeleteAll(Object... entities) {
-		return loop( entities, batchingHelperSession::reactiveDelete )
-				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+		return serialized( () -> loop( entities, batchingHelperSession::reactiveDelete )
+				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveDeleteAll(int batchSize, Object... entities) {
-		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
-		batchingHelperSession.setJdbcBatchSize( batchSize );
-		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveDelete ).thenCompose( v -> connection.executeBatch() )
-				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		return serialized( () -> {
+			final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+			batchingHelperSession.setJdbcBatchSize( batchSize );
+			final ReactiveConnection connection = batchingConnection( batchSize );
+			return loop( entities, batchingHelperSession::reactiveDelete )
+					.thenCompose( v -> connection.executeBatch() )
+					.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		} );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveRefreshAll(Object... entities) {
-		return loop( entities, batchingHelperSession::reactiveRefresh )
-				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() );
+		return serialized( () -> loop( entities, batchingHelperSession::reactiveRefresh )
+				.thenCompose( v -> batchingHelperSession.getReactiveConnection().executeBatch() ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveRefreshAll(int batchSize, Object... entities) {
-		final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
-		batchingHelperSession.setJdbcBatchSize( batchSize );
-		final ReactiveConnection connection = batchingConnection( batchSize );
-		return loop( entities, batchingHelperSession::reactiveRefresh )
-				.thenCompose( v -> connection.executeBatch() )
-				.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		return serialized( () -> {
+			final Integer jdbcBatchSize = batchingHelperSession.getJdbcBatchSize();
+			batchingHelperSession.setJdbcBatchSize( batchSize );
+			final ReactiveConnection connection = batchingConnection( batchSize );
+			return loop( entities, batchingHelperSession::reactiveRefresh )
+					.thenCompose( v -> connection.executeBatch() )
+					.whenComplete( (v, throwable) -> batchingHelperSession.setJdbcBatchSize( jdbcBatchSize ) );
+		} );
 	}
 
 	private ReactiveConnection batchingConnection(int batchSize) {
@@ -775,7 +806,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			throw new SessionException( "proxies cannot be fetched by a stateless session" );
 		}
 		// unless we are still in the process of handling a top-level load
-		return reactiveGet( entityName, id );
+		return doReactiveGet( entityName, id, LockMode.NONE, null );
 	}
 
 	@Override
@@ -785,7 +816,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		// IMPLEMENTATION NOTE: increment/decrement the load count before/after getting the value
 		//                      to ensure that #get does not clear the PersistenceContext.
 		persistenceContext.beforeLoad();
-		return this.reactiveGet( entityName, id )
+		return this.doReactiveGet( entityName, id, LockMode.NONE, null )
 				.whenComplete( (r, e) -> persistenceContext.afterLoad() );
 	}
 
@@ -829,7 +860,19 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
+		return serialized( () -> {
+			checkOpen();
+			return doReactiveFetch( association, unproxy );
+		} );
+	}
+
+	@Override
+	public <T> CompletionStage<T> internalReactiveFetch(T association, boolean unproxy) {
 		checkOpen();
+		return doReactiveFetch( association, unproxy );
+	}
+
+	private <T> CompletionStage<T> doReactiveFetch(T association, boolean unproxy) {
 		if ( association == null ) {
 			return nullFuture();
 		}

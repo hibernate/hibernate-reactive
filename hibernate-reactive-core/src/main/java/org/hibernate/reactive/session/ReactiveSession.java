@@ -7,6 +7,7 @@ package org.hibernate.reactive.session;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
@@ -90,6 +91,10 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	<T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id);
 
+	default <T> CompletionStage<T> internalReactiveGet(Class<T> entityClass, Object id) {
+		return reactiveGet( entityClass, id );
+	}
+
 	<T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id, LockOptions lockOptions, EntityGraph<T> fetchGraph);
 
 	default <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Object id){
@@ -154,6 +159,8 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	boolean isDirty();
 	boolean isOpen();
+
+	<T> CompletionStage<T> serialized(Supplier<CompletionStage<T>> operation);
 
 	// Different approach so that we can overload the method in SessionImpl
 	CompletionStage<Void> reactiveClose();
