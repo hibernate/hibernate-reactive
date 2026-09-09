@@ -55,7 +55,7 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 		final Dialect dialect = factory.getJdbcServices().getDialect();
 		final int columnCount = attributeMapping.getKeyDescriptor().getJdbcTypeCount();
 		if ( columnCount == 1
-				&& dialect.supportsStandardArrays()
+				&& MultiKeyLoadHelper.supportsSqlArrayType( dialect )
 				&& dialect.getPreferredSqlTypeCodeForArray() == SqlTypes.ARRAY ) {
 			// we can use a single ARRAY parameter to send all the ids
 			return new ReactiveCollectionBatchLoaderArrayParam( domainBatchSize, influencers, attributeMapping, factory );
