@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockOptions;
@@ -102,7 +104,7 @@ public class ReactiveCollectionLoaderSingleKey implements ReactiveCollectionLoad
 		assert offset == jdbcParameters.size();
 
 		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-				.buildSelectTranslator( sessionFactory, sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlAst ) )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
 		final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler = SubselectFetch.createRegistrationHandler(

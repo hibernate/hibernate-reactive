@@ -97,7 +97,7 @@ public class ReactiveTableLock extends TableLock {
 		final var selectStatement = new SelectStatement( querySpec, domainResults );
 
 		final JdbcSelect jdbcSelect = jdbcServices.getDialect().getSqlAstTranslatorFactory()
-				.buildSelectTranslator( sessionFactory, selectStatement )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, selectStatement ) )
 				.translate( jdbcParameterBindings, lockingQueryOptions );
 		return StandardReactiveSelectExecutor.INSTANCE
 				.list(

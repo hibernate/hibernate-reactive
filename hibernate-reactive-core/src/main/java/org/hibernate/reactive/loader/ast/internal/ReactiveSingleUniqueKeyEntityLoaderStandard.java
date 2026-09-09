@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -97,7 +99,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 		);
 		assert offset == jdbcParameters.size();
 		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-				.buildSelectTranslator( sessionFactory, sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlAst ) )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
 		return StandardReactiveSelectExecutor.INSTANCE
@@ -153,7 +155,7 @@ public class ReactiveSingleUniqueKeyEntityLoaderStandard<T> implements ReactiveS
 				session
 		);
 		assert offset == jdbcParameters.size();
-		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, sqlAst )
+		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlAst ) )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
 		return StandardReactiveSelectExecutor.INSTANCE

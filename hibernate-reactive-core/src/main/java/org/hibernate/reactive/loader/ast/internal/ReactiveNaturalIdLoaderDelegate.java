@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -173,10 +175,9 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
         );
         assert offset == jdbcParameters.size();
 
-        final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator(
-                        sessionFactory,
-                        sqlSelect
-                )
+		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildTranslator(
+					new SqlAstTranslationRequest.Select( sessionFactory, sqlSelect )
+				)
                 .translate( jdbcParamBindings, QueryOptions.NONE );
         return StandardReactiveSelectExecutor.INSTANCE
                 .list(
@@ -271,7 +272,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
 
         final QueryOptions queryOptions = new SimpleQueryOptions( lockOptions, false );
         final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-                .buildSelectTranslator( sessionFactory, sqlSelect )
+                .buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlSelect ) )
                 .translate( jdbcParamBindings, queryOptions );
 
         final StatisticsImplementor statistics = sessionFactory.getStatistics();

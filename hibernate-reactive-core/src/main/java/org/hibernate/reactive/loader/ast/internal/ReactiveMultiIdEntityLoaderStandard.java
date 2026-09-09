@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -248,7 +250,7 @@ public class ReactiveMultiIdEntityLoaderStandard<T> extends ReactiveAbstractMult
 		// we should have used all the JdbcParameter references (created bindings for all)
 		assert offset == jdbcParameters.size();
 		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-				.buildSelectTranslator( getSessionFactory(), sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlAst ) )
 				.translate( jdbcParameterBindings, QueryOptions.NONE );
 
 		final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler;

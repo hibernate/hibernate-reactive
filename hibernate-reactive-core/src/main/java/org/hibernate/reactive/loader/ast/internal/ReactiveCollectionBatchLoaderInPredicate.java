@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.ArrayList;
 import java.util.concurrent.CompletionStage;
 
@@ -81,7 +83,7 @@ public class ReactiveCollectionBatchLoaderInPredicate extends ReactiveAbstractCo
 		this.jdbcSelect = sessionFactory.getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( sessionFactory, sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlAst ) )
 				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 	}
 

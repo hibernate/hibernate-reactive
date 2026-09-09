@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -165,7 +167,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 					final JdbcSelect jdbcSelectOperation = getSessionFactory().getJdbcServices()
 							.getJdbcEnvironment()
 							.getSqlAstTranslatorFactory()
-							.buildSelectTranslator( getSessionFactory(), sqlAst )
+							.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlAst ) )
 							.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 
 					final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( 1 );
@@ -268,7 +270,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 		final JdbcSelect jdbcSelectOperation = getSessionFactory().getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( getSessionFactory(), sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlAst ) )
 				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 
 		return loadByArrayParameter(

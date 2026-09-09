@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.loader.ast.internal;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -154,7 +156,7 @@ class DatabaseSnapshotExecutor {
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
 		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
 
-		this.jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, selectStatement )
+		this.jdbcSelect = sqlAstTranslatorFactory.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, selectStatement ) )
 				.translate( null, QueryOptions.NONE );
 	}
 
