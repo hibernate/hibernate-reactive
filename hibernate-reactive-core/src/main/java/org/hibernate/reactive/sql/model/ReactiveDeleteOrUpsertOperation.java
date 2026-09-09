@@ -40,28 +40,61 @@ import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
-public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
-		implements ReactiveSelfExecutingUpdateOperation {
+public class ReactiveDeleteOrUpsertOperation implements ReactiveSelfExecutingUpdateOperation {
 	private static final Log LOG = make( Log.class, lookup() );
+	private final MutationTarget mutationTarget;
+	private final UpsertOperation upsertOperation;
+	private final OptionalTableUpdate optionalTableUpdate;
 
 	public ReactiveDeleteOrUpsertOperation(
 			EntityMutationTarget mutationTarget,
 			EntityTableMapping tableMapping,
 			UpsertOperation upsertOperation,
 			OptionalTableUpdate optionalTableUpdate) {
-		super( mutationTarget, tableMapping, upsertOperation, optionalTableUpdate );
+		this.mutationTarget = mutationTarget;
+		this.upsertOperation = upsertOperation;
+		this.optionalTableUpdate = optionalTableUpdate;
 	}
 
 	public ReactiveDeleteOrUpsertOperation(DeleteOrUpsertOperation original) {
-		super( original );
+		this.mutationTarget = original.getMutationTarget();
+		this.upsertOperation = original.getUpsertOperation();
+		this.optionalTableUpdate = original.getOptionalTableUpdate();
 	}
 
-	@Override
 	public void performMutation(
 			JdbcValueBindings jdbcValueBindings,
 			ValuesAnalysis valuesAnalysis,
 			SharedSessionContractImplementor session) {
 		throw LOG.nonReactiveMethodCall( "performReactiveMutation" );
+	}
+
+	@Override
+	public MutationType getMutationType() {
+		return MutationType.UPDATE;
+	}
+
+	@Override
+	public MutationTarget getMutationTarget() {
+		return mutationTarget;
+	}
+
+	@Override
+	public TableMapping getTableDetails() {
+		return upsertOperation.getTableDetails();
+	}
+
+	@Override
+	public JdbcValueDescriptor findValueDescriptor(String columnName, ParameterUsage usage) {
+		return upsertOperation.findValueDescriptor( columnName, usage );
+	}
+
+	public UpsertOperation getUpsertOperation() {
+		return upsertOperation;
+	}
+
+	public OptionalTableUpdate getOptionalTableUpdate() {
+		return optionalTableUpdate;
 	}
 
 	@Override
@@ -133,11 +166,11 @@ public class ReactiveDeleteOrUpsertOperation extends DeleteOrUpsertOperation
 				emptyList()
 		);
 
-		final SqlAstTranslator<JdbcDeleteMutation> translator = session
+			final SqlAstTranslator<JdbcDeleteMutation> translator = session
 				.getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildModelMutationTranslator( upsertDeleteAst, session.getFactory() );
+				.buildTranslator( new SqlAstTranslationRequest.ModelMutation<>( session.getFactory(), upsertDeleteAst ) );
 		final JdbcDeleteMutation upsertDelete = translator.translate( null, MutationQueryOptions.INSTANCE );
 
 		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable( upsertDelete, session );

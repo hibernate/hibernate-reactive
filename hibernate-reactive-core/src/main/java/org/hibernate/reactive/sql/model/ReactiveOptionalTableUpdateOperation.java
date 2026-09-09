@@ -42,16 +42,8 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 			EntityMutationTarget mutationTarget,
 			OptionalTableUpdate upsert,
 			SessionFactoryImplementor factory) {
-		super( mutationTarget, upsert, factory );
+		super( mutationTarget, upsert );
 		this.upsert = upsert;
-	}
-
-	@Override
-	public void performMutation(
-			JdbcValueBindings jdbcValueBindings,
-			ValuesAnalysis valuesAnalysis,
-			SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "performReactiveMutation" );
 	}
 
 	@Override
@@ -99,7 +91,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Void> performReactiveDelete(
 			JdbcValueBindings jdbcValueBindings,
@@ -129,7 +121,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Boolean> performReactiveUpdate(
 			JdbcValueBindings jdbcValueBindings,

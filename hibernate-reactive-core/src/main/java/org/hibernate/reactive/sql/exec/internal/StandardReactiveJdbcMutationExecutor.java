@@ -29,6 +29,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+import org.hibernate.sql.exec.internal.QuerySqlDecorator;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
@@ -131,16 +132,11 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			ExecutionContext executionContext,
 			JdbcServices jdbcServices,
 			QueryOptions queryOptions) {
-		return queryOptions == null
-				? jdbcMutation.getSqlString()
-				: jdbcServices.getDialect()
-				.addSqlHintOrComment(
-						jdbcMutation.getSqlString(),
-						queryOptions,
-						executionContext.getSession()
-								.getFactory()
-								.getSessionFactoryOptions()
-								.isCommentsEnabled()
-				);
+		return QuerySqlDecorator.decorate(
+				jdbcMutation.getSqlString(),
+				queryOptions,
+				executionContext.getSession().getFactory().getSessionFactoryOptions().isCommentsEnabled(),
+				jdbcServices.getDialect()
+		);
 	}
 }
