@@ -373,21 +373,21 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public byte getByte(String columnLabel) {
-		Integer integer = row.getInteger( columnLabel );
+		Integer integer = caseInsensitiveGet( columnLabel, row::getInteger );
 		wasNull = integer == null;
 		return wasNull ? 0 : integer.byteValue();
 	}
 
 	@Override
 	public short getShort(String columnLabel) {
-		Short aShort = row.getShort( columnLabel );
+		Short aShort = caseInsensitiveGet( columnLabel, row::getShort );
 		wasNull = aShort == null;
 		return wasNull ? 0 : aShort;
 	}
 
 	@Override
 	public int getInt(String columnLabel) {
-		Integer integer = row.getInteger( columnLabel );
+		Integer integer = caseInsensitiveGet( columnLabel, row::getInteger );
 		wasNull = integer == null;
 		return wasNull ? 0 : integer;
 	}
@@ -401,14 +401,14 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public float getFloat(String columnLabel) {
-		Float real = row.getFloat( columnLabel );
+		Float real = caseInsensitiveGet( columnLabel, row::getFloat );
 		wasNull = real == null;
 		return wasNull ? 0 : real;
 	}
 
 	@Override
 	public double getDouble(String columnLabel) {
-		Double real = row.getDouble( columnLabel );
+		Double real = caseInsensitiveGet( columnLabel, row::getDouble );
 		wasNull = real == null;
 		return wasNull ? 0 : real;
 	}
