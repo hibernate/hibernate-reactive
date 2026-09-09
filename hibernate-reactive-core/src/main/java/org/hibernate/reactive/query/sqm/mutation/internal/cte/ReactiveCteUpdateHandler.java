@@ -11,7 +11,7 @@ import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteUpdateHandler;
 import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
-import org.hibernate.sql.ast.tree.cte.CteTable;
+import org.hibernate.sql.ast.spi.query.cte.CteTable;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 

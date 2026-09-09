@@ -24,7 +24,7 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -32,8 +32,8 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.zeroFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.MutationType.DELETE;
-import static org.hibernate.sql.model.MutationType.INSERT;
+import static org.hibernate.sql.spi.mutation.MutationType.DELETE;
+import static org.hibernate.sql.spi.mutation.MutationType.INSERT;
 import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinatorOneToMany implements ReactiveUpdateRowsCoordinator{

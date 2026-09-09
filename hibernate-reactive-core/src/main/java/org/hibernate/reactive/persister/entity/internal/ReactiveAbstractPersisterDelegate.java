@@ -61,7 +61,7 @@ import org.hibernate.reactive.metamodel.mapping.internal.ReactiveToOneAttributeM
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonAggregatedIdentifierMappingFetch;
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityResultImpl;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;

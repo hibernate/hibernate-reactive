@@ -70,8 +70,8 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.type.BasicType;
 

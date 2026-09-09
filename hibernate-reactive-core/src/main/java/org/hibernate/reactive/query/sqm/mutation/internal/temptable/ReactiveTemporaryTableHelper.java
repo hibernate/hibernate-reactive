@@ -8,8 +8,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.hibernate.dialect.temptable.TemporaryTable;
-import org.hibernate.dialect.temptable.TemporaryTableExporter;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
+import org.hibernate.dialect.temptable.spi.TemporaryTableExporter;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
@@ -25,7 +25,7 @@ import org.hibernate.reactive.util.internal.CompletionStages;
 import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
 
 /**
- * @see org.hibernate.dialect.temptable.TemporaryTableHelper
+ * @see org.hibernate.dialect.temptable.internal.TemporaryTableHelper
  */
 public class ReactiveTemporaryTableHelper {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );

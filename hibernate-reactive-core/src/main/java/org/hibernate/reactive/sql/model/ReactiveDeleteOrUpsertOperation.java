@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.sql.model;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
@@ -19,14 +21,18 @@ import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.model.TableMapping;
-import org.hibernate.sql.model.ValuesAnalysis;
-import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.internal.TableDeleteStandard;
-import org.hibernate.sql.model.jdbc.DeleteOrUpsertOperation;
-import org.hibernate.sql.model.jdbc.JdbcDeleteMutation;
-import org.hibernate.sql.model.jdbc.UpsertOperation;
+import org.hibernate.sql.ast.spi.translation.SqlAstTranslator;
+import org.hibernate.sql.spi.mutation.MutationTarget;
+import org.hibernate.sql.spi.mutation.MutationType;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcValueDescriptor;
+import org.hibernate.engine.jdbc.mutation.ParameterUsage;
+import org.hibernate.sql.spi.mutation.TableMapping;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.ast.spi.model.TableDeleteStandard;
+import org.hibernate.sql.spi.mutation.jdbc.DeleteOrUpsertOperation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcDeleteMutation;
+import org.hibernate.sql.spi.mutation.jdbc.UpsertOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.Collections.emptyList;

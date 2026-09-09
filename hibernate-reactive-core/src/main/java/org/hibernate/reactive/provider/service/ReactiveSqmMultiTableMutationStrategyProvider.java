@@ -6,7 +6,6 @@ package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
@@ -20,6 +19,7 @@ import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutati
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategyProvider;
+import org.hibernate.dialect.mutation.internal.MultiTableMutationStrategyFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.cte.ReactiveCteMutationStrategy;
 import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveGlobalTemporaryTableInsertStrategy;

@@ -13,8 +13,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.sql.model.ReactiveSelfExecutingUpdateOperation;
-import org.hibernate.sql.model.SelfExecutingUpdateOperation;
-import org.hibernate.sql.model.ValuesAnalysis;
+import org.hibernate.sql.spi.mutation.SelfExecutingUpdateOperation;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;

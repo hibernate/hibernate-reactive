@@ -8,11 +8,11 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.sql.model.SelfExecutingUpdateOperation;
-import org.hibernate.sql.model.ValuesAnalysis;
+import org.hibernate.sql.spi.mutation.SelfExecutingUpdateOperation;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
 
 /**
- * @see org.hibernate.sql.model.SelfExecutingUpdateOperation
+ * @see org.hibernate.sql.spi.mutation.SelfExecutingUpdateOperation
  */
 public interface ReactiveSelfExecutingUpdateOperation extends SelfExecutingUpdateOperation {
 

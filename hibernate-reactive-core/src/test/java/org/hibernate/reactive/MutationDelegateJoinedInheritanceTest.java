@@ -15,7 +15,7 @@ import org.hibernate.generator.EventType;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.id.insert.AbstractSelectingDelegate;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.sql.model.MutationType;
+import org.hibernate.sql.spi.mutation.MutationType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.sql.exec.internal.lock;
 
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+
 import org.hibernate.AssertionFailure;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -19,7 +21,7 @@ import org.hibernate.reactive.session.internal.ReactiveSessionImpl;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.lock.EntityDetails;
 import org.hibernate.sql.exec.internal.lock.TableLock;

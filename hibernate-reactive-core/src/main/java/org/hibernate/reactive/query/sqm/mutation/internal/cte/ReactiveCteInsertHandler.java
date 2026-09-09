@@ -16,7 +16,7 @@ import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.ast.tree.cte.CteTable;
+import org.hibernate.sql.ast.spi.query.cte.CteTable;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import java.lang.invoke.MethodHandles;

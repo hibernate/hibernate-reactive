@@ -30,7 +30,7 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
-import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
+import static org.hibernate.sql.results.internal.LoadingLogger.LOADING_LOGGER;
 import static org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer.BATCH_PROPERTY;
 
 public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl

@@ -12,7 +12,7 @@ import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveNonA
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityAssembler;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityInitializerImpl;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
 import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.graph.DomainResultCreationState;

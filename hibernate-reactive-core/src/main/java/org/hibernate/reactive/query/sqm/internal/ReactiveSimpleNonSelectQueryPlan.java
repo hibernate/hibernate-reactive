@@ -14,7 +14,7 @@ import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
-import org.hibernate.sql.ast.tree.MutationStatement;
+import org.hibernate.sql.ast.spi.query.MutationStatement;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;

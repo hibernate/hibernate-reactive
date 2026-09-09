@@ -10,7 +10,7 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
-import org.hibernate.sql.ast.spi.SqlSelection;
+import org.hibernate.sql.ast.spi.query.select.SqlSelection;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesMappingProducerStandard;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;

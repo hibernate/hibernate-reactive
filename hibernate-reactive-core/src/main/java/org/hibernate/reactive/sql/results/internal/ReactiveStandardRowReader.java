@@ -28,7 +28,7 @@ import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
-import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
+import static org.hibernate.sql.results.internal.LoadingLogger.LOADING_LOGGER;
 
 
 /**

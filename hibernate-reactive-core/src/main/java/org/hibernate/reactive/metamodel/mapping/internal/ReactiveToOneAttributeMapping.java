@@ -14,8 +14,8 @@ import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFe
 import org.hibernate.reactive.sql.results.internal.ReactiveEntityDelayedFetchImpl;
 import org.hibernate.reactive.sql.results.internal.domain.ReactiveCircularFetchImpl;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.tree.from.TableGroup;
-import org.hibernate.sql.ast.tree.from.TableGroupProducer;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.from.TableGroupProducer;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.Fetch;
