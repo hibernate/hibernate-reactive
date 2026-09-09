@@ -75,8 +75,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		lockOptions.setLockMode( LockMode.WRITE );
 		// Visit the table joins and reset the lock mode if we encounter OUTER joins that are not supported
 		final QueryPart sourceSelectStatement = temporaryTableInsert.getSourceSelectStatement();
-		if ( sourceSelectStatement != null
-				&& !jdbcEnvironment.getDialect().supportsOuterJoinForUpdate() ) {
+		if ( sourceSelectStatement != null ) {
 			sourceSelectStatement.visitQuerySpecs(
 					querySpec -> querySpec.getFromClause().visitTableJoins(
 								tableJoin -> {
@@ -88,7 +87,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 						)
 			);
 		}
-		final JdbcOperationQueryMutation jdbcInsert = sqlAstTranslatorFactory.buildMutationTranslator( factory, temporaryTableInsert )
+		final JdbcOperationQueryMutation jdbcInsert = sqlAstTranslatorFactory.buildTranslator( new SqlAstTranslationRequest.QueryMutation( factory, temporaryTableInsert ) )
 				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
 		lockOptions.setLockMode( lockMode );
 
@@ -133,7 +132,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext) {
 		return performBeforeTemporaryTableUseActions(
 				temporaryTable,
-				executionContext.getSession().getDialect().getTemporaryTableBeforeUseAction(),
+				BeforeUseAction.NONE,
 				executionContext
 		).thenCompose( CompletionStages::voidFuture );
 	}
@@ -153,11 +152,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		final Dialect dialect = factory.getJdbcServices().getDialect();
 		if ( beforeUseAction == BeforeUseAction.CREATE ) {
 			final TemporaryTableCreationWork temporaryTableCreationWork = new TemporaryTableCreationWork( temporaryTable, factory );
-			final TempTableDdlTransactionHandling ddlTransactionHandling = dialect.getTemporaryTableDdlTransactionHandling();
-			if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
-				return temporaryTableCreationWork.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() );
-			}
-			throw LOG.notYetImplemented();
+			return temporaryTableCreationWork.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() );
 		}
 		return falseFuture();
 	}
@@ -218,15 +213,10 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext,
 			SessionFactoryImplementor factory,
 			Dialect dialect) {
-		final TempTableDdlTransactionHandling ddlTransactionHandling = dialect.getTemporaryTableDdlTransactionHandling();
-		if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
-			return new ReactiveTemporaryTableHelper
-					.TemporaryTableDropWork( temporaryTable, factory )
-					.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() )
-					.thenCompose( CompletionStages::voidFuture );
-		}
-
-		return failedFuture( LOG.notYetImplemented() );
+		return new ReactiveTemporaryTableHelper
+				.TemporaryTableDropWork( temporaryTable, factory )
+				.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	private static void doNothing(Integer integer, PreparedStatement preparedStatement) {

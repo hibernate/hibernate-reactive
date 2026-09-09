@@ -34,8 +34,7 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 	@Override
 	public SqmMultiTableMutationStrategy createMutationStrategy(
 			EntityMappingType rootEntityDescriptor,
-			MappingModelCreationProcess creationProcess) {
-		final RuntimeModelCreationContext creationContext = creationProcess.getCreationContext();
+			RuntimeModelCreationContext creationContext) {
 		SqmMultiTableMutationStrategy mutationStrategy = mutationStrategy( rootEntityDescriptor, creationContext );
 		if ( mutationStrategy instanceof CteMutationStrategy ) {
 			return new ReactiveCteMutationStrategy( rootEntityDescriptor, creationContext );
@@ -58,14 +57,14 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
 		return options.getCustomSqmMultiTableMutationStrategy() != null
 				? options.getCustomSqmMultiTableMutationStrategy()
-				: creationContext.getDialect().getFallbackSqmMutationStrategy( rootEntityDescriptor, creationContext );
+				: MultiTableMutationStrategyFactory.createMutationStrategy(
+						creationContext.getDialect(), rootEntityDescriptor, creationContext );
 	}
 
 	@Override
 	public SqmMultiTableInsertStrategy createInsertStrategy(
 			EntityMappingType rootEntityDescriptor,
-			MappingModelCreationProcess creationProcess) {
-		final RuntimeModelCreationContext creationContext = creationProcess.getCreationContext();
+			RuntimeModelCreationContext creationContext) {
 		final SqmMultiTableInsertStrategy insertStrategy = insertStrategy( rootEntityDescriptor, creationContext );
 		if ( insertStrategy instanceof CteInsertStrategy ) {
 			return new ReactiveCteInsertStrategy( rootEntityDescriptor, creationContext );
@@ -88,6 +87,7 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
 		return options.getCustomSqmMultiTableInsertStrategy() != null
 				? options.getCustomSqmMultiTableInsertStrategy()
-				: creationContext.getDialect().getFallbackSqmInsertStrategy( rootEntityDescriptor, creationContext );
+				: MultiTableMutationStrategyFactory.createInsertStrategy(
+						creationContext.getDialect(), rootEntityDescriptor, creationContext );
 	}
 }

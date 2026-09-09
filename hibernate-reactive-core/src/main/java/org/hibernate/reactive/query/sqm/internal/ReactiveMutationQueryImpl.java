@@ -51,6 +51,7 @@ import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.spi.SqmCopyContext;
+import org.hibernate.dialect.sql.ast.spi.ValuesListSupport;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
@@ -238,7 +239,9 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		}
 		else if ( sqmInsert instanceof SqmInsertValuesStatement<R> insertValues
 				&& insertValues.getValuesList().size() != 1
-				&& !getSessionFactory().getJdbcServices().getDialect().supportsValuesListForInsert() ) {
+				&& !getSessionFactory().getJdbcServices().getDialect()
+						.getValuesListSupport()
+						.supports( ValuesListSupport.Context.INSERT ) ) {
 			final List<SqmValues> valuesList = insertValues.getValuesList();
 			final ReactiveNonSelectQueryPlan[] planParts = new ReactiveNonSelectQueryPlan[valuesList.size()];
 			for ( int i = 0; i < valuesList.size(); i++ ) {
