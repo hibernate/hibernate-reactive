@@ -31,7 +31,9 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 			Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`,
 			but the Vert.x driver does not support get generated keys.
 		 */
-		if ( dialect.supportsInsertReturning() && noCustomSql( persister, INSERT ) ) {
+		if ( dialect.getGeneratedValuesSupport().supports(
+				org.hibernate.dialect.generated.spi.GeneratedValuesSupport.Capability.INSERT_RETURNING
+		) && noCustomSql( persister, INSERT ) ) {
 			return new ReactiveInsertReturningDelegate( persister, INSERT );
 		}
 		else if ( supportReactiveGetGeneratedKey( dialect, persister.getGeneratedProperties( INSERT ) ) ) {

@@ -86,13 +86,14 @@ public class ReactiveGeneratedValuesHelper {
 		final boolean hasGeneratedProperties = !generatedProperties.isEmpty();
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
+		final GeneratedValuesSupport generatedValuesSupport = dialect.getGeneratedValuesSupport();
 
 		final boolean hasFormula = generatedProperties.stream()
 				.anyMatch( ReactiveGeneratedValuesHelper::isFormula );
 
 		if ( hasRowId
-				&& dialect.supportsInsertReturning()
-				&& dialect.supportsInsertReturningRowId()
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING )
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING_ROW_ID )
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it
@@ -106,7 +107,7 @@ public class ReactiveGeneratedValuesHelper {
 		if ( supportsReturning( dialect, timing ) && noCustomSql( persister, timing ) ) {
 			return new ReactiveInsertReturningDelegate( persister, timing );
 		}
-		else if ( !hasFormula && dialect.supportsInsertReturningGeneratedKeys() ) {
+		else if ( !hasFormula && generatedValuesSupport.supports( GeneratedValuesSupport.Capability.ARBITRARY_GENERATED_KEYS ) ) {
 			return new ReactiveGetGeneratedKeysDelegate( persister, false, timing );
 		}
 		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null
@@ -126,9 +127,11 @@ public class ReactiveGeneratedValuesHelper {
 	}
 
 	public static boolean supportsReturning(Dialect dialect, EventType timing) {
-		return timing == EventType.INSERT
-				? dialect.supportsInsertReturning()
-				: dialect.supportsUpdateReturning();
+		return dialect.getGeneratedValuesSupport().supports(
+				timing == EventType.INSERT
+						? GeneratedValuesSupport.Capability.INSERT_RETURNING
+						: GeneratedValuesSupport.Capability.UPDATE_RETURNING
+		);
 	}
 
 	/**

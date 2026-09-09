@@ -14,6 +14,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.dialect.lock.internal.LockingSqlRewriterSupport;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -153,11 +154,12 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
-		return dialect.applyLocksToSql(
+		return LockingSqlRewriterSupport.rewrite(
+				dialect.getLockingSupport(),
 				query,
 				new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
 				Collections.singletonMap( alias, new String[] { valueColumnName } )
-		);
+		).sql();
 	}
 
 	protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {

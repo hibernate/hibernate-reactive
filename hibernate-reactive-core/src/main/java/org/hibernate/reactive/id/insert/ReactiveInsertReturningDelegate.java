@@ -48,7 +48,8 @@ public class ReactiveInsertReturningDelegate extends ReactiveAbstractReturningDe
 				persister,
 				timing,
 				supportsArbitraryValues,
-				persister.getFactory().getJdbcServices().getDialect().supportsInsertReturningRowId()
+				persister.getFactory().getJdbcServices().getDialect().getGeneratedValuesSupport()
+						.supports( org.hibernate.dialect.generated.spi.GeneratedValuesSupport.Capability.INSERT_RETURNING_ROW_ID )
 		);
 		this.tableReference = new MutatingTableReference( persister.getIdentifierTableMapping() );
 	}
