@@ -47,8 +47,63 @@ public class ReactiveRowProcessingState extends BaseExecutionContext implements 
 		this.initializerData = new InitializerData[rowReader.getInitializerCount()];
 	}
 
-	public CompletionStage<Boolean> next() {
+	@Override
+	public boolean next() {
+		throw new UnsupportedOperationException( "Reactive row processing must use reactiveNext()" );
+	}
+
+	public CompletionStage<Boolean> reactiveNext() {
 		return jdbcValues.next();
+	}
+
+	@Override
+	public boolean previous() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean scroll(int numberOfRows) {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean position(int position) {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public int getPosition() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public void beforeFirst() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean first() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean last() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public void afterLast() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean isLast() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
+	}
+
+	@Override
+	public boolean isFirst() {
+		throw new UnsupportedOperationException( "Reactive row processing does not support scrolling" );
 	}
 
 	@Override

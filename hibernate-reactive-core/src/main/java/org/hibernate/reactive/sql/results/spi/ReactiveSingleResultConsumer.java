@@ -30,7 +30,7 @@ public class ReactiveSingleResultConsumer<T> implements ReactiveResultsConsumer<
 			ReactiveRowProcessingState rowProcessingState,
 			ReactiveRowReader<T> rowReader) {
 		rowReader.startLoading( rowProcessingState );
-		return rowProcessingState.next()
+		return rowProcessingState.reactiveNext()
 				.thenCompose( hasNext -> rowReader
 						.reactiveReadRow( rowProcessingState, processingOptions )
 						.thenCompose( result -> {
