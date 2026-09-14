@@ -6,29 +6,19 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Stream;
 
-import org.hibernate.CacheMode;
 import org.hibernate.HibernateException;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.TypeMismatchException;
 import org.hibernate.dialect.sql.ast.spi.ValuesListSupport;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.generator.Generator;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
-import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.query.IllegalQueryOperationException;
-import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.internal.MutationQueryImpl;
-import org.hibernate.query.named.spi.NamedSqmQueryMemento;
+import org.hibernate.query.named.internal.CriteriaMutationMementoImpl;
+import org.hibernate.query.named.internal.HqlMutationMementoImpl;
 import org.hibernate.query.spi.HqlInterpretation;
-import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.spi.SqmCopyContext;
 import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
@@ -45,9 +35,7 @@ import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsert
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 
-import jakarta.persistence.CacheRetrieveMode;
-import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.LockModeType;
+import static org.hibernate.query.hql.internal.QuerySplitter.split;
 
 /**
  * A reactive mutation query backed by HQL/JPQL or criteria.
@@ -68,10 +56,18 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	}
 
 	public ReactiveMutationQueryImpl(
-			NamedSqmQueryMemento<R> memento,
+			HqlMutationMementoImpl<R> memento,
+			HqlInterpretation<R> interpretation,
 			Class<R> resultType,
 			SharedSessionContractImplementor session) {
-		this( (SqmDmlStatement<R>) memento.getSqmStatement(), session );
+		super( memento, interpretation, resultType, session );
+	}
+
+	public ReactiveMutationQueryImpl(
+			CriteriaMutationMementoImpl<R> memento,
+			SqmDmlStatement<R> criteria,
+			SharedSessionContractImplementor session) {
+		super( memento, criteria, session );
 	}
 
 	public ReactiveMutationQueryImpl(
@@ -84,12 +80,12 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	// Reactive mutation execution
 
 	@Override
-	public int executeUpdate() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	public int execute() {
+		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate() {
+	public CompletionStage<Integer> reactiveExecute() {
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 		return doExecuteReactiveUpdate()
 				.handle( (count, error) -> {
@@ -105,12 +101,6 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 
 	private void handleException(Throwable e) {
 		if ( e != null ) {
-			if ( e instanceof IllegalQueryOperationException ) {
-				throw new IllegalStateException( e );
-			}
-			if ( e instanceof TypeMismatchException ) {
-				throw new IllegalStateException( e );
-			}
 			if ( e instanceof HibernateException ) {
 				throw getSession().getExceptionConverter()
 						.convert( (HibernateException) e, getQueryOptions().getLockOptions() );
@@ -123,21 +113,17 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	}
 
 	private ReactiveNonSelectQueryPlan resolveNonSelectQueryPlan() {
-		ReactiveNonSelectQueryPlan queryPlan = null;
-
-		final QueryInterpretationCache.Key cacheKey = SqmInterpretationsKey.generateNonSelectKey( this );
+		final var cacheKey = SqmInterpretationsKey.generateNonSelectKey( this );
 		if ( cacheKey != null ) {
-			queryPlan = (ReactiveNonSelectQueryPlan) getSession().getFactory().getQueryEngine()
-					.getInterpretationCache().getNonSelectQueryPlan( cacheKey );
-		}
-
-		if ( queryPlan == null ) {
-			queryPlan = buildNonSelectQueryPlan();
-			if ( cacheKey != null ) {
-				getSession().getFactory().getQueryEngine().getInterpretationCache().cacheNonSelectQueryPlan( cacheKey, queryPlan );
+			final var cached = (ReactiveNonSelectQueryPlan) getInterpretationCache().getNonSelectQueryPlan( cacheKey );
+			if ( cached != null ) {
+				return cached;
 			}
 		}
-
+		final var queryPlan = buildNonSelectQueryPlan();
+		if ( cacheKey != null ) {
+			getInterpretationCache().cacheNonSelectQueryPlan( cacheKey, queryPlan );
+		}
 		return queryPlan;
 	}
 
@@ -157,9 +143,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private ReactiveNonSelectQueryPlan buildDeleteQueryPlan() {
-		final SqmDeleteStatement[] concreteSqmStatements = QuerySplitter
-				.split( (SqmDeleteStatement) getSqmStatement() );
-
+		final SqmDeleteStatement[] concreteSqmStatements = split( (SqmDeleteStatement) getSqmStatement() );
 		return concreteSqmStatements.length > 1
 				? buildAggregatedDeleteQueryPlan( concreteSqmStatements )
 				: buildConcreteDeleteQueryPlan( concreteSqmStatements[0] );
@@ -168,9 +152,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	private ReactiveNonSelectQueryPlan buildConcreteDeleteQueryPlan(@SuppressWarnings("rawtypes") SqmDeleteStatement sqmDelete) {
 		final EntityDomainType<?> entityDomainType = sqmDelete.getTarget().getModel();
 		final String entityNameToDelete = entityDomainType.getHibernateEntityName();
-		final EntityPersister entityDescriptor = getSessionFactory().getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.getEntityDescriptor( entityNameToDelete );
+		final EntityPersister entityDescriptor = getMappingMetamodel().getEntityDescriptor( entityNameToDelete );
 		final ReactiveSqmMultiTableMutationStrategy multiTableStrategy =
 				(ReactiveSqmMultiTableMutationStrategy) entityDescriptor.getSqmMultiTableMutationStrategy();
 		return multiTableStrategy == null
@@ -179,7 +161,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	}
 
 	private ReactiveNonSelectQueryPlan buildAggregatedDeleteQueryPlan(@SuppressWarnings("rawtypes") SqmDeleteStatement[] concreteSqmStatements) {
-		final ReactiveNonSelectQueryPlan[] aggregatedQueryPlans = new ReactiveNonSelectQueryPlan[ concreteSqmStatements.length ];
+		final ReactiveNonSelectQueryPlan[] aggregatedQueryPlans = new ReactiveNonSelectQueryPlan[concreteSqmStatements.length];
 		for ( int i = 0, x = concreteSqmStatements.length; i < x; i++ ) {
 			aggregatedQueryPlans[i] = buildConcreteDeleteQueryPlan( concreteSqmStatements[i] );
 		}
@@ -190,9 +172,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		//noinspection rawtypes
 		final SqmUpdateStatement sqmUpdate = (SqmUpdateStatement) getSqmStatement();
 		final String entityNameToUpdate = sqmUpdate.getTarget().getModel().getHibernateEntityName();
-		final EntityPersister entityDescriptor = getSessionFactory().getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.getEntityDescriptor( entityNameToUpdate );
+		final EntityPersister entityDescriptor = getMappingMetamodel().getEntityDescriptor( entityNameToUpdate );
 		final ReactiveSqmMultiTableMutationStrategy multiTableStrategy =
 				(ReactiveSqmMultiTableMutationStrategy) entityDescriptor.getSqmMultiTableMutationStrategy();
 		return multiTableStrategy == null
@@ -201,24 +181,12 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	}
 
 	private ReactiveNonSelectQueryPlan buildInsertQueryPlan() {
-		//noinspection rawtypes
+		@SuppressWarnings("unchecked")
 		final SqmInsertStatement<R> sqmInsert = (SqmInsertStatement<R>) getSqmStatement();
 		final String entityNameToInsert = sqmInsert.getTarget().getModel().getHibernateEntityName();
-		final EntityPersister persister = getSessionFactory()
-				.getMappingMetamodel().getEntityDescriptor( entityNameToInsert );
+		final EntityPersister persister = getMappingMetamodel().getEntityDescriptor( entityNameToInsert );
 
-		boolean useMultiTableInsert = persister.hasMultipleTables();
-		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, persister ) ) {
-			final Generator identifierGenerator = persister.getGenerator();
-			if ( identifierGenerator instanceof BulkInsertionCapableIdentifierGenerator
-					&& identifierGenerator instanceof OptimizableGenerator ) {
-				final Optimizer optimizer = ( (OptimizableGenerator) identifierGenerator ).getOptimizer();
-				if ( optimizer != null && optimizer.getIncrementSize() > 1 ) {
-					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, persister );
-				}
-			}
-		}
-		if ( useMultiTableInsert ) {
+		if ( useMultiTableInsert( persister, sqmInsert ) ) {
 			return new ReactiveMultiTableInsertQueryPlan(
 					sqmInsert,
 					getDomainParameterXref(),
@@ -238,516 +206,22 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 			}
 			return new ReactiveAggregatedNonSelectQueryPlan( planParts );
 		}
-
 		return new ReactiveSimpleNonSelectQueryPlan( sqmInsert, getDomainParameterXref() );
 	}
 
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// ReactiveSelectionQuery — stubs and delegation (not applicable for DML queries)
-
-	@Override
-	public LockOptions getLockOptions() {
-		return getQueryOptions().getLockOptions();
-	}
-
-	@Override
-	public LockModeType getLockMode() {
-		return super.getLockMode();
-	}
-
-	@Override
-	public LockMode getHibernateLockMode() {
-		return getQueryOptions().getLockOptions().getLockMode();
-	}
-
-	@Override
-	public String getQueryString() {
-		return super.getQueryString();
-	}
-
-	@Override
-	public Integer getFetchSize() {
-		return null;
-	}
-
-	@Override
-	public boolean isReadOnly() {
-		return false;
-	}
-
-	@Override
-	public int getFirstResult() {
-		return 0;
-	}
-
-	@Override
-	public int getMaxResults() {
-		return Integer.MAX_VALUE;
-	}
-
-	@Override
-	public CacheMode getCacheMode() {
-		return super.getCacheMode();
-	}
-
-	@Override
-	public CacheStoreMode getCacheStoreMode() {
-		return super.getCacheStoreMode();
-	}
-
-	@Override
-	public CacheRetrieveMode getCacheRetrieveMode() {
-		return super.getCacheRetrieveMode();
-	}
-
-	@Override
-	public boolean isCacheable() {
-		return super.isCacheable();
-	}
-
-	@Override
-	public String getCacheRegion() {
-		return super.getCacheRegion();
-	}
-
-	@Override
-	public void applyGraph(org.hibernate.graph.spi.RootGraphImplementor<?> graph, org.hibernate.graph.GraphSemantic semantic) {
-		// not applicable for mutation queries
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> enableFetchProfile(String profileName) {
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> disableFetchProfile(String profileName) {
-		return this;
-	}
-
-	@Override
-	public boolean isQueryPlanCacheable() {
-		return false;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setQueryPlanCacheable(boolean queryPlanCacheable) {
-		return this;
-	}
-
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// ReactiveSelectionQuery — stubs (not applicable for DML queries)
-
-	@Override
-	public CompletionStage<List<R>> reactiveList() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public CompletionStage<R> getReactiveSingleResult() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public CompletionStage<R> getReactiveSingleResultOrNull() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public CompletionStage<Long> getReactiveResultCount() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public CompletionStage<R> reactiveUnique() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public List<R> getResultList() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public Stream<R> getResultStream() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public R getSingleResult() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	@Override
-	public R getSingleResultOrNull() {
-		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
-	}
-
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Covariant overrides
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setHint(String hintName, Object value) {
-		super.setHint( hintName, value );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setComment(String comment) {
-		super.setComment( comment );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> addQueryHint(String hint) {
-		super.addQueryHint( hint );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setLockOptions(LockOptions lockOptions) {
-		// MutationQueryImpl doesn't support lock options directly
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setLockMode(String alias, LockMode lockMode) {
-		// Not applicable for mutation queries
-		return this;
-	}
-
-	@Override
-	public <T> ReactiveMutationQueryImpl<T> setTupleTransformer(TupleTransformer<T> transformer) {
-		throw new UnsupportedOperationException( "Not supported for mutation queries" );
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setResultListTransformer(ResultListTransformer<R> transformer) {
-		// Not applicable for mutation queries
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setMaxResults(int maxResult) {
-		super.setMaxResults( maxResult );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setFirstResult(int startPosition) {
-		super.setFirstResult( startPosition );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setFlushMode(FlushModeType flushMode) {
-		super.setFlushMode( flushMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setLockMode(LockModeType lockMode) {
-		// Mutation queries have limited lock mode support
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setFollowOnLocking(boolean enable) {
-		// Not applicable to mutation queries
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setCacheMode(CacheMode cacheMode) {
-		super.setCacheMode( cacheMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
-		super.setCacheRetrieveMode( cacheRetrieveMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setCacheStoreMode(CacheStoreMode cacheStoreMode) {
-		super.setCacheStoreMode( cacheStoreMode );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setCacheable(boolean cacheable) {
-		super.setCacheable( cacheable );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setCacheRegion(String cacheRegion) {
-		super.setCacheRegion( cacheRegion );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
-		// Not applicable for mutation queries
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setTimeout(int timeout) {
-		super.setTimeout( timeout );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setFetchSize(int fetchSize) {
-		// Not applicable for mutation queries
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setReadOnly(boolean readOnly) {
-		// Not applicable for mutation queries
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setProperties(Object bean) {
-		super.setProperties( bean );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setProperties(Map bean) {
-		super.setProperties( bean );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(String name, Object value) {
-		super.setParameter( name, value );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(String name, P value, Class<P> javaType) {
-		super.setParameter( name, value, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(String name, P value, Type<P> type) {
-		super.setParameter( name, value, type );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(String name, Instant value, TemporalType temporalType) {
-		super.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(String name, Calendar value, TemporalType temporalType) {
-		super.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(String name, Date value, TemporalType temporalType) {
-		super.setParameter( name, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(int position, Object value) {
-		super.setParameter( position, value );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(int position, P value, Class<P> javaType) {
-		super.setParameter( position, value, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(int position, P value, Type<P> type) {
-		super.setParameter( position, value, type );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(int position, Instant value, TemporalType temporalType) {
-		super.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(int position, Calendar value, TemporalType temporalType) {
-		super.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameter(int position, Date value, TemporalType temporalType) {
-		super.setParameter( position, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value) {
-		super.setParameter( parameter, value );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Class<P> javaType) {
-		super.setParameter( parameter, value, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(QueryParameter<P> parameter, P value, Type<P> type) {
-		super.setParameter( parameter, value, type );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameter(Parameter<P> parameter, P value) {
-		super.setParameter( parameter, value );
-		return this;
-	}
-
-	@Override
-	@SuppressWarnings("rawtypes")
-	public ReactiveMutationQueryImpl<R> setParameter(Parameter param, Calendar value, TemporalType temporalType) {
-		super.setParameter( param, value, temporalType );
-		return this;
-	}
-
-	@Override
-	@SuppressWarnings("rawtypes")
-	public ReactiveMutationQueryImpl<R> setParameter(Parameter param, Date value, TemporalType temporalType) {
-		super.setParameter( param, value, temporalType );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameterList(String name, Collection values) {
-		super.setParameterList( name, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Class<P> javaType) {
-		super.setParameterList( name, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, Collection<? extends P> values, Type<P> type) {
-		super.setParameterList( name, values, type );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameterList(String name, Object[] values) {
-		super.setParameterList( name, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, P[] values, Class<P> javaType) {
-		super.setParameterList( name, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(String name, P[] values, Type<P> type) {
-		super.setParameterList( name, values, type );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameterList(int position, Collection values) {
-		super.setParameterList( position, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Class<P> javaType) {
-		super.setParameterList( position, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, Collection<? extends P> values, Type<P> type) {
-		super.setParameterList( position, values, type );
-		return this;
-	}
-
-	@Override
-	public ReactiveMutationQueryImpl<R> setParameterList(int position, Object[] values) {
-		super.setParameterList( position, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, P[] values, Class<P> javaType) {
-		super.setParameterList( position, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(int position, P[] values, Type<P> type) {
-		super.setParameterList( position, values, type );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values) {
-		super.setParameterList( parameter, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Class<P> javaType) {
-		super.setParameterList( parameter, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, Collection<? extends P> values, Type<P> type) {
-		super.setParameterList( parameter, values, type );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values) {
-		super.setParameterList( parameter, values );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Class<P> javaType) {
-		super.setParameterList( parameter, values, javaType );
-		return this;
-	}
-
-	@Override
-	public <P> ReactiveMutationQueryImpl<R> setParameterList(QueryParameter<P> parameter, P[] values, Type<P> type) {
-		super.setParameterList( parameter, values, type );
-		return this;
-	}
-
-	@Override
-	public org.hibernate.query.named.spi.NamedQueryMemento<?> toMemento(String name) {
-		return toMutationMemento( name );
+	private boolean useMultiTableInsert(EntityPersister persister, SqmInsertStatement<R> sqmInsert) {
+		boolean useMultiTableInsert = persister.hasMultipleTables();
+		if ( !useMultiTableInsert && !isSimpleValuesInsert( sqmInsert, persister ) ) {
+			final var identifierGenerator = persister.getGenerator();
+			if ( identifierGenerator instanceof BulkInsertionCapableIdentifierGenerator bulkGenerator
+					&& identifierGenerator instanceof OptimizableGenerator optimizableGenerator ) {
+				final var optimizer = optimizableGenerator.getOptimizer();
+				if ( ( optimizer != null && optimizer.getIncrementSize() > 1 )
+						|| !bulkGenerator.supportsBulkInsertionIdentifierGeneration() ) {
+					useMultiTableInsert = !hasIdentifierAssigned( sqmInsert, persister );
+				}
+			}
+		}
+		return useMultiTableInsert;
 	}
 }

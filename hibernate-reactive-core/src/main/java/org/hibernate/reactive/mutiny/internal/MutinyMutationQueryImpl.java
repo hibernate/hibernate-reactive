@@ -28,7 +28,7 @@ public class MutinyMutationQueryImpl<R> implements MutationQuery {
 
 	@Override
 	public Uni<Integer> executeUpdate() {
-		return uni( delegate::executeReactiveUpdate );
+		return uni( delegate::reactiveExecute );
 	}
 
 	@Override

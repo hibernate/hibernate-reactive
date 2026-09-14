@@ -8,13 +8,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.query.internal.QueryHelper;
+import org.hibernate.query.named.internal.CriteriaMutationMementoImpl;
+import org.hibernate.query.named.internal.HqlMutationMementoImpl;
+import org.hibernate.query.named.internal.SqmSelectionMemento;
 import org.hibernate.query.named.spi.NamedNativeQueryMemento;
 import org.hibernate.query.named.spi.NamedSqmQueryMemento;
-import org.hibernate.query.named.internal.SqmSelectionMemento;
+import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.spi.MutationQueryImplementor;
 import org.hibernate.query.spi.QueryEngine;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.spi.SelectionQueryImplementor;
+import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.query.sqm.tree.spi.SqmStatement;
 import org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement;
 import org.hibernate.reactive.query.sqm.internal.ReactiveMutationQueryImpl;
@@ -42,9 +47,7 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 
 	@Override
 	public <T> QueryImplementor<T> toQuery(SharedSessionContractImplementor session, Class<T> resultType) {
-		@SuppressWarnings("unchecked")
-		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
-		return new ReactiveMutationQueryImpl<>( typedDelegate, resultType, session );
+		return toMutationQuery( session, resultType );
 	}
 
 	@Override
@@ -60,20 +63,30 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 			final SqmSelectStatement<T> statement = (SqmSelectStatement<T>) sqmStatement;
 			return new ReactiveSelectionQueryImpl<>( statement, resultType, session );
 		}
-		// Delegate has a different memento type, use toQuery instead
-		@SuppressWarnings("unchecked")
-		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
-		return (SelectionQueryImplementor<T>) new ReactiveMutationQueryImpl<>( typedDelegate, resultType, session );
+		// Delegate is a mutation memento - toSelectionQuery on a mutation query is invalid
+		return delegate.toSelectionQuery( session, resultType );
 	}
 
 	@Override
 	public MutationQueryImplementor<E> toMutationQuery(SharedSessionContractImplementor session) {
-		return (MutationQueryImplementor<E>) toQuery( session );
+		return toMutationQuery( session, null );
 	}
 
 	@Override
 	public <T> MutationQueryImplementor<T> toMutationQuery(SharedSessionContractImplementor session, Class<T> resultType) {
-		return (MutationQueryImplementor<T>) toQuery( session, resultType );
+		@SuppressWarnings("unchecked")
+		final NamedSqmQueryMemento<T> typedDelegate = (NamedSqmQueryMemento<T>) delegate;
+		if ( typedDelegate instanceof HqlMutationMementoImpl<T> hqlMemento ) {
+			final HqlInterpretation<T> interpretation = QueryHelper.interpretation( hqlMemento, resultType, session );
+			return new ReactiveMutationQueryImpl<>( hqlMemento, interpretation, resultType, session );
+		}
+		if ( typedDelegate instanceof CriteriaMutationMementoImpl<T> criteriaMemento ) {
+			@SuppressWarnings("unchecked")
+			final SqmDmlStatement<T> sqm = (SqmDmlStatement<T>) criteriaMemento.getSqmStatement();
+			return new ReactiveMutationQueryImpl<>( criteriaMemento, sqm, session );
+		}
+		// Fallback: delegate handles its own instantiation (e.g. custom memento implementations)
+		return typedDelegate.toMutationQuery( session, resultType );
 	}
 
 	@Override
@@ -94,11 +107,6 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	@Override
 	public NamedSqmQueryMemento<E> makeCopy(String name) {
 		return new ReactiveNamedSqmQueryMemento<>( delegate.makeCopy( name ) );
-	}
-
-	@Override
-	public String getName() {
-		return delegate.getName();
 	}
 
 	@Override

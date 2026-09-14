@@ -22,7 +22,7 @@ import jakarta.persistence.metamodel.Type;
  * @see org.hibernate.query.MutationQuery
  */
 public interface ReactiveMutationQuery<R> extends CommonQueryContract {
-	CompletionStage<Integer> executeReactiveUpdate();
+	CompletionStage<Integer> reactiveExecute();
 
 	@Override
 	ReactiveMutationQuery<R> setParameter(String name, Object value);

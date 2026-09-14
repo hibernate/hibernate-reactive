@@ -237,7 +237,7 @@ public class StageQueryImpl<R> implements Query<R> {
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
-		return delegate.executeReactiveUpdate();
+		return delegate.reactiveExecute();
 	}
 
 	@Override

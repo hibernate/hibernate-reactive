@@ -729,7 +729,7 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 	}
 
 	@Override
-	public CompletionStage<Integer> executeReactiveUpdate() {
+	public CompletionStage<Integer> reactiveExecute() {
 		throw new IllegalQueryOperationException( "Not a mutation query" );
 	}
 }
