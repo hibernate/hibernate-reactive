@@ -23,6 +23,7 @@ import org.hibernate.query.sqm.sql.spi.FromClauseIndex;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
 import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
 import org.hibernate.sql.ast.spi.creation.SqlExpressionResolver;
@@ -153,7 +154,8 @@ class DatabaseSnapshotExecutor {
 		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
 		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
 
-		this.jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator( sessionFactory, selectStatement )
+		this.jdbcSelect = sqlAstTranslatorFactory
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, selectStatement ) )
 				.translate( null, QueryOptions.NONE );
 	}
 
