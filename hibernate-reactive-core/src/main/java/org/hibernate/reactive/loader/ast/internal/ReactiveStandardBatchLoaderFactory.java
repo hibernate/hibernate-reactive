@@ -7,15 +7,15 @@ package org.hibernate.reactive.loader.ast.internal;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.loader.ast.internal.MultiKeyLoadHelper;
 import org.hibernate.loader.ast.spi.BatchLoaderFactory;
 import org.hibernate.loader.ast.spi.CollectionBatchLoader;
 import org.hibernate.loader.ast.spi.EntityBatchLoader;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.type.BasicType;
-import org.hibernate.type.SqlTypes;
 import org.hibernate.type.Type;
+
+import static org.hibernate.loader.ast.internal.MultiKeyLoadHelper.supportsSqlArrayType;
 
 /**
  * @see org.hibernate.loader.ast.internal.StandardBatchLoaderFactory
@@ -34,7 +34,7 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 		final int idColumnCount = identifierType.getColumnSpan( factory.getRuntimeMetamodels() );
 
 		if ( idColumnCount == 1
-				&& MultiKeyLoadHelper.supportsSqlArrayType( dialect )
+				&& supportsSqlArrayType( dialect )
 				&& identifierType instanceof BasicType ) {
 			// we can use a single ARRAY parameter to send all the ids
 			return (EntityBatchLoader<T>) new ReactiveEntityBatchLoaderArrayParam<>( domainBatchSize, entityDescriptor, influencers );
@@ -52,11 +52,8 @@ public class ReactiveStandardBatchLoaderFactory implements BatchLoaderFactory {
 			LoadQueryInfluencers influencers,
 			PluralAttributeMapping attributeMapping,
 			SessionFactoryImplementor factory) {
-		final Dialect dialect = factory.getJdbcServices().getDialect();
-		final int columnCount = attributeMapping.getKeyDescriptor().getJdbcTypeCount();
-		if ( columnCount == 1
-				&& dialect.supportsStandardArrays()
-				&& dialect.getPreferredSqlTypeCodeForArray() == SqlTypes.ARRAY ) {
+		if ( attributeMapping.getKeyDescriptor().getJdbcTypeCount() == 1
+				&& supportsSqlArrayType( factory.getJdbcServices().getDialect() ) ) {
 			// we can use a single ARRAY parameter to send all the ids
 			return new ReactiveCollectionBatchLoaderArrayParam( domainBatchSize, influencers, attributeMapping, factory );
 		}

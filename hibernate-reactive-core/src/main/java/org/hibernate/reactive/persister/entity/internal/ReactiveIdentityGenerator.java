@@ -6,6 +6,7 @@ package org.hibernate.reactive.persister.entity.internal;
 
 
 import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.generated.spi.GeneratedValuesSupport;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
 import org.hibernate.persister.entity.EntityPersister;
@@ -15,7 +16,6 @@ import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
 import org.hibernate.reactive.id.insert.ReactiveUniqueKeySelectingDelegate;
 
 import static org.hibernate.generator.EventType.INSERT;
-import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCustomSql;
 import static org.hibernate.internal.NaturalIdHelper.getNaturalIdPropertyNames;
 import static org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesHelper.supportReactiveGetGeneratedKey;
 
@@ -31,7 +31,7 @@ public class ReactiveIdentityGenerator extends IdentityGenerator {
 			Hibernate ORM allows the selection of different strategies based on the property `hibernate.jdbc.use_get_generated_keys`,
 			but the Vert.x driver does not support get generated keys.
 		 */
-		if ( dialect.supportsInsertReturning() && noCustomSql( persister, INSERT ) ) {
+		if ( dialect.getGeneratedValuesSupport().supports( GeneratedValuesSupport.Capability.INSERT_RETURNING ) ) {
 			return new ReactiveInsertReturningDelegate( persister, INSERT );
 		}
 		else if ( supportReactiveGetGeneratedKey( dialect, persister.getGeneratedProperties( INSERT ) ) ) {

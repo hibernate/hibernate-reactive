@@ -18,7 +18,6 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.sql.results.spi.RowReader;
 
-
 /**
  * @see org.hibernate.sql.results.internal.RowProcessingStateStandardImpl
  */

@@ -6,7 +6,6 @@ package org.hibernate.reactive.provider.service;
 
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
@@ -34,9 +33,9 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 	@Override
 	public SqmMultiTableMutationStrategy createMutationStrategy(
 			EntityMappingType rootEntityDescriptor,
-			MappingModelCreationProcess creationProcess) {
-		final RuntimeModelCreationContext creationContext = creationProcess.getCreationContext();
-		SqmMultiTableMutationStrategy mutationStrategy = mutationStrategy( rootEntityDescriptor, creationContext );
+			RuntimeModelCreationContext creationContext) {
+		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
+		final SqmMultiTableMutationStrategy mutationStrategy = options.getCustomSqmMultiTableMutationStrategy();
 		if ( mutationStrategy instanceof CteMutationStrategy ) {
 			return new ReactiveCteMutationStrategy( rootEntityDescriptor, creationContext );
 		}
@@ -52,21 +51,12 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 		return mutationStrategy;
 	}
 
-	private static SqmMultiTableMutationStrategy mutationStrategy(
-			EntityMappingType rootEntityDescriptor,
-			RuntimeModelCreationContext creationContext) {
-		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
-		return options.getCustomSqmMultiTableMutationStrategy() != null
-				? options.getCustomSqmMultiTableMutationStrategy()
-				: creationContext.getDialect().getFallbackSqmMutationStrategy( rootEntityDescriptor, creationContext );
-	}
-
 	@Override
 	public SqmMultiTableInsertStrategy createInsertStrategy(
 			EntityMappingType rootEntityDescriptor,
-			MappingModelCreationProcess creationProcess) {
-		final RuntimeModelCreationContext creationContext = creationProcess.getCreationContext();
-		final SqmMultiTableInsertStrategy insertStrategy = insertStrategy( rootEntityDescriptor, creationContext );
+			RuntimeModelCreationContext creationContext) {
+		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
+		final SqmMultiTableInsertStrategy insertStrategy = options.getCustomSqmMultiTableInsertStrategy();
 		if ( insertStrategy instanceof CteInsertStrategy ) {
 			return new ReactiveCteInsertStrategy( rootEntityDescriptor, creationContext );
 		}
@@ -80,14 +70,5 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 			return new ReactiveGlobalTemporaryTableInsertStrategy( (GlobalTemporaryTableStrategy) insertStrategy );
 		}
 		return insertStrategy;
-	}
-
-	private static SqmMultiTableInsertStrategy insertStrategy(
-			EntityMappingType rootEntityDescriptor,
-			RuntimeModelCreationContext creationContext) {
-		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
-		return options.getCustomSqmMultiTableInsertStrategy() != null
-				? options.getCustomSqmMultiTableInsertStrategy()
-				: creationContext.getDialect().getFallbackSqmInsertStrategy( rootEntityDescriptor, creationContext );
 	}
 }

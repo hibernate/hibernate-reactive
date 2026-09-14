@@ -5,12 +5,7 @@
 package org.hibernate.reactive.query.sqm.internal;
 
 import java.lang.invoke.MethodHandles;
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
@@ -20,16 +15,22 @@ import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.TypeMismatchException;
+import org.hibernate.dialect.sql.ast.spi.ValuesListSupport;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.generator.Generator;
+import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
+import org.hibernate.id.OptimizableGenerator;
+import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.IllegalQueryOperationException;
-import org.hibernate.query.QueryParameter;
-import org.hibernate.query.ResultListTransformer;
-import org.hibernate.query.TupleTransformer;
+import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.internal.MutationQueryImpl;
 import org.hibernate.query.named.spi.NamedSqmQueryMemento;
 import org.hibernate.query.spi.HqlInterpretation;
+import org.hibernate.query.spi.QueryInterpretationCache;
+import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
+import org.hibernate.query.sqm.tree.spi.SqmCopyContext;
 import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.query.sqm.tree.spi.SqmStatement;
 import org.hibernate.query.sqm.tree.spi.delete.SqmDeleteStatement;
@@ -43,22 +44,10 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
-import org.hibernate.generator.Generator;
-import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
-import org.hibernate.id.OptimizableGenerator;
-import org.hibernate.id.enhanced.Optimizer;
-import org.hibernate.query.hql.internal.QuerySplitter;
-import org.hibernate.query.spi.QueryInterpretationCache;
-import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
-import org.hibernate.query.sqm.tree.spi.SqmCopyContext;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
-import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.Parameter;
-import jakarta.persistence.TemporalType;
-import jakarta.persistence.metamodel.Type;
 
 /**
  * A reactive mutation query backed by HQL/JPQL or criteria.
@@ -238,7 +227,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		}
 		else if ( sqmInsert instanceof SqmInsertValuesStatement<R> insertValues
 				&& insertValues.getValuesList().size() != 1
-				&& !getSessionFactory().getJdbcServices().getDialect().supportsValuesListForInsert() ) {
+				&& !getSessionFactory().getJdbcServices().getDialect().getValuesListSupport().supports( ValuesListSupport.Context.INSERT ) ) { ){
 			final List<SqmValues> valuesList = insertValues.getValuesList();
 			final ReactiveNonSelectQueryPlan[] planParts = new ReactiveNonSelectQueryPlan[valuesList.size()];
 			for ( int i = 0; i < valuesList.size(); i++ ) {
