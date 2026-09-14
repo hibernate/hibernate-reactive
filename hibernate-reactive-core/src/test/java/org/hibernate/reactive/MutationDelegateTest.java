@@ -23,7 +23,7 @@ import org.hibernate.reactive.id.insert.ReactiveUniqueKeySelectingDelegate;
 import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.reactive.testing.SqlStatementTracker;
-import org.hibernate.sql.model.MutationType;
+import org.hibernate.sql.spi.mutation.MutationType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

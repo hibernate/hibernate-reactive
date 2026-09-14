@@ -9,8 +9,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.dialect.temptable.TemporaryTable;
-import org.hibernate.dialect.temptable.TemporaryTableStrategy;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
+import org.hibernate.dialect.temptable.spi.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.MutableObject;
 import org.hibernate.query.spi.DomainQueryExecutionContext;

@@ -22,7 +22,7 @@ import org.hibernate.persister.entity.mutation.InsertCoordinatorStandard;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
-import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.spi.mutation.MutationOperationGroup;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;

@@ -4,7 +4,7 @@
  */
 package org.hibernate.reactive.engine.internal;
 
-import org.hibernate.dialect.lock.OptimisticEntityLockException;
+import org.hibernate.dialect.lock.internal.OptimisticEntityLockException;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.reactive.engine.ReactiveBeforeTransactionCompletionProcess;
 import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;

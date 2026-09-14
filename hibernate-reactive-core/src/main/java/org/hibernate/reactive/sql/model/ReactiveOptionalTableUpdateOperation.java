@@ -20,13 +20,13 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.model.TableMapping;
-import org.hibernate.sql.model.ValuesAnalysis;
-import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.jdbc.JdbcDeleteMutation;
-import org.hibernate.sql.model.jdbc.JdbcInsertMutation;
-import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
-import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
+import org.hibernate.sql.spi.mutation.TableMapping;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcDeleteMutation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcInsertMutation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
+import org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -99,7 +99,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Void> performReactiveDelete(
 			JdbcValueBindings jdbcValueBindings,
@@ -129,7 +129,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Boolean> performReactiveUpdate(
 			JdbcValueBindings jdbcValueBindings,
