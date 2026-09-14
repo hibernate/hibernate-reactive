@@ -4,16 +4,19 @@
  */
 package org.hibernate.reactive.id.internal;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
+import org.hibernate.Timeouts;
 import org.hibernate.dialect.CockroachDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.dialect.lock.spi.LockingClauseRequest;
+import org.hibernate.dialect.lock.spi.LockingSqlRewriteRequest;
+import org.hibernate.dialect.lock.spi.LockingSqlRewriteResult;
+import org.hibernate.dialect.lock.spi.PessimisticLockKind;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -27,6 +30,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.service.ServiceRegistry;
+
 
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
@@ -153,11 +157,15 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
-		return dialect.applyLocksToSql(
-				query,
-				new LockOptions( LockMode.PESSIMISTIC_WRITE ).setAliasSpecificLockMode( alias, LockMode.PESSIMISTIC_WRITE ),
-				Collections.singletonMap( alias, new String[] { valueColumnName } )
+		final LockingSqlRewriteResult result = dialect.getLockingSupport().getLockingSqlRewriter().rewrite(
+				new LockingSqlRewriteRequest(
+						query,
+						PessimisticLockKind.UPDATE,
+						Timeouts.WAIT_FOREVER,
+						List.of( new LockingClauseRequest.ColumnTarget( alias, valueColumnName ) )
+				)
 		);
+		return result.sql();
 	}
 
 	protected Boolean determineStoreLastUsedValue(ServiceRegistry serviceRegistry) {

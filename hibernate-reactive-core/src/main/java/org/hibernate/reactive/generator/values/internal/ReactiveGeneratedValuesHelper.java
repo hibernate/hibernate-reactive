@@ -17,6 +17,7 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
+import org.hibernate.dialect.generated.spi.GeneratedValuesSupport;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
 import org.hibernate.generator.Generator;
@@ -85,13 +86,11 @@ public class ReactiveGeneratedValuesHelper {
 		final boolean hasGeneratedProperties = !generatedProperties.isEmpty();
 		final boolean hasRowId = timing == EventType.INSERT && persister.getRowIdMapping() != null;
 		final Dialect dialect = persister.getFactory().getJdbcServices().getDialect();
-
-		final boolean hasFormula = generatedProperties.stream()
-				.anyMatch( ReactiveGeneratedValuesHelper::isFormula );
+		final var generatedValuesSupport = dialect.getGeneratedValuesSupport();
 
 		if ( hasRowId
-				&& dialect.supportsInsertReturning()
-				&& dialect.supportsInsertReturningRowId()
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING )
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING_ROW_ID )
 				&& noCustomSql( persister, timing ) ) {
 			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
 			// make InsertReturningDelegate the preferred method if the dialect supports it
@@ -102,10 +101,18 @@ public class ReactiveGeneratedValuesHelper {
 			return null;
 		}
 
-		if ( supportsReturning( dialect, timing ) && noCustomSql( persister, timing ) ) {
+		final boolean hasFormula = generatedProperties.stream().anyMatch( ReactiveGeneratedValuesHelper::isFormula );
+		if ( hasRowId
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING )
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING_ROW_ID )
+				&& noCustomSql( persister, timing ) ) {
+			// Special case for RowId on INSERT, since GetGeneratedKeysDelegate doesn't support it
+			// make InsertReturningDelegate the preferred method if the dialect supports it
 			return new ReactiveInsertReturningDelegate( persister, timing );
 		}
-		else if ( !hasFormula && dialect.supportsInsertReturningGeneratedKeys() ) {
+		else if ( !hasFormula
+				&& generatedValuesSupport.supports( GeneratedValuesSupport.Capability.ARBITRARY_GENERATED_KEYS )
+				&& persister.getFactory().getSessionFactoryOptions().isGetGeneratedKeysEnabled() ) {
 			return new ReactiveGetGeneratedKeysDelegate( persister, false, timing );
 		}
 		else if ( timing == EventType.INSERT && persister.getNaturalIdentifierProperties() != null
@@ -122,12 +129,6 @@ public class ReactiveGeneratedValuesHelper {
 	public static boolean supportReactiveGetGeneratedKey(Dialect dialect, List<? extends ModelPart> generatedProperties) {
 		return dialect instanceof OracleDialect
 				|| (dialect instanceof MySQLDialect && generatedProperties.size() == 1 && !(dialect instanceof MariaDBDialect));
-	}
-
-	public static boolean supportsReturning(Dialect dialect, EventType timing) {
-		return timing == EventType.INSERT
-				? dialect.supportsInsertReturning()
-				: dialect.supportsUpdateReturning();
 	}
 
 	/**

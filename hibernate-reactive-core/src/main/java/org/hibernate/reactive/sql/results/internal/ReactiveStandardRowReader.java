@@ -28,8 +28,7 @@ import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
-import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
-
+import static org.hibernate.sql.results.internal.LoadingLogger.LOADING_LOGGER;
 
 /**
  * @see org.hibernate.sql.results.internal.StandardRowReader
@@ -129,26 +128,17 @@ public class ReactiveStandardRowReader<R> implements ReactiveRowReader<R> {
 					// This implementation was micro-benchmarked and discussed with Francesco Nigro,
 					// who hinted that using this style instead of the reflective Array.getLength(), Array.set()
 					// is easier for the JVM to optimize"
-					switch ( componentType ) {
-						case BOOLEAN:
-							return booleanComponent( resultAssemblers, rowProcessingState, options );
-						case BYTE:
-							return byteComponent( resultAssemblers, rowProcessingState, options );
-						case CHAR:
-							return charComponent( resultAssemblers, rowProcessingState, options );
-						case SHORT:
-							return shortComponent( resultAssemblers, rowProcessingState, options );
-						case INT:
-							return intComponent( resultAssemblers, rowProcessingState, options );
-						case LONG:
-							return longComponent( resultAssemblers, rowProcessingState, options );
-						case FLOAT:
-							return floatComponent( resultAssemblers, rowProcessingState, options );
-						case DOUBLE:
-							return doubleComponent( resultAssemblers, rowProcessingState, options );
-						default:
-							return objectComponent( resultAssemblers, rowProcessingState, options );
-					}
+					return switch ( componentType ) {
+						case BOOLEAN -> booleanComponent( resultAssemblers, rowProcessingState, options );
+						case BYTE -> byteComponent( resultAssemblers, rowProcessingState, options );
+						case CHAR -> charComponent( resultAssemblers, rowProcessingState, options );
+						case SHORT -> shortComponent( resultAssemblers, rowProcessingState, options );
+						case INT -> intComponent( resultAssemblers, rowProcessingState, options );
+						case LONG -> longComponent( resultAssemblers, rowProcessingState, options );
+						case FLOAT -> floatComponent( resultAssemblers, rowProcessingState, options );
+						case DOUBLE -> doubleComponent( resultAssemblers, rowProcessingState, options );
+						default -> objectComponent( resultAssemblers, rowProcessingState, options );
+					};
 				} );
 	}
 

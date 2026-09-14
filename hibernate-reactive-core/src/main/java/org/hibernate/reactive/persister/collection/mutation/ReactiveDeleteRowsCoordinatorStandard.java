@@ -19,7 +19,8 @@ import org.hibernate.persister.collection.mutation.DeleteRowsCoordinatorStandard
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
+
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.spi.mutation.MutationType;
 import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;

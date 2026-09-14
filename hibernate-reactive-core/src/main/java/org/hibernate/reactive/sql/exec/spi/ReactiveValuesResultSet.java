@@ -25,7 +25,7 @@ import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.sql.ast.spi.query.select.SqlSelection;
 import org.hibernate.sql.exec.ExecutionException;
 import org.hibernate.sql.exec.spi.ExecutionContext;
-import org.hibernate.sql.results.caching.QueryCachePutManager;
+import org.hibernate.sql.results.caching.internal.QueryCachePutManager;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManagerEnabledImpl;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;

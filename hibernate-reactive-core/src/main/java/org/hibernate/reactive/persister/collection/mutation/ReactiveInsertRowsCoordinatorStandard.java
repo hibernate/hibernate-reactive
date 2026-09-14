@@ -7,6 +7,7 @@ package org.hibernate.reactive.persister.collection.mutation;
 import java.util.Iterator;
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.action.queue.spi.decompose.collection.CollectionMutationTarget;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.jdbc.batch.internal.BasicBatchKey;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
@@ -14,14 +15,13 @@ import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.action.queue.spi.decompose.collection.CollectionMutationTarget;
 import org.hibernate.persister.collection.mutation.InsertRowsCoordinatorStandard;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
-import org.hibernate.sql.spi.mutation.MutationType;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
+import org.hibernate.sql.spi.mutation.MutationType;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;

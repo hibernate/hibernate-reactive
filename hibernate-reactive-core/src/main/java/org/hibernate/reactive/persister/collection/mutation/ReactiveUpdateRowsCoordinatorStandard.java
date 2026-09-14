@@ -24,7 +24,7 @@ import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
+import org.hibernate.sql.model.MutationOperationGroup;
 
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;

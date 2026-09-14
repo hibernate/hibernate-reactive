@@ -14,13 +14,11 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.mutation.AttributeInclusionChecker;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.persister.entity.mutation.TableSet;
-import org.hibernate.sql.spi.mutation.MutationOperation;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
+import org.hibernate.sql.ast.internal.model.builder.TableMergeBuilder;
 import org.hibernate.sql.ast.spi.model.builder.AbstractTableUpdateBuilder;
-import org.hibernate.sql.ast.spi.model.builder.TableMergeBuilder;
 import org.hibernate.sql.ast.spi.model.builder.TableUpdateBuilder;
-
-
+import org.hibernate.sql.model.MutationOperationGroup;
+import org.hibernate.sql.spi.mutation.MutationOperation;
 
 /**
  * @see org.hibernate.persister.entity.mutation.MergeCoordinatorStandard
@@ -40,8 +38,7 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 
 	@Override
 	protected <O extends MutationOperation> AbstractTableUpdateBuilder<O> newTableUpdateBuilder(EntityTableMapping tableMapping) {
-		final TableMergeBuilder<O> tableUpdateBuilder =
-				new TableMergeBuilder<>( entityPersister(), tableMapping, factory() );
+		final TableMergeBuilder<O> tableUpdateBuilder = new TableMergeBuilder<>( entityPersister(), tableMapping, factory() );
 		addDiscriminatorValueIfNeeded( tableUpdateBuilder, tableMapping );
 		return tableUpdateBuilder;
 	}
@@ -73,10 +70,6 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 		final var attributeMetadata = attribute.getAttributeMetadata();
 		return attributeMetadata.isUpdatable()
 			|| attributeMetadata.isInsertable();
-	}
-
-	protected AttributeInclusionChecker createAttributeInclusionChecker(boolean[] attributeUpdateability) {
-		return (position, attribute) -> isInsertableOrUpdatable( attribute );
 	}
 
 	@Override

@@ -30,7 +30,6 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
-import static org.hibernate.sql.results.LoadingLogger.LOADING_LOGGER;
 import static org.hibernate.sql.results.graph.entity.internal.BatchEntityInsideEmbeddableSelectFetchInitializer.BATCH_PROPERTY;
 
 public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
@@ -155,7 +154,7 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 
 	private CompletionStage<Void> prepareCompositeInstance(ReactiveEmbeddableInitializerData data) {
 		// Virtual model parts use the owning entity as container which the fetch parent access provides.
-		// For an identifier or foreign key this is called during the resolveKey phase of the fetch parent,
+		// For an identi\fier or foreign key this is called during the resolveKey phase of the fetch parent,
 		// so we can't use the fetch parent access in that case.
 		final ReactiveInitializer<ReactiveEmbeddableInitializerData> parent = (ReactiveInitializer<ReactiveEmbeddableInitializerData>) getParent();
 		if ( parent != null && getInitializedPart() instanceof VirtualModelPart && !isPartOfKey() && data.getState() != State.MISSING ) {
@@ -168,16 +167,11 @@ public class ReactiveEmbeddableInitializerImpl extends EmbeddableInitializerImpl
 								if ( data.getState() == State.INITIALIZED ) {
 									return voidFuture();
 								}
-								return doCreateCompositeInstance( data )
-										.thenAccept( v -> LOADING_LOGGER.debugf(
-												"Created composite instance [%s]",
-												getNavigablePath()
-										) );
+								return doCreateCompositeInstance( data );
 							} );
 		}
 
-		return doCreateCompositeInstance( data )
-				.thenAccept( v -> LOADING_LOGGER.debugf( "Created composite instance [%s]", getNavigablePath() ) );
+		return doCreateCompositeInstance( data );
 
 	}
 

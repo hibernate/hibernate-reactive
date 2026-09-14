@@ -23,7 +23,7 @@ import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorOneToMan
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;

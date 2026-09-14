@@ -12,15 +12,10 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.dialect.TempTableDdlTransactionHandling;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.temptable.internal.TemporaryTable;
 import org.hibernate.dialect.temptable.internal.TemporaryTableSessionUidColumn;
 import org.hibernate.dialect.temptable.spi.TemporaryTableStrategy;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -35,18 +30,13 @@ import org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemp
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExecutor;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.ast.spi.query.from.SqlAstJoinType;
-import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
 import org.hibernate.sql.ast.spi.query.expression.JdbcParameter;
-import org.hibernate.sql.ast.spi.query.insert.InsertSelectStatement;
-import org.hibernate.sql.ast.spi.query.select.QueryPart;
 import org.hibernate.sql.ast.spi.query.select.QuerySpec;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 
 import static org.hibernate.reactive.query.sqm.mutation.internal.temptable.ReactiveTemporaryTableHelper.cleanTemporaryTableRows;
-import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -58,40 +48,6 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	private ReactiveExecuteWithTemporaryTableHelper() {
-	}
-
-	public static CompletionStage<Integer> saveIntoTemporaryTable(
-			InsertSelectStatement temporaryTableInsert,
-			JdbcParameterBindings jdbcParameterBindings,
-			ExecutionContext executionContext) {
-		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
-		final JdbcServices jdbcServices = factory.getJdbcServices();
-		final JdbcEnvironment jdbcEnvironment = jdbcServices.getJdbcEnvironment();
-		final SqlAstTranslatorFactory sqlAstTranslatorFactory = jdbcEnvironment.getSqlAstTranslatorFactory();
-		final LockOptions lockOptions = executionContext.getQueryOptions().getLockOptions();
-		final LockMode lockMode = lockOptions.getLockMode();
-		// Acquire a WRITE lock for the rows that are about to be modified
-		lockOptions.setLockMode( LockMode.WRITE );
-		// Visit the table joins and reset the lock mode if we encounter OUTER joins that are not supported
-		final QueryPart sourceSelectStatement = temporaryTableInsert.getSourceSelectStatement();
-		if ( sourceSelectStatement != null
-				&& !jdbcEnvironment.getDialect().supportsOuterJoinForUpdate() ) {
-			sourceSelectStatement.visitQuerySpecs(
-					querySpec -> querySpec.getFromClause().visitTableJoins(
-								tableJoin -> {
-									if ( tableJoin.isInitialized()
-											&& tableJoin.getJoinType() != SqlAstJoinType.INNER ) {
-										lockOptions.setLockMode( lockMode );
-									}
-								}
-						)
-			);
-		}
-		final JdbcOperationQueryMutation jdbcInsert = sqlAstTranslatorFactory.buildMutationTranslator( factory, temporaryTableInsert )
-				.translate( jdbcParameterBindings, executionContext.getQueryOptions() );
-		lockOptions.setLockMode( lockMode );
-
-		return saveIntoTemporaryTable(jdbcInsert, jdbcParameterBindings, executionContext);
 	}
 
 	public static CompletionStage<Integer> saveIntoTemporaryTable(
@@ -111,30 +67,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 
 	public static QuerySpec createIdTableSelectQuerySpec(
 			TemporaryTable idTable,
-			JdbcParameter sessionUidParameter,
-			EntityMappingType entityDescriptor,
-			ExecutionContext executionContext) {
-		return createIdTableSelectQuerySpec( idTable, null, sessionUidParameter, entityDescriptor, executionContext );
-	}
-
-	public static QuerySpec createIdTableSelectQuerySpec(
-			TemporaryTable idTable,
 			ModelPart fkModelPart,
 			JdbcParameter sessionUidParameter,
 			EntityMappingType entityDescriptor,
 			ExecutionContext executionContext) {
 		return ExecuteWithTemporaryTableHelper.createIdTableSelectQuerySpec( idTable, fkModelPart, sessionUidParameter, entityDescriptor, executionContext );
-	}
-
-	@Deprecated(forRemoval = true, since = "3.1")
-	public static CompletionStage<Void> performBeforeTemporaryTableUseActions(
-			TemporaryTable temporaryTable,
-			ExecutionContext executionContext) {
-		return performBeforeTemporaryTableUseActions(
-				temporaryTable,
-				executionContext.getSession().getDialect().getTemporaryTableBeforeUseAction(),
-				executionContext
-		).thenCompose( CompletionStages::voidFuture );
 	}
 
 	public static CompletionStage<Boolean> performBeforeTemporaryTableUseActions(
@@ -149,14 +86,9 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			BeforeUseAction beforeUseAction,
 			ExecutionContext executionContext) {
 		final SessionFactoryImplementor factory = executionContext.getSession().getFactory();
-		final Dialect dialect = factory.getJdbcServices().getDialect();
 		if ( beforeUseAction == BeforeUseAction.CREATE ) {
 			final TemporaryTableCreationWork temporaryTableCreationWork = new TemporaryTableCreationWork( temporaryTable, factory );
-			final TempTableDdlTransactionHandling ddlTransactionHandling = dialect.getTemporaryTableDdlTransactionHandling();
-			if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
-				return temporaryTableCreationWork.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() );
-			}
-			throw LOG.notYetImplemented();
+			return temporaryTableCreationWork.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() );
 		}
 		return falseFuture();
 	}
@@ -170,7 +102,7 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 		final Dialect dialect = factory.getJdbcServices().getDialect();
 		return switch ( afterUseAction ) {
 			case CLEAN -> cleanTemporaryTableRows( temporaryTable, dialect.getTemporaryTableExporter(), sessionUidAccess, executionContext.getSession() );
-			case DROP -> dropAction( temporaryTable, executionContext, factory, dialect );
+			case DROP -> dropAction( temporaryTable, executionContext, factory );
 			default -> voidFuture();
 		};
 	}
@@ -215,17 +147,11 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 	private static CompletionStage<Void> dropAction(
 			TemporaryTable temporaryTable,
 			ExecutionContext executionContext,
-			SessionFactoryImplementor factory,
-			Dialect dialect) {
-		final TempTableDdlTransactionHandling ddlTransactionHandling = dialect.getTemporaryTableDdlTransactionHandling();
-		if ( ddlTransactionHandling == TempTableDdlTransactionHandling.NONE ) {
-			return new ReactiveTemporaryTableHelper
-					.TemporaryTableDropWork( temporaryTable, factory )
-					.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() )
-					.thenCompose( CompletionStages::voidFuture );
-		}
-
-		return failedFuture( LOG.notYetImplemented() );
+			SessionFactoryImplementor factory) {
+		return new ReactiveTemporaryTableHelper
+				.TemporaryTableDropWork( temporaryTable, factory )
+				.reactiveExecute( ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection() )
+				.thenCompose( CompletionStages::voidFuture );
 	}
 
 	private static void doNothing(Integer integer, PreparedStatement preparedStatement) {

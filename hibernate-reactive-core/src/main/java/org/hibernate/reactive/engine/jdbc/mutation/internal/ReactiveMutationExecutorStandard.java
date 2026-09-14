@@ -4,6 +4,12 @@
  */
 package org.hibernate.reactive.engine.jdbc.mutation.internal;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.engine.jdbc.batch.spi.StaleStateMapper;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.OperationResultChecker;
@@ -27,17 +33,11 @@ import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.spi.mutation.EntityMutationOperationGroup;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
+import org.hibernate.sql.model.EntityMutationOperationGroup;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.spi.mutation.MutationType;
 import org.hibernate.sql.spi.mutation.TableMapping;
 import org.hibernate.sql.spi.mutation.ValuesAnalysis;
-
-import java.lang.invoke.MethodHandles;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.checkResults;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -83,8 +83,7 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 		if ( batchedMutationOperationGroup != null ) {
 			final List<PreparedStatementDetails> preparedStatementDetailsList = new ArrayList<>(
 					batchedMutationOperationGroup.getNumberOfStatements() );
-			batchedMutationOperationGroup.forEachStatement( (tableName, statementDetails) -> preparedStatementDetailsList
-					.add( statementDetails ) );
+			batchedMutationOperationGroup.forEachStatement( (tableName, statementDetails) -> preparedStatementDetailsList.add( statementDetails ) );
 			return loop( preparedStatementDetailsList, statementDetails -> {
 					  if ( statementDetails == null ) {
 						  return voidFuture();

@@ -8,9 +8,9 @@ import java.util.Map;
 
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
-import org.hibernate.engine.jdbc.mutation.spi.JdbcValueBindingsFactory;
 import org.hibernate.engine.jdbc.mutation.MutationExecutor;
 import org.hibernate.engine.jdbc.mutation.spi.BatchKeyAccess;
+import org.hibernate.engine.jdbc.mutation.spi.JdbcValueBindingsFactory;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
@@ -19,10 +19,10 @@ import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExec
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleNonBatched;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorSingleSelfExecuting;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorStandard;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.spi.mutation.MutationOperation;
-import org.hibernate.sql.spi.mutation.MutationOperationGroup;
-import org.hibernate.sql.spi.mutation.jdbc.PreparableMutationOperation;
 import org.hibernate.sql.spi.mutation.SelfExecutingUpdateOperation;
+import org.hibernate.sql.spi.mutation.jdbc.PreparableMutationOperation;
 
 /**
  * @see org.hibernate.engine.jdbc.mutation.internal.StandardMutationExecutorService
