@@ -20,7 +20,7 @@ vertxWebClientVersion = "4.5.34"
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
 com-ibm-db2-jcc = { group = "com.ibm.db2", name = "jcc", version = "12.1.5.0" }
 org-checkerframework-checker-qual = { group = "org.checkerframework", name = "checker-qual-android", version.ref = "checkerFrameworkVersion" }
-com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.4.0.jre11" }
+com-microsoft-sqlserver-mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version = "13.6.0.jre11" }
 com-mysql-mysql-connector-j = { group = "com.mysql", name = "mysql-connector-j", version = "26.7.0" }
 com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-client", version = "3.4" }
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "2.9.5" }
