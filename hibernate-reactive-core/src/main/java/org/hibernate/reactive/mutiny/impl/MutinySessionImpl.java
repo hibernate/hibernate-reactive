@@ -66,6 +66,10 @@ public class MutinySessionImpl implements Mutiny.Session {
 		return factory.uni( stageSupplier );
 	}
 
+	<T> Uni<T> uni(CompletionStage<T> stage) {
+		return Uni.createFrom().completionStage( stage );
+	}
+
 	@Override
 	public Uni<Void> flush() {
 //		checkOpen();
@@ -258,62 +262,62 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	@Override
 	public Uni<Void> persist(Object entity) {
-		return uni( () -> delegate.reactivePersist( entity ) );
+		return uni( delegate.reactivePersist( entity ) );
 	}
 
 	@Override
 	public Uni<Void> persist(String entityName, Object entity) {
-		return uni( () -> delegate.reactivePersist( entityName, entity ) );
+		return uni( delegate.reactivePersist( entityName, entity ) );
 	}
 
 	@Override
 	public Uni<Void> persistAll(Object... entities) {
-		return uni( () -> applyToAll( delegate::reactivePersist, entities ) );
+		return uni( applyToAll( delegate::reactivePersist, entities ) );
 	}
 
 	@Override
 	public Uni<Void> persistMultiple(List<?> entities) {
-		return uni( () -> applyToAll( delegate::reactivePersist, entities.toArray() ) );
+		return uni( applyToAll( delegate::reactivePersist, entities.toArray() ) );
 	}
 
 	@Override
 	public Uni<Void> remove(Object entity) {
-		return uni( () -> delegate.reactiveRemove( entity ) );
+		return uni( delegate.reactiveRemove( entity ) );
 	}
 
 	@Override
 	public Uni<Void> removeAll(Object... entities) {
-		return uni( () -> applyToAll( delegate::reactiveRemove, entities ) );
+		return uni( applyToAll( delegate::reactiveRemove, entities ) );
 	}
 
 	@Override
 	public Uni<Void> removeMultiple(List<?> entities) {
-		return uni( () -> applyToAll( delegate::reactiveRemove, entities.toArray() ) );
+		return uni( applyToAll( delegate::reactiveRemove, entities.toArray() ) );
 	}
 
 	@Override
 	public <T> Uni<T> merge(T entity) {
-		return uni( () -> delegate.reactiveMerge( entity ) );
+		return uni( delegate.reactiveMerge( entity ) );
 	}
 
 	@Override
 	public final Uni<Void> mergeAll(Object... entities) {
-		return uni( () -> applyToAll( delegate::reactiveMerge, entities ) );
+		return uni( applyToAll( delegate::reactiveMerge, entities ) );
 	}
 
 	@Override
 	public Uni<Void> mergeMultiple(List<?> entities) {
-		return uni( () -> applyToAll( delegate::reactiveMerge, entities.toArray() ) );
+		return uni( applyToAll( delegate::reactiveMerge, entities.toArray() ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity) {
-		return uni( () -> delegate.reactiveRefresh( entity, LockOptions.NONE ) );
+		return uni( delegate.reactiveRefresh( entity, LockOptions.NONE ) );
 	}
 
 	@Override
 	public Uni<Void> refresh(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveRefresh( entity, lockMode ) );
+		return uni( delegate.reactiveRefresh( entity, lockMode ) );
 	}
 
 	@Override
@@ -323,22 +327,22 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	//	@Override
 	public Uni<Void> refresh(Object entity, LockOptions lockOptions) {
-		return uni( () -> delegate.reactiveRefresh( entity, lockOptions ) );
+		return uni( delegate.reactiveRefresh( entity, lockOptions ) );
 	}
 
 	@Override
 	public Uni<Void> refreshAll(Object... entities) {
-		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities ) );
+		return uni( applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities ) );
 	}
 
 	@Override
 	public Uni<Void> refreshMultiple(List<?> entities) {
-		return uni( () -> applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities.toArray() ) );
+		return uni( applyToAll( e -> delegate.reactiveRefresh( e, LockOptions.NONE ), entities.toArray() ) );
 	}
 
 	@Override
 	public Uni<Void> lock(Object entity, LockMode lockMode) {
-		return uni( () -> delegate.reactiveLock( entity, lockMode ) );
+		return uni( delegate.reactiveLock( entity, lockMode ) );
 	}
 
 	@Override
@@ -348,7 +352,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	//	@Override
 	public Uni<Void> lock(Object entity, LockOptions lockOptions) {
-		return uni( () -> delegate.reactiveLock( entity, lockOptions ) );
+		return uni( delegate.reactiveLock( entity, lockOptions ) );
 	}
 
 	@Override

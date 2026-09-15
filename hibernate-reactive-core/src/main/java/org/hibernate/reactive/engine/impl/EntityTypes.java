@@ -267,7 +267,7 @@ public class EntityTypes {
 					// explicitly fetch it here before calling replace(). (Note that in Hibernate
 					// ORM this is unnecessary due to transparent lazy fetching.)
 					return ( (ReactiveQueryProducer) session )
-							.reactiveFetch( id, true )
+							.internalReactiveFetch( id, true )
 							.thenCompose( fetched -> {
 								Object idOrUniqueKey = entityType
 										.getIdentifierOrUniqueKeyType( session.getFactory().getRuntimeMetamodels() )
