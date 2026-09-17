@@ -1,9 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright Red Hat Inc. and Hibernate Authors
 
-# A scheduler can only run on the default branch.
-# With workflow_call, we can pass the branch we want to test as parameter so that we can check it out instead of the
-# default branch
 name: Nightly
 
 on:
@@ -15,6 +12,9 @@ permissions:
   contents: read
 
 jobs:
+  # A scheduler can only run on the default branch.
+  # With workflow_call, we can pass the branch we want to test as parameter so that we can check it out instead of the
+  # default branch
   build-snapshots:
     strategy:
       fail-fast: false
