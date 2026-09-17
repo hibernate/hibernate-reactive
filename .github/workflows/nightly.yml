@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Red Hat Inc. and Hibernate Authors
+
+# A scheduler can only run on the default branch.
+# With workflow_call, we can pass the branch we want to test as parameter so that we can check it out instead of the
+# default branch
+name: Nightly
+
+on:
+  schedule:
+    - cron: '25 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-snapshots:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 'wip/3.1', 'wip/3.2', 'wip/3.3', 'wip/3.4', 'wip/4.4', 'wip/5.0', 'wip/main' ]
+    uses: ./.github/workflows/build.yml
+    with:
+      branch: ${{ matrix.branch }}
+
+  reproducible-build-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [ 'wip/3.1', 'wip/3.2', 'wip/3.3', 'wip/3.4', 'wip/4.4', 'wip/5.0', 'wip/main' ]
+    uses: hibernate/.github/.github/workflows/reproducible-build-check.yml@main
+    with:
+      branch: ${{ matrix.branch }}
+    permissions:
+      contents: read
+    secrets: inherit
