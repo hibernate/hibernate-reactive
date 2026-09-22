@@ -80,7 +80,7 @@ public final class Cascade {
 					if ( !Hibernate.isInitialized( fetchable ) ) {
 						beforeDelete = beforeDelete.thenCompose( v -> session
 								.unwrap( ReactiveSession.class )
-								.reactiveFetch( fetchable, true )
+								.internalReactiveFetch( fetchable, true )
 						);
 					}
 				}

@@ -76,7 +76,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 		//TODO: if object was an uninitialized proxy, this is inefficient,
 		//      resulting in two SQL selects
 
-		return ( (ReactiveQueryProducer) source ).reactiveFetch( instance, true )
+		return ( (ReactiveQueryProducer) source ).internalReactiveFetch( instance, true )
 				.thenCompose( entity -> reactiveOnLock( event, entity ) );
 	}
 
