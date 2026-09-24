@@ -126,6 +126,7 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 			boolean restrictToTemporalExcluded,
 			Object rowId,
 			boolean forceDynamicUpdate,
+			boolean databaseDirtinessCheck,
 			SharedSessionContractImplementor session) {
 		final var updateValuesAnalysis = super.analyzeUpdateValues(
 				entity,
@@ -139,6 +140,7 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 				restrictToTemporalExcluded,
 				rowId,
 				forceDynamicUpdate,
+				databaseDirtinessCheck,
 				session
 		);
 		if ( oldValues == null ) {

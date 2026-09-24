@@ -172,6 +172,7 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 							dirtyAttributeIndexes,
 							attributeUpdateability,
 							forceDynamicUpdate,
+							false,
 							entityPersister().excludedFromTemporalVersioning( dirtyAttributeIndexes, hasDirtyCollection )
 					);
 
