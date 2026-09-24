@@ -24,7 +24,7 @@ import static java.util.Collections.addAll;
  *
  * @author Gavin King
  */
-@Incubating
+@Incubating(since = "1.0")
 public class AffectedEntities {
 	private static final String[] NO_TABLES = new String[0];
 

@@ -11,7 +11,7 @@ import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
 import org.hibernate.reactive.stage.Stage;
 
-@Incubating
+@Incubating(since = "2.0")
 public abstract class StageGenerator implements BeforeExecutionGenerator {
 
     @Override

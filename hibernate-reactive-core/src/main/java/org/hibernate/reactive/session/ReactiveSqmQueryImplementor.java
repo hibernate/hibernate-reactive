@@ -35,7 +35,7 @@ import jakarta.persistence.metamodel.Type;
  *
  * @see ReactiveSession
  */
-@Incubating
+@Incubating(since = "2.0")
 public interface ReactiveSqmQueryImplementor<R> extends ReactiveQueryImplementor<R>, NameableQuery {
 
 	SqmStatement<R> getSqmStatement();

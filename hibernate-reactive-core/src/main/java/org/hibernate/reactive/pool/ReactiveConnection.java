@@ -26,7 +26,7 @@ import io.vertx.sqlclient.spi.DatabaseMetadata;
  *
  * @see ReactiveConnectionPool
  */
-@Incubating
+@Incubating(since = "1.0")
 public interface ReactiveConnection {
 
 	boolean isTransactionInProgress();

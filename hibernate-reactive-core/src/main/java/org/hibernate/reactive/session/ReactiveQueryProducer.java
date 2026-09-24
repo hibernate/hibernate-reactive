@@ -36,7 +36,7 @@ import org.hibernate.LockMode;
  *
  * @see SharedSessionContractImplementor
  */
-@Incubating
+@Incubating(since = "2.0")
 public interface ReactiveQueryProducer extends ReactiveConnectionSupplier {
 
 	SessionFactoryImplementor getFactory();

@@ -18,7 +18,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 /**
  * @see org.hibernate.sql.results.spi.SingleResultConsumer
  */
-@Incubating
+@Incubating(since = "2.4")
 public class ReactiveSingleResultConsumer<T> implements ReactiveResultsConsumer<T, T> {
 
 	@Override

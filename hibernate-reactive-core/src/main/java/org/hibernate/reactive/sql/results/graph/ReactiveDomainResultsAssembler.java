@@ -12,7 +12,7 @@ import org.hibernate.sql.results.graph.DomainResultAssembler;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
-@Incubating
+@Incubating(since = "2.0")
 public interface ReactiveDomainResultsAssembler<J> extends DomainResultAssembler<J> {
 
 	CompletionStage<J> reactiveAssemble(

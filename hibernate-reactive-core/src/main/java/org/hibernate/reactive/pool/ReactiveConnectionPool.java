@@ -34,7 +34,7 @@ import java.util.concurrent.CompletionStage;
  *     .build();
  * </pre>
  */
-@Incubating
+@Incubating(since = "1.0")
 public interface ReactiveConnectionPool extends Service {
 	/**
 	 * Obtain a lazily-initializing reactive connection. The

@@ -11,7 +11,7 @@ import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.EventType;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-@Incubating
+@Incubating(since = "2.0")
 public abstract class MutinyGenerator implements BeforeExecutionGenerator {
 
     @Override

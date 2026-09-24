@@ -15,7 +15,7 @@ import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 /**
  * Reactive version of {@link JdbcSelect}
  */
-@Incubating
+@Incubating(since = "5.0")
 public interface ReactiveJdbcSelect extends JdbcSelect {
 
 	CompletionStage<Void> reactivePerformPreActions(ReactiveConnection connection, ExecutionContext executionContext);

@@ -166,7 +166,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().createSelectionQuery( queryString, resultType );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsert(Object entity) {
 		return delegate().upsert( entity );
 	}
@@ -191,7 +191,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().getResultSetMapping( resultType, mappingName );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertMultiple(List<?> entities) {
 		return delegate().upsertMultiple( entities );
 	}
@@ -248,7 +248,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().fetch( association );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertAll(Object... entities) {
 		return delegate().upsertAll( entities );
 	}
@@ -257,7 +257,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().currentTransaction();
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertAll(int batchSize, Object... entities) {
 		return delegate().upsertAll( batchSize, entities );
 	}

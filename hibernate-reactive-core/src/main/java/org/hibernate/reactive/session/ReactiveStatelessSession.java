@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
  * @see org.hibernate.reactive.stage.Stage.Session
  * @see org.hibernate.reactive.mutiny.Mutiny.Session
  */
-@Incubating
+@Incubating(since = "1.0")
 public interface ReactiveStatelessSession extends ReactiveQueryProducer, ReactiveSharedSessionContractImplementor {
 
 	@Override

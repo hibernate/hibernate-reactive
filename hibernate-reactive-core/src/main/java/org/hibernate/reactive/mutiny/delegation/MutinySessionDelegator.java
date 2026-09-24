@@ -164,7 +164,7 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
 		return delegate().lock( entity, lockMode );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public <T> Uni<T> find(Class<T> entityClass, Identifier<T> naturalId) {
 		return delegate().find( entityClass, naturalId );
 	}

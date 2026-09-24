@@ -17,7 +17,7 @@ import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 /**
  * @see org.hibernate.sql.results.graph.Initializer
  */
-@Incubating
+@Incubating(since = "2.0")
 public interface ReactiveInitializer<Data extends InitializerData> {
 
 	/**
