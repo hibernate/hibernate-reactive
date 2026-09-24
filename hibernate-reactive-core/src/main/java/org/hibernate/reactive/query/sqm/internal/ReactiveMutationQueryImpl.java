@@ -46,6 +46,8 @@ import org.hibernate.query.sqm.tree.spi.insert.SqmValues;
 import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
@@ -99,6 +101,11 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 			SqmDmlStatement<R> criteria,
 			SharedSessionContractImplementor session) {
 		super( criteria, session );
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page) {
+		throw new IllegalStateException( "Keyed result list is not supported for mutation queries" );
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

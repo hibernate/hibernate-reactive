@@ -399,7 +399,7 @@ public interface Mutiny {
 		@Override
 		SelectionQuery<R> setComment(String comment);
 
-		@Incubating
+		@Incubating(since = "4.5")
 		Uni<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page);
 	}
 

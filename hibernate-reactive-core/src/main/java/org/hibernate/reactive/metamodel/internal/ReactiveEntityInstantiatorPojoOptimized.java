@@ -4,9 +4,9 @@
  */
 package org.hibernate.reactive.metamodel.internal;
 
-import org.hibernate.bytecode.spi.ReflectionOptimizer;
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.metamodel.internal.EntityInstantiatorPojoOptimized;
+import org.hibernate.metamodel.internal.AbstractEntityInstantiatorPojo;
+import org.hibernate.metamodel.spi.EntityInstantiator;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.bythecode.enhance.spi.internal.ReactiveLazyAttributeLoadingInterceptor;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -14,16 +14,25 @@ import org.hibernate.type.descriptor.java.JavaType;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 
 /**
- * Extends {@link EntityInstantiatorPojoOptimized} to apply a {@link ReactiveLazyAttributeLoadingInterceptor}
+ * Wraps an {@link EntityInstantiator} to apply a {@link ReactiveLazyAttributeLoadingInterceptor}
  */
-public class ReactiveEntityInstantiatorPojoOptimized extends EntityInstantiatorPojoOptimized {
+public class ReactiveEntityInstantiatorPojoOptimized extends AbstractEntityInstantiatorPojo {
+
+	private final EntityInstantiator delegate;
 
 	public ReactiveEntityInstantiatorPojoOptimized(
 			EntityPersister persister,
 			PersistentClass persistentClass,
 			JavaType<?> javaType,
-			ReflectionOptimizer.InstantiationOptimizer instantiationOptimizer) {
-		super( persister, persistentClass, javaType, instantiationOptimizer );
+			EntityInstantiator delegate) {
+		super( persister, persistentClass, javaType );
+		this.delegate = delegate;
+	}
+
+	@Override
+	public Object instantiate() {
+		Object entity = delegate.instantiate();
+		return applyInterception( entity );
 	}
 
 	@Override

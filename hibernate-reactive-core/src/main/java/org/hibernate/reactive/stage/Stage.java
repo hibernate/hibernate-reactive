@@ -399,7 +399,7 @@ public interface Stage {
 		@Override
 		SelectionQuery<R> setComment(String comment);
 
-		@Incubating
+		@Incubating(since = "4.5")
 		CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page);
 	}
 

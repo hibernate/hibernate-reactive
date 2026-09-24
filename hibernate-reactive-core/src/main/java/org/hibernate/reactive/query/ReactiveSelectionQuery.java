@@ -50,7 +50,7 @@ public interface ReactiveSelectionQuery<R> extends CommonQueryContract {
 
 	CompletionStage<Long> getReactiveResultCount();
 
-	@Incubating
+	@Incubating(since = "4.5")
 	CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page);
 
 	CompletionStage<R> reactiveUnique();

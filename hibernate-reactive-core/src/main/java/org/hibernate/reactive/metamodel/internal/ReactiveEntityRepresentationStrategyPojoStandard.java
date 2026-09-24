@@ -4,8 +4,8 @@
  */
 package org.hibernate.reactive.metamodel.internal;
 
-import org.hibernate.bytecode.spi.ReflectionOptimizer;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.metamodel.internal.EntityInstantiatorPojoOptimized;
 import org.hibernate.metamodel.internal.EntityRepresentationStrategyPojoStandard;
 import org.hibernate.metamodel.spi.EntityInstantiator;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -26,13 +26,13 @@ public class ReactiveEntityRepresentationStrategyPojoStandard extends EntityRepr
 
 	@Override
 	protected EntityInstantiator determineInstantiator(PersistentClass bootDescriptor, EntityPersister persister) {
-		final ReflectionOptimizer reflectionOptimizer = getReflectionOptimizer();
-		if ( reflectionOptimizer != null && reflectionOptimizer.getInstantiationOptimizer() != null ) {
+		final EntityInstantiator parentInstantiator = super.determineInstantiator( bootDescriptor, persister );
+		if ( parentInstantiator instanceof EntityInstantiatorPojoOptimized ) {
 			return new ReactiveEntityInstantiatorPojoOptimized(
 					persister,
 					bootDescriptor,
 					getMappedJavaType(),
-					reflectionOptimizer.getInstantiationOptimizer()
+					parentInstantiator
 			);
 		}
 		else {

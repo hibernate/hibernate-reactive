@@ -26,9 +26,9 @@ import org.hibernate.query.hql.internal.QuerySplitter;
 import org.hibernate.query.spi.QueryInterpretationCache;
 import org.hibernate.query.spi.MutableQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.sqm.internal.AbstractSqmSelectionQuery;
+import org.hibernate.query.internal.KeyedResult;
+import org.hibernate.query.internal.SelectionQueryImpl;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.internal.KeyedResult;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.spi.InterpretationsKeySource;
 import org.hibernate.query.sqm.tree.spi.SqmStatement;
@@ -175,7 +175,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 				.adjustFetchProfiles( options.getDisabledFetchProfiles(), options.getEnabledFetchProfiles() );
 	}
 
-	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage, AbstractSqmSelectionQuery original) {
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage, ReactiveSelectionQueryImpl<?> original) {
 		var reactiveSqmSelectionQuery = new ReactiveSelectionQueryImpl<KeyedResult<R>>( original, keyedPage );
 		return reactiveSqmSelectionQuery.reactiveList()
 				.thenApply( results -> {
@@ -184,8 +184,8 @@ public class ReactiveAbstractSelectionQuery<R> {
 							KeyedResult.collectResults( results, pageSize, keyedPage.getKeyInterpretation() ),
 							KeyedResult.collectKeys( results, pageSize ),
 							keyedPage,
-							original.nextPage( keyedPage, results ),
-							original.previousPage( keyedPage, results )
+							SelectionQueryImpl.nextPage( keyedPage, results ),
+							SelectionQueryImpl.previousPage( keyedPage, results )
 					);
 				} );
 	}

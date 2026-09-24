@@ -31,7 +31,7 @@ import org.hibernate.jpa.event.spi.CallbackType;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl;
+import org.hibernate.property.access.spi.PropertyValueAccessor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -499,7 +499,7 @@ public class DefaultReactiveDeleteEventListener
 				}
 			}
 			else if ( currentState[i] == LazyPropertyInitializer.UNFETCHED_PROPERTY
-					|| currentState[i] == PropertyAccessStrategyBackRefImpl.UNKNOWN ) {
+					|| currentState[i] == PropertyValueAccessor.UNKNOWN ) {
 				deletedState[i] = currentState[i];
 			}
 			else {

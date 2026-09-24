@@ -23,7 +23,10 @@ import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.internal.util.collections.IdentitySet;
 import org.hibernate.query.internal.QueryLogging;
 import org.hibernate.query.QueryParameter;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.internal.DelegatingDomainQueryExecutionContext;
+import org.hibernate.query.internal.KeyedResult;
 import org.hibernate.query.internal.SelectionQueryImpl;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.HqlInterpretation;
@@ -85,6 +88,29 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 			Class<R> expectedResultType,
 			SharedSessionContractImplementor session) {
 		super( criteria, expectedResultType, session );
+	}
+
+	public <E> ReactiveSelectionQueryImpl(@SuppressWarnings("rawtypes") ReactiveSelectionQueryImpl original, KeyedPage<E> keyedPage) {
+		super( original, keyedPage );
+	}
+
+	@Override
+	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage) {
+		if ( keyedPage == null ) {
+			throw new IllegalArgumentException( "KeyedPage was null" );
+		}
+		var keyedQuery = new ReactiveSelectionQueryImpl<KeyedResult<R>>( this, keyedPage );
+		return keyedQuery.reactiveList()
+				.thenApply( results -> {
+					final int pageSize = keyedPage.getPage().getSize();
+					return new KeyedResultList<>(
+							KeyedResult.collectResults( results, pageSize, keyedPage.getKeyInterpretation() ),
+							KeyedResult.collectKeys( results, pageSize ),
+							keyedPage,
+							SelectionQueryImpl.nextPage( keyedPage, results ),
+							SelectionQueryImpl.previousPage( keyedPage, results )
+					);
+				} );
 	}
 
 	@Override

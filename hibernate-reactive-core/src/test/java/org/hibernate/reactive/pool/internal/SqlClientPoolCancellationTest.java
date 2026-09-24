@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Copyright Red Hat Inc. and Hibernate Authors
  */
-package org.hibernate.reactive.pool.impl;
+package org.hibernate.reactive.pool.internal;
 
 import java.lang.reflect.Proxy;
 import java.util.concurrent.CompletionStage;

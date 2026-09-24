@@ -25,6 +25,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.property.access.internal.PropertyAccessorServiceInitiator;
 import org.hibernate.reactive.context.internal.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
@@ -85,6 +86,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] PropertyAccessStrategyResolver
 		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
+
+		// [standard] PropertyAccessorService
+		serviceInitiators.add( PropertyAccessorServiceInitiator.INSTANCE );
 
 		// [standard] SqlScriptCommandExtractor
 		serviceInitiators.add( SqlScriptExtractorInitiator.INSTANCE );
