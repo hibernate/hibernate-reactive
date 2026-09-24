@@ -10,19 +10,18 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.PreparedStatementGroupSingleTable;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.mutation.UpdateValuesAnalysis;
 import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
 import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.internal.CompletionStages;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.spi.mutation.MutationTarget;
 import org.hibernate.sql.spi.mutation.TableMapping;
 import org.hibernate.sql.spi.mutation.ValuesAnalysis;
-import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcDeleteMutation;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcInsertMutation;
 import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
@@ -38,11 +37,8 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	private static final Log LOG = make( Log.class, lookup() );
 	private final OptionalTableUpdate upsert;
 
-	public ReactiveOptionalTableUpdateOperation(
-			EntityMutationTarget mutationTarget,
-			OptionalTableUpdate upsert,
-			SessionFactoryImplementor factory) {
-		super( mutationTarget, upsert, factory );
+	public ReactiveOptionalTableUpdateOperation(MutationTarget mutationTarget, OptionalTableUpdate upsert) {
+		super( mutationTarget, upsert );
 		this.upsert = upsert;
 	}
 
@@ -138,8 +134,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 
 		final JdbcMutationOperation jdbcUpdate = createJdbcUpdate( session );
 		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable( jdbcUpdate, session );
-		final PreparedStatementDetails statementDetails = statementGroup
-				.resolvePreparedStatementDetails( getTableDetails().getTableName() );
+		final PreparedStatementDetails statementDetails = statementGroup.resolvePreparedStatementDetails( getTableDetails().getTableName() );
 
 		// If we get here the statement is needed - make sure it is resolved
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {

@@ -120,6 +120,11 @@ public class ReactiveNamedSqmQueryMemento<E> implements NamedSqmQueryMemento<E> 
 	}
 
 	@Override
+	public String getName() {
+		return delegate.getName();
+	}
+
+	@Override
 	public Timeout getTimeout() {
 		return delegate.getTimeout();
 	}

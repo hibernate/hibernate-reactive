@@ -6,11 +6,18 @@ package org.hibernate.reactive.query.sqm.internal;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
 
 import org.hibernate.HibernateException;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.dialect.sql.ast.spi.ValuesListSupport;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
@@ -18,6 +25,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.internal.MutationQueryImpl;
 import org.hibernate.query.named.internal.CriteriaMutationMementoImpl;
 import org.hibernate.query.named.internal.HqlMutationMementoImpl;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 import org.hibernate.query.spi.HqlInterpretation;
 import org.hibernate.query.sqm.internal.SqmInterpretationsKey;
 import org.hibernate.query.sqm.tree.spi.SqmCopyContext;
@@ -30,6 +38,7 @@ import org.hibernate.query.sqm.tree.spi.insert.SqmValues;
 import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
@@ -195,7 +204,7 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		}
 		else if ( sqmInsert instanceof SqmInsertValuesStatement<R> insertValues
 				&& insertValues.getValuesList().size() != 1
-				&& !getSessionFactory().getJdbcServices().getDialect().getValuesListSupport().supports( ValuesListSupport.Context.INSERT ) ) { ){
+				&& !getSessionFactory().getJdbcServices().getDialect().getValuesListSupport().supports( ValuesListSupport.Context.INSERT ) ) {
 			final List<SqmValues> valuesList = insertValues.getValuesList();
 			final ReactiveNonSelectQueryPlan[] planParts = new ReactiveNonSelectQueryPlan[valuesList.size()];
 			for ( int i = 0; i < valuesList.size(); i++ ) {
@@ -223,5 +232,166 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 			}
 		}
 		return useMultiTableInsert;
+	}
+
+	@Override
+	public NamedQueryMemento<?> toMemento(String name) {
+		return null;
+	}
+
+	@Override
+	public CompletionStage<List<R>> reactiveList() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResult() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public CompletionStage<R> getReactiveSingleResultOrNull() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public CompletionStage<Long> getReactiveResultCount() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public CompletionStage<R> reactiveUnique() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public CompletionStage<Optional<R>> reactiveUniqueResultOptional() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public List<R> getResultList() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public Stream<R> getResultStream() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public R getSingleResult() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	@Override
+	public R getSingleResultOrNull() {
+		throw LOG.nonReactiveMethodCall( "executeReactiveUpdate" );
+	}
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Covariant overrides
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setHint(String hintName, Object value) {
+		super.setHint( hintName, value );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setComment(String comment) {
+		super.setComment( comment );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> addQueryHint(String hint) {
+		super.addQueryHint( hint );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setMaxResults(int maxResult) {
+		super.setMaxResults( maxResult );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setFirstResult(int startPosition) {
+		super.setFirstResult( startPosition );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setCacheable(boolean cacheable) {
+		super.setCacheable( cacheable );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setCacheRegion(String cacheRegion) {
+		super.setCacheRegion( cacheRegion );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setHibernateLockMode(LockMode lockMode) {
+		// Not applicable for mutation queries
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setTimeout(int timeout) {
+		super.setTimeout( timeout );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setFetchSize(int fetchSize) {
+		// Not applicable for mutation queries
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setReadOnly(boolean readOnly) {
+		// Not applicable for mutation queries
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setProperties(Object bean) {
+		super.setProperties( bean );
+		return this;
+	}
+
+	@Override
+	public ReactiveMutationQueryImpl<R> setProperties(Map bean) {
+		super.setProperties( bean );
+		return this;
+	}
+
+	@Override
+	public LockOptions getLockOptions() {
+		return null;
+	}
+
+	@Override
+	public ReactiveSqmQueryImplementor<R> setLockOptions(LockOptions lockOptions) {
+		return null;
+	}
+
+	@Override
+	public ReactiveSqmQueryImplementor<R> setLockMode(String alias, LockMode lockMode) {
+		return null;
+	}
+
+	@Override
+	public ReactiveSelectionQuery<R> setFollowOnLocking(boolean enable) {
+		return null;
+	}
+
+	@Override
+	public void applyGraph(RootGraphImplementor<?> graph, GraphSemantic semantic) {
+
 	}
 }
