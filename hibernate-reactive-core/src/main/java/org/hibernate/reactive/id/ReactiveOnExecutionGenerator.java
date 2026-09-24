@@ -9,10 +9,10 @@ import org.hibernate.dialect.generated.spi.GeneratedValuesSupport;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
-import org.hibernate.id.insert.UniqueKeySelectingDelegate;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.id.insert.ReactiveGetGeneratedKeysDelegate;
 import org.hibernate.reactive.id.insert.ReactiveInsertReturningDelegate;
+import org.hibernate.reactive.id.insert.ReactiveUniqueKeySelectingDelegate;
 
 import static org.hibernate.generator.EventType.INSERT;
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCustomSql;
@@ -33,7 +33,7 @@ public interface ReactiveOnExecutionGenerator extends OnExecutionGenerator {
 			return new ReactiveInsertReturningDelegate( persister, INSERT );
 		}
 		// let's just hope the entity has a @NaturalId!
-		return new UniqueKeySelectingDelegate( persister, getUniqueKeyPropertyNames( persister ), INSERT );
+		return new ReactiveUniqueKeySelectingDelegate( persister, getUniqueKeyPropertyNames( persister ), INSERT );
 	}
 
 }
