@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
@@ -50,6 +51,7 @@ public class JDBCTimeZoneZonedTest extends BaseReactiveTest {
 		super.setProperties( configuration );
 		configuration.setProperty( TIMEZONE_DEFAULT_STORAGE, "NORMALIZE" );
 		configuration.setProperty( JDBC_TIME_ZONE, "GMT+5" );
+		configuration.setProperty( AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC, "false" );
 	}
 
 	@Test

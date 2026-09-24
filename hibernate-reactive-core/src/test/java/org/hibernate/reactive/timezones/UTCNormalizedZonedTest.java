@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
@@ -43,6 +44,7 @@ public class UTCNormalizedZonedTest extends BaseReactiveTest {
 	protected void setProperties(Configuration configuration) {
 		super.setProperties( configuration );
 		configuration.setProperty( TIMEZONE_DEFAULT_STORAGE, "NORMALIZE_UTC" );
+		configuration.setProperty( AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC, "false" );
 	}
 
 	@Test
