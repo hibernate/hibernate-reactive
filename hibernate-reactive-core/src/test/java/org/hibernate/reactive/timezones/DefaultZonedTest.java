@@ -12,7 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
-import org.hibernate.dialect.TimeZoneSupport;
+import org.hibernate.dialect.type.spi.TimeZoneSupport;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
 
@@ -46,7 +46,7 @@ public class DefaultZonedTest extends BaseReactiveTest {
 	public void test(VertxTestContext context) {
 		final ZonedDateTime nowZoned;
 		final OffsetDateTime nowOffset;
-		if ( getDialect().getDefaultTimestampPrecision() == 6 ) {
+		if ( getDialect().fractionalSecondPrecisionInNanos() <= 1000 ) {
 			nowZoned = ZonedDateTime.now().withZoneSameInstant( ZoneId.of("CET") ).truncatedTo( ChronoUnit.MICROS );
 			nowOffset = OffsetDateTime.now().withOffsetSameInstant( ZoneOffset.ofHours(3) ).truncatedTo( ChronoUnit.MICROS );
 		}

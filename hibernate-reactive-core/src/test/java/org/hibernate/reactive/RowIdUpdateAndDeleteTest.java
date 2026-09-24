@@ -186,7 +186,7 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 
 	private static void shouldUseRowIdForUpdate() {
 		// Not all databases have a rowId column
-		String rowId = getDialect().rowId( "" );
+		String rowId = getDialect().getRowIdSupport().resolveExpression( "" );
 		String column = rowId == null ? "primary_key" : rowId;
 		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )
@@ -195,7 +195,7 @@ public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 
 	private static void shouldUseRowIdForDelete() {
 		// Not all databases have a rowId column
-		String rowId = getDialect().rowId( "" );
+		String rowId = getDialect().getRowIdSupport().resolveExpression( "" );
 		String column = rowId == null ? "primary_key" : rowId;
 		assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
 		assertThat( sqlTracker.getLoggedQueries().get( 0 ) )

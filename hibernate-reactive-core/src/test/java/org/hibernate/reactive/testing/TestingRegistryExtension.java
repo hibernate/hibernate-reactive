@@ -10,9 +10,11 @@ import java.util.Map;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
 import org.hibernate.engine.jdbc.env.spi.ExtractedDatabaseMetaData;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.engine.jdbc.env.spi.JdbcMetadata;
 import org.hibernate.engine.jdbc.env.spi.LobCreatorBuilder;
 import org.hibernate.engine.jdbc.env.spi.NameQualifierSupport;
 import org.hibernate.engine.jdbc.env.spi.QualifiedObjectNameFormatter;
@@ -114,7 +116,12 @@ public class TestingRegistryExtension implements BeforeEachCallback, AfterEachCa
 				}
 
 				@Override
-				public Object getJdbcMetadata() {
+				public JdbcMetadata getJdbcMetadata() {
+					return null;
+				}
+
+				@Override
+				public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
 					return null;
 				}
 			} );

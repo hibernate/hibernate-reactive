@@ -155,7 +155,7 @@ public class MutationDelegateIdentityTest extends BaseReactiveTest {
 		final int expectedQueriesSize = delegate instanceof AbstractSelectingDelegate
 				? 3
 				: delegate != null && delegate.supportsArbitraryValues() ? 1 : 2;
-		final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().rowId( "" ) != null;
+		final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().getRowIdSupport().resolveExpression( "" ) != null;
 		final IdentityAndValuesAndRowId entity = new IdentityAndValuesAndRowId();
 
 		test( context, getMutinySessionFactory()
@@ -213,7 +213,7 @@ public class MutationDelegateIdentityTest extends BaseReactiveTest {
 						assertNumberOfOccurrenceInQueryNoSpace( 1, "id_column", 1 );
 					}
 
-					final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().rowId( "" ) != null;
+					final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().getRowIdSupport().resolveExpression( "" ) != null;
 					if ( shouldHaveRowId ) {
 						// assert row-id was populated in entity entry
 						final PersistenceContext pc = ( (MutinySessionImpl) s )

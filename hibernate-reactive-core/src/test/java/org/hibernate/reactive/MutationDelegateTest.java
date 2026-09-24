@@ -122,7 +122,7 @@ public class MutationDelegateTest extends BaseReactiveTest {
 	public void testGeneratedValuesAndRowId(VertxTestContext context) {
 		final GeneratedValuesMutationDelegate delegate = getDelegate( ValuesAndRowId.class, MutationType.INSERT );
 		final int expectedQueriesSize = delegate != null && delegate.supportsArbitraryValues() ? 1 : 2;
-		final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().rowId( "" ) != null;
+		final boolean shouldHaveRowId = delegate != null && delegate.supportsRowId() && getDialect().getRowIdSupport().resolveExpression( "" ) != null;
 
 		final ValuesAndRowId entity = new ValuesAndRowId( 1L );
 		test( context, getMutinySessionFactory()

@@ -162,7 +162,7 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 						query,
 						PessimisticLockKind.UPDATE,
 						Timeouts.WAIT_FOREVER,
-						List.of( new LockingClauseRequest.ColumnTarget( alias, valueColumnName ) )
+						List.of( new LockingClauseRequest.TableTarget( alias ) )
 				)
 		);
 		return result.sql();
