@@ -24,7 +24,6 @@ import org.hibernate.service.Service;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceBinding;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -115,7 +114,7 @@ public class TestingRegistryExtension implements BeforeEachCallback, AfterEachCa
 				}
 
 				@Override
-				public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
+				public Object getJdbcMetadata() {
 					return null;
 				}
 			} );
