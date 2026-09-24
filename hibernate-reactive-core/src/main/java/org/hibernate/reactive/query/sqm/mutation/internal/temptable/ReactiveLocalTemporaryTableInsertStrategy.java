@@ -5,6 +5,8 @@
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
 import org.hibernate.internal.util.MutableObject;
+import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
@@ -17,8 +19,10 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 public class ReactiveLocalTemporaryTableInsertStrategy extends LocalTemporaryTableInsertStrategy
 		implements ReactiveSqmMultiTableInsertStrategy {
 
-	public ReactiveLocalTemporaryTableInsertStrategy(LocalTemporaryTableInsertStrategy insertStrategy) {
-		super( insertStrategy.getTemporaryTable(), insertStrategy.getSessionFactory() );
+	public ReactiveLocalTemporaryTableInsertStrategy(
+			EntityMappingType rootEntityDescriptor,
+			RuntimeModelCreationContext creationContext) {
+		super( rootEntityDescriptor, creationContext );
 	}
 
 	@Override

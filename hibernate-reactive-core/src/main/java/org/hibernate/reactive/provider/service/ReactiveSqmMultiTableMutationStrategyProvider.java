@@ -4,18 +4,10 @@
  */
 package org.hibernate.reactive.provider.service;
 
-import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.dialect.mutation.spi.MultiTableMutationStrategyKind;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
-import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
-import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableInsertStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableInsertStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategyProvider;
@@ -34,41 +26,41 @@ public class ReactiveSqmMultiTableMutationStrategyProvider implements SqmMultiTa
 	public SqmMultiTableMutationStrategy createMutationStrategy(
 			EntityMappingType rootEntityDescriptor,
 			RuntimeModelCreationContext creationContext) {
-		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
-		final SqmMultiTableMutationStrategy mutationStrategy = options.getCustomSqmMultiTableMutationStrategy();
-		if ( mutationStrategy instanceof CteMutationStrategy ) {
-			return new ReactiveCteMutationStrategy( rootEntityDescriptor, creationContext );
+		final Dialect dialect = creationContext.getDialect();
+		final MultiTableMutationStrategyKind kind =
+				dialect.getMultiTableMutationSupport().mutationStrategyKind();
+		switch ( kind ) {
+			case CTE:
+				return new ReactiveCteMutationStrategy( rootEntityDescriptor, creationContext );
+			case LOCAL_TEMPORARY_TABLE:
+				return new ReactiveLocalTemporaryTableMutationStrategy( rootEntityDescriptor, creationContext );
+			case GLOBAL_TEMPORARY_TABLE:
+				return new ReactiveGlobalTemporaryTableMutationStrategy( rootEntityDescriptor, creationContext );
+			case PERSISTENT_TABLE:
+				return new ReactivePersistentTableMutationStrategy( rootEntityDescriptor, creationContext );
+			default:
+				throw new IllegalArgumentException( "Unrecognized MultiTableMutationStrategyKind: " + kind );
 		}
-		if ( mutationStrategy instanceof LocalTemporaryTableMutationStrategy ) {
-			return new ReactiveLocalTemporaryTableMutationStrategy( (LocalTemporaryTableMutationStrategy) mutationStrategy );
-		}
-		if ( mutationStrategy instanceof PersistentTableMutationStrategy ) {
-			return new ReactivePersistentTableMutationStrategy( (PersistentTableMutationStrategy) mutationStrategy );
-		}
-		if ( mutationStrategy instanceof GlobalTemporaryTableMutationStrategy ) {
-			return new ReactiveGlobalTemporaryTableMutationStrategy( (GlobalTemporaryTableStrategy) mutationStrategy );
-		}
-		return mutationStrategy;
 	}
 
 	@Override
 	public SqmMultiTableInsertStrategy createInsertStrategy(
 			EntityMappingType rootEntityDescriptor,
 			RuntimeModelCreationContext creationContext) {
-		final SessionFactoryOptions options = creationContext.getSessionFactoryOptions();
-		final SqmMultiTableInsertStrategy insertStrategy = options.getCustomSqmMultiTableInsertStrategy();
-		if ( insertStrategy instanceof CteInsertStrategy ) {
-			return new ReactiveCteInsertStrategy( rootEntityDescriptor, creationContext );
+		final Dialect dialect = creationContext.getDialect();
+		final MultiTableMutationStrategyKind kind =
+				dialect.getMultiTableMutationSupport().insertStrategyKind();
+		switch ( kind ) {
+			case CTE:
+				return new ReactiveCteInsertStrategy( rootEntityDescriptor, creationContext );
+			case LOCAL_TEMPORARY_TABLE:
+				return new ReactiveLocalTemporaryTableInsertStrategy( rootEntityDescriptor, creationContext );
+			case GLOBAL_TEMPORARY_TABLE:
+				return new ReactiveGlobalTemporaryTableInsertStrategy( rootEntityDescriptor, creationContext );
+			case PERSISTENT_TABLE:
+				return new ReactivePersistentTableInsertStrategy( rootEntityDescriptor, creationContext );
+			default:
+				throw new IllegalArgumentException( "Unrecognized MultiTableMutationStrategyKind: " + kind );
 		}
-		if ( insertStrategy instanceof LocalTemporaryTableInsertStrategy ) {
-			return new ReactiveLocalTemporaryTableInsertStrategy( (LocalTemporaryTableInsertStrategy) insertStrategy );
-		}
-		if ( insertStrategy instanceof PersistentTableInsertStrategy ) {
-			return new ReactivePersistentTableInsertStrategy( (PersistentTableInsertStrategy) insertStrategy );
-		}
-		if ( insertStrategy instanceof GlobalTemporaryTableInsertStrategy ) {
-			return new ReactiveGlobalTemporaryTableInsertStrategy( (GlobalTemporaryTableStrategy) insertStrategy );
-		}
-		return insertStrategy;
 	}
 }

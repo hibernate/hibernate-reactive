@@ -9,12 +9,13 @@ import java.util.concurrent.CompletableFuture;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.MutableObject;
+import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy;
-import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.query.sqm.mutation.spi.MultiTableHandler;
 import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
 import org.hibernate.query.sqm.tree.spi.SqmDeleteOrUpdateStatement;
@@ -37,8 +38,10 @@ public class ReactiveGlobalTemporaryTableMutationStrategy extends GlobalTemporar
 
 	private boolean dropIdTables;
 
-	public ReactiveGlobalTemporaryTableMutationStrategy(GlobalTemporaryTableStrategy strategy) {
-		super( strategy.getTemporaryTable(), strategy.getSessionFactory() );
+	public ReactiveGlobalTemporaryTableMutationStrategy(
+			EntityMappingType rootEntityDescriptor,
+			RuntimeModelCreationContext creationContext) {
+		super( rootEntityDescriptor, creationContext );
 	}
 
 

@@ -4,10 +4,15 @@
  */
 package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.MutableObject;
+import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
+import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
@@ -17,9 +22,6 @@ import org.hibernate.query.sqm.tree.spi.delete.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 
 public class ReactivePersistentTableMutationStrategy extends PersistentTableMutationStrategy
@@ -33,8 +35,10 @@ public class ReactivePersistentTableMutationStrategy extends PersistentTableMuta
 
 	private boolean dropIdTables;
 
-	public ReactivePersistentTableMutationStrategy(PersistentTableMutationStrategy original) {
-		super( original.getTemporaryTable(), original.getSessionFactory() );
+	public ReactivePersistentTableMutationStrategy(
+			EntityMappingType rootEntityDescriptor,
+			RuntimeModelCreationContext creationContext) {
+		super( rootEntityDescriptor, creationContext );
 	}
 
 	@Override
