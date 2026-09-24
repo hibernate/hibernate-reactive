@@ -17,6 +17,7 @@ import org.hibernate.dialect.lock.spi.LockingClauseRequest;
 import org.hibernate.dialect.lock.spi.LockingSqlRewriteRequest;
 import org.hibernate.dialect.lock.spi.LockingSqlRewriteResult;
 import org.hibernate.dialect.lock.spi.PessimisticLockKind;
+import org.hibernate.dialect.lock.spi.RowLockStrategy;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
@@ -157,12 +158,17 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 	}
 
 	private String applyLocksToSelect(Dialect dialect, String alias, String query) {
-		final LockingSqlRewriteResult result = dialect.getLockingSupport().getLockingSqlRewriter().rewrite(
+		final var lockingSupport = dialect.getLockingSupport();
+		final var rowLockStrategy = lockingSupport.getMetadata().getWriteRowLockStrategy();
+		final LockingClauseRequest.Target target = rowLockStrategy == RowLockStrategy.COLUMN
+				? new LockingClauseRequest.ColumnTarget( alias, valueColumnName )
+				: new LockingClauseRequest.TableTarget( alias );
+		final LockingSqlRewriteResult result = lockingSupport.getLockingSqlRewriter().rewrite(
 				new LockingSqlRewriteRequest(
 						query,
 						PessimisticLockKind.UPDATE,
 						Timeouts.WAIT_FOREVER,
-						List.of( new LockingClauseRequest.TableTarget( alias ) )
+						List.of( target )
 				)
 		);
 		return result.sql();
