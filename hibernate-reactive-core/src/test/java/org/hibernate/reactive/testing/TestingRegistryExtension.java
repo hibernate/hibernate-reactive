@@ -10,6 +10,7 @@ import java.util.Map;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
+import org.hibernate.dialect.lock.spi.TransactionConcurrency;
 import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
 import org.hibernate.engine.jdbc.env.spi.ExtractedDatabaseMetaData;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
@@ -117,6 +118,11 @@ public class TestingRegistryExtension implements BeforeEachCallback, AfterEachCa
 
 				@Override
 				public JdbcMetadata getJdbcMetadata() {
+					return null;
+				}
+
+				@Override
+				public TransactionConcurrency getTransactionConcurrency() {
 					return null;
 				}
 
