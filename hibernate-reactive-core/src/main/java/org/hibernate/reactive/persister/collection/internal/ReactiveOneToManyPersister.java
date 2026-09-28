@@ -26,7 +26,7 @@ import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
-import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
@@ -43,12 +43,12 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCo
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveUpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
 
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.MutationType.UPDATE;
+import static org.hibernate.sql.spi.mutation.MutationType.UPDATE;
 import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 /**

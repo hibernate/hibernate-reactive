@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.internal;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.AbstractMultiTableMutationQueryPlan;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.tree.SqmDmlStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDmlStatement;
 import org.hibernate.reactive.action.internal.ReactiveBulkOperationCleanupAction;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.internal.ReactiveHandler;

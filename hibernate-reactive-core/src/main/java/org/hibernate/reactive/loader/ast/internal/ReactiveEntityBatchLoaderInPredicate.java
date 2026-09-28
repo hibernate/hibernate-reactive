@@ -13,7 +13,6 @@ import org.hibernate.LockOptions;
 import org.hibernate.engine.spi.BatchFetchQueue;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.SubselectFetch;
 import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
@@ -22,8 +21,9 @@ import org.hibernate.loader.ast.spi.SqlInPredicateMultiKeyLoader;
 import org.hibernate.metamodel.mapping.EntityIdentifierMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.exec.spi.JdbcSelect;
@@ -52,8 +52,8 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 			int domainBatchSize,
 			int sqlBatchSize,
 			EntityMappingType entityDescriptor,
-			SessionFactoryImplementor sessionFactory) {
-		super( entityDescriptor, sessionFactory );
+			LoadQueryInfluencers loadQueryInfluencers) {
+		super( entityDescriptor, loadQueryInfluencers );
 		this.domainBatchSize = domainBatchSize;
 		this.sqlBatchSize = sqlBatchSize;
 
@@ -67,9 +67,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 		}
 
 		final EntityIdentifierMapping identifierMapping = getLoadable().getIdentifierMapping();
-
 		final int expectedNumberOfParameters = identifierMapping.getJdbcTypeCount() * sqlBatchSize;
-
 		final JdbcParametersList.Builder jdbcParametersBuilder = JdbcParametersList.newBuilder( expectedNumberOfParameters );
 		sqlAst = LoaderSelectBuilder.createSelect(
 				getLoadable(),
@@ -78,8 +76,8 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 				identifierMapping,
 				null,
 				sqlBatchSize,
-				new LoadQueryInfluencers( sessionFactory ),
-				LockOptions.NONE,
+				loadQueryInfluencers,
+				new LockOptions(),
 				jdbcParametersBuilder::add,
 				new SqlAliasBaseManager(),
 				sessionFactory
@@ -90,7 +88,7 @@ public class ReactiveEntityBatchLoaderInPredicate<T> extends ReactiveSingleIdEnt
 		jdbcSelectOperation = sessionFactory.getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( sessionFactory, sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlAst ) )
 				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 	}
 

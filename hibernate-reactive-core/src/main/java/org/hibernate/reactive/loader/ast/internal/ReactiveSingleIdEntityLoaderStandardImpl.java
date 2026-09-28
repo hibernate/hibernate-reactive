@@ -14,8 +14,8 @@ import org.hibernate.loader.ast.internal.LoaderSelectBuilder;
 import org.hibernate.loader.ast.internal.SingleIdEntityLoaderStandardImpl;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.reactive.loader.ast.spi.ReactiveSingleIdEntityLoader;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 
 /**

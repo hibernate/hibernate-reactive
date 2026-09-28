@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.FlushMode;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.QueryParameter;
 
@@ -23,7 +22,7 @@ import jakarta.persistence.metamodel.Type;
  * @see org.hibernate.query.MutationQuery
  */
 public interface ReactiveMutationQuery<R> extends CommonQueryContract {
-	CompletionStage<Integer> executeReactiveUpdate();
+	CompletionStage<Integer> reactiveExecute();
 
 	@Override
 	ReactiveMutationQuery<R> setParameter(String name, Object value);
@@ -138,7 +137,4 @@ public interface ReactiveMutationQuery<R> extends CommonQueryContract {
 
 	@Override
 	ReactiveMutationQuery<R> setProperties(Map bean);
-
-	@Override
-	ReactiveMutationQuery<R> setHibernateFlushMode(FlushMode flushMode);
 }

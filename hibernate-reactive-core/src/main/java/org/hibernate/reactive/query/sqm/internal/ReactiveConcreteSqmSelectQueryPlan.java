@@ -13,19 +13,19 @@ import org.hibernate.internal.util.MutableObject;
 import org.hibernate.query.Query;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.QueryOptions;
-import org.hibernate.query.spi.ScrollableResultsImplementor;
+import org.hibernate.ScrollableResults;
 import org.hibernate.query.sqm.internal.CacheableSqmInterpretation;
 import org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
-import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
+import org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.sql.results.spi.ReactiveResultsConsumer;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.sql.ast.spi.query.expression.Expression;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.exec.spi.JdbcSelect;
@@ -42,7 +42,7 @@ import static org.hibernate.reactive.util.internal.CompletionStages.completedFut
  *
  * @see org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan
  */
-public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
+public class ReactiveConcreteSqmSelectQueryPlan<R> extends ConcreteSqmSelectQueryPlan<R>
 		implements ReactiveSelectQueryPlan<R> {
 
 	private final SqmInterpreter<Object, ReactiveResultsConsumer<Object, R>> executeQueryInterpreter;
@@ -54,7 +54,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 
 	private volatile CacheableSqmInterpretation<SelectStatement, JdbcSelect> cacheableSqmInterpretation;
 
-	public ConcreteSqmSelectReactiveQueryPlan(
+	public ReactiveConcreteSqmSelectQueryPlan(
 			SqmSelectStatement<?> sqm,
 			String hql,
 			DomainParameterXref domainParameterXref,
@@ -171,7 +171,7 @@ public class ConcreteSqmSelectReactiveQueryPlan<R> extends ConcreteSqmSelectQuer
 	}
 
 	@Override
-	public ScrollableResultsImplementor<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
+	public ScrollableResults<R> performScroll(ScrollMode scrollMode, DomainQueryExecutionContext executionContext) {
 		throw new UnsupportedOperationException();
 	}
 

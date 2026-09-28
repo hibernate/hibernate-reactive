@@ -31,9 +31,10 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.expression.JdbcParameter;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
@@ -165,7 +166,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 					final JdbcSelect jdbcSelectOperation = getSessionFactory().getJdbcServices()
 							.getJdbcEnvironment()
 							.getSqlAstTranslatorFactory()
-							.buildSelectTranslator( getSessionFactory(), sqlAst )
+							.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlAst ) )
 							.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 
 					final JdbcParameterBindings jdbcParameterBindings = new JdbcParameterBindingsImpl( 1 );
@@ -268,7 +269,7 @@ public class ReactiveMultiIdEntityLoaderArrayParam<E> extends ReactiveAbstractMu
 		final JdbcSelect jdbcSelectOperation = getSessionFactory().getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( getSessionFactory(), sqlAst )
+				.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlAst ) )
 				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 
 		return loadByArrayParameter(

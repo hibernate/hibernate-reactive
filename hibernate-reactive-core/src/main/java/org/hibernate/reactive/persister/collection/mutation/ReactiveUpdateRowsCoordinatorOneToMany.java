@@ -17,14 +17,14 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.persister.collection.mutation.CollectionMutationTarget;
+import org.hibernate.persister.collection.OneToManyPersister;
 import org.hibernate.persister.collection.mutation.RowMutationOperations;
 import org.hibernate.persister.collection.mutation.UpdateRowsCoordinatorOneToMany;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.model.MutationOperationGroup;
-import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -32,8 +32,8 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.zeroFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
-import static org.hibernate.sql.model.MutationType.DELETE;
-import static org.hibernate.sql.model.MutationType.INSERT;
+import static org.hibernate.sql.spi.mutation.MutationType.DELETE;
+import static org.hibernate.sql.spi.mutation.MutationType.INSERT;
 import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.singleOperation;
 
 public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinatorOneToMany implements ReactiveUpdateRowsCoordinator{
@@ -44,7 +44,7 @@ public class ReactiveUpdateRowsCoordinatorOneToMany extends UpdateRowsCoordinato
 	private MutationOperationGroup deleteOperationGroup;
 	private MutationOperationGroup insertOperationGroup;
 
-	public ReactiveUpdateRowsCoordinatorOneToMany(CollectionMutationTarget mutationTarget, RowMutationOperations rowMutationOperations, SessionFactoryImplementor sessionFactory) {
+	public ReactiveUpdateRowsCoordinatorOneToMany(OneToManyPersister mutationTarget, RowMutationOperations rowMutationOperations, SessionFactoryImplementor sessionFactory) {
 		super( mutationTarget, rowMutationOperations, sessionFactory );
 		this.rowMutationOperations = rowMutationOperations;
 	}

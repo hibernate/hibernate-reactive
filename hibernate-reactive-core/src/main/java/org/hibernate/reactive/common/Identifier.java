@@ -19,7 +19,7 @@ import java.util.Map;
  * @param <T> the owning entity class
  * @see org.hibernate.annotations.NaturalId
  */
-@Incubating
+@Incubating(since = "1.0")
 public abstract class Identifier<T> {
 
 	public abstract Id<T>[] ids();

@@ -19,7 +19,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
-import jakarta.persistence.FlushModeType;
+import jakarta.persistence.QueryFlushMode;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
 import java.util.List;
@@ -56,12 +56,12 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 
 	@Override
 	public FlushMode getFlushMode() {
-		return delegate.getHibernateFlushMode();
+		return delegate.getEffectiveFlushMode();
 	}
 
 	@Override
-	public SelectionQuery<R> setFlushMode(FlushMode flushMode) {
-		delegate.setHibernateFlushMode( flushMode );
+	public SelectionQuery<R> setFlushMode(QueryFlushMode flushMode) {
+		delegate.setQueryFlushMode( flushMode );
 		return this;
 	}
 
@@ -85,12 +85,6 @@ public class MutinySelectionQueryImpl<R> implements SelectionQuery<R> {
 	@Override
 	public Uni<R> getSingleResultOrNull() {
 		return uni( delegate::getReactiveSingleResultOrNull );
-	}
-
-	@Override
-	public SelectionQuery<R> setFlushMode(FlushModeType flushMode) {
-		delegate.setFlushMode( flushMode );
-		return this;
 	}
 
 	@Override

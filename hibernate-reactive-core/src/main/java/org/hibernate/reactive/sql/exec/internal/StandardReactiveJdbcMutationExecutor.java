@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.hibernate.Timeouts;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.logging.internal.Log;
@@ -24,10 +24,12 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcMutationExecutor;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
+import org.hibernate.sql.exec.internal.QuerySqlDecorator;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
+
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
@@ -73,8 +75,7 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 					.getLogicalConnection();
 
 			final JdbcServices jdbcServices = session.getJdbcServices();
-			final QueryOptions queryOptions = executionContext.getQueryOptions();
-			final String finalSql = finalSql( jdbcMutation, executionContext, jdbcServices, queryOptions );
+			final String finalSql = applyOptions( jdbcMutation, executionContext, jdbcServices );
 
 			Object[] parameters = PreparedStatementAdaptor
 					.bind( statement -> prepareStatement( jdbcMutation, statement, jdbcParameterBindings, executionContext ) );
@@ -98,8 +99,9 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 			JdbcParameterBindings jdbcParameterBindings,
 			ExecutionContext executionContext) {
 		try {
-			if ( executionContext.getQueryOptions().getTimeout() != null ) {
-				preparedStatement.setQueryTimeout( executionContext.getQueryOptions().getTimeout() );
+			final jakarta.persistence.Timeout timeout = executionContext.getQueryOptions().getTimeout();
+			if ( Timeouts.isRealTimeout( timeout ) ) {
+				preparedStatement.setQueryTimeout( Timeouts.getTimeoutInSeconds( timeout ) );
 			}
 
 			// bind parameters
@@ -124,21 +126,19 @@ public class StandardReactiveJdbcMutationExecutor implements ReactiveJdbcMutatio
 		return ( (ReactiveConnectionSupplier) executionContext.getSession() ).getReactiveConnection();
 	}
 
-	private static String finalSql(
+	// Same as StandardJdbcMutationExecutor#applyOptions
+	private static String applyOptions(
 			JdbcOperationQueryMutation jdbcMutation,
 			ExecutionContext executionContext,
-			JdbcServices jdbcServices,
-			QueryOptions queryOptions) {
-		return queryOptions == null
-				? jdbcMutation.getSqlString()
-				: jdbcServices.getDialect()
-				.addSqlHintOrComment(
-						jdbcMutation.getSqlString(),
-						queryOptions,
-						executionContext.getSession()
-								.getFactory()
-								.getSessionFactoryOptions()
-								.isCommentsEnabled()
-				);
+			JdbcServices jdbcServices) {
+		return QuerySqlDecorator.decorate(
+				jdbcMutation.getSqlString(),
+				executionContext.getQueryOptions(),
+				executionContext.getSession()
+						.getFactory()
+						.getSessionFactoryOptions()
+						.isCommentsEnabled(),
+				jdbcServices.getDialect()
+		);
 	}
 }

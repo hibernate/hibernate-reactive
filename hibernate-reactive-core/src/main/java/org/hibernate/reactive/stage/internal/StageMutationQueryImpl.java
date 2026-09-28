@@ -20,7 +20,7 @@ public class StageMutationQueryImpl<T> implements MutationQuery {
 
 	@Override
 	public CompletionStage<Integer> executeUpdate() {
-		return delegate.executeReactiveUpdate();
+		return delegate.reactiveExecute();
 	}
 
 	@Override

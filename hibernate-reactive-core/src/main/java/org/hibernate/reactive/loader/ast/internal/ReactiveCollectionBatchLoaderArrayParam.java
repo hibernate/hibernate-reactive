@@ -24,9 +24,10 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.expression.JdbcParameter;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
@@ -75,6 +76,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 				getSessionFactory()
 		);
 
+		// FIXME: Checck if ORM has this variable
 		final var sqlAliasBaseGenerator = new SqlAliasBaseManager();
 
 		jdbcParameter = new JdbcParameterImpl( arrayJdbcMapping );
@@ -100,7 +102,7 @@ public class ReactiveCollectionBatchLoaderArrayParam extends ReactiveAbstractCol
 		jdbcSelectOperation = getSessionFactory().getJdbcServices()
 				.getJdbcEnvironment()
 				.getSqlAstTranslatorFactory()
-				.buildSelectTranslator( getSessionFactory(), sqlSelect )
+				.buildTranslator( new SqlAstTranslationRequest.Select( getSessionFactory(), sqlSelect ) )
 				.translate( JdbcParameterBindings.NO_BINDINGS, QueryOptions.NONE );
 	}
 

@@ -23,7 +23,8 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.ResultsHelper;
@@ -85,7 +86,7 @@ public class ReactiveCollectionLoaderSubSelectFetch extends CollectionLoaderSubS
 		}
 
 		final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-				.buildSelectTranslator( sessionFactory, getSqlAst() )
+				.buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, getSqlAst() ) )
 				.translate( this.subselect.getLoadingJdbcParameterBindings(), QueryOptions.NONE );
 
 		final SubselectFetch.RegistrationHandler subSelectFetchableKeysHandler = SubselectFetch.createRegistrationHandler(
@@ -116,7 +117,7 @@ public class ReactiveCollectionLoaderSubSelectFetch extends CollectionLoaderSubS
 	private void initializeSubCollection(PersistenceContext persistenceContext, PersistentCollection<?> c) {
 		if ( !c.wasInitialized() ) {
 			c.initializeEmptyCollection( getLoadable().getCollectionDescriptor() );
-			ResultsHelper.finalizeCollectionLoading( persistenceContext, getLoadable().getCollectionDescriptor(), c, c.getKey(), true );
+			ResultsHelper.finalizeCollectionLoading( persistenceContext, getLoadable().getCollectionDescriptor(), c, c.getKey(), true, jakarta.persistence.CacheStoreMode.USE );
 		}
 	}
 }

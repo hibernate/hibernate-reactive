@@ -25,7 +25,7 @@ import org.hibernate.reactive.session.ReactiveConnectionSupplier;
  *
  * @see IdentifierGenerator
  */
-@Incubating
+@Incubating(since = "1.0")
 public interface ReactiveIdentifierGenerator<Id> extends IdentifierGenerator {
 
 	/**

@@ -27,6 +27,8 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -471,14 +473,52 @@ public class ResultSetAdaptor implements ResultSet {
 
 	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) {
-		T object = row.get( type, columnIndex - 1 );
+		int index = columnIndex - 1;
+		if ( isJavaTimeType( type ) ) {
+			T object = getJavaTimeValue( type, index );
+			return ( wasNull = object == null ) ? null : object;
+		}
+		T object = row.get( type, index );
 		return ( wasNull = object == null ) ? null : object;
 	}
 
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) {
-		T object = row.get( type, row.getColumnIndex( columnLabel ) );
+		int index = row.getColumnIndex( columnLabel );
+		if ( isJavaTimeType( type ) ) {
+			T object = getJavaTimeValue( type, index );
+			return ( wasNull = object == null ) ? null : object;
+		}
+		T object = row.get( type, index );
 		return ( wasNull = object == null ) ? null : object;
+	}
+
+	private static boolean isJavaTimeType(Class<?> type) {
+		return type == LocalTime.class
+				|| type == LocalDate.class
+				|| type == LocalDateTime.class
+				|| type == OffsetDateTime.class
+				|| type == OffsetTime.class;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T getJavaTimeValue(Class<T> type, int index) {
+		if ( type == LocalTime.class ) {
+			return (T) row.getLocalTime( index );
+		}
+		if ( type == LocalDate.class ) {
+			return (T) row.getLocalDate( index );
+		}
+		if ( type == LocalDateTime.class ) {
+			return (T) row.getLocalDateTime( index );
+		}
+		if ( type == OffsetDateTime.class ) {
+			return (T) row.getOffsetDateTime( index );
+		}
+		if ( type == OffsetTime.class ) {
+			return (T) row.getOffsetTime( index );
+		}
+		return null;
 	}
 
 	@Override

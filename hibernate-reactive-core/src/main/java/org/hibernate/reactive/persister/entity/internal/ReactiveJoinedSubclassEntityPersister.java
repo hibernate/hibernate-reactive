@@ -5,17 +5,18 @@
 package org.hibernate.reactive.persister.entity.internal;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.FetchMode;
+import org.hibernate.engine.FetchStyle;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.spi.CascadeStyle;
+import org.hibernate.cascade.spi.CascadeStyle;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.Generator;
@@ -48,7 +49,7 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.tree.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.type.CompositeType;
@@ -141,7 +142,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 			ManagedMappingType declaringType,
 			PropertyAccess propertyAccess,
 			CascadeStyle cascadeStyle,
-			FetchMode fetchMode,
+			FetchStyle fetchStyle,
 			MappingModelCreationProcess creationProcess) {
 		return reactiveDelegate.buildPluralAttributeMapping(
 				attrName,
@@ -151,7 +152,7 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 				declaringType,
 				propertyAccess,
 				cascadeStyle,
-				fetchMode,
+				fetchStyle,
 				creationProcess
 		);
 	}
@@ -344,11 +345,6 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
-	public Object loadEntityIdByNaturalId(Object[] naturalIdValues, LockOptions lockOptions, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "loadEntityIdByNaturalId" );
-	}
-
-	@Override
 	public Object loadByUniqueKey(String propertyName, Object uniqueKey, SharedSessionContractImplementor session) {
 		return loadByUniqueKey( propertyName, uniqueKey, null, session );
 	}
@@ -387,9 +383,14 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 		return reactiveDelegate.getReactiveUniqueKeyLoader( this, (SingularAttributeMapping) findByPath( attributeName ) );
 	}
 
+	private Map<String, ReactiveSingleIdArrayLoadPlan> reactiveLazyLoadPlanByFetchGroup;
+
 	@Override
 	public ReactiveSingleIdArrayLoadPlan reactiveGetSQLLazySelectLoadPlan(String fetchGroup) {
-		return this.getLazyLoadPlanByFetchGroup( getSubclassPropertyNameClosure() ).get(fetchGroup );
+		if ( reactiveLazyLoadPlanByFetchGroup == null ) {
+			reactiveLazyLoadPlanByFetchGroup = ReactiveAbstractEntityPersister.super.getLazyLoadPlanByFetchGroup( getPropertyNames() );
+		}
+		return reactiveLazyLoadPlanByFetchGroup.get( fetchGroup );
 	}
 
 	@Override

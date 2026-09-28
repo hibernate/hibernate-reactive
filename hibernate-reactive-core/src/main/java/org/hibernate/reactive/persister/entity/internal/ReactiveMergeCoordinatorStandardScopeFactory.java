@@ -13,12 +13,12 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoor
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.sql.model.ReactiveDeleteOrUpsertOperation;
 import org.hibernate.reactive.sql.model.ReactiveOptionalTableUpdateOperation;
-import org.hibernate.sql.model.MutationOperation;
-import org.hibernate.sql.model.ValuesAnalysis;
-import org.hibernate.sql.model.ast.TableMutation;
-import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.jdbc.DeleteOrUpsertOperation;
-import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.ast.spi.model.TableMutation;
+import org.hibernate.sql.spi.mutation.MutationOperation;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
+import org.hibernate.sql.spi.mutation.jdbc.DeleteOrUpsertOperation;
+import org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation;
 
 public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinatorStandard
 		implements ReactiveUpdateCoordinator {
@@ -46,7 +46,7 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 		MutationOperation operation = singleTableMutation.createMutationOperation( valuesAnalysis, factory() );
 		if ( operation instanceof OptionalTableUpdateOperation ) {
 			// We need to plug in our own reactive operation
-			return new ReactiveOptionalTableUpdateOperation( operation.getMutationTarget(), (OptionalTableUpdate) singleTableMutation, factory() );
+			return new ReactiveOptionalTableUpdateOperation( operation.getMutationTarget(), (OptionalTableUpdate) singleTableMutation );
 		}
 		if ( operation instanceof DeleteOrUpsertOperation ) {
 			return new ReactiveDeleteOrUpsertOperation( (DeleteOrUpsertOperation) operation );

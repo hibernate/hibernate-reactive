@@ -10,7 +10,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 /**
  * A source of {@link ReactiveConnection}s.
  */
-@Incubating
+@Incubating(since = "1.0")
 public interface ReactiveConnectionSupplier {
     /**
      * Obtain the {@link ReactiveConnection} that is associated with the current session.

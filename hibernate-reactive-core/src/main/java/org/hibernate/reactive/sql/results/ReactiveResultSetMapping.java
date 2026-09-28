@@ -14,10 +14,10 @@ import java.util.function.Consumer;
 
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.query.named.NamedResultSetMappingMemento;
-import org.hibernate.query.results.LegacyFetchBuilder;
-import org.hibernate.query.results.ResultBuilder;
-import org.hibernate.query.results.ResultSetMapping;
+import org.hibernate.query.named.spi.NamedResultSetMappingMemento;
+import org.hibernate.query.results.spi.LegacyFetchBuilder;
+import org.hibernate.query.results.spi.ResultBuilder;
+import org.hibernate.query.results.spi.ResultSetMapping;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;

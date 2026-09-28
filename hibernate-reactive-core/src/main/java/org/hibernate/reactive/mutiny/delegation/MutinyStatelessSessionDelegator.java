@@ -97,9 +97,9 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().refreshAll( batchSize, entities );
 	}
 
-	public <R> Mutiny.Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		return delegate().createQuery( typedQueryReference );
-	}
+    public <R> Mutiny.SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        return delegate().createQuery(typedQueryReference);
+    }
 
 	public <R> Mutiny.SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
 		return delegate().createQuery( queryString, resultType );
@@ -137,7 +137,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().createSelectionQuery( queryString, resultType );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsert(Object entity) {
 		return delegate().upsert( entity );
 	}
@@ -158,7 +158,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().getResultSetMapping( resultType, mappingName );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertMultiple(List<?> entities) {
 		return delegate().upsertMultiple( entities );
 	}
@@ -215,7 +215,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().fetch( association );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertAll(Object... entities) {
 		return delegate().upsertAll( entities );
 	}
@@ -224,7 +224,7 @@ public abstract class MutinyStatelessSessionDelegator implements Mutiny.Stateles
 		return delegate().currentTransaction();
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public Uni<Void> upsertAll(int batchSize, Object... entities) {
 		return delegate().upsertAll( batchSize, entities );
 	}

@@ -44,6 +44,7 @@ import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Parameter;
+import jakarta.persistence.QueryFlushMode;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -154,7 +155,7 @@ public interface Stage {
 		 *
 		 * @since 2.1
 		 */
-		@Incubating
+		@Incubating(since = "2.1")
 		SelectionQuery<R> setPage(Page page);
 
 		/**
@@ -205,7 +206,7 @@ public interface Stage {
 		 *
 		 * @return the size of the list that would be returned
 		 */
-		@Incubating
+		@Incubating(since = "2.4")
 		CompletionStage<Long> getResultCount();
 
 		/**
@@ -316,18 +317,10 @@ public interface Stage {
 		CacheMode getCacheMode();
 
 		/**
-		 * Set the current {@link FlushMode} in effect while this query is
+		 * Set the current {@link QueryFlushMode} in effect while this query is
 		 * being executed.
 		 */
-		SelectionQuery<R> setFlushMode(FlushMode flushMode);
-
-		/**
-		 * Set the current {@link FlushModeType} in effect while this query is
-		 * being executed.
-		 */
-		default SelectionQuery<R> setFlushMode(FlushModeType flushModeType) {
-			return setFlushMode( FlushModeTypeHelper.getFlushMode(flushModeType) );
-		}
+		SelectionQuery<R> setFlushMode(QueryFlushMode flushMode);
 
 		/**
 		 * Obtain the {@link FlushMode} in effect for this query. By default,
@@ -404,7 +397,7 @@ public interface Stage {
 		@Override
 		SelectionQuery<R> setComment(String comment);
 
-		@Incubating
+		@Incubating(since = "4.5")
 		CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> page);
 	}
 
@@ -464,13 +457,7 @@ public interface Stage {
 		}
 
 		@Override
-		Query<R> setFlushMode(FlushMode flushMode);
-
-		@Override
-		default Query<R> setFlushMode(FlushModeType flushModeType) {
-			SelectionQuery.super.setFlushMode( flushModeType );
-			return this;
-		}
+		Query<R> setFlushMode(QueryFlushMode flushMode);
 
 		@Override
 		Query<R> setLockMode(LockMode lockMode);
@@ -597,7 +584,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.query.QueryProducer#createQuery(TypedQueryReference)
 		 */
-		<R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference);
+		<R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference);
 
 		/**
 		 * Create an instance of {@link Query} for the given HQL/JPQL query
@@ -954,7 +941,7 @@ public interface Stage {
 		 *
 		 * @return a persistent instance or null via a {@code CompletionStage}
 		 */
-		@Incubating
+		@Incubating(since = "1.0")
 		<T> CompletionStage<T> find(Class<T> entityClass, Identifier<T> naturalId);
 
 		/**
@@ -1848,7 +1835,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#upsert(Object)
 		 */
-		@Incubating
+		@Incubating(since = "3.0")
 		CompletionStage<Void> upsert(Object... entities);
 
 		/**
@@ -1860,7 +1847,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#upsert(Object)
 		 */
-		@Incubating
+		@Incubating(since = "4.3")
 		CompletionStage<Void> upsert(int batchSize, Object... entities);
 
 		/**
@@ -1874,7 +1861,7 @@ public interface Stage {
 		 *
 		 * @deprecated Use {@link #upsert(Object...)} instead
 		 */
-		@Incubating @Deprecated(forRemoval = true)
+		@Incubating(since = "3.0") @Deprecated(forRemoval = true)
 		CompletionStage<Void> upsertAll(Object... entities);
 
 		/**
@@ -1888,7 +1875,7 @@ public interface Stage {
 		 *
 		 * @deprecated Use {@link #upsert(int, Object...)} instead
 		 */
-		@Incubating @Deprecated(forRemoval = true)
+		@Incubating(since = "3.0") @Deprecated(forRemoval = true)
 		CompletionStage<Void> upsertAll(int batchSize, Object... entities);
 
 		/**
@@ -1900,7 +1887,7 @@ public interface Stage {
 		 *
 		 * @see org.hibernate.StatelessSession#upsert(Object)
 		 */
-		@Incubating
+		@Incubating(since = "3.0")
 		CompletionStage<Void> upsertMultiple(List<?> entities);
 
 		/**
@@ -2041,7 +2028,7 @@ public interface Stage {
 		 * <p>
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		@Incubating
+		@Incubating(since = "3.2")
 		Session createSession();
 
 		/**
@@ -2053,7 +2040,7 @@ public interface Stage {
 		 * <p>
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		@Incubating
+		@Incubating(since = "3.2")
 		Session createSession(String tenantId);
 
 		/**
@@ -2065,7 +2052,7 @@ public interface Stage {
 		 * <p>
 		 * The client must close the session using {@link Session#close()}.
 		 */
-		@Incubating
+		@Incubating(since = "3.2")
 		StatelessSession createStatelessSession();
 
 		/**
@@ -2078,7 +2065,7 @@ public interface Stage {
 		 * The client must close the session using {@link Session#close()}.
 		 * @param tenantId the id of the tenant
 		 */
-		@Incubating
+		@Incubating(since = "3.2")
 		StatelessSession createStatelessSession(String tenantId);
 
 		/**

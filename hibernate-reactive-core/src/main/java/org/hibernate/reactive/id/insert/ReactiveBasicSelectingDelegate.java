@@ -22,8 +22,8 @@ import org.hibernate.reactive.generator.values.internal.ReactiveGeneratedValuesH
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.sql.model.ast.builder.TableInsertBuilderStandard;
-import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
+import org.hibernate.sql.ast.spi.model.builder.TableInsertBuilderStandard;
+import org.hibernate.sql.ast.spi.model.builder.TableMutationBuilder;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CompletionStage;

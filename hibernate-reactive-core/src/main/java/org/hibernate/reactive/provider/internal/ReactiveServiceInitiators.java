@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.internal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.action.queue.internal.support.ActionQueueFactoryServiceInitiator;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.internal.BytecodeProviderInitiator;
@@ -24,6 +25,7 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.property.access.internal.PropertyAccessorServiceInitiator;
 import org.hibernate.reactive.context.internal.VertxContextInitiator;
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
@@ -41,7 +43,7 @@ import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInit
 import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStrategyProviderInitiator;
 import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.reactive.vertx.internal.VertxInstanceInitiator;
-import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
+import org.hibernate.resource.beans.internal.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.service.internal.ChangesetCoordinatorInitiator;
@@ -84,6 +86,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] PropertyAccessStrategyResolver
 		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
+
+		// [standard] PropertyAccessorService
+		serviceInitiators.add( PropertyAccessorServiceInitiator.INSTANCE );
 
 		// [standard] SqlScriptCommandExtractor
 		serviceInitiators.add( SqlScriptExtractorInitiator.INSTANCE );
@@ -134,6 +139,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] SessionFactoryServiceRegistryFactory
 		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
+
+		// [standard] ActionQueueFactoryService
+		serviceInitiators.add( ActionQueueFactoryServiceInitiator.INSTANCE );
 
 		// [standard] RegionFactory
 		serviceInitiators.add( RegionFactoryInitiator.INSTANCE );
