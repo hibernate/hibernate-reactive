@@ -99,7 +99,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testMutinyMergeUpsertAll(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withStatelessTransaction( s -> s.upsertAll( PIGS ) )
-				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.invoke( () -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
 		);
 	}
@@ -109,7 +109,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testMutinyMergeUpsertAllWithBatchSize(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withStatelessTransaction( s -> s.upsertAll( 10, PIGS ) )
-				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.invoke( () -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
 		);
 	}
@@ -119,7 +119,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testMutinyMergeUpsertMultiple(VertxTestContext context) {
 		test( context, getMutinySessionFactory()
 				.withStatelessTransaction( s -> s.upsertMultiple( List.of( PIGS ) ) )
-				.invoke( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.invoke( () -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.chain( () -> Uni.createFrom().completionStage( assertExpectedResult( PIGS ) ) )
 		);
 	}
@@ -129,7 +129,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testStageMergeUpsertAll(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withStatelessTransaction( s -> s.upsert( PIGS ) )
-				.thenRun( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenRun( () -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.thenCompose( v -> assertExpectedResult( PIGS ) )
 		);
 	}
@@ -139,7 +139,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testStageMergeUpsertAllWithBatchSize(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withStatelessTransaction( s -> s.upsert( 10, PIGS ) )
-				.thenRun(() -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenRun(() -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.thenCompose( v -> assertExpectedResult( PIGS ) )
 		);
 	}
@@ -149,7 +149,7 @@ public class ReactiveStatelessWithBatchTest extends BaseReactiveTest {
 	public void testStageMergeUpsertMultiple(VertxTestContext context) {
 		test( context, getSessionFactory()
 				.withStatelessTransaction( s -> s.upsertMultiple( List.of( PIGS ) ) )
-				.thenRun( () -> assertSqlLogTracker( "merge into pig as t using (.*)" ) )
+				.thenRun( () -> assertSqlLogTracker( "insert into pig \\(name,id\\) values \\(.*\\) on conflict \\(id\\) do update set name=excluded\\.name" ) )
 				.thenCompose( v -> assertExpectedResult( PIGS ) )
 		);
 	}

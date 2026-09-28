@@ -53,7 +53,7 @@ public class AutoZonedTest extends BaseReactiveTest {
 	public void test(VertxTestContext context) {
 		final ZonedDateTime nowZoned;
 		final OffsetDateTime nowOffset;
-		if ( getDialect().getDefaultTimestampPrecision() == 6 ) {
+		if ( getDialect().fractionalSecondPrecisionInNanos() <= 1000 ) {
 			nowZoned = ZonedDateTime.now().withZoneSameInstant( ZoneId.of("CET") ).truncatedTo( ChronoUnit.MICROS );
 			nowOffset = OffsetDateTime.now().withOffsetSameInstant( ZoneOffset.ofHours(3) ).truncatedTo( ChronoUnit.MICROS );
 		}
