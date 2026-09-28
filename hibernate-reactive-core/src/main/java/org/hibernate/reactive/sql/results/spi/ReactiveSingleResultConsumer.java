@@ -18,7 +18,7 @@ import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 /**
  * @see org.hibernate.sql.results.spi.SingleResultConsumer
  */
-@Incubating
+@Incubating(since = "2.4")
 public class ReactiveSingleResultConsumer<T> implements ReactiveResultsConsumer<T, T> {
 
 	@Override
@@ -30,7 +30,7 @@ public class ReactiveSingleResultConsumer<T> implements ReactiveResultsConsumer<
 			ReactiveRowProcessingState rowProcessingState,
 			ReactiveRowReader<T> rowReader) {
 		rowReader.startLoading( rowProcessingState );
-		return rowProcessingState.next()
+		return rowProcessingState.reactiveNext()
 				.thenCompose( hasNext -> rowReader
 						.reactiveReadRow( rowProcessingState, processingOptions )
 						.thenCompose( result -> {

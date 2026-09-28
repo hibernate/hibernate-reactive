@@ -31,12 +31,13 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveNaturalIdLoader;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.spi.NavigablePath;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.spi.SimpleFromClauseAccessImpl;
-import org.hibernate.sql.ast.spi.SqlAliasBaseManager;
-import org.hibernate.sql.ast.tree.from.TableGroup;
-import org.hibernate.sql.ast.tree.select.QuerySpec;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.creation.SimpleFromClauseAccessImpl;
+import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.select.QuerySpec;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
 import org.hibernate.sql.exec.internal.BaseExecutionContext;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.Callback;
@@ -172,10 +173,8 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
         );
         assert offset == jdbcParameters.size();
 
-        final JdbcSelect jdbcSelect = sqlAstTranslatorFactory.buildSelectTranslator(
-                        sessionFactory,
-                        sqlSelect
-                )
+        final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
+                .buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlSelect ) )
                 .translate( jdbcParamBindings, QueryOptions.NONE );
         return StandardReactiveSelectExecutor.INSTANCE
                 .list(
@@ -270,7 +269,7 @@ public abstract class ReactiveNaturalIdLoaderDelegate<T> extends AbstractNatural
 
         final QueryOptions queryOptions = new SimpleQueryOptions( lockOptions, false );
         final JdbcSelect jdbcSelect = sqlAstTranslatorFactory
-                .buildSelectTranslator( sessionFactory, sqlSelect )
+                .buildTranslator( new SqlAstTranslationRequest.Select( sessionFactory, sqlSelect ) )
                 .translate( jdbcParamBindings, queryOptions );
 
         final StatisticsImplementor statistics = sessionFactory.getStatistics();

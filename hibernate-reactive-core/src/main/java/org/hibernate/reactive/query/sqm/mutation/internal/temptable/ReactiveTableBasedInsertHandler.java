@@ -8,15 +8,14 @@ import java.lang.invoke.MethodHandles;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import org.hibernate.dialect.temptable.TemporaryTable;
-import org.hibernate.dialect.temptable.TemporaryTableStrategy;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
+import org.hibernate.dialect.temptable.spi.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
@@ -31,7 +30,7 @@ import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedInsertHandler;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
+import org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.id.insert.ReactiveInsertGeneratedIdentifierDelegate;
 import org.hibernate.reactive.logging.internal.Log;
@@ -42,12 +41,11 @@ import org.hibernate.reactive.sql.exec.internal.StandardReactiveJdbcMutationExec
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
+import org.hibernate.sql.ast.spi.query.expression.JdbcParameter;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingImpl;
 import org.hibernate.sql.exec.internal.JdbcParameterBindingsImpl;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcOperationQueryMutation;
-import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.type.descriptor.ValueBinder;
 
@@ -200,10 +198,10 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 							)
 					);
 				}
-				final List<JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
-				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
-				final JdbcParameter rowNumber = (JdbcParameter) parameterBinders.get( 1 );
-				final BasicEntityIdentifierMapping basicIdentifierMapping = (BasicEntityIdentifierMapping) identifierMapping;
+				var parameterBinders = rootTableInserter.temporaryTableIdUpdate().getParameterBinders();
+				var rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
+				var rowNumber = (JdbcParameter) parameterBinders.get( 1 );
+				var basicIdentifierMapping = (BasicEntityIdentifierMapping) identifierMapping;
 
 				if ( !rowNumberStartsAtOne ) {
 					return ReactiveExecuteWithTemporaryTableHelper.loadInsertedRowNumbers(
@@ -354,10 +352,10 @@ public class ReactiveTableBasedInsertHandler extends TableBasedInsertHandler imp
 			).thenCompose( unused -> {
 				final JdbcParameterBindings updateBindings = new JdbcParameterBindingsImpl( 2 );
 
-				final List<JdbcParameterBinder> parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
+				var parameterBinders = rootTableInserter.temporaryTableIdentityUpdate()
 						.getParameterBinders();
-				final JdbcParameter rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
-				final JdbcParameter entityIdentity = (JdbcParameter) parameterBinders.get( 1 );
+				var rootIdentity = (JdbcParameter) parameterBinders.get( 0 );
+				var entityIdentity = (JdbcParameter) parameterBinders.get( 1 );
 				return loop(entityTableToRootIdentity.entrySet(), entry -> {
 					JdbcMapping jdbcMapping = basicIdentifierMapping.getJdbcMapping();
 					updateBindings.addBinding(

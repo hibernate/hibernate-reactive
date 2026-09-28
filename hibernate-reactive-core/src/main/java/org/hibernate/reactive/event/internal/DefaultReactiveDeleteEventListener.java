@@ -12,7 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.TransientObjectException;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
-import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.cascade.spi.CascadePoint;
 import org.hibernate.engine.internal.Nullability;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityKey;
@@ -20,20 +20,18 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.OnUpdateVisitor;
 import org.hibernate.event.internal.PostDeleteEventListenerStandardImpl;
+import org.hibernate.event.jpa.spi.EntityCallbacks;
 import org.hibernate.event.service.spi.EventListenerGroups;
-import org.hibernate.event.service.spi.JpaBootstrapSensitive;
 import org.hibernate.event.spi.DeleteContext;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.internal.EmptyInterceptor;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.jpa.event.spi.CallbackType;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl;
+import org.hibernate.property.access.spi.PropertyValueAccessor;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -61,22 +59,9 @@ import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
  * A reactive {@link org.hibernate.event.internal.DefaultDeleteEventListener}.
  */
 public class DefaultReactiveDeleteEventListener
-		implements DeleteEventListener, ReactiveDeleteEventListener, CallbackRegistryConsumer, JpaBootstrapSensitive {
+		implements DeleteEventListener, ReactiveDeleteEventListener {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	private CallbackRegistry callbackRegistry;
-	private boolean jpaBootstrap;
-
-	@Override
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		this.callbackRegistry = callbackRegistry;
-	}
-
-	@Override
-	public void wasJpaBootstrap(boolean wasJpaBootstrap) {
-		this.jpaBootstrap = wasJpaBootstrap;
-	}
 
 	/**
 	 * Handle the given delete event.
@@ -242,8 +227,7 @@ public class DefaultReactiveDeleteEventListener
 								version,
 								LockMode.NONE,
 								true,
-								persister,
-								false
+								persister
 						);
 						persister.afterReassociate( entity, source );
 
@@ -278,7 +262,7 @@ public class DefaultReactiveDeleteEventListener
 			Object id,
 			Object version,
 			EntityEntry entry) {
-		callbackRegistry.preRemove( entity );
+		persister.getEntityCallbacks().preRemove( entity );
 		return deleteEntity(
 				source,
 				entity,
@@ -320,9 +304,9 @@ public class DefaultReactiveDeleteEventListener
 	}
 
 	private boolean hasRegisteredRemoveCallbacks(EntityPersister persister) {
-		final Class<?> mappedClass = persister.getMappedClass();
-		return callbackRegistry.hasRegisteredCallbacks( mappedClass, CallbackType.PRE_REMOVE )
-				|| callbackRegistry.hasRegisteredCallbacks( mappedClass, CallbackType.POST_REMOVE );
+		final EntityCallbacks entityCallbacks = persister.getEntityCallbacks();
+		return entityCallbacks.hasRegisteredCallbacks( CallbackType.PRE_REMOVE )
+				|| entityCallbacks.hasRegisteredCallbacks( CallbackType.POST_REMOVE );
 	}
 
 	/**
@@ -334,7 +318,7 @@ public class DefaultReactiveDeleteEventListener
 	 * @param event The event.
 	 */
 	protected void performDetachedEntityDeletionCheck(DeleteEvent event) {
-		if ( jpaBootstrap ) {
+		if ( event.getSession().getFactory().getSessionFactoryOptions().isJpaBootstrap() ) {
 			disallowDeletionOfDetached( event );
 		}
 		// ok in normal Hibernate usage to delete a detached entity; JPA however
@@ -515,7 +499,7 @@ public class DefaultReactiveDeleteEventListener
 				}
 			}
 			else if ( currentState[i] == LazyPropertyInitializer.UNFETCHED_PROPERTY
-					|| currentState[i] == PropertyAccessStrategyBackRefImpl.UNKNOWN ) {
+					|| currentState[i] == PropertyValueAccessor.UNKNOWN ) {
 				deletedState[i] = currentState[i];
 			}
 			else {

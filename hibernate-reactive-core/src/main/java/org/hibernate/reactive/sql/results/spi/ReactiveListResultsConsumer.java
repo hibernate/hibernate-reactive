@@ -90,7 +90,7 @@ public class ReactiveListResultsConsumer<R> implements ReactiveResultsConsumer<L
 				isEntityResultType
 		);
 		final int[] readRows = {0};
-		return whileLoop( () -> rowProcessingState.next()
+		return whileLoop( () -> rowProcessingState.reactiveNext()
 				.thenCompose( hasNext -> {
 					if ( hasNext ) {
 						return addToResultsSupplier.get()

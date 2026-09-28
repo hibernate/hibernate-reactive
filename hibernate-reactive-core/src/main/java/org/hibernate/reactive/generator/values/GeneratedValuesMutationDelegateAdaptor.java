@@ -11,11 +11,12 @@ import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.action.queue.spi.plan.FlushOperation;
 import org.hibernate.generator.EventType;
 import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.jdbc.Expectation;
-import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
+import org.hibernate.sql.ast.spi.model.builder.TableMutationBuilder;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMappingProducer;
 
 /**
@@ -77,5 +78,13 @@ public class GeneratedValuesMutationDelegateAdaptor implements ReactiveGenerated
 	@Override
 	public JdbcValuesMappingProducer getGeneratedValuesMappingProducer() {
 		return delegate.getGeneratedValuesMappingProducer();
+	}
+
+	@Override
+	public GeneratedValues performGraphMutation(
+			FlushOperation operation,
+			Object entity,
+			SharedSessionContractImplementor session) {
+		return delegate.performGraphMutation( operation, entity, session );
 	}
 }

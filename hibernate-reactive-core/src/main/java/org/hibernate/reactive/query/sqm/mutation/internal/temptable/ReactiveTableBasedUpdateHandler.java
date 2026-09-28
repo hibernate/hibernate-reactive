@@ -9,15 +9,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.dialect.temptable.TemporaryTable;
-import org.hibernate.dialect.temptable.TemporaryTableStrategy;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
+import org.hibernate.dialect.temptable.spi.TemporaryTableStrategy;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.MutableObject;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.internal.SqmJdbcExecutionContextAdapter;
 import org.hibernate.query.sqm.mutation.internal.temptable.TableBasedUpdateHandler;
-import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveAbstractMutationHandler;

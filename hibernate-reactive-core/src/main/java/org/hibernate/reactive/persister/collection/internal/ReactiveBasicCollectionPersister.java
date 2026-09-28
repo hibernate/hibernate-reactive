@@ -19,7 +19,7 @@ import org.hibernate.mapping.Collection;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.BasicCollectionPersister;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoader;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCollectionLoaderSubSelectFetch;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveDeleteRowsCoordinator;
@@ -181,12 +181,12 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected ReactiveInsertRowsCoordinator getCreateEntryCoordinator() {
+	public ReactiveInsertRowsCoordinator getCreateEntryCoordinator() {
 		return insertRowsCoordinator;
 	}
 
 	@Override
-	protected ReactiveUpdateRowsCoordinator getUpdateEntryCoordinator() {
+	public ReactiveUpdateRowsCoordinator getUpdateEntryCoordinator() {
 		return updateRowsCoordinator;
 	}
 
@@ -196,7 +196,7 @@ public class ReactiveBasicCollectionPersister extends BasicCollectionPersister i
 	}
 
 	@Override
-	protected ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
+	public ReactiveDeleteRowsCoordinator getRemoveEntryCoordinator() {
 		return deleteRowsCoordinator;
 	}
 }

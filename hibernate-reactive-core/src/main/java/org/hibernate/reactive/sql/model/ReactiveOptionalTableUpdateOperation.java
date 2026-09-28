@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.jdbc.mutation.internal.PreparedStatementGroupSingleTable;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.mutation.UpdateValuesAnalysis;
 import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
@@ -19,14 +18,14 @@ import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.model.MutationTarget;
-import org.hibernate.sql.model.TableMapping;
-import org.hibernate.sql.model.ValuesAnalysis;
-import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.jdbc.JdbcDeleteMutation;
-import org.hibernate.sql.model.jdbc.JdbcInsertMutation;
-import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
-import org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.spi.mutation.MutationTarget;
+import org.hibernate.sql.spi.mutation.TableMapping;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcDeleteMutation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcInsertMutation;
+import org.hibernate.sql.spi.mutation.jdbc.JdbcMutationOperation;
+import org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -38,11 +37,8 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	private static final Log LOG = make( Log.class, lookup() );
 	private final OptionalTableUpdate upsert;
 
-	public ReactiveOptionalTableUpdateOperation(
-			MutationTarget<?> mutationTarget,
-			OptionalTableUpdate upsert,
-			SessionFactoryImplementor factory) {
-		super( mutationTarget, upsert, factory );
+	public ReactiveOptionalTableUpdateOperation(MutationTarget mutationTarget, OptionalTableUpdate upsert) {
+		super( mutationTarget, upsert );
 		this.upsert = upsert;
 	}
 
@@ -99,7 +95,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performDelete(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Void> performReactiveDelete(
 			JdbcValueBindings jdbcValueBindings,
@@ -129,7 +125,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 	}
 
 	/**
-	 * @see org.hibernate.sql.model.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
+	 * @see org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation#performUpdate(JdbcValueBindings, SharedSessionContractImplementor)
 	 */
 	private CompletionStage<Boolean> performReactiveUpdate(
 			JdbcValueBindings jdbcValueBindings,
@@ -138,8 +134,7 @@ public class ReactiveOptionalTableUpdateOperation extends OptionalTableUpdateOpe
 
 		final JdbcMutationOperation jdbcUpdate = createJdbcUpdate( session );
 		final PreparedStatementGroupSingleTable statementGroup = new PreparedStatementGroupSingleTable( jdbcUpdate, session );
-		final PreparedStatementDetails statementDetails = statementGroup
-				.resolvePreparedStatementDetails( getTableDetails().getTableName() );
+		final PreparedStatementDetails statementDetails = statementGroup.resolvePreparedStatementDetails( getTableDetails().getTableName() );
 
 		// If we get here the statement is needed - make sure it is resolved
 		Object[] params = PreparedStatementAdaptor.bind( statement -> {

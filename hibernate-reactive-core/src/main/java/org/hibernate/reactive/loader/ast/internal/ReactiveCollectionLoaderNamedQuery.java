@@ -10,7 +10,7 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.persister.collection.CollectionPersister;
-import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedQueryMemento;
 
 /**
  * @see org.hibernate.loader.ast.internal.CollectionLoaderNamedQuery

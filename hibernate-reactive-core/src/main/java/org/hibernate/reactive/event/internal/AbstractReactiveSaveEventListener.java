@@ -12,7 +12,7 @@ import org.hibernate.LockMode;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.action.internal.AbstractEntityInsertAction;
 import org.hibernate.action.internal.EntityIdentityInsertAction;
-import org.hibernate.engine.internal.CascadePoint;
+import org.hibernate.cascade.spi.CascadePoint;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityEntryExtraState;
 import org.hibernate.engine.spi.EntityKey;
@@ -25,9 +25,8 @@ import org.hibernate.event.spi.EventSource;
 import org.hibernate.generator.BeforeExecutionGenerator;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
+import org.hibernate.id.GenericGeneratorGeneration;
 import org.hibernate.id.IdentifierGenerationException;
-import org.hibernate.jpa.event.spi.CallbackRegistry;
-import org.hibernate.jpa.event.spi.CallbackRegistryConsumer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.internal.Cascade;
@@ -62,15 +61,9 @@ import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
  * @see DefaultReactivePersistOnFlushEventListener
  * @see DefaultReactiveMergeEventListener
  */
-abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryConsumer {
+abstract class AbstractReactiveSaveEventListener<C> {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
-	private CallbackRegistry callbackRegistry;
-
-	public void injectCallbackRegistry(CallbackRegistry callbackRegistry) {
-		this.callbackRegistry = callbackRegistry;
-	}
 
 	/**
 	 * Prepares the save call using the given requested id.
@@ -89,8 +82,6 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			String entityName,
 			C context,
 			EventSource source) {
-		callbackRegistry.preCreate( entity );
-
 		return reactivePerformSave(
 				entity,
 				requestedId,
@@ -142,8 +133,9 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 			// go ahead and generate id, and then set it to
 			// the entity instance, so it will be available
 			// to the entity in the @PrePersist callback
-			if ( generator instanceof ReactiveIdentifierGenerator ) {
-				return generateId( entity, source, (ReactiveIdentifierGenerator<?>) generator, persister )
+			final ReactiveIdentifierGenerator<?> reactiveGenerator = unwrapReactiveGenerator( generator );
+			if ( reactiveGenerator != null ) {
+				return generateId( entity, source, reactiveGenerator, persister )
 						.thenCompose( gid -> {
 							if ( gid == SHORT_CIRCUIT_INDICATOR ) {
 								source.getIdentifier( entity );
@@ -172,6 +164,19 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		final Object id =  castToIdentifierType( generatedId, persister );
 		final boolean delayIdentityInserts = !source.isTransactionInProgress() && !requiresImmediateIdAccess && generatedOnExecution;
 		return reactivePerformSave( entity, id, persister, generatedOnExecution, context, source, delayIdentityInserts );
+	}
+
+	private static ReactiveIdentifierGenerator<?> unwrapReactiveGenerator(Generator generator) {
+		if ( generator instanceof ReactiveIdentifierGenerator ) {
+			return (ReactiveIdentifierGenerator<?>) generator;
+		}
+		if ( generator instanceof GenericGeneratorGeneration ) {
+			final Generator delegate = ( (GenericGeneratorGeneration) generator ).getDelegate();
+			if ( delegate instanceof ReactiveIdentifierGenerator ) {
+				return (ReactiveIdentifierGenerator<?>) delegate;
+			}
+		}
+		return null;
 	}
 
 	private CompletionStage<Object> generateId(
@@ -225,7 +230,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 
 		// call this after generation of an id,
 		// but before we retrieve an assigned id
-		callbackRegistry.preCreate( entity );
+		persister.getEntityCallbacks().preCreate( entity );
 
 		processIfSelfDirtinessTracker( entity, SelfDirtinessTracker::$$_hibernate_clearDirtyAttributes );
 		processIfManagedEntity( entity, managedEntity -> managedEntity.$$_hibernate_setUseTracker( true ) );
@@ -333,8 +338,7 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 				null,
 				LockMode.WRITE,
 				useIdentityColumn,
-				persister,
-				false
+				persister
 		);
 
 		if ( original.getLoadedState() != null ) {
@@ -422,13 +426,13 @@ abstract class AbstractReactiveSaveEventListener<C> implements CallbackRegistryC
 		final ReactiveActionQueue actionQueue = source.unwrap(ReactiveSession.class).getReactiveActionQueue();
 		if ( useIdentityColumn ) {
 			final ReactiveEntityIdentityInsertAction insert = new ReactiveEntityIdentityInsertAction(
-					values, entity, persister, false, source, shouldDelayIdentityInserts
+					values, entity, persister, source, shouldDelayIdentityInserts
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}
 		else {
 			final ReactiveEntityRegularInsertAction insert = new ReactiveEntityRegularInsertAction(
-					id, values, entity, getVersion( values, persister ), persister, false, source
+					id, values, entity, getVersion( values, persister ), persister, source
 			);
 			return actionQueue.addAction( insert ).thenApply( v -> insert );
 		}

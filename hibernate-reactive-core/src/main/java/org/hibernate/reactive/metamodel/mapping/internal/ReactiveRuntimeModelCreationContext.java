@@ -25,6 +25,7 @@ import org.hibernate.mapping.SimpleValue;
 import org.hibernate.mapping.Value;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
+import org.hibernate.action.queue.spi.PlanningOptions;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.reactive.boot.spi.ReactiveBootstrapContextAdapter;
 import org.hibernate.reactive.logging.internal.Log;
@@ -220,4 +221,8 @@ public class ReactiveRuntimeModelCreationContext implements RuntimeModelCreation
 		}
 	}
 
+	@Override
+	public PlanningOptions getGraphPlanningOptions() {
+		return delegate.getGraphPlanningOptions();
+	}
 }

@@ -622,7 +622,7 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 		@Convert(converter = BigIntegerAsString.class)
 		BigInteger bigIntegerAsString;
 
-		@Type(org.hibernate.reactive.types.BigDecimalAsString.class)
+		@Type(BigDecimalAsString.class)
 		BigDecimal bigDecimalAsString;
 
 		Cover cover;

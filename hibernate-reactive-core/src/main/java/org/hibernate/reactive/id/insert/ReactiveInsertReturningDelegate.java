@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.dialect.generated.spi.GeneratedValuesSupport;
 import org.hibernate.engine.jdbc.mutation.JdbcValueBindings;
 import org.hibernate.engine.jdbc.mutation.group.PreparedStatementDetails;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -24,8 +25,8 @@ import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
-import org.hibernate.sql.model.ast.MutatingTableReference;
-import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
+import org.hibernate.sql.ast.spi.model.MutatingTableReference;
+import org.hibernate.sql.ast.spi.model.builder.TableMutationBuilder;
 
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static org.hibernate.generator.EventType.INSERT;
@@ -48,7 +49,9 @@ public class ReactiveInsertReturningDelegate extends ReactiveAbstractReturningDe
 				persister,
 				timing,
 				supportsArbitraryValues,
-				persister.getFactory().getJdbcServices().getDialect().supportsInsertReturningRowId()
+				persister.getFactory().getJdbcServices().getDialect()
+						.getGeneratedValuesSupport()
+						.supports( GeneratedValuesSupport.Capability.INSERT_RETURNING_ROW_ID )
 		);
 		this.tableReference = new MutatingTableReference( persister.getIdentifierTableMapping() );
 	}

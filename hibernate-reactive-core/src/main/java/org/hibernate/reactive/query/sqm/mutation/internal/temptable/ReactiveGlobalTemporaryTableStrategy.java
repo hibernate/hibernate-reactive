@@ -7,7 +7,7 @@ package org.hibernate.reactive.query.sqm.mutation.internal.temptable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;

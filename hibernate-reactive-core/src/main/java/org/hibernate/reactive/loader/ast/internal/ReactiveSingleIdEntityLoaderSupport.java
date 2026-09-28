@@ -6,6 +6,7 @@ package org.hibernate.reactive.loader.ast.internal;
 
 import java.util.concurrent.CompletionStage;
 
+import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -20,9 +21,9 @@ public abstract class ReactiveSingleIdEntityLoaderSupport<T> implements Reactive
 
 	private DatabaseSnapshotExecutor databaseSnapshotExecutor;
 
-	public ReactiveSingleIdEntityLoaderSupport(EntityMappingType entityDescriptor, SessionFactoryImplementor sessionFactory) {
+	public ReactiveSingleIdEntityLoaderSupport(EntityMappingType entityDescriptor, LoadQueryInfluencers influencers) {
 		this.entityDescriptor = entityDescriptor;
-		this.sessionFactory = sessionFactory;
+		this.sessionFactory = influencers.getSessionFactory();
 	}
 
 	@Override

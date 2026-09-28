@@ -116,9 +116,9 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
 		return delegate().lock( entity, lockModeType );
 	}
 
-	public <R> Mutiny.Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		return delegate().createQuery( typedQueryReference );
-	}
+    public <R> Mutiny.SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        return delegate().createQuery(typedQueryReference);
+    }
 
 	public <R> Mutiny.SelectionQuery<R> createNativeQuery(
 			String queryString,
@@ -131,7 +131,7 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
 		return delegate().lock( entity, lockMode );
 	}
 
-	@Incubating
+	@Incubating(since = "3.0")
 	public <T> Uni<T> find(Class<T> entityClass, Identifier<T> naturalId) {
 		return delegate().find( entityClass, naturalId );
 	}

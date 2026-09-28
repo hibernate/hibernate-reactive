@@ -33,7 +33,7 @@ import org.hibernate.type.Type;
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
-import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
+import static org.hibernate.property.access.spi.PropertyValueAccessor.UNKNOWN;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 import static org.hibernate.reactive.engine.internal.ForeignKeys.getEntityIdentifierIfNotUnsaved;
 import static org.hibernate.reactive.session.internal.SessionUtil.checkEntityFound;

@@ -10,7 +10,6 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.reactive.common.AffectedEntities;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.reactive.query.ReactiveQuery;
 import org.hibernate.reactive.session.ReactiveStatelessSession;
 import org.hibernate.reactive.session.internal.CurrentTransaction;
 import org.hibernate.reactive.session.internal.ExecutableTransaction;
@@ -310,9 +309,8 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 	}
 
 	@Override
-	public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
-		ReactiveQuery<R> reactiveQuery = delegate.createReactiveQuery( typedQueryReference );
-		return new StageQueryImpl<>( reactiveQuery );
+	public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( typedQueryReference ) );
 	}
 
 	@Override
@@ -342,12 +340,12 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public MutationQuery createNativeMutationQuery(String sqlString) {
-		return new StageMutationQueryImpl<>( delegate.createNativeReactiveMutationQuery( sqlString ) );
+		return new StageMutationQueryImpl<>( delegate.createReactiveNativeMutationQuery( sqlString ) );
 	}
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(String queryString, Class<R> resultType) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( queryString, resultType ) );
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( queryString, resultType ) );
 	}
 
 	@Override
@@ -392,7 +390,7 @@ public class StageStatelessSessionImpl implements Stage.StatelessSession {
 
 	@Override
 	public <R> SelectionQuery<R> createQuery(CriteriaQuery<R> criteriaQuery) {
-		return new StageSelectionQueryImpl<>( delegate.createReactiveQuery( criteriaQuery ) );
+		return new StageSelectionQueryImpl<>( delegate.createReactiveSelectionQuery( criteriaQuery ) );
 	}
 
 	@Override

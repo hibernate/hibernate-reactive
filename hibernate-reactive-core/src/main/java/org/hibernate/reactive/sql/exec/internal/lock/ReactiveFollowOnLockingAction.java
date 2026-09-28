@@ -4,9 +4,13 @@
  */
 package org.hibernate.reactive.sql.exec.internal.lock;
 
+import java.lang.invoke.MethodHandles;
+import java.sql.Connection;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.Locking;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
@@ -16,8 +20,8 @@ import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.internal.ReactiveSessionImpl;
 import org.hibernate.reactive.sql.exec.spi.ReactivePostAction;
-import org.hibernate.sql.ast.spi.LockingClauseStrategy;
-import org.hibernate.sql.ast.tree.select.QuerySpec;
+import org.hibernate.dialect.lock.spi.LockingClauseStrategy;
+import org.hibernate.sql.ast.spi.query.select.QuerySpec;
 import org.hibernate.sql.exec.internal.lock.FollowOnLockingAction;
 import org.hibernate.sql.exec.internal.lock.LockingHelper;
 import org.hibernate.sql.exec.internal.lock.TableLock;
@@ -26,11 +30,8 @@ import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
 import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 import org.hibernate.sql.exec.spi.StatementAccess;
 
+import jakarta.persistence.PessimisticLockScope;
 import jakarta.persistence.Timeout;
-import java.lang.invoke.MethodHandles;
-import java.sql.Connection;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
@@ -48,11 +49,10 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostAction()" );
 	}
 
-
 	protected ReactiveFollowOnLockingAction(
 			LockMode lockMode,
 			Timeout lockTimeout,
-			Locking.Scope lockScope) {
+			PessimisticLockScope lockScope) {
 		super( lockMode, lockTimeout, lockScope );
 	}
 

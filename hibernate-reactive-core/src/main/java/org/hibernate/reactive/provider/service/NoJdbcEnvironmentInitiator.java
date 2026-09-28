@@ -325,12 +325,6 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 		}
 
 		@Override
-		public String getSQLKeywords() {
-			// Vert.x metadata doesn't have this info
-			return null;
-		}
-
-		@Override
 		public String toString() {
 			return getDatabaseMajorVersion() + "." + getDatabaseMinorVersion();
 		}

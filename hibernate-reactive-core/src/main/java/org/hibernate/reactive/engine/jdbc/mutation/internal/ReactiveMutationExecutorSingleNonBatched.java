@@ -16,8 +16,8 @@ import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
 import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.sql.model.PreparableMutationOperation;
-import org.hibernate.sql.model.ValuesAnalysis;
+import org.hibernate.sql.spi.mutation.jdbc.PreparableMutationOperation;
+import org.hibernate.sql.spi.mutation.ValuesAnalysis;
 
 /**
  * @see org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched

@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.TransientObjectException;
+import org.hibernate.action.queue.spi.decompose.DecompositionContext;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.engine.internal.NonNullableTransientDependencies;
 import org.hibernate.engine.spi.EntityEntry;
@@ -48,6 +49,7 @@ public final class ForeignKeys {
 		private final SharedSessionContractImplementor session;
 		private final Object self;
 		private final EntityPersister persister;
+		private final DecompositionContext decompositionContext;
 
 		/**
 		 * Constructs a Nullifier
@@ -64,11 +66,32 @@ public final class ForeignKeys {
 				final boolean isEarlyInsert,
 				final SharedSessionContractImplementor session,
 				final EntityPersister persister) {
+			this( self, isDelete, isEarlyInsert, session, persister, null );
+		}
+
+		/**
+		 * Constructs a Nullifier with decomposition context
+		 *
+		 * @param self The entity
+		 * @param isDelete Are we in the middle of a delete action?
+		 * @param isEarlyInsert Is this an early insert (INSERT generated id strategy)?
+		 * @param session The session
+		 * @param persister The EntityPersister for {@code self}
+		 * @param decompositionContext The decomposition context (might be null)
+		 */
+		public Nullifier(
+				final Object self,
+				final boolean isDelete,
+				final boolean isEarlyInsert,
+				final SharedSessionContractImplementor session,
+				final EntityPersister persister,
+				final DecompositionContext decompositionContext) {
 			this.isDelete = isDelete;
 			this.isEarlyInsert = isEarlyInsert;
 			this.session = session;
 			this.persister = persister;
 			this.self = self;
+			this.decompositionContext = decompositionContext;
 		}
 
 		/**
@@ -238,8 +261,13 @@ public final class ForeignKeys {
 			// unless we are using native id generation, in which
 			// case we definitely need to nullify
 			if ( object == self ) {
-				 return completedFuture( isEarlyInsert
-						 || isDelete && session.getJdbcServices().getDialect().hasSelfReferentialForeignKeyBug() );
+				return completedFuture( isEarlyInsert || isDelete && requiresSelfReferentialForeignKeyNullification() );
+			}
+
+			// Check if this entity is being inserted in the current flush
+			// If so, don't nullify - it will be inserted in the same flush
+			if ( decompositionContext != null && decompositionContext.isBeingInsertedInCurrentFlush( object ) ) {
+				return falseFuture();
 			}
 
 			// See if the entity is already bound to this session, if not look at the
@@ -251,6 +279,11 @@ public final class ForeignKeys {
 			return entityEntry == null
 					? isTransient( entityName, object, null, session )
 					: completedFuture( entityEntry.isNullifiable( isEarlyInsert, session ) );
+		}
+
+		private boolean requiresSelfReferentialForeignKeyNullification() {
+			return session.getFactory().getJdbcServices().getDialect()
+					.getForeignKeySupport().requiresSelfReferentialForeignKeyNullification();
 		}
 	}
 
