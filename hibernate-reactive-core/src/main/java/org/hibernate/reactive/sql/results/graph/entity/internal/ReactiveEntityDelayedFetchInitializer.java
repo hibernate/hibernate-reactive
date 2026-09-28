@@ -18,8 +18,8 @@ import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
-import org.hibernate.reactive.session.impl.ReactiveQueryExecutorLookup;
+import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
+import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveEmbeddableForeignKeyResultImpl;
 import org.hibernate.spi.NavigablePath;
@@ -33,7 +33,7 @@ import org.hibernate.sql.results.graph.entity.internal.EntityDelayedFetchInitial
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.type.Type;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.results.graph.entity.internal.EntityInitializerImpl.determineConcreteEntityDescriptor;
 
 public class ReactiveEntityDelayedFetchInitializer extends EntityDelayedFetchInitializer

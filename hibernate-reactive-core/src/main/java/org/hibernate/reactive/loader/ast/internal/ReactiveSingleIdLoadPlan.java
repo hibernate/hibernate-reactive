@@ -19,7 +19,7 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.internal.SimpleQueryOptions;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.QueryParameterBindings;
-import org.hibernate.reactive.engine.impl.ReactiveCallbackImpl;
+import org.hibernate.reactive.engine.internal.ReactiveCallbackImpl;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
@@ -31,7 +31,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.results.spi.RowTransformer;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 
 public class ReactiveSingleIdLoadPlan<T> extends SingleIdLoadPlan<CompletionStage<T>> {
 

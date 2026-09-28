@@ -18,15 +18,15 @@ import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.generator.values.GeneratedValuesMutationDelegate;
 import org.hibernate.persister.entity.mutation.EntityMutationTarget;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
-import org.hibernate.reactive.adaptor.impl.PrepareStatementDetailsAdaptor;
-import org.hibernate.reactive.adaptor.impl.PreparedStatementAdaptor;
+import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.engine.jdbc.ResultsCheckerUtil;
 import org.hibernate.reactive.engine.jdbc.env.internal.ReactiveMutationExecutor;
 import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDelegate;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.model.MutationType;
@@ -40,11 +40,11 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.checkResults;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
 /**

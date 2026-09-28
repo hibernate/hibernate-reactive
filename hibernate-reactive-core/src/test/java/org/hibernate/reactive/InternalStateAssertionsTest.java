@@ -38,7 +38,7 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	/**
-	 * @see org.hibernate.reactive.logging.impl.Log#detectedUsedOfTheSessionOnTheWrongThread
+	 * @see org.hibernate.reactive.logging.internal.Log#detectedUsedOfTheSessionOnTheWrongThread
 	 */
 	private static final String ERROR_CODE = "HR000069";
 

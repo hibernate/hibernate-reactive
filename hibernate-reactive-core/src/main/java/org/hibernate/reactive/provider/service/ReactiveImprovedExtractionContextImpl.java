@@ -43,7 +43,7 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.schema.internal.exec.ImprovedExtractionContextImpl;
 import org.hibernate.tool.schema.internal.exec.JdbcContext;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.internal.CompletionStages.logSqlException;
 
 public class ReactiveImprovedExtractionContextImpl extends ImprovedExtractionContextImpl {
 

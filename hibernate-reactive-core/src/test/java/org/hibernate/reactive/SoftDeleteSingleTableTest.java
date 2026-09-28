@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 
 /**
  * Tests validity of @SoftDelete annotation value options

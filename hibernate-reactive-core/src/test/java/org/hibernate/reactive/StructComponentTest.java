@@ -10,8 +10,8 @@ import java.util.List;
 
 import org.hibernate.annotations.Struct;
 import org.hibernate.reactive.annotations.DisabledFor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -6,8 +6,8 @@ package org.hibernate.reactive.bythecode.enhance.spi.internal;
 
 import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 

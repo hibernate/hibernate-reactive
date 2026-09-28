@@ -5,10 +5,10 @@
 package org.hibernate.reactive.types;
 
 import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionImpl;
 import org.hibernate.reactive.pool.BatchingConnection;
-import org.hibernate.reactive.pool.impl.SqlClientConnection;
-import org.hibernate.reactive.stage.impl.StageSessionImpl;
+import org.hibernate.reactive.pool.internal.SqlClientConnection;
+import org.hibernate.reactive.stage.internal.StageSessionImpl;
 
 import org.junit.jupiter.api.Test;
 

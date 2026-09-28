@@ -19,7 +19,7 @@ import org.hibernate.annotations.IdGeneratorType;
 import org.hibernate.generator.EventType;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.Test;
 

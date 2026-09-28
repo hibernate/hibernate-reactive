@@ -15,8 +15,8 @@ import org.hibernate.metamodel.mapping.internal.CompoundNaturalIdMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.models.spi.ClassDetails;
 import org.hibernate.reactive.loader.ast.internal.ReactiveCompoundNaturalIdLoader;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 public class ReactiveCompoundNaturalIdMapping extends CompoundNaturalIdMapping {
 

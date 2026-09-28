@@ -49,7 +49,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORA
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

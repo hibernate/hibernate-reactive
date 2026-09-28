@@ -24,8 +24,8 @@ import org.hibernate.sql.model.MutationType;
 import org.hibernate.sql.model.internal.MutationOperationGroupFactory;
 import org.hibernate.sql.model.jdbc.JdbcMutationOperation;
 
-import static org.hibernate.reactive.util.impl.CompletionStages.loop;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.sql.model.ModelMutationLogging.MODEL_MUTATION_LOGGER;
 
 public class ReactiveDeleteRowsCoordinatorStandard extends DeleteRowsCoordinatorStandard implements ReactiveDeleteRowsCoordinator {

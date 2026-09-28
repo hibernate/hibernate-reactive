@@ -9,12 +9,12 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.state.internal.AbstractStateManagement;
 import org.hibernate.persister.state.spi.StateManagement;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveInsertRowsCoordinator;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveInsertRowsCoordinatorNoOp;
 import org.hibernate.reactive.persister.collection.mutation.ReactiveInsertRowsCoordinatorStandard;
-import org.hibernate.reactive.persister.entity.impl.ReactiveMergeCoordinatorStandardScopeFactory;
-import org.hibernate.reactive.persister.entity.impl.ReactiveUpdateCoordinatorStandardScopeFactory;
+import org.hibernate.reactive.persister.entity.internal.ReactiveMergeCoordinatorStandardScopeFactory;
+import org.hibernate.reactive.persister.entity.internal.ReactiveUpdateCoordinatorStandardScopeFactory;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
@@ -22,7 +22,7 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinato
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 
 /**
  * @see org.hibernate.persister.state.internal.AbstractStateManagement

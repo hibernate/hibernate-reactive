@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.hibernate.reactive.MyCurrentTenantIdentifierResolver.Tenant;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPool;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;

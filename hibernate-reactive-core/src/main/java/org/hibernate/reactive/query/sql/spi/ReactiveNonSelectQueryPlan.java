@@ -9,8 +9,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.spi.NonSelectQueryPlan;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 
 /**
  * A reactive {@link org.hibernate.query.spi.NonSelectQueryPlan}

@@ -1,0 +1,17 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+package org.hibernate.reactive.util.internal;
+
+/**
+ * Similar to a {@link java.util.function.BiFunction}
+ * but one of the arguments is a primitive integer.
+ *
+ * @param <T> the type of the first argument of the function
+ * @param <R> the result the function
+ */
+@FunctionalInterface
+public interface IntBiFunction<T, R> {
+	R apply(T value, int integer);
+}

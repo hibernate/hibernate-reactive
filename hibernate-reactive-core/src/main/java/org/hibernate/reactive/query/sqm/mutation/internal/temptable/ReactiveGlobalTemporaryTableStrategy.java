@@ -15,14 +15,14 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
-import org.hibernate.reactive.logging.impl.Log;
+import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 
 import static java.lang.invoke.MethodHandles.lookup;
-import static org.hibernate.reactive.logging.impl.LoggerFactory.make;
-import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public interface ReactiveGlobalTemporaryTableStrategy {
 
