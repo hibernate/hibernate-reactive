@@ -161,7 +161,7 @@ public class CollectionStatelessSessionListenerTest extends BaseReactiveTest {
 	}
 
 	@Entity
-	@Table(name = "ENTITY_A")
+	@Table(name = "CSSL_ENTITY_A")
 	public static class EntityA {
 
 		@Id
@@ -170,12 +170,12 @@ public class CollectionStatelessSessionListenerTest extends BaseReactiveTest {
 		Integer id;
 
 		@OneToMany
-		@JoinColumn(name = "ENTITY_A")
+		@JoinColumn(name = "CSSL_ENTITY_A")
 		Collection<EntityB> children = new ArrayList<>();
 	}
 
 	@Entity
-	@Table(name = "ENTITY_B")
+	@Table(name = "CSSL_ENTITY_B")
 	public static class EntityB {
 		@Id
 		@GeneratedValue(strategy = GenerationType.AUTO)

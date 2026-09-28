@@ -18,6 +18,7 @@ import java.util.List;
 import org.hibernate.annotations.TimeZoneColumn;
 import org.hibernate.annotations.TimeZoneStorage;
 import org.hibernate.annotations.TimeZoneStorageType;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.BaseReactiveTest;
 import org.hibernate.reactive.annotations.DisabledFor;
@@ -88,6 +89,7 @@ public class TimeZoneStorageMappingTest extends BaseReactiveTest {
 	protected void setProperties(Configuration configuration) {
 		super.setProperties( configuration );
 		configuration.setProperty( TIMEZONE_DEFAULT_STORAGE, "AUTO" );
+		configuration.setProperty( AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC, "false" );
 	}
 
 	@BeforeEach

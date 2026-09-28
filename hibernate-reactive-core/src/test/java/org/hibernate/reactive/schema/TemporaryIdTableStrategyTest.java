@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.temptable.TemporaryTable;
+import org.hibernate.dialect.temptable.internal.TemporaryTable;
 import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableStrategy;
 import org.hibernate.reactive.BaseReactiveTest;
@@ -147,7 +147,7 @@ public class TemporaryIdTableStrategyTest extends BaseReactiveTest {
 		test( context, setupSessionFactory( configure )
 				.thenAccept( v -> {
 					dialect[0] = getDialect();
-					assertThat( commandsCount( dialect[0].getTemporaryTableCreateCommand() ) )
+					assertThat( commandsCount( "create " ) )
 							.as( "Unexpected number of temporary tables for ids CREATED" )
 							.isEqualTo( expectedTempTablesCreated );
 					sqlStatementTracker.clear();
@@ -155,7 +155,7 @@ public class TemporaryIdTableStrategyTest extends BaseReactiveTest {
 				// to ensure the factory is always closed even in case of exceptions
 				.handle( CompletionStages::handle )
 				.thenCompose( this::closeFactory )
-				.thenAccept( v -> assertThat( commandsCount( dialect[0].getTemporaryTableDropCommand() ) )
+				.thenAccept( v -> assertThat( commandsCount( "drop " ) )
 						.as( "Unexpected number of temporary tables for ids DROPPED" )
 						.isEqualTo( expectedTempTablesDropped ) )
 		);
@@ -171,9 +171,9 @@ public class TemporaryIdTableStrategyTest extends BaseReactiveTest {
 						.thenCompose( factoryHandler::getResultAsCompletionStage ) );
 	}
 
-	private static long commandsCount(String temporaryTableCommand) {
+	private static long commandsCount(String prefix) {
 		return sqlStatementTracker.getLoggedQueries().stream()
-				.filter( q -> q.startsWith( temporaryTableCommand ) && q.contains( TemporaryTable.ID_TABLE_PREFIX ) )
+				.filter( q -> q.toLowerCase().startsWith( prefix ) && q.contains( TemporaryTable.ID_TABLE_PREFIX ) )
 				.count();
 	}
 
