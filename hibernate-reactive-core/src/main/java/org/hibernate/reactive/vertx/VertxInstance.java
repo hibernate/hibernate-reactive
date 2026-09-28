@@ -6,14 +6,14 @@ package org.hibernate.reactive.vertx;
 
 import io.vertx.core.Vertx;
 
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPool;
 import org.hibernate.service.Service;
 
 /**
  * Used by {@link DefaultSqlClientPool} and
- * {@link org.hibernate.reactive.context.impl.VertxContext}
+ * {@link org.hibernate.reactive.context.internal.VertxContext}
  * to obtain an instance of {@link Vertx}. The default instance is
- * {@link org.hibernate.reactive.vertx.impl.DefaultVertxInstance}.
+ * {@link org.hibernate.reactive.vertx.internal.DefaultVertxInstance}.
  * <p>
  * A program may integrate a custom {@link VertxInstance}
  * with Hibernate Reactive by contributing a new service using a
@@ -28,7 +28,7 @@ import org.hibernate.service.Service;
  *     .build();
  * }</pre>
  *
- * @see org.hibernate.reactive.vertx.impl.ProvidedVertxInstance
+ * @see org.hibernate.reactive.vertx.internal.ProvidedVertxInstance
  */
 @FunctionalInterface
 public interface VertxInstance extends Service {

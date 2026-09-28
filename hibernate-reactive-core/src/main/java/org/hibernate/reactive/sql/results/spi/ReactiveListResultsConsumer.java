@@ -12,14 +12,14 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
-import org.hibernate.reactive.engine.impl.ReactivePersistenceContextAdapter;
+import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -30,8 +30,8 @@ import org.hibernate.type.spi.TypeConfiguration;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.ALLOW;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.ASSERT;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.FILTER;
-import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
-import static org.hibernate.reactive.util.impl.CompletionStages.whileLoop;
+import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.whileLoop;
 
 /**
  * @see org.hibernate.sql.results.spi.ListResultsConsumer

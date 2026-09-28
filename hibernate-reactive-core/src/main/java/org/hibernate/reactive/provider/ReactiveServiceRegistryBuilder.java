@@ -18,7 +18,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.Environment;
 import org.hibernate.internal.util.PropertiesHelper;
-import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
+import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.ServiceRegistry;
 
 /**

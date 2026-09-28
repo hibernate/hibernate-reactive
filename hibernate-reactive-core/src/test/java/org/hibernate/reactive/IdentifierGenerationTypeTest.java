@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Check that the generated id can be of a specific type
  *
- * @see org.hibernate.reactive.id.impl.IdentifierGeneration
+ * @see org.hibernate.reactive.id.internal.IdentifierGeneration
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0. " +

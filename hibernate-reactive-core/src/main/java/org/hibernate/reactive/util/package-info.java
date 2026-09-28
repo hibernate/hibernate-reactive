@@ -6,6 +6,6 @@
  * Utility functions for working with
  * {@link java.util.concurrent.CompletionStage}.
  *
- * @see org.hibernate.reactive.util.impl.CompletionStages
+ * @see org.hibernate.reactive.util.internal.CompletionStages
  */
 package org.hibernate.reactive.util;

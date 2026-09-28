@@ -24,7 +24,7 @@ import org.hibernate.internal.OptimisticLockHelper;
 import org.hibernate.loader.LoaderLogging;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.pretty.MessageHelper;
-import org.hibernate.reactive.persister.entity.impl.ReactiveEntityPersister;
+import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
 import org.hibernate.reactive.sql.exec.internal.StandardReactiveSelectExecutor;
 import org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer;
 import org.hibernate.sql.ast.tree.expression.JdbcParameter;
@@ -37,8 +37,8 @@ import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
 import static java.util.Objects.requireNonNull;
-import static org.hibernate.reactive.util.impl.CompletionStages.supplyStage;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.supplyStage;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * @see org.hibernate.loader.ast.internal.LoaderHelper

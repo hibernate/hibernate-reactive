@@ -9,7 +9,7 @@ import org.hibernate.service.Service;
 /**
  * This service is only used to "mark" the registry as being
  * intended for use by an instance of Hibernate Reactive.
- * @see org.hibernate.reactive.provider.impl.ReactiveModeCheck#isReactiveRegistry(org.hibernate.service.ServiceRegistry)
+ * @see org.hibernate.reactive.provider.internal.ReactiveModeCheck#isReactiveRegistry(org.hibernate.service.ServiceRegistry)
  */
 public interface ReactiveMarkerService extends Service {
 

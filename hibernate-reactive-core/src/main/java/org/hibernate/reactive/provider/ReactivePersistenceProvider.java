@@ -16,10 +16,10 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
-import org.hibernate.reactive.logging.impl.Log;
-import org.hibernate.reactive.logging.impl.LoggerFactory;
-import org.hibernate.reactive.provider.impl.ReactiveEntityManagerFactoryBuilder;
-import org.hibernate.reactive.provider.impl.ReactiveProviderChecker;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.provider.internal.ReactiveEntityManagerFactoryBuilder;
+import org.hibernate.reactive.provider.internal.ReactiveProviderChecker;
 
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;

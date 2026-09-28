@@ -17,9 +17,9 @@ import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
 import org.hibernate.reactive.annotations.EnabledFor;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
-import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
-import org.hibernate.reactive.pool.impl.SqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPool;
+import org.hibernate.reactive.pool.internal.DefaultSqlClientPoolConfiguration;
+import org.hibernate.reactive.pool.internal.SqlClientPoolConfiguration;
 import org.hibernate.reactive.testing.TestingRegistryExtension;
 
 import org.junit.jupiter.api.Test;

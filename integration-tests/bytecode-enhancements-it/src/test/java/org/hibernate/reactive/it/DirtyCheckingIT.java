@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class DirtyCheckingIT extends BaseReactiveIT {
 
