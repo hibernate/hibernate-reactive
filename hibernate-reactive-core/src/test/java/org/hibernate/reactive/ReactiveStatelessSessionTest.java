@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQuery;
@@ -30,6 +31,7 @@ import jakarta.persistence.criteria.Root;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 
@@ -150,6 +152,56 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testStatelessSessionFind(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.find( GuineaPig.class, pig.id ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionFindMultiple(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		GuineaPig c = new GuineaPig( "C" );
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insertMultiple( List.of( a, b, c ) )
+						.thenCompose( v -> ss.find( GuineaPig.class, a.id, c.id ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( c, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.findMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.close() ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionGetMultipleWithList(VertxTestContext context) {
+		GuineaPig a = new GuineaPig( "A" );
+		GuineaPig b = new GuineaPig( "B" );
+		test( context, getSessionFactory().openStatelessSession()
+				.thenCompose( ss -> ss.insertMultiple( List.of( a, b ) )
+						.thenCompose( v -> ss.getMultiple( GuineaPig.class, List.of( a.id, b.id ) ) )
+						.thenAccept( list -> {
+							assertThat( list ).hasSize( 2 );
+							assertThatPigsAreEqual( a, list.get( 0 ) );
+							assertThatPigsAreEqual( b, list.get( 1 ) );
+						} )
+						.thenCompose( v -> ss.close() ) )
+		);
+	}
+
+	@Test
 	public void testStatelessSessionCriteria(VertxTestContext context) {
 		GuineaPig pig = new GuineaPig( "Aloi" );
 
@@ -254,6 +306,46 @@ public class ReactiveStatelessSessionTest extends BaseReactiveTest {
 							return s.createSelectionQuery( "from GuineaPig", GuineaPig.class ).getResultList();
 						} ) )
 		) );
+	}
+
+	@Test
+	public void testFindReturnsNullForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.find( GuineaPig.class, -999 )
+				.thenAccept( result -> assertThat( result ).isNull() ) )
+		);
+	}
+
+	@Test
+	public void testGetThrowsForNonExistentEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withStatelessSession( ss ->
+				assertThrown( EntityNotFoundException.class, ss.get( GuineaPig.class, -999 ) )
+						.thenAccept( e -> assertThat( e.getMessage() )
+								.contains( GuineaPig.class.getName() )
+								.contains( "-999" ) ) )
+		);
+	}
+
+	@Test
+	public void testGetReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.get( GuineaPig.class, pig.getId() ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
+	}
+
+	@Test
+	public void testFindReturnsExistingEntity(VertxTestContext context) {
+		GuineaPig pig = new GuineaPig( "Aloi" );
+		test( context, getSessionFactory().withStatelessSession( ss -> ss
+				.insert( pig )
+				.thenCompose( v -> ss.find( GuineaPig.class, pig.getId() ) )
+				.thenAccept( p -> assertThatPigsAreEqual( pig, p ) )
+				.thenCompose( v -> ss.delete( pig ) ) )
+		);
 	}
 
 	private void assertThatPigsAreEqual( GuineaPig expected, GuineaPig actual) {
