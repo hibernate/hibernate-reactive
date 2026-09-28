@@ -24,6 +24,7 @@ import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -90,6 +91,10 @@ public abstract class MutinySessionDelegator implements Mutiny.Session {
 
 	public Mutiny.MutationQuery createNativeMutationQuery(String sqlString) {
 		return delegate().createNativeMutationQuery( sqlString );
+	}
+
+	public Mutiny.MutationQuery createStatement(StatementReference statementReference) {
+		return delegate().createStatement( statementReference );
 	}
 
 	public Uni<Void> close() {
