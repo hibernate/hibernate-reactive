@@ -955,7 +955,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final Object id = initializer.getIdentifier();
 		initializer.setSession( this );
 		persistenceContext.beforeLoad();
-		return reactiveImplementation( initializer )
+		return reactiveImmediateLoad( entityName, id )
 				.thenApply( entity -> {
 					checkEntityFound( this, entityName, id, entity );
 					initializer.setImplementation( entity );
@@ -968,15 +968,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 						persistenceContext.clear();
 					}
 				} );
-	}
-
-	private static CompletionStage<?> reactiveImplementation(LazyInitializer initializer) {
-		// This is hard to test because it happens on slower machines like the ones we use on CI.
-		// See AbstractLazyInitializer#initialize, it happens when the object is not initialized, and we need to
-		// call session.immediateLoad
-		return initializer.getImplementation() instanceof CompletionStage
-				? (CompletionStage<?>) initializer.getImplementation()
-				: completedFuture( initializer.getImplementation() );
 	}
 
 	@Override
