@@ -228,14 +228,25 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		Object[] sids = new Object[ids.length];
 		System.arraycopy( ids, 0, sids, 0, ids.length );
 
-		return getEntityPersister( entityClass.getName() )
+		final ReactiveEntityPersister persister = getEntityPersister( entityClass.getName() );
+		return persister
 				.reactiveMultiLoad( sids, this, StatelessSessionImpl.MULTI_ID_LOAD_OPTIONS )
 				.whenComplete( (list, e) -> {
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
 					}
 				} )
-				.thenApply( list -> (List<T>) list );
+				.thenApply( list -> {
+					if ( list != null ) {
+						for ( int i = 0; i < list.size(); i++ ) {
+							final Object entity = list.get( i );
+							if ( entity != null ) {
+								callOnLoadForEntity( entity, sids[i], persister );
+							}
+						}
+					}
+					return (List<T>) list;
+				} );
 	}
 
 	@Override
@@ -268,6 +279,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		if ( persister.canReadFromCache() ) {
 			final Object cachedEntity = loadFromSecondLevelCache( persister, generateEntityKey( id, persister ), null, lockMode );
 			if ( cachedEntity != null ) {
+				callOnLoadForEntity( cachedEntity, id, persister );
 				getPersistenceContext().clear();
 				return completedFuture( (T) cachedEntity );
 			}
@@ -280,12 +292,24 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 					}
 					getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 				} )
-				.thenApply( entity -> (T) entity );
+				.thenApply( entity -> {
+					if ( entity != null ) {
+						callOnLoadForEntity( entity, id, persister );
+					}
+					return (T) entity;
+				} );
 	}
 
 	private ReactiveEntityPersister getEntityPersister(String entityName) {
 		return (ReactiveEntityPersister) getFactory().getMappingMetamodel()
 				.getEntityDescriptor( entityName );
+	}
+
+	private void callOnLoadForEntity(Object entity, Object id, EntityPersister persister) {
+		final Object[] state = persister.getValues( entity );
+		if ( getInterceptor().onLoad( entity, id, state, persister.getPropertyNames(), persister.getPropertyTypes() ) ) {
+			persister.setValues( entity, state );
+		}
 	}
 
 	@Override
@@ -635,6 +659,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		return fromInternalFetchProfile( REFRESH, () -> persister.reactiveLoad( id, entity, getNullSafeLockMode( lockMode ), this ) )
 				.thenAccept( result -> {
 					UnresolvableObjectException.throwIfNull( result, id, persister.getEntityName() );
+					callOnLoadForEntity( result, id, persister );
 					if ( getPersistenceContext().isLoadFinished() ) {
 						getPersistenceContext().clear();
 					}
@@ -901,7 +926,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final Object id = initializer.getIdentifier();
 		initializer.setSession( this );
 		persistenceContext.beforeLoad();
-		return reactiveImplementation( initializer )
+		return reactiveImmediateLoad( entityName, id )
 				.thenApply( entity -> {
 					checkEntityFound( this, entityName, id, entity );
 					initializer.setImplementation( entity );
@@ -914,15 +939,6 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 						persistenceContext.clear();
 					}
 				} );
-	}
-
-	private static CompletionStage<?> reactiveImplementation(LazyInitializer initializer) {
-		// This is hard to test because it happens on slower machines like the ones we use on CI.
-		// See AbstractLazyInitializer#initialize, it happens when the object is not initialized, and we need to
-		// call session.immediateLoad
-		return initializer.getImplementation() instanceof CompletionStage
-				? (CompletionStage<?>) initializer.getImplementation()
-				: completedFuture( initializer.getImplementation() );
 	}
 
 	@Override
