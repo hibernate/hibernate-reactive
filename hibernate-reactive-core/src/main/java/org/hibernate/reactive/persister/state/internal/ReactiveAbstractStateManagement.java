@@ -15,8 +15,8 @@ import org.hibernate.reactive.persister.collection.mutation.ReactiveInsertRowsCo
 import org.hibernate.reactive.persister.collection.mutation.ReactiveInsertRowsCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.internal.ReactiveMergeCoordinatorStandardScopeFactory;
 import org.hibernate.reactive.persister.entity.internal.ReactiveUpdateCoordinatorStandardScopeFactory;
+import org.hibernate.reactive.persister.entity.internal.ReactiveDeleteCoordinatorStandardScopeFactory;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinatorNoOp;
@@ -53,7 +53,7 @@ public abstract class ReactiveAbstractStateManagement extends AbstractStateManag
 
 	@Override
 	public ReactiveDeleteCoordinator createDeleteCoordinator(EntityPersister persister) {
-		return new ReactiveDeleteCoordinatorStandard( persister, persister.getFactory() );
+		return new ReactiveDeleteCoordinatorStandardScopeFactory( persister, persister.getFactory() );
 	}
 
 	@Override

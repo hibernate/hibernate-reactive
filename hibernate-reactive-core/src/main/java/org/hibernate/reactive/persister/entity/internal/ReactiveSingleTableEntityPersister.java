@@ -326,7 +326,9 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
-		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() )
+				.makeScopedCoordinator()
+				.reactiveDelete( entity, id, version, session );
 	}
 
 	/**

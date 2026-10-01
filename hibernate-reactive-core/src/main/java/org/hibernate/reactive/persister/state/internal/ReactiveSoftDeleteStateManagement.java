@@ -11,8 +11,8 @@ import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.state.internal.SoftDeleteStateManagement;
+import org.hibernate.reactive.persister.entity.internal.ReactiveDeleteCoordinatorSoftScopeFactory;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorSoft;
 
 /**
  * @see org.hibernate.persister.state.internal.SoftDeleteStateManagement
@@ -24,7 +24,7 @@ public class ReactiveSoftDeleteStateManagement extends ReactiveAbstractStateMana
 
 	@Override
 	public ReactiveDeleteCoordinator createDeleteCoordinator(EntityPersister persister) {
-		return new ReactiveDeleteCoordinatorSoft( persister, persister.getFactory() );
+		return new ReactiveDeleteCoordinatorSoftScopeFactory( persister, persister.getFactory() );
 	}
 
 	@Override

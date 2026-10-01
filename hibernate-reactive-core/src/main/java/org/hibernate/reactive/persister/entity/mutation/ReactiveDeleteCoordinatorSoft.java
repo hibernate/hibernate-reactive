@@ -29,11 +29,15 @@ import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.id
 import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
-public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft implements ReactiveDeleteCoordinator {
+/**
+ * Reactive version of {@link DeleteCoordinatorSoft}, scoped to a single delete operation
+ * so that instance state (the {@code stage} field) is not shared across concurrent calls.
+ */
+public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft implements ReactiveScopedDeleteCoordinator {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private CompletionStage<Void> stage;
+	private CompletableFuture<Void> stage;
 
 	public ReactiveDeleteCoordinatorSoft(
 			EntityPersister entityPersister,
@@ -43,7 +47,7 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 
 	@Override
 	public void delete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "coordinateReactiveDelete" );
+		throw LOG.nonReactiveMethodCall( "reactiveDelete" );
 	}
 
 	@Override
@@ -56,7 +60,7 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 			if ( stage == null ) {
 				return failedFuture( t );
 			}
-			stage.toCompletableFuture().completeExceptionally( t );
+			stage.completeExceptionally( t );
 			return stage;
 		}
 	}
@@ -164,10 +168,10 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 
 	private void complete(Object o, Throwable throwable) {
 		if ( throwable != null ) {
-			stage.toCompletableFuture().completeExceptionally( throwable );
+			stage.completeExceptionally( throwable );
 		}
 		else {
-			stage.toCompletableFuture().complete( null );
+			stage.complete( null );
 		}
 	}
 
