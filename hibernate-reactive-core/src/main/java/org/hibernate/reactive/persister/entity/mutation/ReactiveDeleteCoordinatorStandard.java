@@ -29,11 +29,15 @@ import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.id
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
 
-public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard implements ReactiveDeleteCoordinator {
+/**
+ * Reactive version of {@link DeleteCoordinatorStandard}, scoped to a single delete operation
+ * so that instance state (the {@code stage} field) is not shared across concurrent calls.
+ */
+public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard implements ReactiveScopedDeleteCoordinator {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
-	private CompletionStage<Void> stage;
+	private CompletableFuture<Void> stage;
 
 	public ReactiveDeleteCoordinatorStandard(EntityPersister entityPersister, SessionFactoryImplementor factory) {
 		super( entityPersister, factory );
@@ -41,7 +45,7 @@ public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard
 
 	@Override
 	public void delete(Object entity, Object id, Object version, SharedSessionContractImplementor session) {
-		throw LOG.nonReactiveMethodCall( "coordinateReactiveDelete" );
+		throw LOG.nonReactiveMethodCall( "reactiveDelete" );
 	}
 
 	@Override
@@ -54,7 +58,7 @@ public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard
 			if ( stage == null ) {
 				return failedFuture( e );
 			}
-			stage.toCompletableFuture().completeExceptionally( e );
+			stage.completeExceptionally( e );
 			return stage;
 		}
 	}
@@ -162,10 +166,10 @@ public class ReactiveDeleteCoordinatorStandard extends DeleteCoordinatorStandard
 
 	private void complete(Object o, Throwable throwable) {
 		if ( throwable != null ) {
-			stage.toCompletableFuture().completeExceptionally( throwable );
+			stage.completeExceptionally( throwable );
 		}
 		else {
-			stage.toCompletableFuture().complete( null );
+			stage.complete( null );
 		}
 	}
 

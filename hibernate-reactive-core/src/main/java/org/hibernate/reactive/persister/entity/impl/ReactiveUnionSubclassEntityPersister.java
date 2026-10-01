@@ -47,7 +47,7 @@ import org.hibernate.reactive.loader.ast.spi.ReactiveSingleUniqueKeyEntityLoader
 import org.hibernate.reactive.logging.impl.Log;
 import org.hibernate.reactive.logging.impl.LoggerFactory;
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveRuntimeModelCreationContext;
-import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinatorStandard;
+import org.hibernate.reactive.persister.entity.mutation.ReactiveDeleteCoordinator;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveInsertCoordinatorStandard;
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -323,7 +323,9 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 
 	@Override
 	public CompletionStage<Void> deleteReactive(Object id, Object version, Object entity, SharedSessionContractImplementor session) {
-		return ( (ReactiveDeleteCoordinatorStandard) getDeleteCoordinator() ).reactiveDelete( entity, id, version, session );
+		return ( (ReactiveDeleteCoordinator) getDeleteCoordinator() )
+				.makeScopedCoordinator()
+				.reactiveDelete( entity, id, version, session );
 	}
 
 	@Override
