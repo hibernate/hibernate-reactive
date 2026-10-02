@@ -35,12 +35,9 @@ driver for your database, one of the following options:
 | PostgreSQL or CockroachDB | `io.vertx:vertx-pg-client:{vertxSqlClientVersion}`
 | MySQL or MariaDB          | `io.vertx:vertx-mysql-client:{vertxSqlClientVersion}`
 | DB2                       | `io.vertx:vertx-db2-client:{vertxSqlClientVersion}`
-| SQL Server                | `io.vertx:vertx-mssql-client:${vertxSqlClientVersion}`
-| Oracle                    | `io.vertx:vertx-oracle-client:${vertxSqlClientVersion}`
+| SQL Server                | `io.vertx:vertx-mssql-client:{vertxSqlClientVersion}`
+| Oracle                    | `io.vertx:vertx-oracle-client:{vertxSqlClientVersion}`
 |===
-
-Where `{vertxSqlClientVersion}` is the version of Vert.x compatible with the
-version of Hibernate Reactive you're using.
 
 You don't need to depend on the JDBC driver for your database.
 
