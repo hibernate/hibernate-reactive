@@ -36,6 +36,7 @@ import org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement;
 import org.hibernate.reactive.engine.internal.ReactiveCallbackImpl;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.reactive.query.sqm.internal.ReactiveAggregatedSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.internal.ReactiveConcreteSqmSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSelectionQueryImpl;
@@ -152,6 +153,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public CompletionStage<List<R>> reactiveList() {
+		return ReactiveSessionInternals.serialized( session, this::executeReactiveList );
+	}
+
+	private CompletionStage<List<R>> executeReactiveList() {
 		final var profiles = applyProfiles();
 		return beforeQuery.get()
 				.thenCompose( v -> doReactiveList() )

@@ -172,6 +172,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
 	private PersistenceContext reactivePersistenceContext;
+	private CompletionStage<Void> previousOperation = voidFuture();
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, StatefulOptions options, ReactiveConnection connection) {
 		super( delegate, options );
@@ -203,6 +204,17 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	private void threadCheck() {
 		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
+	}
+
+	public <T> CompletionStage<T> serialized(Supplier<CompletionStage<T>> operation) {
+		// Make sure a second operation triggered before the first finished can still work:
+		// we will only start the second operation when the first one finished.
+		// Note we're not using locks because we still don't support parallel calls;
+		// just sequential calls that fail to wait for a previous (async) operation to finish.
+		final CompletionStage<T> result = previousOperation
+				.thenCompose( ignored -> operation.get() );
+		previousOperation = result.handle( (v, e) -> null );
+		return result;
 	}
 
 	@Override
@@ -333,6 +345,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	//Note: when making changes to this method, please also consider
 	//      the similar code in Mutiny.fetch() and Stage.fetch()
 	public <T> CompletionStage<T> reactiveFetch(T association, boolean unproxy) {
+		return serialized( () -> doReactiveFetch( association, unproxy ) );
+	}
+
+	public <T> CompletionStage<T> internalReactiveFetch(T association, boolean unproxy) {
+		return doReactiveFetch( association, unproxy );
+	}
+
+	private <T> CompletionStage<T> doReactiveFetch(T association, boolean unproxy) {
 		checkOpen();
 		if ( association == null ) {
 			return nullFuture();
@@ -384,20 +404,22 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <E, T> CompletionStage<T> reactiveFetch(E entity, Attribute<E, T> field) {
-		final ReactiveEntityPersister entityPersister = (ReactiveEntityPersister) getEntityPersister( null, entity );
-		LazyAttributeLoadingInterceptor lazyAttributeLoadingInterceptor = entityPersister.getBytecodeEnhancementMetadata()
-				.extractInterceptor( entity );
-		final String attributeName = field.getName();
-		if ( !lazyAttributeLoadingInterceptor.isAttributeLoaded( attributeName ) ) {
-			return ( (CompletionStage<T>) lazyAttributeLoadingInterceptor.fetchAttribute( entity, field.getName() ) )
-					.thenApply( value -> {
-						lazyAttributeLoadingInterceptor.attributeInitialized( attributeName );
-						return value;
-					} );
-		}
-		else {
-			return completedFuture( (T) entityPersister.getPropertyValue( entity, attributeName ) );
-		}
+		return serialized( () -> {
+			final ReactiveEntityPersister entityPersister = (ReactiveEntityPersister) getEntityPersister( null, entity );
+			LazyAttributeLoadingInterceptor lazyAttributeLoadingInterceptor = entityPersister.getBytecodeEnhancementMetadata()
+					.extractInterceptor( entity );
+			final String attributeName = field.getName();
+			if ( !lazyAttributeLoadingInterceptor.isAttributeLoaded( attributeName ) ) {
+				return ((CompletionStage<T>) lazyAttributeLoadingInterceptor.fetchAttribute( entity, field.getName() ))
+						.thenApply( value -> {
+							lazyAttributeLoadingInterceptor.attributeInitialized( attributeName );
+							return value;
+						} );
+			}
+			else {
+				return completedFuture( (T) entityPersister.getPropertyValue( entity, attributeName ) );
+			}
+		} );
 	}
 
 	@Override
@@ -964,13 +986,13 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactivePersist(Object entity) {
 		checkOpen();
-		return firePersist( new PersistEvent( null, entity, this ) );
+		return serialized( () -> firePersist( new PersistEvent( null, entity, this ) ) );
 	}
 
 	@Override
 	public CompletionStage<Void> reactivePersist(String entityName, Object entity) {
 		checkOpen();
-		return firePersist( new PersistEvent( entityName, entity, this ) );
+		return serialized( () -> firePersist( new PersistEvent( entityName, entity, this ) ) );
 	}
 
 	@Override
@@ -1033,7 +1055,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveRemove(Object entity) {
 		checkOpen();
-		return fireRemove( new DeleteEvent( entity, this ) );
+		return serialized( () -> fireRemove( new DeleteEvent( entity, this ) ) );
 	}
 
 	@Override
@@ -1101,7 +1123,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public <T> CompletionStage<T> reactiveMerge(T object) throws HibernateException {
 		checkOpen();
-		return fireMerge( new MergeEvent( null, object, this ) );
+		return serialized( () -> fireMerge( new MergeEvent( null, object, this ) ) );
 	}
 
 	@Override
@@ -1162,12 +1184,14 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveFlush() {
 		checkOpen();
-		return doFlush();
+		return serialized( this::doFlush );
 	}
 
 	@Override
 	public CompletionStage<Void> reactiveAutoflush() {
-		return getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ? voidFuture() : doFlush();
+		return serialized( () ->
+				getHibernateFlushMode().lessThan( FlushMode.COMMIT ) ? voidFuture() : doFlush()
+		);
 	}
 
 	@Override
@@ -1230,7 +1254,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveRefresh(Object entity, LockOptions lockOptions) {
 		checkOpen();
-		return fireRefresh( new RefreshEvent( entity, lockOptions, this ) );
+		return serialized( () -> fireRefresh( new RefreshEvent( entity, lockOptions, this ) ) );
 	}
 
 	@Override
@@ -1283,7 +1307,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	@Override
 	public CompletionStage<Void> reactiveLock(Object object, LockOptions lockOptions) {
 		checkOpen();
-		return fireLock( new LockEvent( object, lockOptions, this ) );
+		return serialized( () -> fireLock( new LockEvent( object, lockOptions, this ) ) );
 	}
 
 	@Override
@@ -1293,6 +1317,12 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public CompletionStage<Void> reactiveLock(String entityName, Object object, LockOptions lockOptions) {
+		checkOpen();
+		return serialized( () -> fireLock( new LockEvent( entityName, object, lockOptions, this ) ) );
+	}
+
+	@Override
+	public CompletionStage<Void> internalReactiveLock(String entityName, Object object, LockOptions lockOptions) {
 		checkOpen();
 		return fireLock( new LockEvent( entityName, object, lockOptions, this ) );
 	}
@@ -1314,6 +1344,15 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<T> reactiveGet(Class<T> entityClass, Object id) {
+		return serialized( () -> doReactiveGet( entityClass, id ) );
+	}
+
+	@Override
+	public <T> CompletionStage<T> internalReactiveGet(Class<T> entityClass, Object id) {
+		return doReactiveGet( entityClass, id );
+	}
+
+	private <T> CompletionStage<T> doReactiveGet(Class<T> entityClass, Object id) {
 		return reactiveById( entityClass ).load( id );
 	}
 
@@ -1332,24 +1371,25 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 			LockOptions lockOptions,
 			EntityGraph<T> fetchGraph) {
 		checkOpen();
-		return supplyStage( () -> {
-			if ( fetchGraph != null ) {
-				getLoadQueryInfluencers()
-						.getEffectiveEntityGraph()
-						.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
-			}
-			getLoadQueryInfluencers().setReadOnly( readOnlyHint( null ) );
+		return serialized( () -> supplyStage( () -> {
+				if ( fetchGraph != null ) {
+					getLoadQueryInfluencers()
+							.getEffectiveEntityGraph()
+							.applyGraph( (RootGraphImplementor<T>) fetchGraph, GraphSemantic.FETCH );
+				}
+				getLoadQueryInfluencers().setReadOnly( readOnlyHint( null ) );
 
-			return reactiveById( entityClass )
-					.with( determineAppropriateLocalCacheMode( null ) )
-					.with( lockOptions )
-					.load( id );
-		} ).handle( CompletionStages::handle )
-				.thenCompose( handler -> handleReactiveFindException( entityClass, id, lockOptions, handler ) )
-				.whenComplete( (v, e) -> {
-					getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
-					getLoadQueryInfluencers().setReadOnly( null );
-				} );
+				return reactiveById( entityClass )
+						.with( determineAppropriateLocalCacheMode( null ) )
+						.with( lockOptions )
+						.load( id );
+			} ).handle( CompletionStages::handle )
+					.thenCompose( handler -> handleReactiveFindException( entityClass, id, lockOptions, handler ) )
+					.whenComplete( (v, e) -> {
+						getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
+						getLoadQueryInfluencers().setReadOnly( null );
+					} )
+		);
 	}
 
 	@Override
@@ -1411,16 +1451,19 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 
 	@Override
 	public <T> CompletionStage<List<T>> reactiveFind(Class<T> entityClass, Object... ids) {
-		return new ReactiveMultiIdentifierLoadAccessImpl<>( entityClass ).multiLoad( ids );
+		return serialized( () -> new ReactiveMultiIdentifierLoadAccessImpl<>( entityClass ).multiLoad( ids ) );
 	}
 
 	@Override
 	public <T> CompletionStage<T> reactiveFind(Class<T> entityClass, Map<String, Object> ids) {
-		final ReactiveEntityPersister persister = entityPersister( entityClass );
-		final Object normalizedIdValues = persister.getNaturalIdMapping().normalizeInput( ids );
-		return new NaturalIdLoadAccessImpl<T>( this, persister, requireEntityPersister( entityClass ) )
-				.resolveNaturalId( normalizedIdValues )
-				.thenCompose( id -> reactiveFind( entityClass, id ) );
+		checkOpen();
+		return serialized( () -> {
+			final ReactiveEntityPersister persister = entityPersister( entityClass );
+			final Object normalizedIdValues = persister.getNaturalIdMapping().normalizeInput( ids );
+			return new NaturalIdLoadAccessImpl<T>( this, persister, requireEntityPersister( entityClass ) )
+					.resolveNaturalId( normalizedIdValues )
+					.thenCompose( id -> reactiveById( entityClass ).load( id ) );
+		} );
 	}
 
 	private <T> ReactiveEntityPersister entityPersister(Class<T> entityClass) {

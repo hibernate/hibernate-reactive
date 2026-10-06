@@ -44,6 +44,7 @@ import org.hibernate.reactive.query.internal.ReactiveAbstractSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.type.BasicTypeReference;
@@ -211,7 +212,7 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
-		return reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this );
+		return ReactiveSessionInternals.serialized( getSession(), () -> reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this ) );
 	}
 
 	// NativeQueryImpl.parameterOccurrences is private with no getter (ORM 8.0),

@@ -22,7 +22,7 @@ import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.engine.spi.ReactiveSharedSessionContractImplementor;
 import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
-import org.hibernate.reactive.session.ReactiveQueryProducer;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
@@ -266,8 +266,7 @@ public class EntityTypes {
 					// as a ComponentType. In the case that the entity is unfetched, we need to
 					// explicitly fetch it here before calling replace(). (Note that in Hibernate
 					// ORM this is unnecessary due to transparent lazy fetching.)
-					return ( (ReactiveQueryProducer) session )
-							.reactiveFetch( id, true )
+					return ReactiveSessionInternals.internalReactiveFetch( session, id, true )
 							.thenCompose( fetched -> {
 								Object idOrUniqueKey = entityType
 										.getIdentifierOrUniqueKeyType( session.getFactory().getRuntimeMetamodels() )

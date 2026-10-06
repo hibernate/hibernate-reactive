@@ -40,7 +40,7 @@ import org.hibernate.reactive.event.ReactiveLoadEventListener;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
-import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
@@ -674,7 +674,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				if ( session == null ) {
 					throw LOG.sessionClosedLazyInitializationException();
 				}
-				return ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( entity, false );
+				return ReactiveSessionInternals.internalReactiveFetch( session, entity, false );
 			}
 			else {
 				return completedFuture( entity );

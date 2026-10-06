@@ -44,8 +44,8 @@ import org.hibernate.reactive.engine.internal.ReactiveOrphanRemovalAction;
 import org.hibernate.reactive.event.ReactiveDeleteEventListener;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.CompositeType;
 import org.hibernate.type.Type;
@@ -183,8 +183,7 @@ public class DefaultReactiveDeleteEventListener
 		}
 
 		//Object entity = persistenceContext.unproxyAndReassociate( event.getObject() );
-		return ( (ReactiveQueryProducer) source )
-				.reactiveFetch( objectEvent, true )
+		return ReactiveSessionInternals.internalReactiveFetch( source, objectEvent, true )
 				.thenCompose( entity -> delete( event, transientEntities, entity ) );
 
 	}

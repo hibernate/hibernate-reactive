@@ -22,6 +22,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.EntityType;
@@ -62,7 +63,7 @@ public class CascadingActions {
 			final ReactiveSession reactiveSession = session.unwrap( ReactiveSession.class );
 			//TODO: force-fetching it here circumvents the unloaded-delete optimization
 			//      so we don't actually want to do this
-			return reactiveSession.reactiveFetch( child, true )
+			return ReactiveSessionInternals.internalReactiveFetch( session, child, true )
 					.thenCompose( c -> reactiveSession.reactiveRemove( entityName, c, isCascadeDeleteEnabled, context ) );
 		}
 	};

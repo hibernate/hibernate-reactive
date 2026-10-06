@@ -52,6 +52,7 @@ import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
 
 import jakarta.persistence.CacheRetrieveMode;
@@ -118,6 +119,10 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
+		return ReactiveSessionInternals.serialized( getSession(), this::doReactiveExecute );
+	}
+
+	private CompletionStage<Integer> doReactiveExecute() {
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 		return doExecuteReactiveUpdate()
 				.handle( (count, error) -> {

@@ -30,6 +30,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.session.ReactiveSession;
+import org.hibernate.reactive.session.internal.ReactiveSessionInternals;
 import org.hibernate.type.AssociationType;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.ComponentType;
@@ -78,9 +79,8 @@ public final class Cascade {
 				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
 					Object fetchable = state[i];
 					if ( !Hibernate.isInitialized( fetchable ) ) {
-						beforeDelete = beforeDelete.thenCompose( v -> session
-								.unwrap( ReactiveSession.class )
-								.reactiveFetch( fetchable, true )
+						beforeDelete = beforeDelete.thenCompose( v ->
+								ReactiveSessionInternals.internalReactiveFetch( session, fetchable, true )
 						);
 					}
 				}
