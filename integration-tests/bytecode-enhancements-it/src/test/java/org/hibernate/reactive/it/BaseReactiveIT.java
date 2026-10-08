@@ -33,7 +33,7 @@ import io.vertx.junit5.RunTestOnContext;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
@@ -56,7 +56,7 @@ public abstract class BaseReactiveIT {
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
 
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
+	public static final PostgreSQLContainer postgresql = new PostgreSQLContainer( IMAGE_NAME )
 			.withUsername( USERNAME )
 			.withPassword( PASSWORD )
 			.withDatabaseName( DB_NAME )
