@@ -12,7 +12,6 @@ import org.hibernate.HibernateException;
 import org.hibernate.reactive.pool.internal.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.internal.DefaultSqlClientPoolConfiguration;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.sqlclient.SqlConnectOptions;
@@ -21,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.createJdbcUrl;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test the correct creation of the {@link SqlConnectOptions}
@@ -160,7 +159,7 @@ public class JdbcUrlParserTest {
 
 	@Test
 	public void testUnrecognizedSchemeException()  {
-		Assert.assertThrows( IllegalArgumentException.class, () -> {
+		assertThrows( IllegalArgumentException.class, () -> {
 			URI uri = new URI( "bogusScheme://localhost/database" );
 			new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 		} );

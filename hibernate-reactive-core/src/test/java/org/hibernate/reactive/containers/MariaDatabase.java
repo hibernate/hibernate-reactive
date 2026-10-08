@@ -10,7 +10,7 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.mariadb.MariaDBContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
@@ -35,7 +35,7 @@ class MariaDatabase extends MySQLDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MariaDBContainer<?> maria = new MariaDBContainer<>( fromDockerfile( "maria" ) )
+	public static final MariaDBContainer maria = new MariaDBContainer( fromDockerfile( "maria" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

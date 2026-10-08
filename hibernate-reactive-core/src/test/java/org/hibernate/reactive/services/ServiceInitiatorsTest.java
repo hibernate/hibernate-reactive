@@ -16,7 +16,6 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,8 +46,9 @@ public class ServiceInitiatorsTest {
 		reportDivider( "All Services in sorted order" );
 		int i = 1;
 		for ( String key : ORM_SERVICES.keySet() ) {
-			String error = "ORM service '" + key + "' is not defined by the HR services list";
-			Assert.assertTrue( error, HR_SERVICES.containsKey( key ) || HR_INTENTIONALLY_OMITTED.contains( key ) );
+			assertThat( HR_SERVICES.containsKey( key ) || HR_INTENTIONALLY_OMITTED.contains( key ) )
+					.as( "ORM service '" + key + "' is not defined by the HR services list" )
+					.isTrue();
 			if ( Objects.equals( HR_SERVICES.get( key ), ORM_SERVICES.get( key ) ) ) {
 				sharedServiceImplementations.add( key );
 			}

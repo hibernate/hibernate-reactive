@@ -21,7 +21,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.containers.output.OutputFrame;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -46,7 +46,7 @@ public class VertxServer {
 
 	private static final String POSGRESQL_CONF_PATH = "/postgresql-min.conf";
 
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
+	public static final PostgreSQLContainer postgresql = new PostgreSQLContainer( IMAGE_NAME )
 			.withUsername( USERNAME )
 			.withPassword( PASSWORD )
 			.withDatabaseName( DB_NAME )
