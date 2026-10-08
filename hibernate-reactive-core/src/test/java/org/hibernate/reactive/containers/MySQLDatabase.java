@@ -27,7 +27,7 @@ import org.hibernate.type.NumericBooleanConverter;
 import org.hibernate.type.TrueFalseConverter;
 import org.hibernate.type.YesNoConverter;
 
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 
 class MySQLDatabase implements TestableDatabase {
 
@@ -86,7 +86,7 @@ class MySQLDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MySQLContainer<?> mysql = new MySQLContainer<>( fromDockerfile( "mysql" ).asCompatibleSubstituteFor( "mysql" ) )
+	public static final MySQLContainer mysql = new MySQLContainer( fromDockerfile( "mysql" ).asCompatibleSubstituteFor( "mysql" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

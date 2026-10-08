@@ -25,7 +25,7 @@ import org.hibernate.type.NumericBooleanConverter;
 import org.hibernate.type.TrueFalseConverter;
 import org.hibernate.type.YesNoConverter;
 
-import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
 
 import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
@@ -95,7 +95,7 @@ class MSSQLServerDatabase implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	public static final MSSQLServerContainer<?> mssqlserver = new MSSQLServerContainer<>( fromDockerfile( "sqlserver" ) )
+	public static final MSSQLServerContainer mssqlserver = new MSSQLServerContainer( fromDockerfile( "sqlserver" ) )
 			.acceptLicense()
 			.withPassword( PASSWORD )
 			.withReuse( true );

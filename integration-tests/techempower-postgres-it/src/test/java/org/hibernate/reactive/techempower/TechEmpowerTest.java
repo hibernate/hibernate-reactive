@@ -14,7 +14,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
-import junit.framework.AssertionFailedError;
+import org.opentest4j.AssertionFailedError;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
