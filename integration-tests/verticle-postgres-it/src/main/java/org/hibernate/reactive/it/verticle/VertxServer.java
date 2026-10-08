@@ -19,7 +19,7 @@ import org.hibernate.reactive.vertx.VertxInstance;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -42,7 +42,7 @@ public class VertxServer {
 	public static final String PASSWORD = "hreact";
 	public static final String DB_NAME = "hreact";
 
-	public static final PostgreSQLContainer<?> postgresql = new PostgreSQLContainer<>( IMAGE_NAME )
+	public static final PostgreSQLContainer postgresql = new PostgreSQLContainer( IMAGE_NAME )
 			.withUsername( USERNAME )
 			.withPassword( PASSWORD )
 			.withDatabaseName( DB_NAME )

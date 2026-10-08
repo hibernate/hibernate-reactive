@@ -25,7 +25,7 @@ import org.hibernate.type.NumericBooleanConverter;
 import org.hibernate.type.TrueFalseConverter;
 import org.hibernate.type.YesNoConverter;
 
-import org.testcontainers.containers.Db2Container;
+import org.testcontainers.db2.Db2Container;
 
 import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;
 
