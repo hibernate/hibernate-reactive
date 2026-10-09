@@ -10,8 +10,8 @@ import java.util.List;
 import org.hibernate.annotations.RowId;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.testing.SqlStatementTracker;
 import org.hibernate.reactive.annotations.DisabledFor;
+import org.hibernate.reactive.testing.SqlStatementTracker;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +26,11 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 
 /**
  * Adapted from the test with the same name in Hibernate ORM: {@literal org.hibernate.orm.test.rowid.RowIdUpdateAndDeleteTest}
  */
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 @DisabledFor(value = ORACLE, reason = "Vert.x driver doesn't support RowId type parameters")
 public class RowIdUpdateAndDeleteTest extends BaseReactiveTest {
 

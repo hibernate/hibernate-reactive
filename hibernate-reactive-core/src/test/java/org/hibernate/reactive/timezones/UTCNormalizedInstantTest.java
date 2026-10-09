@@ -27,7 +27,7 @@ import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisabledFor(value = DB2, reason = "Exception: SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007")
 public class UTCNormalizedInstantTest extends BaseReactiveTest {
 
 	@Override
