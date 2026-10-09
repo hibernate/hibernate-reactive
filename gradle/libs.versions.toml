@@ -15,6 +15,7 @@ testcontainersVersion = "2.0.5"
 vertxSqlClientVersion = "5.1.10"
 vertxWebVersion= "5.1.10"
 vertxWebClientVersion = "5.1.10"
+vertxMicrometerMetricsVersion = "5.1.10"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
@@ -26,7 +27,7 @@ com-ongres-scram-scram-client = { group = "com.ongres.scram", name = "scram-clie
 io-smallrye-reactive-mutiny = { group = "io.smallrye.reactive", name = "mutiny", version = "3.3.0" }
 io-vertx-vertx-db2-client = { group = "io.vertx", name = "vertx-db2-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-junit5 = { group = "io.vertx", name = "vertx-junit5", version.ref = "vertxSqlClientVersion" }
-io-vertx-vertx-micrometer-metrics = { group = "io.vertx", name = "vertx-micrometer-metrics", version.ref = "vertxSqlClientVersion" }
+io-vertx-vertx-micrometer-metrics = { group = "io.vertx", name = "vertx-micrometer-metrics", version.ref = "vertxMicrometerMetricsVersion" }
 io-vertx-vertx-mssql-client = { group = "io.vertx", name = "vertx-mssql-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-mysql-client = { group = "io.vertx", name = "vertx-mysql-client", version.ref = "vertxSqlClientVersion" }
 io-vertx-vertx-oracle-client = { group = "io.vertx", name = "vertx-oracle-client", version.ref = "vertxSqlClientVersion" }
