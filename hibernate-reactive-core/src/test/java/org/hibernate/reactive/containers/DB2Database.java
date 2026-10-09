@@ -91,6 +91,12 @@ class DB2Database implements TestableDatabase {
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )
 			.withLogConsumer( of -> System.out.println( of.getUtf8String() ) )
+			// Podman only: Podman mounts the image volume `/database` with `nosuid`, which prevents the
+			// Db2 setuid binaries from running and `db2start` fails with SQL1641N or SQL1042C.
+			// Uncomment the following line to mount `/database` as a tmpfs that allows setuid.
+			// Note that the data is kept in memory and lost when the container stops.
+			// This is not necessary with Docker.
+			// .withTmpFs( Map.of( "/database", "rw,exec,suid,dev" ) )
 			.acceptLicense()
 			.withReuse( true );
 
