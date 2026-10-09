@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +25,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @see EagerUniqueKeyTest
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class LazyUniqueKeyTest extends BaseReactiveTest {
 
 	@Override

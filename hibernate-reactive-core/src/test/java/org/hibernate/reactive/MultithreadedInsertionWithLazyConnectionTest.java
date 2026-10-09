@@ -13,7 +13,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.provider.ReactiveServiceRegistryBuilder;
 import org.hibernate.reactive.stage.Stage;
 import org.hibernate.reactive.util.impl.CompletionStages;
@@ -42,7 +41,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hibernate.cfg.AvailableSettings.SHOW_SQL;
 import static org.hibernate.reactive.BaseReactiveTest.setDefaultProperties;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.provider.Settings.POOL_CONNECT_TIMEOUT;
 import static org.hibernate.reactive.util.impl.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.loop;
@@ -160,7 +158,6 @@ public class MultithreadedInsertionWithLazyConnectionTest {
 	}
 
 	@Test
-	@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 	public void testIdentityGeneratorWithTransaction(VertxTestContext context) {
 		final DeploymentOptions deploymentOptions = new DeploymentOptions();
 		deploymentOptions.setInstances( N_THREADS );
