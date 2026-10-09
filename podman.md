@@ -138,11 +138,23 @@ Build and start a [Db2][db2] database:
 
 ```
 podman build -f tooling/docker/db2.Dockerfile -t hreact-db2 .
-podman run --rm --privileged --name HibernateTestingDB2 -p 50000:50000 hreact-db2
+podman run --rm --cap-add IPC_OWNER --tmpfs /database:rw,exec,suid,dev --name HibernateTestingDB2 -p 50000:50000 hreact-db2
 ```
 
-**NOTE:** Db2 requires `--privileged` mode. On Fedora with rootless Podman, this may not work.
-See the [Db2 with rootless Podman](#db2-with-rootless-podman) section for workarounds.
+The database takes a few minutes to start. Wait for the message `(*) Setup has completed.`
+in the logs before running the tests.
+
+**NOTE:** The image declares `/database` as a volume, and Podman mounts it with `nosuid`.
+This prevents the Db2 setuid binaries from running, and the startup fails with errors like
+`SQL1641N` or `SQL1042C An unexpected system error occurred`.
+The option `--tmpfs /database:rw,exec,suid,dev` mounts `/database` as a tmpfs that allows setuid
+(the data is lost when the container stops). If you want to keep the data between runs,
+use a named volume instead: `-v hreact-db2-data:/database:suid,dev`.
+This works with both rootful and rootless Podman, and `--privileged` is not required.
+
+The same problem affects the tests when Testcontainers uses Podman.
+To fix it, uncomment the `withTmpFs` line in
+`hibernate-reactive-core/src/test/java/org/hibernate/reactive/containers/DB2Database.java`.
 
 When the database has started, you can run the tests on Db2 with:
 
@@ -153,20 +165,9 @@ When the database has started, you can run the tests on Db2 with:
 Optionally, you can connect to the database with the [Db2 command line interface][db2-cli] using:
 
 ```
-podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c db2 connect"
+podman exec -ti HibernateTestingDB2 bash -c "su - hreact -c 'db2 connect to hreact && db2'"
 ```
 [db2-cli]:https://www.ibm.com/support/knowledgecenter/en/SSEPEK_11.0.0/comref/src/tpc/db2z_commandlineprocessor.html
-
-### Db2 with rootless Podman
-
-Db2 requires `--privileged` mode for shared memory management, which doesn't work with
-rootless Podman. You can use rootful Podman instead:
-
-```
-sudo systemctl enable --now podman.socket
-sudo podman build -f tooling/docker/db2.Dockerfile -t hreact-db2 .
-sudo podman run --rm --privileged --name HibernateTestingDB2 -p 50000:50000 hreact-db2
-```
 
 ## Microsoft SQL Server
 
