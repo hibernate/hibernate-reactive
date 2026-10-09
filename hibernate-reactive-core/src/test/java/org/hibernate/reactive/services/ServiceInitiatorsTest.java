@@ -16,8 +16,9 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Useful to spot inconsistencies in the default ServiceInitiator lists
@@ -33,9 +34,9 @@ public class ServiceInitiatorsTest {
 	private static final Set<String> HR_INTENTIONALLY_OMITTED = Set.of( "org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformResolver" );
 
 	@Test
-	public void serviceInitiatorsAreUnique() {
-		Assert.assertEquals( HR_SERVICES.size(), ReactiveServiceInitiators.LIST.size() );
-		Assert.assertEquals( ORM_SERVICES.size(), StandardServiceInitiators.LIST.size() );
+	public void hrServiceInitiatorsAreUnique() {
+		assertThat( HR_SERVICES ).hasSameSizeAs( ReactiveServiceInitiators.LIST );
+		assertThat( ORM_SERVICES ).hasSameSizeAs( StandardServiceInitiators.LIST );
 	}
 
 	@Test
@@ -45,8 +46,9 @@ public class ServiceInitiatorsTest {
 		reportDivider( "All Services in sorted order" );
 		int i = 1;
 		for ( String key : ORM_SERVICES.keySet() ) {
-			String error = "ORM service '" + key + "' is not defined by the HR services list";
-			Assert.assertTrue( error, HR_SERVICES.containsKey( key ) || HR_INTENTIONALLY_OMITTED.contains( key ) );
+			assertThat( HR_SERVICES.containsKey( key ) || HR_INTENTIONALLY_OMITTED.contains( key ) )
+					.as( "ORM service '" + key + "' is not defined by the HR services list" )
+					.isTrue();
 			if ( Objects.equals( HR_SERVICES.get( key ), ORM_SERVICES.get( key ) ) ) {
 				sharedServiceImplementations.add( key );
 			}

@@ -8,7 +8,7 @@ import java.util.Objects;
 
 import org.hibernate.HibernateException;
 
-import org.testcontainers.containers.CockroachContainer;
+import org.testcontainers.cockroachdb.CockroachContainer;
 import org.testcontainers.containers.Container;
 
 import static org.hibernate.reactive.containers.DockerImage.fromDockerfile;

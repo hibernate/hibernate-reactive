@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 
 import org.hibernate.annotations.SoftDelete;
 import org.hibernate.annotations.SoftDeleteType;
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.type.YesNoConverter;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +41,6 @@ import static org.hibernate.reactive.util.impl.CompletionStages.loop;
  *
  * Tests single-table entity mappings (entities without inheritance).
  */
-@DisabledFor(value = DB2, reason = "Needed to have 6 in buffer but only had 0")
 public class SoftDeleteSingleTableTest extends BaseReactiveTest {
 
 	static final Deletable[] activeEntities = {
