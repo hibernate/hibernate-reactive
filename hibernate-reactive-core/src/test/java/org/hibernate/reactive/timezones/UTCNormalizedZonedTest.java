@@ -32,7 +32,7 @@ import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTrunca
 import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisabledFor(value = DB2, reason = "Exception: SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007")
 public class UTCNormalizedZonedTest extends BaseReactiveTest {
 
 	@Override
