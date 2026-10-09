@@ -9,13 +9,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import org.hibernate.query.Order;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
+import org.hibernate.query.Order;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.type.descriptor.java.StringJavaType;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -34,14 +33,12 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.query.Page.first;
 import static org.hibernate.query.Page.page;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Test the combination of filters, max results, first result, and {@link org.hibernate.query.Page}.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class FilterWithPaginationTest extends BaseReactiveTest {
 
 	FamousPerson margaret = new FamousPerson( 1L, "Margaret Howe Lovatt", Status.LIVING, "the woman who lived in a half-flooded home with a dolphin." );

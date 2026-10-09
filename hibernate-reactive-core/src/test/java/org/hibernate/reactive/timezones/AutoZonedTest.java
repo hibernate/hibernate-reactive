@@ -4,16 +4,6 @@
  */
 package org.hibernate.reactive.timezones;
 
-import io.vertx.junit5.Timeout;
-import io.vertx.junit5.VertxTestContext;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-import org.hibernate.cfg.Configuration;
-import org.hibernate.reactive.BaseReactiveTest;
-import org.hibernate.reactive.annotations.DisabledFor;
-
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -22,7 +12,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.cfg.Configuration;
+import org.hibernate.reactive.BaseReactiveTest;
+import org.hibernate.reactive.annotations.DisabledFor;
+
 import org.junit.jupiter.api.Test;
+
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxTestContext;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +35,7 @@ import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecisi
  * Test adapted from {@link org.hibernate.orm.test.timezones.AutoZonedTest}
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisabledFor(value = DB2, reason = "Exception: SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007")
 public class AutoZonedTest extends BaseReactiveTest {
 
 	@Override
