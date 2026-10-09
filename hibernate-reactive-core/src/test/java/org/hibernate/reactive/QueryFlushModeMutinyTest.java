@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.hibernate.FlushMode;
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,6 @@ import jakarta.persistence.QueryFlushMode;
 import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -30,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Based on {@link org.hibernate.orm.test.jpa.query.JpaQueryFlushModeTest}
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "IllegalStateException: Needed to have 6 in buffer but only had 0")
 public class QueryFlushModeMutinyTest extends BaseReactiveTest {
 
 	@Override

@@ -27,7 +27,6 @@ import jakarta.persistence.Table;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.hibernate.reactive.provider.Settings.DIALECT;
 import static org.hibernate.reactive.provider.Settings.DRIVER;
@@ -38,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * using both JPA/hibernate and reactive session factories.
  */
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
 @DisabledFor(value = COCKROACHDB, reason = "We need to change the URL schema we normally use for testing")
 public class ORMReactivePersistenceTest extends BaseReactiveTest {
 

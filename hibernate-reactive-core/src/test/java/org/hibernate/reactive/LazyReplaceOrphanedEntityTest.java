@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = DB2, reason = "Exception: IllegalStateException: Needed to have 6 in buffer but only had 0")
+@DisabledFor(value = DB2, reason = "DRDA Protocol error: SQLCODE=-30020  SQLSTATE=58009")
 public class LazyReplaceOrphanedEntityTest extends BaseReactiveTest {
 
 	private Campaign theCampaign;

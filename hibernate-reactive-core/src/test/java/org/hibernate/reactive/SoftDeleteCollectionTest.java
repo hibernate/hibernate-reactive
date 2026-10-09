@@ -11,7 +11,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.annotations.SoftDelete;
-import org.hibernate.reactive.annotations.DisabledFor;
 import org.hibernate.reactive.util.internal.CompletionStages;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +37,6 @@ import static org.hibernate.reactive.util.internal.CompletionStages.loop;
  * Tests @SoftDelete annotation applied to collection relationships.
  * Covers basic filtering, CascadeType.REMOVE, and orphanRemoval=true scenarios.
  */
-@DisabledFor( value = DB2, reason = "Needed to have 6 in buffer but only had 0" )
 public class SoftDeleteCollectionTest extends BaseReactiveTest {
 
 	@Override
