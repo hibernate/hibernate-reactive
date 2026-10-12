@@ -144,7 +144,7 @@ public class UpsertTest extends BaseReactiveTest {
 
 	private boolean hasMergeOperator() {
 		return switch ( dbType() ) {
-			case SQLSERVER, ORACLE, POSTGRESQL, DB2 -> true;
+			case SQLSERVER, ORACLE, DB2 -> true;
 			default -> false;
 		};
 	}
