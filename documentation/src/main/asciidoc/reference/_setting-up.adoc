@@ -44,6 +44,21 @@ version of Hibernate Reactive you're using.
 
 You don't need to depend on the JDBC driver for your database.
 
+[NOTE]
+====
+During bootstrap, Hibernate Reactive checks that the versions of Hibernate ORM
+and the Vert.x SQL client on the classpath aren't older than the minimum versions
+it requires, and fails with error `HR000004` if they are.
+This usually means that a different version has been imported by another
+dependency or BOM.
+
+If you really need to, you can disable this check by setting the property
+`hibernate.reactive.skip_version_check` to `true`.
+It can also be set as a system property, for example with
+`-Dhibernate.reactive.skip_version_check=true` on the command line.
+The system property has precedence over the value in the configuration.
+====
+
 == Optional dependencies
 
 :slf4j: http://www.slf4j.org/
@@ -231,6 +246,25 @@ the following settings:
 | `hibernate.format_sql`      | If `true`, log SQL in a multiline, indented format
 | `hibernate.highlight_sql`   | If `true`, log SQL with syntax highlighting via ANSI escape codes
 |===
+
+== Logging information at startup
+
+During bootstrap, Hibernate Reactive logs some useful information at `INFO` level,
+such as the version of Hibernate Reactive, the URL of the database, and the
+configuration of the connection pool.
+
+These messages are logged using the dedicated category `org.hibernate.reactive.info`
+(the equivalent of the category `org.hibernate.orm.info` used by Hibernate ORM).
+If you don't want to see them, you can raise the level of these categories.
+For example, using Log4J 2:
+
+[source,properties]
+----
+logger.reactive-info.name = org.hibernate.reactive.info
+logger.reactive-info.level = warn
+logger.orm-info.name = org.hibernate.orm.info
+logger.orm-info.level = warn
+----
 
 == Minimizing repetitive mapping information
 

@@ -14,6 +14,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import static org.hibernate.reactive.logging.internal.BootInfoLogging.BOOT_INFO_LOGGER;
+
 /**
  * A Hibernate {@linkplain StandardServiceInitiator service initiator} that
  * allows the user to define their own {@link SqlClientPoolConfiguration}
@@ -32,7 +34,7 @@ public class SqlClientPoolConfigurationInitiator implements StandardServiceIniti
             return new DefaultSqlClientPoolConfiguration();
         }
         else {
-            LOG.sqlClientConfiguration( configClassName );
+            BOOT_INFO_LOGGER.sqlClientConfiguration( configClassName );
             final ClassLoaderService classLoaderService = registry.getService( ClassLoaderService.class );
             try {
                 return (SqlClientPoolConfiguration) classLoaderService.classForName( configClassName ).newInstance();

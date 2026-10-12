@@ -38,6 +38,8 @@ import io.vertx.sqlclient.SqlConnectOptions;
 import io.vertx.sqlclient.impl.Utils;
 import io.vertx.sqlclient.spi.Driver;
 
+import static org.hibernate.reactive.logging.internal.BootInfoLogging.BOOT_INFO_LOGGER;
+
 /**
  * A pool of reactive connections backed by a Vert.x {@link Pool}.
  * The {@code Pool} itself is backed by an instance of {@link Vertx}
@@ -213,7 +215,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 */
 	protected URI jdbcUrl(Map<?,?> configurationValues) {
 		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
-		LOG.sqlClientUrl( url);
+		BOOT_INFO_LOGGER.sqlClientUrl( url);
 		return parse( url );
 	}
 
@@ -233,11 +235,11 @@ public class DefaultSqlClientPool extends SqlClientPool
 		for ( Driver<SqlConnectOptions> d : ServiceLoader.load( Driver.class ) ) {
 			String driverName = d.getClass().getCanonicalName();
 			if ( matchesScheme( driverName, scheme ) ) {
-				LOG.selectedDriver( driverName );
+				BOOT_INFO_LOGGER.selectedDriver( driverName );
 				selected.add( d );
 			}
 			else {
-				LOG.detectedDriver( driverName );
+				BOOT_INFO_LOGGER.detectedDriver( driverName );
 			}
 		}
 		if ( selected.isEmpty() ) {
