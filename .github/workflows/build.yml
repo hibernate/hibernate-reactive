@@ -86,7 +86,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
@@ -105,7 +105,7 @@ jobs:
         run: |
          echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Cache Gradle downloads
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache-gradle
         with:
           path: |
@@ -116,13 +116,13 @@ jobs:
           key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: 17
@@ -136,7 +136,7 @@ jobs:
           MATRIX_DB: ${{ matrix.db }}
         run: ./gradlew ":$MATRIX_EXAMPLE:runAllExamplesOn$MATRIX_DB"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
@@ -150,7 +150,7 @@ jobs:
         db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB', 'Db2', 'Oracle' ]
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
@@ -169,7 +169,7 @@ jobs:
         run: |
          echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Cache Gradle downloads
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: cache-gradle
         with:
           path: |
@@ -180,13 +180,13 @@ jobs:
           key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
 
         with:
           distribution: 'temurin'
@@ -198,13 +198,13 @@ jobs:
           MATRIX_DB: ${{ matrix.db }}
         run: ./gradlew build -PshowStandardOutput -Pdb="$MATRIX_DB"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
       - name: Upload coverage reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-coverage-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: |
@@ -236,7 +236,7 @@ jobs:
           - { name: "28-ea", java_version_numeric: 28, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
       - name: Get year/month for cache key
@@ -269,7 +269,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       - name: Cache Maven/Gradle Dependency/Dist Caches
         id: cache-maven
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # if it's not a pull request, we restore and save the cache
         if: github.event_name != 'pull_request'
         with:
@@ -286,7 +286,7 @@ jobs:
             ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
             ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
       - name: Restore Maven/Gradle Dependency/Dist Caches
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # if it's a pull request, we restore the cache, but we don't save it
         if: github.event_name == 'pull_request'
         with:
@@ -308,7 +308,7 @@ jobs:
           release: ${{ matrix.java.java_version_numeric }}
       - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
         if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java.java_version_numeric }}
@@ -318,14 +318,14 @@ jobs:
         run: echo "path=${JAVA_HOME}" >> "$GITHUB_OUTPUT"
       - name: Set up JDK 11
         if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: 11
           check-latest: true
       - name: Set up JDK 17
         if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: 17
@@ -355,7 +355,7 @@ jobs:
               -Porg.gradle.java.installations.paths="$MAIN_JDK_PATH,$TEST_JDK_PATH" \
               "${EXTRA_ARGS[@]}"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
@@ -375,7 +375,7 @@ jobs:
 
     steps:
       - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
       - name: Sanitize the branch name
@@ -386,7 +386,7 @@ jobs:
         run: |
           echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
       - name: Set up JDK 17
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -405,7 +405,7 @@ jobs:
             echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" 
           } >> "$GITHUB_OUTPUT"
       - name: Restore Maven/Gradle Dependency/Dist Caches
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.m2/repository/
@@ -419,7 +419,7 @@ jobs:
             ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
 
       - name: Download coverage reports
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # 8.0.2
         with:
           pattern: build-coverage-data*${{ steps.current-branch-suffix.outputs.value }}*
           path: .
@@ -431,7 +431,7 @@ jobs:
         run: ./gradlew mergeCodeCoverageReport copyDependenciesSonar --no-parallel
 
       - name: Store build info for Sonar scanning
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-results-data
           retention-days: 1
