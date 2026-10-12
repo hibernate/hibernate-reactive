@@ -8,10 +8,12 @@ on:
       - '2.*'
       - '3.*'
       - '4.*'
+      - '5.*'
     tags:
       - '2.*'
       - '3.*'
       - '4.*'
+      - '5.*'
   pull_request:
     branches:
       - 'main'
@@ -19,6 +21,7 @@ on:
       - '2.*'
       - '3.*'
       - '4.*'
+      - '5.*'
   # For building snapshots
   workflow_call:
     inputs:
