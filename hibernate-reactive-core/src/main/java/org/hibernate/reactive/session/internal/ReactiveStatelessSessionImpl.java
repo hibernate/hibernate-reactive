@@ -56,6 +56,7 @@ import org.hibernate.query.specification.MutationSpecification;
 import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
+import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
@@ -103,6 +104,7 @@ import jakarta.persistence.criteria.CriteriaStatement;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import static org.hibernate.internal.util.ArgumentsHelper.bindReferenceArguments;
+import static org.hibernate.jpa.SpecHints.HINT_SPEC_LOAD_GRAPH;
 import static java.lang.Boolean.TRUE;
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.function.Function.identity;
@@ -1014,6 +1016,10 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( typedQueryReference.getName(), resultType );
 		bindReferenceArguments( (QueryImplementor<?>) query, typedQueryReference );
 		typedQueryReference.getHints().forEach( query::setHint );
+		if ( !isEmpty( typedQueryReference.getEntityGraphName() ) ) {
+			query.setHint( HINT_SPEC_LOAD_GRAPH, typedQueryReference.getEntityGraphName() );
+		}
+		typedQueryReference.getOptions().forEach( ( (SelectionQuery<?>) query )::addOption );
 		return query;
 	}
 
@@ -1317,6 +1323,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		final ReactiveMutationQuery<R> query = createReactiveNamedMutationQuery( statementReference.getName() );
 		bindReferenceArguments( (QueryImplementor<?>) query, statementReference );
 		statementReference.getHints().forEach( query::setHint );
+		statementReference.getOptions().forEach( ( (MutationQuery) query )::addOption );
 		return query;
 	}
 

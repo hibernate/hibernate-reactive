@@ -6,7 +6,9 @@ package org.hibernate.reactive;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
+import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
 
 import org.junit.jupiter.api.Test;
@@ -14,8 +16,15 @@ import org.junit.jupiter.api.Test;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.QueryFlushMode;
+import jakarta.persistence.Statement;
 import jakarta.persistence.Table;
+import jakarta.persistence.TypedQuery;
 import jakarta.persistence.query.JakartaQuery;
 import jakarta.persistence.query.StaticStatementReference;
 import jakarta.persistence.query.StaticTypedQueryReference;
@@ -36,7 +45,7 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
-		return List.of( Pig.class );
+		return List.of( Pig.class, Farm.class );
 	}
 
 	@Override
@@ -47,6 +56,13 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 	}
 
 	private static StaticTypedQueryReference<Pig> findByName(String name) {
+		return findByName( name, null );
+	}
+
+	private static StaticTypedQueryReference<Pig> findByName(
+			String name,
+			String entityGraphName,
+			TypedQuery.Option... options) {
 		return new StaticTypedQueryReference<>(
 				FIND_BY_NAME,
 				Queries.class,
@@ -54,25 +70,88 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 				Pig.class,
 				List.of( String.class ),
 				List.of( "name" ),
-				List.of( name )
+				List.of( name ),
+				entityGraphName,
+				Map.of(),
+				options
 		);
 	}
 
-	private static StaticStatementReference deleteByName(String name) {
+	private static StaticStatementReference deleteByName(String name, Statement.Option... options) {
 		return new StaticStatementReference(
 				DELETE_BY_NAME,
 				Queries.class,
 				"deleteByName",
 				List.of( String.class ),
 				List.of( "name" ),
-				List.of( name )
+				List.of( name ),
+				Map.of(),
+				options
+		);
+	}
+
+	@Test
+	public void testSessionCreateQueryFromReferenceWithEntityGraph(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> {
+					final Farm farm = new Farm( 1, "Sunny Farm" );
+					return session.persist( farm )
+							.chain( () -> session.persist( new Pig( 2, "Xavier", farm ) ) );
+				} )
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
+						.createQuery( findByName( "Xavier", "Pig.farm" ) )
+						.getSingleResult()
+						.invoke( pig -> assertThat( Hibernate.isInitialized( pig.farm ) ).isTrue() ) ) )
+				.chain( () -> getMutinySessionFactory().withSession( session -> session
+						.createQuery( findByName( "Xavier", null ) )
+						.getSingleResult()
+						.invoke( pig -> assertThat( Hibernate.isInitialized( pig.farm ) ).isFalse() ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateQueryFromReferenceWithEntityGraph(VertxTestContext context) {
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> {
+					final Farm farm = new Farm( 1, "Sunny Farm" );
+					return session.persist( farm )
+							.chain( () -> session.persist( new Pig( 2, "Xavier", farm ) ) );
+				} )
+				.chain( () -> getMutinySessionFactory().withStatelessSession( session -> session
+						.createQuery( findByName( "Xavier", "Pig.farm" ) )
+						.getSingleResult()
+						.invoke( pig -> assertThat( Hibernate.isInitialized( pig.farm ) ).isTrue() ) ) )
+		);
+	}
+
+	@Test
+	public void testSessionCreateQueryFromReferenceWithOptions(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+				.persist( new Pig( 1, "Aloi", null ) )
+				// without the option, the pending insert is flushed before the query
+				.chain( () -> session.createQuery( findByName( "Aloi", null ) ).getResultList() )
+				.invoke( pigs -> assertThat( pigs ).hasSize( 1 ) )
+				.chain( () -> session.persist( new Pig( 2, "Xavier", null ) ) )
+				.chain( () -> session.createQuery( findByName( "Xavier", null, QueryFlushMode.NO_FLUSH ) )
+						.getResultList() )
+				.invoke( pigs -> assertThat( pigs ).isEmpty() ) )
+		);
+	}
+
+	@Test
+	public void testSessionCreateStatementFromReferenceWithOptions(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+				.persist( new Pig( 1, "Aloi", null ) )
+				.chain( session::flush )
+				.chain( () -> session.createStatement( deleteByName( "Aloi", QueryFlushMode.FLUSH ) ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) ) )
 		);
 	}
 
 	@Test
 	public void testSessionCreateQueryFromReferenceWithArguments(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( session -> session
-				.persistAll( new Pig( 1, "Aloi" ), new Pig( 2, "Xavier" ) )
+				.persistAll( new Pig( 1, "Aloi", null ), new Pig( 2, "Xavier", null ) )
 				.chain( session::flush )
 				.chain( () -> session.createQuery( findByName( "Xavier" ) ).getSingleResult() )
 				.invoke( pig -> assertThat( pig.id ).isEqualTo( 2 ) ) )
@@ -82,7 +161,7 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionCreateQueryFromReferenceWithArguments(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withStatelessTransaction( session -> session
-				.insertMultiple( List.of( new Pig( 1, "Aloi" ), new Pig( 2, "Xavier" ) ) )
+				.insertMultiple( List.of( new Pig( 1, "Aloi", null ), new Pig( 2, "Xavier", null ) ) )
 				.chain( () -> session.createQuery( findByName( "Xavier" ) ).getSingleResult() )
 				.invoke( pig -> assertThat( pig.id ).isEqualTo( 2 ) ) )
 		);
@@ -91,7 +170,7 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 	@Test
 	public void testSessionCreateStatementFromReferenceWithArguments(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( session -> session
-				.persistAll( new Pig( 1, "Aloi" ), new Pig( 2, "Xavier" ) )
+				.persistAll( new Pig( 1, "Aloi", null ), new Pig( 2, "Xavier", null ) )
 				.chain( session::flush )
 				.chain( () -> session.createStatement( deleteByName( "Aloi" ) ).executeUpdate() )
 				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) ) )
@@ -101,7 +180,7 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 	@Test
 	public void testStatelessSessionCreateStatementFromReferenceWithArguments(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withStatelessTransaction( session -> session
-				.insertMultiple( List.of( new Pig( 1, "Aloi" ), new Pig( 2, "Xavier" ) ) )
+				.insertMultiple( List.of( new Pig( 1, "Aloi", null ), new Pig( 2, "Xavier", null ) ) )
 				.chain( () -> session.createStatement( deleteByName( "Aloi" ) ).executeUpdate() )
 				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) ) )
 		);
@@ -109,15 +188,35 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 
 	@Entity(name = "Pig")
 	@Table(name = "QueryReferencePig")
+	@NamedEntityGraph(name = "Pig.farm", attributeNodes = @NamedAttributeNode("farm"))
 	public static class Pig {
 		@Id
 		Integer id;
 		String name;
+		@ManyToOne(fetch = FetchType.LAZY)
+		Farm farm;
 
 		public Pig() {
 		}
 
-		public Pig(Integer id, String name) {
+		public Pig(Integer id, String name, Farm farm) {
+			this.id = id;
+			this.name = name;
+			this.farm = farm;
+		}
+	}
+
+	@Entity(name = "Farm")
+	@Table(name = "QueryReferenceFarm")
+	public static class Farm {
+		@Id
+		Integer id;
+		String name;
+
+		public Farm() {
+		}
+
+		public Farm(Integer id, String name) {
 			this.id = id;
 			this.name = name;
 		}
