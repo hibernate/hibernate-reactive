@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -211,7 +212,15 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
-		return reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this );
+		// applies the flush mode (and cache mode) of the query to the session while executing it
+		final HashSet<String> fetchProfiles = beforeQueryHandlingFetchProfiles();
+		final boolean[] success = {false};
+		return reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this )
+				.thenApply( count -> {
+					success[0] = true;
+					return count;
+				} )
+				.whenComplete( (count, error) -> afterQueryHandlingFetchProfiles( success[0], fetchProfiles ) );
 	}
 
 	// NativeQueryImpl.parameterOccurrences is private with no getter (ORM 8.0),
