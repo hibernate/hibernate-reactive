@@ -18,6 +18,7 @@ import org.hibernate.service.spi.Configurable;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 
+import static org.hibernate.reactive.logging.internal.BootInfoLogging.BOOT_INFO_LOGGER;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInt;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getInteger;
 import static org.hibernate.internal.util.config.ConfigurationHelper.getString;
@@ -64,24 +65,24 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 	public PoolOptions poolOptions() {
 		PoolOptions poolOptions = new PoolOptions();
 
-		LOG.connectionPoolSize( poolSize );
+		BOOT_INFO_LOGGER.connectionPoolSize( poolSize );
 		poolOptions.setMaxSize( poolSize );
 		if ( maxWaitQueueSize != null ) {
-			LOG.connectionPoolMaxWaitSize( maxWaitQueueSize );
+			BOOT_INFO_LOGGER.connectionPoolMaxWaitSize( maxWaitQueueSize );
 			poolOptions.setMaxWaitQueueSize( maxWaitQueueSize );
 		}
 		if ( idleTimeout != null ) {
-			LOG.connectionPoolIdleTimeout( idleTimeout );
+			BOOT_INFO_LOGGER.connectionPoolIdleTimeout( idleTimeout );
 			poolOptions.setIdleTimeout( idleTimeout );
 			poolOptions.setIdleTimeoutUnit( TimeUnit.MILLISECONDS );
 		}
 		if ( connectTimeout != null ) {
-			LOG.connectionPoolTimeout( connectTimeout );
+			BOOT_INFO_LOGGER.connectionPoolTimeout( connectTimeout );
 			poolOptions.setConnectionTimeout( connectTimeout );
 			poolOptions.setConnectionTimeoutUnit( TimeUnit.MILLISECONDS );
 		}
 		if ( poolCleanerPeriod != null ) {
-			LOG.connectionPoolCleanerPeriod( poolCleanerPeriod );
+			BOOT_INFO_LOGGER.connectionPoolCleanerPeriod( poolCleanerPeriod );
 			poolOptions.setPoolCleanerPeriod( poolCleanerPeriod );
 		}
 		return poolOptions;
@@ -209,18 +210,18 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 		if ( cacheMaxSize != null ) {
 			if ( cacheMaxSize <= 0 ) {
-				LOG.preparedStatementCacheDisabled();
+				BOOT_INFO_LOGGER.preparedStatementCacheDisabled();
 				connectOptions.setCachePreparedStatements( false );
 			}
 			else {
-				LOG.preparedStatementCacheMaxSize( cacheMaxSize );
+				BOOT_INFO_LOGGER.preparedStatementCacheMaxSize( cacheMaxSize );
 				connectOptions.setCachePreparedStatements( true );
 				connectOptions.setPreparedStatementCacheMaxSize( cacheMaxSize );
 			}
 		}
 
 		if ( sqlLimit != null ) {
-			LOG.preparedStatementCacheSQLLimit( sqlLimit );
+			BOOT_INFO_LOGGER.preparedStatementCacheSQLLimit( sqlLimit );
 			connectOptions.setPreparedStatementCacheSqlLimit( sqlLimit );
 		}
 

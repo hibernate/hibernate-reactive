@@ -4,8 +4,6 @@
  */
 package org.hibernate.reactive.provider.internal;
 
-import java.lang.invoke.MethodHandles;
-
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.engine.config.spi.ConfigurationService;
@@ -25,9 +23,7 @@ import org.hibernate.reactive.event.internal.DefaultReactivePersistEventListener
 import org.hibernate.reactive.event.internal.DefaultReactivePersistOnFlushEventListener;
 import org.hibernate.reactive.event.internal.DefaultReactivePostLoadEventListener;
 import org.hibernate.reactive.event.internal.DefaultReactiveRefreshEventListener;
-import org.hibernate.reactive.logging.internal.Log;
-import org.hibernate.reactive.logging.internal.LoggerFactory;
-import org.hibernate.reactive.logging.internal.Version;
+import org.hibernate.reactive.logging.internal.BootInfoLogging;
 import org.hibernate.service.ServiceRegistry;
 
 /**
@@ -40,8 +36,6 @@ import org.hibernate.service.ServiceRegistry;
  */
 public class ReactiveIntegrator implements Integrator {
 
-	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
-
 	@Override
 	public void integrate(Metadata metadata, BootstrapContext bootstrapContext, SessionFactoryImplementor sessionFactory) {
 		attachEventContextManagingListenersIfRequired( sessionFactory.getServiceRegistry() );
@@ -49,7 +43,7 @@ public class ReactiveIntegrator implements Integrator {
 
 	private void attachEventContextManagingListenersIfRequired(ServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
-			LOG.startHibernateReactive( Version.getVersionString() );
+			BootInfoLogging.logVersion();
 			DependencyVersionCheck.verifyOnce( serviceRegistry.requireService( ConfigurationService.class ).getSettings() );
 
 			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
