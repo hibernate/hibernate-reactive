@@ -1294,11 +1294,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 
 	@Override
 	public <R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String queryName) {
-		return (ReactiveMutationQuery<R>) buildNamedQuery(
-				queryName,
-				memento -> memento.toMutationQuery( this ),
-				memento -> memento.toMutationQuery( this )
-		).asMutationQuery();
+		// The mementos create ORM's blocking MutationQueryImpl, which cannot be a ReactiveMutationQuery
+		final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( queryName );
+		if ( query instanceof ReactiveSelectionQueryImpl<?> ) {
+			throw new IllegalMutationQueryException( "Named query '" + queryName + "' is not a mutation query" );
+		}
+		return query;
 	}
 
 	@Override
