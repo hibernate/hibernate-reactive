@@ -82,7 +82,7 @@ updates:
       - dependency-type: "all"
 
   #################################################################################
-  # Duplicate the package-ecosystems for main because we want to target branch 4.5
+  # Duplicate the package-ecosystems for main because we want to target branch 5.0
   # and dependabot doesn't support YAML aliases and anchors at the moment
   #################################################################################
   - package-ecosystem: "github-actions"
