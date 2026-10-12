@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         # main is 5.1
-        branch: [ 'main', '5.0', 4.5', '3.4' ]
+        branch: [ 'main', '5.0', '4.5', '3.4' ]
     uses: hibernate/.github/.github/workflows/reproducible-build-check.yml@main
     with:
       branch: ${{ matrix.branch }}
