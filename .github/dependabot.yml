@@ -570,7 +570,7 @@ updates:
 
   - package-ecosystem: "gradle"
     directory: "/"
-    target-branch: "3.2"
+    target-branch: "3.1"
     schedule:
       interval: "weekly"
       day: "tuesday"
