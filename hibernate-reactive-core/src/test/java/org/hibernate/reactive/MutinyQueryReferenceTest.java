@@ -142,8 +142,11 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 	public void testSessionCreateStatementFromReferenceWithOptions(VertxTestContext context) {
 		test( context, getMutinySessionFactory().withTransaction( session -> session
 				.persist( new Pig( 1, "Aloi", null ) )
-				.chain( session::flush )
-				.chain( () -> session.createStatement( deleteByName( "Aloi", QueryFlushMode.FLUSH ) ).executeUpdate() )
+				// the pending insert is not flushed, so there is nothing to delete
+				.chain( () -> session.createStatement( deleteByName( "Aloi", QueryFlushMode.NO_FLUSH ) ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 0 ) )
+				// the flush mode only applies to the statement
+				.chain( () -> session.createStatement( deleteByName( "Aloi" ) ).executeUpdate() )
 				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) ) )
 		);
 	}
