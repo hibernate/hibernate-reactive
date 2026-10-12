@@ -56,6 +56,7 @@ import org.hibernate.query.specification.MutationSpecification;
 import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
 import org.hibernate.query.spi.HqlInterpretation;
+import org.hibernate.query.spi.QueryImplementor;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
 import org.hibernate.query.sqm.internal.SqmUtil;
 import org.hibernate.query.sqm.spi.SqmStatementAccess;
@@ -101,6 +102,7 @@ import jakarta.persistence.criteria.CriteriaSelect;
 import jakarta.persistence.criteria.CriteriaStatement;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import static org.hibernate.internal.util.ArgumentsHelper.bindReferenceArguments;
 import static java.lang.Boolean.TRUE;
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.util.function.Function.identity;
@@ -1010,6 +1012,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 		// this cast is fine because of all our impls of TypedQueryReference return Class<R>
 		final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
 		final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( typedQueryReference.getName(), resultType );
+		bindReferenceArguments( (QueryImplementor<?>) query, typedQueryReference );
 		typedQueryReference.getHints().forEach( query::setHint );
 		return query;
 	}
@@ -1311,6 +1314,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			return new ReactiveMutationQueryImpl<>( (SqmDmlStatement<R>) criteriaStatement, this );
 		}
 		final ReactiveMutationQuery<R> query = createReactiveNamedMutationQuery( statementReference.getName() );
+		bindReferenceArguments( (QueryImplementor<?>) query, statementReference );
 		statementReference.getHints().forEach( query::setHint );
 		return query;
 	}
