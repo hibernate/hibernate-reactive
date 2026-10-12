@@ -93,6 +93,18 @@ dependencies {
     testImplementation(libs.org.testcontainers.oracle.xe)
 }
 
+// Minimum versions of the dependencies, checked during bootstrap (see DependencyVersionCheck)
+def minimumVersions = [
+        hibernateOrmMinimumVersion  : libs.versions.hibernateOrmMinimumVersion.get(),
+        vertxSqlClientMinimumVersion: libs.versions.vertxSqlClientMinimumVersion.get()
+]
+tasks.named( 'processResources', ProcessResources ) {
+    inputs.properties( minimumVersions )
+    filesMatching( '**/minimum-versions.properties' ) {
+        expand( minimumVersions )
+    }
+}
+
 // Reproducible Builds
 
 // https://docs.gradle.org/current/userguide/working_with_files.html#sec:reproducible_archives

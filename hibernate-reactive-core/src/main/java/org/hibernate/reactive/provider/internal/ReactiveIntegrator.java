@@ -8,6 +8,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
@@ -49,6 +50,7 @@ public class ReactiveIntegrator implements Integrator {
 	private void attachEventContextManagingListenersIfRequired(ServiceRegistry serviceRegistry) {
 		if ( ReactiveModeCheck.isReactiveRegistry( serviceRegistry ) ) {
 			LOG.startHibernateReactive( Version.getVersionString() );
+			DependencyVersionCheck.verifyOnce( serviceRegistry.requireService( ConfigurationService.class ).getSettings() );
 
 			EventListenerRegistry eventListenerRegistry = serviceRegistry.getService( EventListenerRegistry.class );
 			eventListenerRegistry.addDuplicationStrategy( ReplacementDuplicationStrategy.INSTANCE );

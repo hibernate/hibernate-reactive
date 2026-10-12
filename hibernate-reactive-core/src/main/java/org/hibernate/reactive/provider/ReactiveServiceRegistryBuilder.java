@@ -14,10 +14,12 @@ import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.Environment;
 import org.hibernate.internal.util.PropertiesHelper;
+import org.hibernate.reactive.provider.internal.DependencyVersionCheck;
 import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.ServiceRegistry;
 
@@ -49,6 +51,12 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
                 super.getAggregatedCfgXml().merge( loadedConfig );
                 // super also collects the properties - here we skip that part
                 return this;
+            }
+
+            @Override
+            public StandardServiceRegistry build() {
+                DependencyVersionCheck.verifyOnce( getSettings() );
+                return super.build();
             }
         };
     }
@@ -114,6 +122,12 @@ public final class ReactiveServiceRegistryBuilder extends StandardServiceRegistr
                 loadedConfig,
                 initiators
         );
+    }
+
+    @Override
+    public StandardServiceRegistry build() {
+        DependencyVersionCheck.verifyOnce( getSettings() );
+        return super.build();
     }
 
     /**

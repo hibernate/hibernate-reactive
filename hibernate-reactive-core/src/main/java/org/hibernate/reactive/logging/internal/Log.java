@@ -45,6 +45,15 @@ public interface Log extends BasicLogger {
 	@Message(id = 3, value = "Vert.x instance stopped")
 	void vertxInstanceStopped();
 
+	@Message(id = 4, value = "Hibernate Reactive %1$s requires %2$s %3$s or later, but version %4$s was found."
+			+ " Make sure that the dependencies are aligned (for example, check the order of imported BOMs),"
+			+ " or set '%5$s' to 'true' to skip this check")
+	HibernateException incompatibleDependencyVersion(String reactiveVersion, String library, String minimumVersion, String foundVersion, String skipSetting);
+
+	@LogMessage(level = DEBUG)
+	@Message(id = 5, value = "Skipping version check for %1$s: cannot compare version [%2$s] with minimum required version [%3$s]")
+	void skippingVersionCheck(String library, String foundVersion, String minimumVersion);
+
 	@LogMessage(level = INFO)
 	@Message(id = 11, value = "SQL Client URL [\u001b[34m%1$s\u001b[0m]")
 	void sqlClientUrl(String url);

@@ -65,4 +65,17 @@ public interface Settings extends AvailableSettings {
 	 * Specifies a {@link org.hibernate.reactive.pool.ReactiveConnectionPool} class.
 	 */
 	String SQL_CLIENT_POOL = "hibernate.vertx.pool.class";
+
+	/**
+	 * When {@code true}, Hibernate Reactive won't check during bootstrap that
+	 * the versions of Hibernate ORM and the Vert.x SQL client on the classpath are not older
+	 * than the minimum versions it requires.
+	 * <p>
+	 * It can also be set as a system property, for example from the command line
+	 * with {@code -Dhibernate.reactive.skip_version_check=true}. When set, the system
+	 * property has precedence over the value in the configuration.
+	 * <p>
+	 * Default: {@code false}
+	 */
+	String SKIP_VERSION_CHECK = "hibernate.reactive.skip_version_check";
 }

@@ -64,6 +64,12 @@ tasks.withType( Test ).configureEach {
 	// Set the project root for finding Docker files - available to all modules
 	systemProperty 'hibernate.reactive.project.root', rootProject.projectDir.absolutePath
 
+	// Example: ./gradlew test -Dhibernate.reactive.skip_version_check=true
+	def skipVersionCheck = providers.systemProperty( 'hibernate.reactive.skip_version_check' )
+	if ( skipVersionCheck.isPresent() ) {
+		systemProperty 'hibernate.reactive.skip_version_check', skipVersionCheck.get()
+	}
+
     jacoco {
         destinationFile = layout.buildDirectory.file("jacoco/report-${coverageReportSuffix}.exec").get().asFile
     }
