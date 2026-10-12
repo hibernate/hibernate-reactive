@@ -139,14 +139,14 @@ jobs:
           MATRIX_DB: ${{ matrix.db }}
         run: ./gradlew ":$MATRIX_EXAMPLE:runAllExamplesOn$MATRIX_DB"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
       - name: Upload Develocity build scan data
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-scan-data-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: ~/.gradle/build-scan-data
@@ -209,13 +209,13 @@ jobs:
           MATRIX_DB: ${{ matrix.db }}
         run: ./gradlew build -PshowStandardOutput -Pdb="$MATRIX_DB"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
       - name: Upload coverage reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-coverage-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: |
@@ -224,7 +224,7 @@ jobs:
             ./**/build/generated/
       - name: Upload Develocity build scan data
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-scan-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: ~/.gradle/build-scan-data
@@ -383,14 +383,14 @@ jobs:
               -Porg.gradle.java.installations.paths="$MAIN_JDK_PATH,$TEST_JDK_PATH" \
               "${EXTRA_ARGS[@]}"
       - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: reports-java${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
       - name: Upload Develocity build scan data
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-scan-data-jdk-${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: ~/.gradle/build-scan-data
@@ -455,7 +455,7 @@ jobs:
             ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
 
       - name: Download coverage reports
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # 8.0.2
         with:
           pattern: build-coverage-data*${{ steps.current-branch-suffix.outputs.value }}*
           path: .
@@ -467,7 +467,7 @@ jobs:
         run: ./gradlew mergeCodeCoverageReport copyDependenciesSonar --no-parallel
 
       - name: Store build info for Sonar scanning
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-results-data
           retention-days: 1
