@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -119,11 +120,16 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
+		// applies the flush mode (and cache mode) of the query to the session while executing it
+		final HashSet<String> fetchProfiles = beforeQueryHandlingFetchProfiles();
+		final boolean[] success = {false};
 		return doExecuteReactiveUpdate()
 				.handle( (count, error) -> {
 					handleException( error );
+					success[0] = true;
 					return count;
-				} );
+				} )
+				.whenComplete( (count, error) -> afterQueryHandlingFetchProfiles( success[0], fetchProfiles ) );
 	}
 
 	private CompletionStage<Integer> doExecuteReactiveUpdate() {
