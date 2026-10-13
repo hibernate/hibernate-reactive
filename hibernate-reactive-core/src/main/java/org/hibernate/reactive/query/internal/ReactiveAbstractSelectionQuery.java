@@ -170,9 +170,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	private HashSet<String> applyProfiles() {
-		final var options = getQueryOptions();
-		return getSession().getLoadQueryInfluencers()
-				.adjustFetchProfiles( options.getDisabledFetchProfiles(), options.getEnabledFetchProfiles() );
+		return ReactiveMutationExecution.adjustFetchProfiles( getQueryOptions(), getSession() );
 	}
 
 	public CompletionStage<KeyedResultList<R>> getReactiveKeyedResultList(KeyedPage<R> keyedPage, ReactiveSelectionQueryImpl<?> original) {

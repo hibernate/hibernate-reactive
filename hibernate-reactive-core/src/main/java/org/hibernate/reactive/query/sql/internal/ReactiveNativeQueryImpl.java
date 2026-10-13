@@ -9,12 +9,10 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.CacheMode;
@@ -27,7 +25,6 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.metamodel.model.domain.BasicDomainType;
-import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.QueryParameter;
@@ -48,8 +45,6 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.spi.ReactiveSelectQueryPlan;
 import org.hibernate.reactive.session.ReactiveSession;
-import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.reactive.util.internal.CompletionStages.CompletionStageHandler;
 import org.hibernate.sql.exec.spi.Callback;
 import org.hibernate.type.BasicTypeReference;
 
@@ -63,7 +58,8 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.SingularAttribute;
 import jakarta.persistence.metamodel.Type;
 
-import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.query.internal.ReactiveMutationExecution.adjustFetchProfiles;
+import static org.hibernate.reactive.query.internal.ReactiveMutationExecution.executeReactiveMutation;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 
@@ -216,58 +212,23 @@ public class ReactiveNativeQueryImpl<R> extends NativeQueryImpl<R>
 	}
 
 	/**
-	 * Same as {@link org.hibernate.query.internal.AbstractQuery#executeMutation}, but it applies
-	 * the flush mode (and cache mode) of the query to the session using {@link #reactiveBeforeQuery()},
-	 * because {@link #beforeQueryHandlingFetchProfiles()} might flush the session with a blocking call.
+	 * The reactive equivalent of {@link NativeQueryImpl#executeUpdate()}.
+	 * <p>
+	 * It applies the flush mode (and cache mode) of the query to the session using
+	 * {@link #reactiveBeforeQuery()}, because {@link #beforeQueryHandlingFetchProfiles()}
+	 * might flush the session with a blocking call.
+	 * </p>
+	 *
+	 * @see org.hibernate.reactive.query.internal.ReactiveMutationExecution#executeReactiveMutation
 	 */
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
-		return reactiveBeforeQuery()
-				.thenCompose( v -> {
-					final HashSet<String> fetchProfiles = adjustFetchProfiles();
-					return executeReactiveUpdate()
-							.handle( CompletionStages::handle )
-							.thenCompose( handler -> {
-								afterQueryHandlingFetchProfiles( !handler.hasFailed(), fetchProfiles );
-								return convertMutation( handler );
-							} );
-				} );
-	}
-
-	private HashSet<String> adjustFetchProfiles() {
-		final var options = getQueryOptions();
-		return getSession().getLoadQueryInfluencers()
-				.adjustFetchProfiles( options.getDisabledFetchProfiles(), options.getEnabledFetchProfiles() );
-	}
-
-	private CompletionStage<Integer> executeReactiveUpdate() {
-		try {
-			return reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this );
-		}
-		catch (RuntimeException e) {
-			// Make sure that the session gets reset by the caller
-			return failedFuture( e );
-		}
-	}
-
-	private CompletionStage<Integer> convertMutation(CompletionStageHandler<Integer, Throwable> handler) {
-		return handler.hasFailed()
-				? failedFuture( convertMutationException( handler.getThrowable() ) )
-				: handler.getResultAsCompletionStage();
-	}
-
-	// Same conversion as AbstractQuery#executeMutation in ORM
-	private Throwable convertMutationException(Throwable error) {
-		final Throwable cause = error instanceof CompletionException && error.getCause() != null
-				? error.getCause()
-				: error;
-		if ( cause instanceof IllegalQueryOperationException ) {
-			return new IllegalStateException( cause );
-		}
-		if ( cause instanceof HibernateException hibernateException ) {
-			return getExceptionConverter().convert( hibernateException );
-		}
-		return cause;
+		return executeReactiveMutation(
+				() -> reactiveBeforeQuery().thenApply( v -> adjustFetchProfiles( getQueryOptions(), getSession() ) ),
+				() -> reactiveResolveNonSelectQueryPlan().executeReactiveUpdate( this ),
+				this::afterQueryHandlingFetchProfiles,
+				getExceptionConverter()
+		);
 	}
 
 	// NativeQueryImpl.parameterOccurrences is private with no getter (ORM 8.0),
