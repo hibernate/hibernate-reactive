@@ -56,6 +56,59 @@ It can also be set as a system property, for example with
 The system property has precedence over the value in the configuration.
 ====
 
+=== Using the platform (BOM)
+
+Hibernate Reactive also publishes a platform, or "BOM",
+`org.hibernate.reactive:hibernate-reactive-platform`.
+It manages the versions of Hibernate Reactive, of the Vert.x database clients, of Hibernate ORM,
+and of all their dependencies, using the versions Hibernate Reactive was built and tested with.
+
+When you import it, you only need to choose the version of the platform,
+and you can omit the version of the other dependencies.
+
+In a Maven build:
+
+[source,xml,subs="attributes+"]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.hibernate.reactive</groupId>
+            <artifactId>hibernate-reactive-platform</artifactId>
+            <version>{fullVersion}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.hibernate.reactive</groupId>
+        <artifactId>hibernate-reactive-core</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-pg-client</artifactId>
+    </dependency>
+</dependencies>
+----
+
+In a Gradle build:
+
+[source,groovy,subs="attributes+"]
+----
+dependencies {
+    implementation platform( 'org.hibernate.reactive:hibernate-reactive-platform:{fullVersion}' )
+
+    implementation 'org.hibernate.reactive:hibernate-reactive-core'
+    runtimeOnly 'io.vertx:vertx-pg-client'
+}
+----
+
+TIP: If your project already uses a platform managing some of the same dependencies,
+for example the one from Quarkus, prefer that one.
+
 == Optional dependencies
 
 :slf4j: http://www.slf4j.org/
@@ -97,7 +150,7 @@ program.
 The only required configuration that's really specific to Hibernate
 Reactive is the persistence `<provider>` element, which must be explicit:
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 ----
@@ -108,7 +161,7 @@ configure Hibernate ORM core.
 
 Just like in regular JPA, you should list your entity classes in `persistence.xml`:
 
-[source,xml]
+[source,xml,subs="attributes+"]
 ----
 <class>org.hibernate.reactive.example.session.Author</class>
 <class>org.hibernate.reactive.example.session.Book</class>

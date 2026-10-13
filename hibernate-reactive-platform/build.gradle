@@ -1,0 +1,94 @@
+plugins {
+    id 'java-platform'
+}
+
+group = rootProject.group
+version = rootProject.version
+
+ext {
+    mavenPomName = 'Hibernate Reactive Platform (BOM)'
+}
+
+description = 'Platform (BOM) managing the versions of Hibernate Reactive and of its dependencies'
+
+apply from: rootProject.file( 'publish-common.gradle' )
+
+repositories {
+    // Example: ./gradlew build -PenableMavenLocalRepo
+    if ( project.hasProperty( 'enableMavenLocalRepo' ) ) {
+        mavenLocal()
+    }
+    // Example: ./gradlew build -PenableCentralSonatypeSnapshotsRep
+    if ( project.hasProperty( 'enableCentralSonatypeSnapshotsRep' ) ) {
+        maven { url 'https://central.sonatype.com/repository/maven-snapshots/' }
+    }
+    mavenCentral()
+}
+
+// The dependencies a typical application needs at runtime:
+// Hibernate Reactive, one of the Vert.x database clients, and optional integrations.
+// We resolve them, so that the platform contains the exact versions we build and test with,
+// including all the transitive dependencies.
+configurations.create( 'platformContent' ) {
+    canBeConsumed = false
+    canBeResolved = true
+    attributes {
+        attribute( Usage.USAGE_ATTRIBUTE, objects.named( Usage, Usage.JAVA_RUNTIME ) )
+        attribute( Category.CATEGORY_ATTRIBUTE, objects.named( Category, Category.LIBRARY ) )
+        attribute( LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named( LibraryElements, LibraryElements.JAR ) )
+        attribute( Bundling.BUNDLING_ATTRIBUTE, objects.named( Bundling, Bundling.EXTERNAL ) )
+        attribute( TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named( TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM ) )
+        attribute( TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, gradle.ext.baselineJavaVersion.asInt() )
+    }
+}
+
+dependencies {
+    platformContent project( ':hibernate-reactive-core' )
+
+    // Vert.x database clients
+    platformContent libs.io.vertx.vertx.pg.client
+    platformContent libs.io.vertx.vertx.mysql.client
+    platformContent libs.io.vertx.vertx.db2.client
+    platformContent libs.io.vertx.vertx.mssql.client
+    platformContent libs.io.vertx.vertx.oracle.client
+
+    // Optional dependency of vertx-pg-client, required for SASL SCRAM authentication
+    platformContent libs.com.ongres.scram.scram.client
+
+    // Optional Hibernate ORM integrations
+    platformContent libs.org.hibernate.orm.hibernate.jcache
+    platformContent libs.org.hibernate.orm.hibernate.jpamodelgen
+
+    constraints {
+        api project( ':hibernate-reactive-core' )
+    }
+}
+
+static boolean isPlatform(ResolvedVariantResult variant) {
+    def category = variant.attributes.getAttribute( Attribute.of( Category.CATEGORY_ATTRIBUTE.name, String ) )
+            ?: variant.attributes.getAttribute( Category.CATEGORY_ATTRIBUTE )?.name
+    return category in [Category.REGULAR_PLATFORM, Category.ENFORCED_PLATFORM]
+}
+
+def platformContent = configurations.named( 'platformContent' )
+// Add a constraint for each resolved module, but only when the platform is actually needed
+// (e.g. when publishing), so that the resolution doesn't happen during the configuration phase.
+configurations.api.dependencyConstraints.addAllLater( provider {
+    platformContent.get().incoming.resolutionResult.allComponents
+            // Skip BOMs imported by our dependencies (e.g. jackson-bom), they are not libraries
+            .findAll { component -> !component.variants.any { isPlatform( it ) } }
+            .collect { it.id }
+            .findAll { it instanceof ModuleComponentIdentifier }
+            .collect { ModuleComponentIdentifier id ->
+                project.dependencies.constraints.create( "${id.group}:${id.module}:${id.version}" )
+            }
+            .sort { it.group + ':' + it.name }
+} )
+
+publishing {
+    publications {
+        named( "publishedArtifacts", MavenPublication ) {
+            from components.javaPlatform
+        }
+    }
+}

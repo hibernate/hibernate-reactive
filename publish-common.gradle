@@ -1,0 +1,66 @@
+apply plugin: 'maven-publish'
+
+// Publishing configuration shared by all the published modules (jars and BOMs)
+
+publishing {
+    publications {
+        register( "publishedArtifacts", MavenPublication) {
+            pom {
+                name = project.mavenPomName
+                description = project.description
+                url = 'https://github.com/hibernate/hibernate-reactive'
+                organization {
+                    name = 'Hibernate.org'
+                    url = 'https://hibernate.org'
+                }
+                licenses {
+                    license {
+                        name = 'Apache License Version 2.0'
+                        url = 'https://opensource.org/licenses/Apache-2.0'
+                        comments = 'See discussion at https://hibernate.org/community/license/ for more details.'
+                        distribution = 'repo'
+                    }
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/hibernate/hibernate-reactive/issues'
+                }
+                scm {
+                    connection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/hibernate/hibernate-reactive.git'
+                    url = 'https://github.com/hibernate/hibernate-reactive.git'
+                }
+                developers {
+                    developer {
+                        id = 'hibernate-team'
+                        name = 'The Hibernate Development Team'
+                        organization = 'Hibernate.org'
+                        organizationUrl = 'https://hibernate.org'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "staging"
+            url = rootProject.layout.buildDirectory.dir("staging-deploy${File.separator}maven")
+        }
+        maven {
+            name = 'snapshots'
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
+            // So that Gradle uses the `ORG_GRADLE_PROJECT_snapshotsPassword` / `ORG_GRADLE_PROJECT_snapshotsUsername`
+            //  env variables to read the username/password for the `snapshots` repository publishing:
+            credentials(PasswordCredentials)
+        }
+    }
+}
+
+tasks.register("releasePrepare") {
+	description "Prepares all the artifacts and documentation for a JReleaser release."
+	group "Release"
+
+	// Create all the published artifacts (i.e. jars) and move them to the staging directory (for JReleaser):
+	dependsOn publishAllPublicationsToStagingRepository
+}
+
