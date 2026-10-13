@@ -27,6 +27,11 @@ plugins {
 description = 'Hibernate Reactive Session Examples'
 
 dependencies {
+    // The platform (BOM) manages the versions of Hibernate Reactive and of its dependencies.
+    // Outside this project, use: platform( 'org.hibernate.reactive:hibernate-reactive-platform:<version>' )
+    implementation platform( project( ':hibernate-reactive-platform' ) )
+    annotationProcessor platform( project( ':hibernate-reactive-platform' ) )
+
     implementation project( ':hibernate-reactive-core' )
 
     // Hibernate Validator (optional)
@@ -34,17 +39,17 @@ dependencies {
     runtimeOnly(libs.org.glassfish.expressly.expressly)
 
     // JPA metamodel generation for criteria queries (optional)
-    annotationProcessor(libs.org.hibernate.orm.hibernate.jpamodelgen)
+    annotationProcessor 'org.hibernate.orm:hibernate-jpamodelgen'
 
     // database drivers for PostgreSQL and MySQL
-    runtimeOnly(libs.io.vertx.vertx.pg.client)
-    runtimeOnly(libs.io.vertx.vertx.mysql.client)
+    runtimeOnly 'io.vertx:vertx-pg-client'
+    runtimeOnly 'io.vertx:vertx-mysql-client'
 
     // logging (optional)
     runtimeOnly(libs.org.apache.logging.log4j.log4j.core)
 
     // Allow authentication to PostgreSQL using SCRAM:
-    runtimeOnly(libs.com.ongres.scram.scram.client)
+    runtimeOnly 'com.ongres.scram:scram-client'
 }
 
 // Optional: enable the bytecode enhancements
