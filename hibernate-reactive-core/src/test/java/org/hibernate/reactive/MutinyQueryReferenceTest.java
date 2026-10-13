@@ -10,6 +10,9 @@ import java.util.Map;
 
 import org.hibernate.Hibernate;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.IllegalMutationQueryException;
+import org.hibernate.query.IllegalSelectQueryException;
+import org.hibernate.reactive.mutiny.Mutiny.MutationQuery;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +24,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedAttributeNode;
 import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedStatement;
 import jakarta.persistence.QueryFlushMode;
+import jakarta.persistence.QueryHint;
 import jakarta.persistence.Statement;
 import jakarta.persistence.Table;
 import jakarta.persistence.TypedQuery;
@@ -31,6 +36,9 @@ import jakarta.persistence.query.StaticTypedQueryReference;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.jpa.HibernateHints.HINT_COMMENT;
+import static org.hibernate.jpa.HibernateHints.HINT_FLUSH_MODE;
+import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 
 /**
  * Named queries and statements executed via a {@link jakarta.persistence.TypedQueryReference}
@@ -189,8 +197,83 @@ public class MutinyQueryReferenceTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testSessionCreateStatementFromReferenceKeepsNamedQueryOptions(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+				.persist( new Pig( 1, "Aloi", null ) )
+				// the named statement is declared with flush mode MANUAL, so the pending insert is not flushed
+				.chain( () -> session.createStatement( deleteByNameNoFlush( "Aloi" ) ).executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 0 ) ) )
+		);
+	}
+
+	@Test
+	public void testStatelessSessionCreateStatementFromReferenceKeepsNamedQueryOptions(VertxTestContext context) {
+		test( context, getMutinySessionFactory().withStatelessTransaction( session -> {
+			final MutationQuery query = session.createStatement( deleteByNameNoFlush( "Aloi" ) );
+			assertThat( query.getComment() ).isEqualTo( "Pig.deleteByNameNoFlush" );
+			return query.executeUpdate();
+		} ) );
+	}
+
+	@Test
+	public void testSessionCreateQueryFromReferenceToStatement(VertxTestContext context) {
+		test( context, assertThrown(
+				IllegalSelectQueryException.class,
+				getMutinySessionFactory().withSession( session -> session
+						.createQuery( new StaticTypedQueryReference<>(
+								DELETE_BY_NAME,
+								Queries.class,
+								"deleteByName",
+								Pig.class,
+								List.of( String.class ),
+								List.of( "name" ),
+								List.of( "Aloi" )
+						) )
+						.getResultList() )
+		) );
+	}
+
+	@Test
+	public void testSessionCreateStatementFromReferenceToQuery(VertxTestContext context) {
+		test( context, assertThrown(
+				IllegalMutationQueryException.class,
+				getMutinySessionFactory().withTransaction( session -> session
+						.createStatement( new StaticStatementReference(
+								FIND_BY_NAME,
+								Queries.class,
+								"findByName",
+								List.of( String.class ),
+								List.of( "name" ),
+								List.of( "Aloi" ),
+								Map.of()
+						) )
+						.executeUpdate() )
+		) );
+	}
+
+	private static StaticStatementReference deleteByNameNoFlush(String name) {
+		return new StaticStatementReference(
+				"Pig.deleteByNameNoFlush",
+				Pig.class,
+				"deleteByNameNoFlush",
+				List.of( String.class ),
+				List.of( "name" ),
+				List.of( name ),
+				Map.of()
+		);
+	}
+
 	@Entity(name = "Pig")
 	@Table(name = "QueryReferencePig")
+	@NamedStatement(
+			name = "Pig.deleteByNameNoFlush",
+			statement = "delete from Pig where name = :name",
+			hints = {
+					@QueryHint(name = HINT_FLUSH_MODE, value = "MANUAL"),
+					@QueryHint(name = HINT_COMMENT, value = "Pig.deleteByNameNoFlush")
+			}
+	)
 	@NamedEntityGraph(name = "Pig.farm", attributeNodes = @NamedAttributeNode("farm"))
 	public static class Pig {
 		@Id
