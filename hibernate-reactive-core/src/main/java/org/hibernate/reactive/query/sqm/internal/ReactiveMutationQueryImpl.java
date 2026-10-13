@@ -9,16 +9,13 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.hibernate.CacheMode;
-import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.dialect.sql.ast.spi.ValuesListSupport;
@@ -29,7 +26,6 @@ import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -52,12 +48,11 @@ import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
+import org.hibernate.reactive.query.internal.ReactiveMutationExecution;
 import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
-import org.hibernate.reactive.util.internal.CompletionStages;
-import org.hibernate.reactive.util.internal.CompletionStages.CompletionStageHandler;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
@@ -68,7 +63,8 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.Type;
 
 import static org.hibernate.query.hql.internal.QuerySplitter.split;
-import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.query.internal.ReactiveMutationExecution.executeReactiveMutation;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
  * A reactive mutation query backed by HQL/JPQL or criteria.
@@ -122,48 +118,30 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		throw LOG.nonReactiveMethodCall( "reactiveExecute" );
 	}
 
+	/**
+	 * The reactive equivalent of {@link MutationQueryImpl#execute()}.
+	 * <p>
+	 * {@link #beforeQueryHandlingFetchProfiles()} can be called directly, because
+	 * for an HQL query it doesn't flush the session: the query plan flushes the
+	 * session reactively when it executes the query.
+	 * </p>
+	 *
+	 * @see ReactiveMutationExecution#executeReactiveMutation
+	 */
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
-		// applies the flush mode (and cache mode) of the query to the session while executing it
-		final HashSet<String> fetchProfiles = beforeQueryHandlingFetchProfiles();
-		return doExecuteReactiveUpdate()
-				.handle( CompletionStages::handle )
-				.thenCompose( handler -> {
+		return executeReactiveMutation(
+				// applies the flush mode (and cache mode) of the query to the session while executing it
+				() -> completedFuture( beforeQueryHandlingFetchProfiles() ),
+				() -> resolveNonSelectQueryPlan().executeReactiveUpdate( this ),
+				(success, fetchProfiles) -> {
+					// like the finally block of MutationQueryImpl#doExecute
 					getDomainParameterXref().clearExpansions();
-					afterQueryHandlingFetchProfiles( !handler.hasFailed(), fetchProfiles );
-					return convertMutation( handler );
-				} );
-	}
-
-	private CompletionStage<Integer> doExecuteReactiveUpdate() {
-		try {
-			return resolveNonSelectQueryPlan().executeReactiveUpdate( this );
-		}
-		catch (RuntimeException e) {
-			// Make sure that the session gets reset by the caller
-			return failedFuture( e );
-		}
-	}
-
-	private CompletionStage<Integer> convertMutation(CompletionStageHandler<Integer, Throwable> handler) {
-		return handler.hasFailed()
-				? failedFuture( convertMutationException( handler.getThrowable() ) )
-				: handler.getResultAsCompletionStage();
-	}
-
-	// Same conversion as AbstractQuery#executeMutation in ORM
-	private Throwable convertMutationException(Throwable error) {
-		final Throwable cause = error instanceof CompletionException && error.getCause() != null
-				? error.getCause()
-				: error;
-		if ( cause instanceof IllegalQueryOperationException ) {
-			return new IllegalStateException( cause );
-		}
-		if ( cause instanceof HibernateException hibernateException ) {
-			return getExceptionConverter().convert( hibernateException );
-		}
-		return cause;
+					afterQueryHandlingFetchProfiles( success, fetchProfiles );
+				},
+				getExceptionConverter()
+		);
 	}
 
 	private ReactiveNonSelectQueryPlan resolveNonSelectQueryPlan() {
