@@ -74,12 +74,15 @@ import org.hibernate.pretty.MessageHelper;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.query.IllegalMutationQueryException;
+import org.hibernate.query.IllegalSelectQueryException;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.UnknownNamedQueryException;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.named.spi.NamedNativeQueryMemento;
 import org.hibernate.query.named.spi.NamedResultSetMappingMemento;
 import org.hibernate.query.named.spi.NamedSqmQueryMemento;
+import org.hibernate.query.named.spi.NamedQueryMemento;
+import org.hibernate.query.named.spi.NamedSelectionMemento;
 import org.hibernate.query.specification.MutationSpecification;
 import org.hibernate.query.specification.internal.MutationSpecificationImpl;
 import org.hibernate.query.specification.internal.SelectionSpecificationImpl;
@@ -126,6 +129,7 @@ import org.hibernate.reactive.query.ReactiveQueryImplementor;
 import org.hibernate.reactive.query.ReactiveSelectionQuery;
 import org.hibernate.reactive.query.sql.internal.ReactiveNativeQueryImpl;
 import org.hibernate.reactive.query.sql.spi.ReactiveNativeQueryImplementor;
+import org.hibernate.reactive.query.sql.spi.ReactiveNamedSqmQueryMemento;
 import org.hibernate.reactive.query.sqm.internal.ReactiveMutationQueryImpl;
 import org.hibernate.reactive.query.sqm.internal.ReactiveSelectionQueryImpl;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -448,14 +452,23 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 		else {
 			// this cast is fine because of all our impls of TypedQueryReference return Class<R>
 			final Class<R> resultType = (Class<R>) typedQueryReference.getResultType();
-			final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( typedQueryReference.getName(), resultType );
-			bindReferenceArguments( (QueryImplementor<?>) query, typedQueryReference );
-			typedQueryReference.getHints().forEach(query::setHint);
-			if ( !isEmpty( typedQueryReference.getEntityGraphName() ) ) {
-				query.setHint( HINT_SPEC_LOAD_GRAPH, typedQueryReference.getEntityGraphName() );
+			try {
+				final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( typedQueryReference.getName(), resultType );
+				if ( !( query instanceof SelectionQuery<?> selectionQuery ) ) {
+					throw new IllegalSelectQueryException( "Named query '" + typedQueryReference.getName() + "' is not a selection query" );
+				}
+				bindReferenceArguments( (QueryImplementor<?>) query, typedQueryReference );
+				typedQueryReference.getHints().forEach(query::setHint);
+				if ( !isEmpty( typedQueryReference.getEntityGraphName() ) ) {
+					query.setHint( HINT_SPEC_LOAD_GRAPH, typedQueryReference.getEntityGraphName() );
+				}
+				typedQueryReference.getOptions().forEach( selectionQuery::addOption );
+				return query;
 			}
-			typedQueryReference.getOptions().forEach( ( (SelectionQuery<?>) query )::addOption );
-			return query;
+			catch (RuntimeException e) {
+				markForRollbackOnly();
+				throw e;
+			}
 		}
 	}
 
@@ -809,13 +822,27 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <R> ReactiveMutationQuery<R> createReactiveNamedMutationQuery(String queryName) {
-		// The mementos create ORM's blocking MutationQueryImpl, which cannot be a ReactiveMutationQuery
-		final ReactiveQueryImplementor<R> query = createReactiveNamedQuery( queryName );
-		if ( query instanceof ReactiveSelectionQueryImpl<?> ) {
+		checksBeforeQueryCreation();
+		final NamedQueryMemento<?> memento;
+		try {
+			memento = getFactory().getQueryEngine().getNamedObjectRepository().getQueryMementoByName( queryName, false );
+		}
+		catch (RuntimeException e) {
+			throw convertNamedQueryException( e );
+		}
+		if ( memento instanceof NamedSelectionMemento<?> ) {
 			throw new IllegalMutationQueryException( "Named query '" + queryName + "' is not a mutation query" );
 		}
-		return query;
+		if ( memento instanceof NamedSqmQueryMemento<?> sqmMemento ) {
+			// The ORM mementos create a blocking MutationQueryImpl, the reactive one keeps the options of the memento
+			final ReactiveNamedSqmQueryMemento<?> reactiveMemento = sqmMemento instanceof ReactiveNamedSqmQueryMemento<?> wrapped
+					? wrapped
+					: new ReactiveNamedSqmQueryMemento<>( sqmMemento );
+			return (ReactiveMutationQuery<R>) reactiveMemento.toMutationQuery( this );
+		}
+		return createReactiveNamedQuery( queryName );
 	}
 
 	@Override
