@@ -13,7 +13,8 @@ ext {
 			'example',
             'release',
             'reporting',
-			'documentation'
+			'documentation',
+			'hibernate-reactive-platform'
 	]
 }
 

@@ -147,6 +147,7 @@ logger.lifecycle "Java versions for tests: " + gradle.ext.javaVersions.test
 gradle.ext.javadocJdkVersion = gradle.ext.javaVersions.main.compiler.asInt()
 
 include 'hibernate-reactive-core'
+include 'hibernate-reactive-platform'
 include 'session-example'
 include 'native-sql-example'
 include 'documentation'
