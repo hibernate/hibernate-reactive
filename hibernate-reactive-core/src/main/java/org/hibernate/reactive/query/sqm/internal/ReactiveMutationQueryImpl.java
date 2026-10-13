@@ -9,10 +9,11 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
@@ -28,6 +29,7 @@ import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.metamodel.model.domain.EntityDomainType;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.query.IllegalQueryOperationException;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.TupleTransformer;
@@ -54,6 +56,8 @@ import org.hibernate.reactive.query.sql.spi.ReactiveNonSelectQueryPlan;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableInsertStrategy;
 import org.hibernate.reactive.query.sqm.mutation.spi.ReactiveSqmMultiTableMutationStrategy;
 import org.hibernate.reactive.session.ReactiveSqmQueryImplementor;
+import org.hibernate.reactive.util.internal.CompletionStages;
+import org.hibernate.reactive.util.internal.CompletionStages.CompletionStageHandler;
 
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
@@ -64,6 +68,7 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.metamodel.Type;
 
 import static org.hibernate.query.hql.internal.QuerySplitter.split;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 
 /**
  * A reactive mutation query backed by HQL/JPQL or criteria.
@@ -122,32 +127,43 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 		// applies the flush mode (and cache mode) of the query to the session while executing it
 		final HashSet<String> fetchProfiles = beforeQueryHandlingFetchProfiles();
-		final boolean[] success = {false};
 		return doExecuteReactiveUpdate()
-				.handle( (count, error) -> {
-					handleException( error );
-					success[0] = true;
-					return count;
-				} )
-				.whenComplete( (count, error) -> afterQueryHandlingFetchProfiles( success[0], fetchProfiles ) );
+				.handle( CompletionStages::handle )
+				.thenCompose( handler -> {
+					getDomainParameterXref().clearExpansions();
+					afterQueryHandlingFetchProfiles( !handler.hasFailed(), fetchProfiles );
+					return convertMutation( handler );
+				} );
 	}
 
 	private CompletionStage<Integer> doExecuteReactiveUpdate() {
-		getSession().prepareForQueryExecution( true );
-		return resolveNonSelectQueryPlan().executeReactiveUpdate( this );
+		try {
+			return resolveNonSelectQueryPlan().executeReactiveUpdate( this );
+		}
+		catch (RuntimeException e) {
+			// Make sure that the session gets reset by the caller
+			return failedFuture( e );
+		}
 	}
 
-	private void handleException(Throwable e) {
-		if ( e != null ) {
-			if ( e instanceof HibernateException ) {
-				throw getSession().getExceptionConverter()
-						.convert( (HibernateException) e, getQueryOptions().getLockOptions() );
-			}
-			if ( e instanceof RuntimeException ) {
-				throw (RuntimeException) e;
-			}
-			throw new HibernateException( e );
+	private CompletionStage<Integer> convertMutation(CompletionStageHandler<Integer, Throwable> handler) {
+		return handler.hasFailed()
+				? failedFuture( convertMutationException( handler.getThrowable() ) )
+				: handler.getResultAsCompletionStage();
+	}
+
+	// Same conversion as AbstractQuery#executeMutation in ORM
+	private Throwable convertMutationException(Throwable error) {
+		final Throwable cause = error instanceof CompletionException && error.getCause() != null
+				? error.getCause()
+				: error;
+		if ( cause instanceof IllegalQueryOperationException ) {
+			return new IllegalStateException( cause );
 		}
+		if ( cause instanceof HibernateException hibernateException ) {
+			return getExceptionConverter().convert( hibernateException );
+		}
+		return cause;
 	}
 
 	private ReactiveNonSelectQueryPlan resolveNonSelectQueryPlan() {
