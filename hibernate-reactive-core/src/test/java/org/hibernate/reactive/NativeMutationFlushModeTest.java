@@ -50,6 +50,19 @@ public class NativeMutationFlushModeTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testNativeMutationQueryFlushWithoutAffectedEntities(VertxTestContext context) {
+		// Without query spaces, the session is flushed before the query (reactively)
+		test( context, getMutinySessionFactory().withTransaction( session -> session
+				.persist( new Pig( 1, "Aloi" ) )
+				.chain( () -> session.createNativeQuery( "delete from NativeFlushPig where name = :name" )
+						.setFlushMode( QueryFlushMode.FLUSH )
+						.setParameter( "name", "Aloi" )
+						.executeUpdate() )
+				.invoke( rows -> assertThat( rows ).isEqualTo( 1 ) ) )
+		);
+	}
+
 	@Entity(name = "Pig")
 	@Table(name = "NativeFlushPig")
 	public static class Pig {
