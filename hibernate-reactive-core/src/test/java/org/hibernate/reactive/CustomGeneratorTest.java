@@ -30,12 +30,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
 public class CustomGeneratorTest extends BaseReactiveTest {
 
 	@Override
@@ -45,32 +43,63 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 
 	@Test
 	public void testSequenceGenerator(VertxTestContext context) {
-		CustomId b = new CustomId();
-		b.string = "Hello World";
+		CustomId entity1 = new CustomId();
+		entity1.string = "Stateful Hello World";
 
-		test( context, openSession()
-				.thenCompose( s -> s.persist( b ).thenCompose( v -> s.flush() ) )
-				.thenCompose( v -> openSession() )
-				.thenCompose( s2 -> s2
-						.find( CustomId.class, b.getId() )
-						.thenAccept( bb -> {
-							assertNotNull( bb );
-							assertEquals( 1100, bb.id );
-							assertEquals( bb.string, b.string );
-							assertEquals( 0, bb.version );
+		CustomId entity2 = new CustomId();
+		entity2.string = "Stateless Hello World";
 
-							bb.string = "Goodbye";
-						} )
-						.thenCompose( vv -> s2.flush() )
-						.thenCompose( vv -> s2.find( CustomId.class, b.getId() ) )
-						.thenAccept( bt -> assertEquals( 1, bt.version ) ) )
-				.thenCompose( v -> openSession() )
-				.thenCompose( s3 -> s3.find( CustomId.class, b.getId() ) )
-				.thenAccept( bb -> {
-					assertEquals( 1, bb.version );
-					assertEquals( "Goodbye", bb.string );
-				} )
+		test(
+				context,
+				// First, we create and update an entity with the regular session
+				openSession()
+						// Persist an entity
+						.thenCompose( s1 -> s1.persist( entity1 ).thenCompose( v -> s1.flush() ) )
+						.thenCompose( v -> openSession() )
+						// Find it and update a field
+						.thenCompose( s2 -> s2.find( CustomId.class, entity1.getId() )
+								.thenCompose( found -> {
+									assertEntity( found, 1100, entity1.string, 0 );
+									found.string = "Stateful Goodbye";
+									return s2.flush()
+											// Check version after flush
+											.thenAccept( v -> assertThat( found.version ).isEqualTo( 1 ) );
+								} )
+						)
+						// Find the entity and check the version again (shouldn't have changed)
+						.thenCompose( v -> openSession() )
+						.thenCompose( s3 -> s3.find( CustomId.class, entity1.getId() ) )
+						.thenAccept( found -> assertEntity( found, 1100, "Stateful Goodbye", 1 ) )
+
+						// then, we insert and update another entity with the stateless session
+						.thenCompose( v -> openStatelessSession() )
+						// Insert a new entity
+						.thenCompose( ss1 -> ss1.insert( entity2 ) )
+						// Find it and update a field
+						.thenCompose( v -> openStatelessSession() )
+						.thenCompose( ss2 -> ss2
+								.find( CustomId.class, entity2.getId() )
+								.thenCompose( found -> {
+									assertEntity( found, 2100, entity2.string, 0 );
+									found.string = "Stateless Goodbye";
+									return ss2.update( found )
+											// Check version after update
+											.thenAccept( v -> assertThat( found.version ).isEqualTo( 1 ) );
+								} )
+
+						)
+						// Find the entity and check the version again (shouldn't have changed)
+						.thenCompose( v -> openStatelessSession() )
+						.thenCompose( s3 -> s3.find( CustomId.class, entity2.getId() ) )
+						.thenAccept( found -> assertEntity( found, 2100, "Stateless Goodbye", 1 ) )
 		);
+	}
+
+	private static void assertEntity(CustomId found, int expectedId, String expectedString, int expectedVersion) {
+		assertThat( found ).isNotNull();
+		assertThat( found.id ).isEqualTo( expectedId );
+		assertThat( found.string ).isEqualTo( expectedString );
+		assertThat( found.version ).isEqualTo( expectedVersion );
 	}
 
 	public static class Thousands implements ReactiveIdentifierGenerator<Integer>, Configurable {
