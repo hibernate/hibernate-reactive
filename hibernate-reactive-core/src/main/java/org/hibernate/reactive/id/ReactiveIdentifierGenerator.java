@@ -10,6 +10,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.Incubating;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.generator.EventType;
+import org.hibernate.generator.Generator;
+import org.hibernate.id.GenericGeneratorGeneration;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
@@ -51,5 +53,24 @@ public interface ReactiveIdentifierGenerator<Id> extends IdentifierGenerator {
 	@Override
 	default Object generate(SharedSessionContractImplementor session, Object object){
 		throw new HibernateException( "Detected call to non reactive method. Alternative reactive method: `generate(ReactiveConnectionSupplier, Object)`" );
+	}
+
+	/**
+	 * Extract a {@link ReactiveIdentifierGenerator} from the given generator, unwrapping
+	 * {@link GenericGeneratorGeneration} if necessary.
+	 *
+	 * @return the reactive generator, or {@code null} if the generator is not reactive
+	 */
+	static ReactiveIdentifierGenerator<?> from(Generator generator) {
+		if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
+			return reactiveGenerator;
+		}
+		if ( generator instanceof GenericGeneratorGeneration genericGenerator ) {
+			final Generator delegate = genericGenerator.getDelegate();
+			if ( delegate instanceof ReactiveIdentifierGenerator<?> reactiveDelegate ) {
+				return reactiveDelegate;
+			}
+		}
+		return null;
 	}
 }

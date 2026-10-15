@@ -20,7 +20,10 @@ import org.hibernate.id.Configurable;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
@@ -35,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CustomGeneratorTest extends BaseReactiveTest {
 
 	@Override
@@ -43,6 +46,7 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 		return List.of( CustomId.class );
 	}
 
+	@Order(1)
 	@Test
 	public void testSequenceGenerator(VertxTestContext context) {
 		CustomId b = new CustomId();
@@ -70,6 +74,25 @@ public class CustomGeneratorTest extends BaseReactiveTest {
 					assertEquals( 1, bb.version );
 					assertEquals( "Goodbye", bb.string );
 				} )
+		);
+	}
+
+	@Order(2)
+	@Test
+	public void testStatelessSessionInsertWithGenericGenerator(VertxTestContext context) {
+		CustomId b = new CustomId();
+		b.string = "Stateless Hello";
+
+		test( context, openStatelessSession()
+				.thenCompose( s -> s.insert( b )
+						.thenCompose( v -> s.get( CustomId.class, b.getId() ) )
+						.thenAccept( bb -> {
+							assertNotNull( bb );
+							assertNotNull( bb.id );
+							assertEquals( "Stateless Hello", bb.string );
+						} )
+						.thenCompose( v -> s.close() )
+				)
 		);
 	}
 
