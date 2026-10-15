@@ -20,7 +20,8 @@ ext {
 	projectsToSkipWhenAggregatingJavadocs = [
 			'example',
 			'release',
-			'documentation'
+			'documentation',
+			'hibernate-reactive-platform'
 	]
 }
 
