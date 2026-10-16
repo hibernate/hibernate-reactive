@@ -504,12 +504,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private CompletionStage<?> generateIdForInsert(Object entity, Generator generator, ReactiveEntityPersister persister) {
+		final Object currentValue = generator.allowAssignedIdentifiers() ? persister.getIdentifier( entity ) : null;
 		if ( generator instanceof ReactiveIdentifierGenerator<?> reactiveGenerator ) {
-			return reactiveGenerator.generate( (ReactiveConnectionSupplier) this, entity )
+			return reactiveGenerator.generate( (ReactiveConnectionSupplier) this, entity, currentValue, INSERT )
 					.thenApply( id -> castToIdentifierType( id, persister ) );
 		}
 
-		final Object currentValue = generator.allowAssignedIdentifiers() ? persister.getIdentifier( entity ) : null;
 		return completedFuture( ( (BeforeExecutionGenerator) generator ).generate( this, entity, currentValue, INSERT ) );
 	}
 
