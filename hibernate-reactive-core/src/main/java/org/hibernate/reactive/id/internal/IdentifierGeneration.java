@@ -6,6 +6,8 @@ package org.hibernate.reactive.id.internal;
 
 import java.lang.invoke.MethodHandles;
 
+import org.hibernate.generator.Generator;
+import org.hibernate.id.GenericGeneratorGeneration;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
@@ -19,6 +21,18 @@ import org.hibernate.type.descriptor.java.StringJavaType;
 public class IdentifierGeneration {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
+
+	/**
+	 * Unwrap the {@link Generator} declared via {@link org.hibernate.annotations.GenericGenerator},
+	 * so that we can check its actual type.
+	 *
+	 * @return the delegate of a {@link GenericGeneratorGeneration}, or the given generator otherwise
+	 */
+	public static Generator unwrap(Generator generator) {
+		return generator instanceof GenericGeneratorGeneration genericGenerator
+				? genericGenerator.getDelegate()
+				: generator;
+	}
 
 	public static Object castToIdentifierType(Object generatedId, EntityPersister persister) {
 		return generatedId instanceof Long
