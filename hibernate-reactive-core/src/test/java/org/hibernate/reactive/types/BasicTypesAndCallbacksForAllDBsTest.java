@@ -60,7 +60,6 @@ import jakarta.persistence.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
 /**
  * Test all the types and lifecycle callbacks that we expect to work on all supported DBs
@@ -446,12 +445,14 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	@DisabledFor(value = DB2, reason = "java.sql.SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007 in insert query")
 	public void testInstant(VertxTestContext context) {
 		Basic basic = new Basic();
-		basic.instant = Instant.now();
+		// A fixed value with millisecond precision is stored exactly by every supported database,
+		// so the result doesn't depend on whether the database rounds or truncates fractional seconds
+		basic.instant = Instant.parse( "2024-03-15T10:15:30.123Z" );
 
 		testField(
 				context, basic, found -> {
 					assertThat( found.instant ).isNotNull();
-					assertWithTruncationThat( found.instant ).isEqualTo( basic.instant );
+					assertThat( found.instant ).isEqualTo( basic.instant );
 				}
 		);
 	}
