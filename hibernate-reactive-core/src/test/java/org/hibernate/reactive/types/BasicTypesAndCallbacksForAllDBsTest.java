@@ -404,11 +404,11 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 	@Test
 	public void testLocalTimeType(VertxTestContext context) {
 		Basic basic = new Basic();
-		basic.localTime = LocalTime.now();
+		// Don't use LocalTime.now(): some databases round the fractional seconds (12:59:59.7 becomes 13:00:00),
+		// so the value read back might not match. A fixed value without fractional seconds is stored exactly.
+		basic.localTime = LocalTime.of( 14, 30, 15 );
 
-		testField( context, basic, found -> assertThat( found.localTime.truncatedTo( ChronoUnit.MINUTES ) )
-				.isEqualTo( basic.localTime.truncatedTo( ChronoUnit.MINUTES ) )
-		);
+		testField( context, basic, found -> assertThat( found.localTime ).isEqualTo( basic.localTime ) );
 	}
 
 	@Test
