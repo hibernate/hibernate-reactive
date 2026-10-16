@@ -20,6 +20,8 @@ tasks.named( "test", Test ).configure { t ->
 	def dbName = providers.gradleProperty( "db" ).orElse( "PostgreSQL" )
 	def dockerEnabled = !providers.gradleProperty( "skipTestcontainers" ).isPresent()
 	def showStandardStreams = providers.gradleProperty( "showStandardOutput" ).isPresent()
+	// By default, only failed tests are logged. Use -PshowPassedTest to also log passed and skipped tests
+	def showPassedTest = providers.gradleProperty( "showPassedTest" ).isPresent()
 
 	t.systemProperty( "db", dbName.get() )
 	t.systemProperty( "skipTestcontainers", dockerEnabled ? "false" : "true" )
@@ -38,7 +40,7 @@ tasks.named( "test", Test ).configure { t ->
 		it.showStackTraces = true
 		it.exceptionFormat = 'full'
 		it.displayGranularity = 1
-		it.events = ['PASSED', 'FAILED', 'SKIPPED']
+		it.events = showPassedTest ? ['PASSED', 'FAILED', 'SKIPPED'] : ['FAILED']
 	}
 
 	t.addTestListener( new TestListener() {
@@ -80,6 +82,7 @@ tasks.register( "testAll", Test ) {
 // Configure all testDbXXX tasks with the same parameters as the testAll task
 tasks.withType( TestDbTask ).all { task ->
 	dockerEnabled = !project.hasProperty( 'skipTestcontainers' )
+	showPassedTest = project.hasProperty( 'showPassedTest' )
 
 	// Propagate --tests filter from testAll task if it's in the task graph
 	gradle.taskGraph.whenReady { graph ->

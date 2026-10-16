@@ -206,6 +206,10 @@ The `--tests` flag works with all test tasks:
 To enable logging of the standard output streams, add the property 
 `-PshowStandardOutput`.
 
+By default, only failed tests are logged, followed by a summary of the
+results. To also log passed and skipped tests, add the property
+`-PshowPassedTest`.
+
 There are three ways to start the test database.
 
 #### Using Testcontainers (default)
