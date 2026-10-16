@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.timezones;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -27,12 +28,14 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.AvailableSettings.TIMEZONE_DEFAULT_STORAGE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
-import static org.hibernate.type.descriptor.DateTimeUtils.adjustToDefaultPrecision;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007")
 public class UTCNormalizedZonedTest extends BaseReactiveTest {
+
+	// A fixed value with millisecond precision is stored exactly by every supported database,
+	// so the result doesn't depend on whether the database rounds or truncates fractional seconds
+	private static final Instant INSTANT = Instant.parse( "2024-03-15T10:15:30.123Z" );
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -47,22 +50,20 @@ public class UTCNormalizedZonedTest extends BaseReactiveTest {
 
 	@Test
 	public void test(VertxTestContext context) {
-		ZonedDateTime nowZoned = ZonedDateTime.now().withZoneSameInstant( ZoneId.of( "CET" ) );
-		OffsetDateTime nowOffset = OffsetDateTime.now().withOffsetSameInstant( ZoneOffset.ofHours( 3 ) );
+		final ZonedDateTime zoned = INSTANT.atZone( ZoneId.of( "CET" ) );
+		final OffsetDateTime offset = INSTANT.atOffset( ZoneOffset.ofHours( 3 ) );
 		test( context, getSessionFactory()
 				.withTransaction( s -> {
 					Zoned z = new Zoned();
-					z.zonedDateTime = nowZoned;
-					z.offsetDateTime = nowOffset;
+					z.zonedDateTime = zoned;
+					z.offsetDateTime = offset;
 					return s.persist( z ).thenApply( v -> z.id );
 				} )
 				.thenCompose( zid -> openSession()
 						.thenCompose( s -> s.find( Zoned.class, zid )
 								.thenAccept( z -> {
-									assertWithTruncationThat( adjustToDefaultPrecision( z.zonedDateTime.toInstant(), getDialect() ) )
-											.isEqualTo( adjustToDefaultPrecision( nowZoned.toInstant(), getDialect() ) );
-									assertWithTruncationThat( adjustToDefaultPrecision( z.offsetDateTime.toInstant(), getDialect() ) )
-											.isEqualTo( adjustToDefaultPrecision( nowOffset.toInstant(), getDialect() ) );
+									assertThat( z.zonedDateTime.toInstant() ).isEqualTo( INSTANT );
+									assertThat( z.offsetDateTime.toInstant() ).isEqualTo( INSTANT );
 									assertThat( z.offsetDateTime.getOffset() ).isEqualTo( ZoneId.of( "Z" ) );
 									assertThat( z.zonedDateTime.getZone() ).isEqualTo( ZoneOffset.ofHours( 0 ) );
 								} )
