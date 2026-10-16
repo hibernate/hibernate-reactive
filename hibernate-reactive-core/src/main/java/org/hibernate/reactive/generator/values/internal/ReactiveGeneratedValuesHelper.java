@@ -67,6 +67,7 @@ import org.hibernate.type.descriptor.WrapperOptions;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.generator.values.internal.GeneratedValuesHelper.noCustomSql;
 import static org.hibernate.internal.NaturalIdHelper.getNaturalIdPropertyNames;
+import static org.hibernate.reactive.id.internal.IdentifierGeneration.unwrap;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.sql.results.spi.ReactiveListResultsConsumer.UniqueSemantic.NONE;
 import static org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions.NO_OPTIONS;
@@ -236,7 +237,9 @@ public class ReactiveGeneratedValuesHelper {
 			Generator generator,
 			GeneratorCreationContext creationContext,
 			RuntimeModelCreationContext runtimeModelCreationContext) {
-		if ( generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
+		// The generator might be wrapped, if declared with @GenericGenerator
+		final Generator unwrapped = unwrap( generator );
+		if ( unwrapped instanceof SequenceStyleGenerator sequenceStyleGenerator) {
 			final DatabaseStructure structure = sequenceStyleGenerator.getDatabaseStructure();
 			if ( structure instanceof TableStructure ) {
 				return initialize( new EmulatedSequenceReactiveIdentifierGenerator( sequenceStyleGenerator, runtimeModelCreationContext ), creationContext );
@@ -246,13 +249,13 @@ public class ReactiveGeneratedValuesHelper {
 			}
 			throw LOG.unknownStructureType();
 		}
-		if ( generator instanceof TableGenerator tableGenerator ) {
+		if ( unwrapped instanceof TableGenerator tableGenerator ) {
 			return initialize( new TableReactiveIdentifierGenerator( tableGenerator, runtimeModelCreationContext ), creationContext );
 		}
-		if ( generator instanceof SelectGenerator ) {
+		if ( unwrapped instanceof SelectGenerator ) {
 			throw LOG.selectGeneratorIsNotSupportedInHibernateReactive();
 		}
-		if ( generator instanceof CompositeNestedGeneratedValueGenerator compositeNestedGeneratedValueGenerator ) {
+		if ( unwrapped instanceof CompositeNestedGeneratedValueGenerator compositeNestedGeneratedValueGenerator ) {
 			final ReactiveCompositeNestedGeneratedValueGenerator reactiveCompositeNestedGeneratedValueGenerator = new ReactiveCompositeNestedGeneratedValueGenerator(
 					compositeNestedGeneratedValueGenerator,
 					creationContext,
@@ -261,7 +264,7 @@ public class ReactiveGeneratedValuesHelper {
 			return initialize( reactiveCompositeNestedGeneratedValueGenerator, creationContext );
 		}
 		//nothing to do
-		return generator;
+		return unwrapped;
 	}
 
 	private static Generator initialize(
