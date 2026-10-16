@@ -18,6 +18,7 @@ public abstract class TestDbTask extends Test {
 	private String dbName = "PostgreSQL";
 	private boolean dockerEnabled = true;
 	private boolean showStandardStreams = false;
+	private boolean showPassedTest = false;
 
 	@Input
 	@Optional
@@ -49,6 +50,15 @@ public abstract class TestDbTask extends Test {
 	}
 
 	@Input
+	public boolean isShowPassedTest() {
+		return showPassedTest;
+	}
+
+	public void setShowPassedTest(boolean showPassedTest) {
+		this.showPassedTest = showPassedTest;
+	}
+
+	@Input
 	public Map<String, String> getCustomSystemProperties() {
 		final Map<String, String> props = new HashMap<>();
 		props.put("db", dbName);
@@ -65,7 +75,7 @@ public abstract class TestDbTask extends Test {
 		testLogging.setShowStackTraces( true );
 		testLogging.setExceptionFormat( "full" );
 		testLogging.setDisplayGranularity( 1 );
-		testLogging.events( "PASSED", "FAILED", "SKIPPED" );
+		testLogging.events( "FAILED" );
 
 		// enforcing Hibernate internal state
 		systemProperty( "org.hibernate.reactive.common.InternalStateAssertions.ENFORCE", "true" );
@@ -100,6 +110,9 @@ public abstract class TestDbTask extends Test {
 		// Apply system properties before running
 		getCustomSystemProperties().forEach(this::systemProperty);
 		getTestLogging().setShowStandardStreams( showStandardStreams );
+		if ( showPassedTest ) {
+			getTestLogging().events( "PASSED", "FAILED", "SKIPPED" );
+		}
 
 		// Log Testcontainers status
 		final var testcontainersStatus = dockerEnabled ? "enabled" : "disabled";
