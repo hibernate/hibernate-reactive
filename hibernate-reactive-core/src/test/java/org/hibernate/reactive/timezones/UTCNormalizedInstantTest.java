@@ -23,8 +23,8 @@ import jakarta.persistence.Id;
 
 import static java.sql.Types.TIMESTAMP;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.testing.ReactiveAssertions.assertWithTruncationThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "Exception: SQLException: An error occurred with a DB2 operation, SQLCODE=-180  SQLSTATE=22007")
@@ -35,7 +35,9 @@ public class UTCNormalizedInstantTest extends BaseReactiveTest {
 		return List.of( Zoned.class );
 	}
 
-	final Instant instant = Instant.now();
+	// A fixed value with millisecond precision is stored exactly by every supported database,
+	// so the result doesn't depend on whether the database rounds or truncates fractional seconds
+	final Instant instant = Instant.parse( "2024-03-15T10:15:30.123Z" );
 
 	@Test
 	public void test(VertxTestContext scope) {
@@ -71,8 +73,8 @@ public class UTCNormalizedInstantTest extends BaseReactiveTest {
 	}
 
 	private void assertInstant(Zoned z) {
-		assertWithTruncationThat( z.utcInstant ).isEqualTo( instant );
-		assertWithTruncationThat( z.localInstant ).isEqualTo( instant );
+		assertThat( z.utcInstant ).isEqualTo( instant );
+		assertThat( z.localInstant ).isEqualTo( instant );
 	}
 
 	@Entity(name = "Zoned")
