@@ -413,8 +413,9 @@ public class BasicTypesAndCallbacksForAllDBsTest extends BaseReactiveTest {
 
 	@Test
 	public void testDateAsTimeType(VertxTestContext context) {
-		// Use java.sql.Time directly to avoid timezone conversion issues
-		Time time = new Time( System.currentTimeMillis() );
+		// Use java.sql.Time directly to avoid timezone conversion issues.
+		// Use a fixed value without milliseconds because some databases round them when storing a TIME
+		Time time = Time.valueOf( LocalTime.of( 14, 30, 15 ) );
 
 		Basic basic = new Basic();
 		basic.dateAsTime = time;
