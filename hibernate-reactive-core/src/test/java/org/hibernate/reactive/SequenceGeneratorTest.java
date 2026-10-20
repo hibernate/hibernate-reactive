@@ -11,7 +11,6 @@ import java.util.Objects;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.provider.Settings;
-import org.hibernate.reactive.annotations.DisabledFor;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,15 +24,11 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.COCKROACHDB;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 10, timeUnit = MINUTES)
-@DisabledFor(value = MYSQL, reason = "See https://github.com/hibernate/hibernate-reactive/issues/1525")
-@DisabledFor(value = COCKROACHDB, reason = "we don't have permission to create schema in the CI!")
 public class SequenceGeneratorTest extends BaseReactiveTest {
 
 	@Override
