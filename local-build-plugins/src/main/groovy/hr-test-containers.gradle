@@ -1,3 +1,4 @@
+import org.hibernate.reactive.env.FailedTestOutputListener
 import org.hibernate.reactive.env.TestDbTask
 
 def dbs = ['MariaDB', 'MySQL', 'PostgreSQL', 'DB2', 'CockroachDB', 'MSSQLServer', 'Oracle']
@@ -41,6 +42,13 @@ tasks.named( "test", Test ).configure { t ->
 		it.exceptionFormat = 'full'
 		it.displayGranularity = 1
 		it.events = showPassedTest ? ['PASSED', 'FAILED', 'SKIPPED'] : ['FAILED']
+	}
+
+	// Without -PshowStandardOutput, only log the output of failed tests
+	if ( !showStandardStreams ) {
+		def failedTestOutputListener = new FailedTestOutputListener( logger )
+		t.addTestListener( failedTestOutputListener )
+		t.addTestOutputListener( failedTestOutputListener )
 	}
 
 	t.addTestListener( new TestListener() {
