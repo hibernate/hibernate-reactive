@@ -28,8 +28,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 
-@Timeout(value = 10, timeUnit = MINUTES)
-public class SequenceGeneratorTest extends BaseReactiveTest {
+public abstract class SequenceGeneratorTestBase extends BaseReactiveTest {
+
+	@Timeout(value = 10, timeUnit = MINUTES)
+	public static class DefaultSchemaTest extends SequenceGeneratorTestBase {
+		@Override
+		protected Configuration constructConfiguration() {
+			// Keep the default configuration
+			return super.constructConfiguration();
+		}
+	}
+
+	@Timeout(value = 10, timeUnit = MINUTES)
+	public static class CustomSchemaTest extends SequenceGeneratorTestBase {
+
+		@Override
+		protected Configuration constructConfiguration() {
+			Configuration configuration = super.constructConfiguration();
+			configuration.setProperty( Settings.DEFAULT_SCHEMA, schemaName() );
+			configuration.setProperty( Settings.HBM2DDL_CREATE_SCHEMAS, "true" );
+			return configuration;
+		}
+
+		/**
+		 * Oracle Database automatically creates a schema when you create a user and we don't have
+		 * enough permission to create a new one in the container, for the other databases
+		 * we test with a schema that doesn't match the username.
+		 */
+		private String schemaName() {
+			return dbType() == ORACLE
+					? DatabaseConfiguration.USERNAME
+					: "hrSequenceGenerator";
+		}
+	}
 
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
@@ -65,31 +96,12 @@ public class SequenceGeneratorTest extends BaseReactiveTest {
 		);
 	}
 
-	public static class SequenceGeneratorDefaultSchemaTest extends SequenceGeneratorTest {
-
-		@Override
-		protected Configuration constructConfiguration() {
-			Configuration configuration = super.constructConfiguration();
-			configuration.setProperty( Settings.DEFAULT_SCHEMA, schemaName() );
-			configuration.setProperty( Settings.HBM2DDL_CREATE_SCHEMAS, "true" );
-			return configuration;
-		}
-
-		/**
-		 * Oracle Database automatically creates a schema when you create a user,
-		 * for the other databases we test with a schema that doesn't match the username.
-		 */
-		private String schemaName() {
-			return dbType() == ORACLE
-					? DatabaseConfiguration.USERNAME
-					: "hr";
-		}
-	}
-
 	@Entity(name = "SequenceId")
 	@SequenceGenerator(name = "seq", sequenceName = "test_id_seq", initialValue = 5, allocationSize = 1)
-	@Table(name = "SequenceId")
+	@Table(name = SequenceId.TABLE)
 	public static class SequenceId {
+		public static final String TABLE = "SGTB_SequenceId";
+
 		@Id
 		@GeneratedValue(generator = "seq")
 		Integer id;
