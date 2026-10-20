@@ -3,7 +3,7 @@ asciidoctorJVersion = "3.0.1"
 assertjVersion = "3.27.7"
 checkerFrameworkVersion = "4.3.1"
 hibernateAsciidoctorExtensionsVersion = "3.2.1.Final"
-hibernateAsciidoctorThemeVersion = "6.1.4.Final"
+hibernateAsciidoctorThemeVersion = "6.1.5.Final"
 hibernateOrmVersion = "8.0.0.Beta3"
 # Minimum versions accepted at runtime: Hibernate Reactive fails at bootstrap if it finds an older version.
 # Update them only when Hibernate Reactive starts relying on a change in the dependency.
