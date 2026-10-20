@@ -207,7 +207,7 @@ jobs:
       - name: Build and Test with ${{ matrix.db }}
         env:
           MATRIX_DB: ${{ matrix.db }}
-        run: ./gradlew build -PshowStandardOutput -Pdb="$MATRIX_DB"
+        run: ./gradlew build -Pdb="$MATRIX_DB"
       - name: Upload reports (if build failed)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -379,7 +379,7 @@ jobs:
           if [ -n "$LAUNCHER_ARGS" ]; then
             EXTRA_ARGS+=("$LAUNCHER_ARGS")
           fi
-          ./gradlew build -PshowStandardOutput -Ptest.jdk.version="$TEST_JDK_VERSION" \
+          ./gradlew build -Ptest.jdk.version="$TEST_JDK_VERSION" \
               -Porg.gradle.java.installations.paths="$MAIN_JDK_PATH,$TEST_JDK_PATH" \
               "${EXTRA_ARGS[@]}"
       - name: Upload reports (if build failed)
