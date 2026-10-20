@@ -193,7 +193,7 @@ public class StageSessionImpl implements Stage.Session {
 
 	@Override
 	public CompletionStage<Void> persist(Object... entity) {
-		return applyToAll( delegate::reactivePersist, entity );
+		return delegate.reactivePersistAll( entity );
 	}
 
 	@Override

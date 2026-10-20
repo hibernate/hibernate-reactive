@@ -161,6 +161,7 @@ import static org.hibernate.reactive.persister.entity.internal.ReactiveEntityPer
 import static org.hibernate.reactive.session.internal.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.rethrow;
 import static org.hibernate.reactive.util.internal.CompletionStages.returnNullorRethrow;
@@ -1022,11 +1023,24 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private CompletionStage<Void> firePersist(PersistEvent event) {
 		checkNoUnresolvedActionsBeforeOperation();
 
+		return firePersistEvent( event )
+				.handle( (v, e) -> returnNullorRethrow( checkNoUnresolvedActionsAfterOperation( e ) ) );
+	}
+
+	@Override
+	public CompletionStage<Void> reactivePersistAll(Object... entities) {
+		checkOpen();
+		checkNoUnresolvedActionsBeforeOperation();
+
+		// A single operation: an entity can reference another entity that appears later in the array
+		return loop( entities, entity -> firePersistEvent( new PersistEvent( null, entity, this ) ) )
+				.handle( (v, e) -> returnNullorRethrow( checkNoUnresolvedActionsAfterOperation( e ) ) );
+	}
+
+	private CompletionStage<Void> firePersistEvent(PersistEvent event) {
 		return getFactory().getEventListenerGroups().eventListenerGroup_PERSIST
 				.fireEventOnEachListener( event, (ReactivePersistEventListener l) -> l::reactiveOnPersist )
 				.handle( (v, e) -> {
-					checkNoUnresolvedActionsAfterOperation();
-
 					if ( e instanceof MappingException ) {
 						throw getExceptionConverter().convert( new IllegalArgumentException( e.getMessage() ) );
 					}
@@ -1158,12 +1172,49 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 				.fireEventOnEachListener( event, (ReactiveMergeEventListener l) -> l::reactiveOnMerge )
 				.handle( CompletionStages::handle )
 				.thenCompose( handler -> {
-					checkNoUnresolvedActionsAfterOperation();
-					final Throwable e = handler.getThrowable();
+					final Throwable e = checkNoUnresolvedActionsAfterOperation( handler.getThrowable() );
 					return e != null
 							? failedFuture( convertException( e ) )
 							: completedFuture( (T) event.getResult() );
 				} );
+	}
+
+	@Override
+	protected void checkNoUnresolvedActionsBeforeOperation() {
+		if ( getPersistenceContextInternal().getCascadeLevel() == 0 && reactiveActionQueue.hasUnresolvedEntityInsertActions() ) {
+			throw new IllegalStateException( "There are delayed insert actions before operation as cascade level 0." );
+		}
+	}
+
+	@Override
+	protected void checkNoUnresolvedActionsAfterOperation() {
+		if ( getPersistenceContextInternal().getCascadeLevel() == 0 ) {
+			reactiveActionQueue.checkNoUnresolvedActionsAfterOperation();
+		}
+		delayedAfterCompletion();
+	}
+
+	/**
+	 * Like {@link #checkNoUnresolvedActionsAfterOperation()}, but returns the converted failure
+	 * instead of throwing it. If the operation has already failed, the failure of the check is
+	 * added as suppressed exception.
+	 *
+	 * @param operationFailure the failure of the operation, or {@code null}
+	 * @return the failure to report, or {@code null}
+	 */
+	private Throwable checkNoUnresolvedActionsAfterOperation(Throwable operationFailure) {
+		try {
+			checkNoUnresolvedActionsAfterOperation();
+			return operationFailure;
+		}
+		catch (RuntimeException e) {
+			final RuntimeException failure = getExceptionConverter().convert( e );
+			if ( operationFailure == null ) {
+				return failure;
+			}
+			operationFailure.addSuppressed( failure );
+			return operationFailure;
+		}
 	}
 
 	private Throwable convertException(Throwable e) {
