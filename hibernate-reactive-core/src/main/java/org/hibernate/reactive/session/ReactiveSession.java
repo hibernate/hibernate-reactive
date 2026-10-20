@@ -52,6 +52,12 @@ public interface ReactiveSession extends ReactiveQueryProducer, ReactiveSharedSe
 
 	CompletionStage<Void> reactivePersist(String entityName, Object object);
 
+	/**
+	 * Persist multiple entities as a single operation: an entity may reference,
+	 * via a non-nullable association, another entity that comes later in the array.
+	 */
+	CompletionStage<Void> reactivePersistAll(Object... entities);
+
 	CompletionStage<Void> reactivePersist(Object object, PersistContext copiedAlready);
 
 	CompletionStage<Void> reactivePersistOnFlush(Object entity, PersistContext copiedAlready);
