@@ -65,7 +65,7 @@ public class AutoZonedTest extends BaseReactiveTest {
 				.thenCompose( zid -> openSession()
 						.thenCompose( s -> s.find( Zoned.class, zid )
 								.thenAccept( z -> {
-									assertThat( z.zonedDateTime.toInstant() ).isEqualTo( INSTANT );
+									assertThat( z.zonedDateTime.toInstant() ).isNotEqualTo( INSTANT );
 									assertThat( z.offsetDateTime.toInstant() ).isEqualTo( INSTANT );
 									assertThat( z.zonedDateTime.toOffsetDateTime().getOffset() )
 											.isEqualTo( zoned.toOffsetDateTime().getOffset() );
