@@ -203,8 +203,8 @@ The `--tests` flag works with all test tasks:
     ./gradlew testDbMySQL --tests="DefaultPortTest"
     ./gradlew testDbPostgreSQL testDbMySQL --tests="*SessionTest*"
 
-To enable logging of the standard output streams, add the property 
-`-PshowStandardOutput`.
+By default, the standard output streams are logged only for failed tests.
+To log them for all tests, add the property `-PshowStandardOutput`.
 
 By default, only failed tests are logged, followed by a summary of the
 results. To also log passed and skipped tests, add the property

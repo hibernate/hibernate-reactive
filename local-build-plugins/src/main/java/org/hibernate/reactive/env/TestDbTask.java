@@ -113,6 +113,12 @@ public abstract class TestDbTask extends Test {
 		if ( showPassedTest ) {
 			getTestLogging().events( "PASSED", "FAILED", "SKIPPED" );
 		}
+		if ( !showStandardStreams ) {
+			// Only log the output of failed tests
+			final var failedTestOutputListener = new FailedTestOutputListener( getLogger() );
+			addTestListener( failedTestOutputListener );
+			addTestOutputListener( failedTestOutputListener );
+		}
 
 		// Log Testcontainers status
 		final var testcontainersStatus = dockerEnabled ? "enabled" : "disabled";
