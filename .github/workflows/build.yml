@@ -155,11 +155,21 @@ jobs:
 
   test_dbs:
     name: Test with ${{ matrix.db }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB', 'Db2', 'Oracle' ]
+        include:
+          - { db: 'MariaDB', runs-on: 'ubuntu-latest' }
+          - { db: 'MySQL', runs-on: 'ubuntu-latest' }
+          - { db: 'PostgreSQL', runs-on: 'ubuntu-latest' }
+          - { db: 'MSSQLServer', runs-on: 'runs-on/fleet=linux-standard/env=commonhaus' }
+          - { db: 'CockroachDB', runs-on: 'runs-on/fleet=linux-standard/env=commonhaus' }
+          - { db: 'Db2', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
+          - { db: 'Oracle', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
     steps:
+      - name: Set up RunsOn
+        if: ${{ contains(matrix.runs-on, 'runs-on') }}
+        uses: runs-on/action@v2
       - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -242,27 +252,21 @@ jobs:
 
   test_jdks:
     name: Test with Java ${{ matrix.java.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.java.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        # To list the available "feature versions" on adoptium.net (ignore "tip_version", it's not relevant):
-        # https://api.adoptium.net/v3/info/available_releases
-        # To list the available releases for a given "feature version" on adoptium.net (example for 16):
-        # https://api.adoptium.net/v3/assets/latest/16/hotspot
-        # To see the available versions and download links on jdk.java.net:
-        # https://github.com/oracle-actions/setup-java/blob/main/jdk.java.net-uri.properties
         java:
-          - { name: "17", java_version_numeric: 17 }
-          # We want to enable preview features when testing newer builds of OpenJDK:
-          # even if we don't use these features, just enabling them can cause side effects
-          # and it's useful to test that.
-          - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
-          - { name: "25", java_version_numeric: 25, jvm_args: '--enable-preview' }
-          - { name: "26", java_version_numeric: 26, jvm_args: '--enable-preview' }
-          - { name: "27", java_version_numeric: 27, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-          - { name: "28-ea", java_version_numeric: 28, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "17", java_version_numeric: 17, runs-on: 'ubuntu-latest' }
+          - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
+          - { name: "25", java_version_numeric: 25, jvm_args: '--enable-preview', runs-on: 'ubuntu-latest' }
+          - { name: "26", java_version_numeric: 26, jvm_args: '--enable-preview', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
+          - { name: "27", java_version_numeric: 27, from: 'jdk.java.net', jvm_args: '--enable-preview', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
+          - { name: "28-ea", java_version_numeric: 28, from: 'jdk.java.net', jvm_args: '--enable-preview', runs-on: 'runs-on/fleet=linux-standard/env=ibm' }
     steps:
+      - name: Set up RunsOn
+        if: ${{ contains(matrix.java.runs-on, 'runs-on') }}
+        uses: runs-on/action@v2
       - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
