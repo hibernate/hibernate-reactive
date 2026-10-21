@@ -35,8 +35,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.cfg.SchemaToolingSettings.HBM2DDL_JDBC_METADATA_EXTRACTOR_STRATEGY;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MYSQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.testing.ReactiveAssertions.assertThrown;
 import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
@@ -51,7 +49,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  * - TODO: Test that validation fails when a column is the wrong type
  */
 @DisabledFor(value = DB2, reason = "We don't have an information extractor. See https://github.com/hibernate/hibernate-reactive/issues/911")
-@DisabledFor(value = { MARIA, MYSQL }, reason = "HHH-18869: Schema creation creates an invalid schema")
 public class SchemaValidationTest extends BaseReactiveTest {
 
 	static Stream<Arguments> settings() {
