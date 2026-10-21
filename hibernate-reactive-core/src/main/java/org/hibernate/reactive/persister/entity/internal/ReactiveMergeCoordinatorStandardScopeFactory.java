@@ -13,12 +13,17 @@ import org.hibernate.reactive.persister.entity.mutation.ReactiveScopedUpdateCoor
 import org.hibernate.reactive.persister.entity.mutation.ReactiveUpdateCoordinator;
 import org.hibernate.reactive.sql.model.ReactiveDeleteOrUpsertOperation;
 import org.hibernate.reactive.sql.model.ReactiveOptionalTableUpdateOperation;
+import org.hibernate.sql.ast.spi.model.MutationGroup;
 import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
 import org.hibernate.sql.ast.spi.model.TableMutation;
+import org.hibernate.sql.model.MutationOperationGroup;
 import org.hibernate.sql.spi.mutation.MutationOperation;
 import org.hibernate.sql.spi.mutation.ValuesAnalysis;
 import org.hibernate.sql.spi.mutation.jdbc.DeleteOrUpsertOperation;
 import org.hibernate.sql.spi.mutation.jdbc.OptionalTableUpdateOperation;
+
+import static java.util.Arrays.copyOf;
+import static org.hibernate.sql.model.internal.MutationOperationGroupFactory.manyOperations;
 
 public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinatorStandard
 		implements ReactiveUpdateCoordinator {
@@ -39,6 +44,28 @@ public class ReactiveMergeCoordinatorStandardScopeFactory extends MergeCoordinat
 				getVersionUpdateGroup(),
 				getVersionUpdateBatchkey()
 		);
+	}
+
+	/**
+	 * ORM only calls {@link #createOperation(ValuesAnalysis, TableMutation)} when there is
+	 * a single table mutation, but we also need to replace the operations for entities
+	 * mapped to multiple tables (e.g. joined inheritance).
+	 */
+	@Override
+	protected MutationOperationGroup createOperationGroup(ValuesAnalysis valuesAnalysis, MutationGroup mutationGroup) {
+		final int numberOfTableMutations = mutationGroup.getNumberOfTableMutations();
+		if ( numberOfTableMutations <= 1 ) {
+			return super.createOperationGroup( valuesAnalysis, mutationGroup );
+		}
+		final MutationOperation[] operations = new MutationOperation[numberOfTableMutations];
+		int outputIndex = 0;
+		for ( int i = 0; i < numberOfTableMutations; i++ ) {
+			final MutationOperation operation = createOperation( valuesAnalysis, mutationGroup.getTableMutation( i ) );
+			if ( operation != null ) {
+				operations[outputIndex++] = operation;
+			}
+		}
+		return manyOperations( mutationGroup.getMutationType(), entityPersister(), copyOf( operations, outputIndex ) );
 	}
 
 	@Override
