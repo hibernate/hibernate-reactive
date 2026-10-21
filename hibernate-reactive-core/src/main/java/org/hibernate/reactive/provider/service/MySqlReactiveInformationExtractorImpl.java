@@ -40,6 +40,9 @@ public class MySqlReactiveInformationExtractorImpl extends AbstractReactiveInfor
 				return Types.CHAR;
 			case "double":
 				return Types.FLOAT;
+			case "longtext":
+				// MariaDB stores JSON columns as longtext
+				return Types.LONGVARCHAR;
 			default:
 				return 0;
 		}
