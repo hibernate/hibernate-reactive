@@ -32,6 +32,7 @@ import org.hibernate.reactive.generator.values.ReactiveGeneratedValuesMutationDe
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.sql.model.ReactiveSelfExecutingUpdateOperation;
 import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.sql.model.EntityMutationOperationGroup;
 import org.hibernate.sql.model.MutationOperationGroup;
@@ -226,6 +227,9 @@ public class ReactiveMutationExecutorStandard extends MutationExecutorStandard i
 
 		return loop( getSelfExecutingMutations(), operation -> {
 			if ( inclusionChecker.include( operation.getTableDetails() ) ) {
+				if ( operation instanceof ReactiveSelfExecutingUpdateOperation reactiveOperation ) {
+					return reactiveOperation.performReactiveMutation( getJdbcValueBindings(), valuesAnalysis, session );
+				}
 				operation.performMutation( getJdbcValueBindings(), valuesAnalysis, session );
 			}
 			return voidFuture();
