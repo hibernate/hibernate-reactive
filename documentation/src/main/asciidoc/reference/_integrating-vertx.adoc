@@ -84,10 +84,27 @@ Hibernate Reactive session associated with the context.
 == Vert.x instance service
 
 The `VertxInstance` service defines how Hibernate Reactive obtains an instance
-of Vert.x. The default implementation just creates one the first time it's
-needed. But if your program requires control over how the Vert.x instance is
-created, or how it's obtained, you can override the default implementation and
-provide your own `VertxInstance`. Let's consider this example:
+of Vert.x. When Hibernate Reactive starts, the default implementation uses the
+instance of `Vertx` that owns the current Vert.x context, if there is one.
+Otherwise, it creates a new instance of `Vertx`, and closes it when the session
+factory is closed.
+
+IMPORTANT: If your program starts Vert.x itself, and the session factory is not
+created from a thread associated with a context of that instance, you'll end up
+with multiple instances of `Vertx` in your program, resulting in confusing
+error messages.
+
+There are two ways to avoid this problem:
+
+- create the session factory from code running in a Vert.x context of your
+  instance of `Vertx`, for example, using `runOnContext()` as described in
+  <<_executing_code_in_a_vert_x_context>>, or
+- tell Hibernate Reactive which instance to use, by registering a
+  `ProvidedVertxInstance`, or your own implementation of `VertxInstance`.
+
+If your program requires control over how the Vert.x instance is created, or
+how it's obtained, you can override the default implementation and provide your
+own `VertxInstance`. Let's consider this example:
 
 [source,java]
 ----

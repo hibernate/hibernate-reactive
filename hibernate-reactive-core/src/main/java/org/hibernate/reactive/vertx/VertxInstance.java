@@ -12,8 +12,18 @@ import org.hibernate.service.Service;
 /**
  * Used by {@link DefaultSqlClientPool} and
  * {@link org.hibernate.reactive.context.internal.VertxContext}
- * to obtain an instance of {@link Vertx}. The default instance is
+ * to obtain an instance of {@link Vertx}.
+ * <p>
+ * The default implementation is
  * {@link org.hibernate.reactive.vertx.internal.DefaultVertxInstance}.
+ * When Hibernate Reactive starts, it reuses the instance of {@code Vertx}
+ * that owns the current Vert.x context, if there is one, or otherwise
+ * creates a new instance of {@code Vertx}, which is closed along with
+ * the session factory. In a program which manages its own instance of
+ * {@code Vertx}, this may result in multiple instances of {@code Vertx},
+ * and so such programs should register a
+ * {@link org.hibernate.reactive.vertx.internal.ProvidedVertxInstance}
+ * or a custom {@code VertxInstance}.
  * <p>
  * A program may integrate a custom {@link VertxInstance}
  * with Hibernate Reactive by contributing a new service using a
