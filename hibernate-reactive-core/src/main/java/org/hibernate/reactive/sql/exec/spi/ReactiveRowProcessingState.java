@@ -154,7 +154,7 @@ public class ReactiveRowProcessingState extends BaseExecutionContext implements 
 
 	@Override
 	public Object getJdbcValue(int position) {
-		return jdbcValues.getCurrentRowValuesArray()[position];
+		return jdbcValues.getCurrentRowValue( position );
 	}
 
 	@Override
@@ -163,9 +163,7 @@ public class ReactiveRowProcessingState extends BaseExecutionContext implements 
 
 	@Override
 	public boolean isQueryCacheHit() {
-		// TODO [ORM-6]: Implements cached version
-//		return jdbcValues instanceof JdbcValuesCacheHit;
-		return false;
+		return jdbcValues.isQueryCacheHit();
 	}
 
 	@Override
