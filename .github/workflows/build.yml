@@ -134,6 +134,10 @@ jobs:
         env:
           MATRIX_EXAMPLE: ${{ matrix.example }}
           MATRIX_DB: ${{ matrix.db }}
+          # For jobs running on 'push', publish build scan and cache immediately.
+          # This won't work for pull requests, since they don't have access to secrets.
+          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
+          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
         run: ./gradlew ":$MATRIX_EXAMPLE:runAllExamplesOn$MATRIX_DB"
       - name: Upload reports (if build failed)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -141,6 +145,9 @@ jobs:
         with:
           name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
+      # Build scans that couldn't be published directly (e.g. pull requests) are published
+      # by a separate workflow (see build-report.yml).
+      # We don't write to the remote cache from there, as that would be unsafe.
       - name: Upload Develocity build scan data
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -204,6 +211,10 @@ jobs:
       - name: Build and Test with ${{ matrix.db }}
         env:
           MATRIX_DB: ${{ matrix.db }}
+          # For jobs running on 'push', publish build scan and cache immediately.
+          # This won't work for pull requests, since they don't have access to secrets.
+          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
+          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
         run: ./gradlew build -Pdb="$MATRIX_DB"
       - name: Upload reports (if build failed)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -219,6 +230,9 @@ jobs:
             ./**/build/jacoco/*.exec
             ./**/build/classes/
             ./**/build/generated/
+      # Build scans that couldn't be published directly (e.g. pull requests) are published
+      # by a separate workflow (see build-report.yml).
+      # We don't write to the remote cache from there, as that would be unsafe.
       - name: Upload Develocity build scan data
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -371,6 +385,10 @@ jobs:
           MAIN_JDK_PATH: ${{ steps.mainjdk-exportpath.outputs.path }}
           TEST_JDK_PATH: ${{ steps.testjdk-exportpath.outputs.path }}
           LAUNCHER_ARGS: "${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}"
+          # For jobs running on 'push', publish build scan and cache immediately.
+          # This won't work for pull requests, since they don't have access to secrets.
+          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
+          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
         run: |
           EXTRA_ARGS=()
           if [ -n "$LAUNCHER_ARGS" ]; then
@@ -385,6 +403,9 @@ jobs:
         with:
           name: reports-java${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
           path: './**/build/reports/'
+      # Build scans that couldn't be published directly (e.g. pull requests) are published
+      # by a separate workflow (see build-report.yml).
+      # We don't write to the remote cache from there, as that would be unsafe.
       - name: Upload Develocity build scan data
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
