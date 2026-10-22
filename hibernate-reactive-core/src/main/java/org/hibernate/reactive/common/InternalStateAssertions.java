@@ -57,9 +57,26 @@ public final class InternalStateAssertions {
 		if ( ENFORCE ) {
 			final ContextInternal currentContext = ContextInternal.current();
 			Objects.requireNonNull( currentContext, "Current context cannot be null" );
-			if ( !currentContext.equals( expectedContext ) ) {
+			if ( !isSameExecutionContext( expectedContext, currentContext ) ) {
 				throw LOG.unexpectedContextDetected( object, expectedContext, currentContext );
 			}
 		}
+	}
+
+	/**
+	 * Duplicated contexts (of the same root context, or of another duplicate) share the
+	 * event loop of their root, and so they are equivalent as far as the thread-safety of a
+	 * connection is concerned. Frameworks such as Quarkus legitimately switch to a
+	 * different duplicated context (for example, to propagate the context locals to a task
+	 * or to a REST client invocation), therefore comparing the instances with {@code equals}
+	 * would be too strict.
+	 * <p>
+	 * Two contexts are considered the same if they have the same root context
+	 * or run on the same event loop.
+	 */
+	private static boolean isSameExecutionContext(ContextInternal expected, ContextInternal current) {
+		return current == expected
+				|| current.unwrap() == expected.unwrap()
+				|| ( current.nettyEventLoop() != null && current.nettyEventLoop() == expected.nettyEventLoop() );
 	}
 }
