@@ -25,6 +25,8 @@ import org.hibernate.reactive.sql.results.spi.ReactiveValuesMappingProducer;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
 
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+
 /**
  * @see org.hibernate.query.results.internal.ResultSetMappingImpl
  */
@@ -56,9 +58,13 @@ public class ReactiveResultSetMapping implements ResultSetMapping, ReactiveValue
 			JdbcValuesMetadata jdbcResultsMetadata,
 			LoadQueryInfluencers loadQueryInfluencers,
 			SessionFactoryImplementor sessionFactory) {
-		return ( (ReactiveResultSetAccess) jdbcResultsMetadata )
-				.getReactiveResultSet()
-				.thenApply( columnCount -> delegate.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
+		if ( jdbcResultsMetadata instanceof ReactiveResultSetAccess resultSetAccess ) {
+			return resultSetAccess
+					.getReactiveResultSet()
+					.thenApply( columnCount -> delegate.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
+		}
+		// The metadata is already available, for example when it comes from the query cache
+		return completedFuture( delegate.resolve( jdbcResultsMetadata, loadQueryInfluencers, sessionFactory ) );
 	}
 
 	@Override
