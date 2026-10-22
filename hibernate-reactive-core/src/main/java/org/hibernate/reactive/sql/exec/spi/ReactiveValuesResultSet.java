@@ -27,7 +27,6 @@ import org.hibernate.sql.exec.ExecutionException;
 import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManager;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManagerEnabledImpl;
-import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
@@ -93,38 +92,20 @@ public class ReactiveValuesResultSet {
 			this.rowToCacheSize = -1;
 		}
 		else {
-			final BitSet valueIndexesToCache = new BitSet( rowSize );
-			for ( DomainResult<?> domainResult : valuesMapping.getDomainResults() ) {
-				domainResult.collectValueIndexesToCache( valueIndexesToCache );
-			}
-			if ( valueIndexesToCache.nextClearBit( 0 ) == -1 ) {
-				this.valueIndexesToCacheIndexes = null;
-				this.rowToCacheSize = -1;
-			}
-			else {
-				final int[] valueIndexesToCacheIndexes = new int[rowSize];
-				int cacheIndex = 0;
+			this.valueIndexesToCacheIndexes = valuesMapping.getValueIndexesToCacheIndexes();
+			final int rowToCacheSize = valuesMapping.getRowToCacheSize();
+			assert rowToCacheSize > 0;
+			int cacheIndex = rowToCacheSize;
+			if ( rowToCacheSize == 1 ) {
+				// Special case. Set the rowToCacheSize to the inverted index of the single element to cache
 				for ( int i = 0; i < valueIndexesToCacheIndexes.length; i++ ) {
-					if ( valueIndexesToCache.get( i ) ) {
-						valueIndexesToCacheIndexes[i] = cacheIndex++;
-					}
-					else {
-						valueIndexesToCacheIndexes[i] = -1;
+					if ( valueIndexesToCacheIndexes[i] != -1 ) {
+						cacheIndex = -i;
+						break;
 					}
 				}
-
-				this.valueIndexesToCacheIndexes = valueIndexesToCacheIndexes;
-				if ( cacheIndex == 1 ) {
-					// Special case. Set the rowToCacheSize to the inverted index of the single element to cache
-					for ( int i = 0; i < valueIndexesToCacheIndexes.length; i++ ) {
-						if ( valueIndexesToCacheIndexes[i] != -1 ) {
-							cacheIndex = -i;
-							break;
-						}
-					}
-				}
-				this.rowToCacheSize = cacheIndex;
 			}
+			this.rowToCacheSize = cacheIndex;
 		}
 	}
 
@@ -236,7 +217,7 @@ public class ReactiveValuesResultSet {
 			}
 			else {
 				final Object[] rowToCache = new Object[rowToCacheSize];
-				for ( int i = 0; i < currentRowJdbcValues.length; i++ ) {
+				for ( int i = 0; i < valueIndexesToCacheIndexes.length; i++ ) {
 					final int cacheIndex = valueIndexesToCacheIndexes[i];
 					if ( cacheIndex != -1 ) {
 						rowToCache[cacheIndex] = initializedIndexes.get( i ) ? currentRowJdbcValues[i] : null;
@@ -267,14 +248,21 @@ public class ReactiveValuesResultSet {
 		return resultSetAccess.getReactiveResultSet()
 				.thenApply( resultSet -> {
 					final SharedSessionContractImplementor session = executionContext.getSession();
+					initializedIndexes.clear();
 					for ( final SqlSelection sqlSelection : sqlSelections ) {
-						try {
-							currentRowJdbcValues[sqlSelection.getValuesArrayPosition()] = sqlSelection
-									.getJdbcValueExtractor()
-									.extract( resultSet, sqlSelection.getJdbcResultSetIndex(), session );
-						}
-						catch (Exception e) {
-							throw new HibernateException( "Unable to extract JDBC value for position `" + sqlSelection.getJdbcResultSetIndex() + "`", e );
+						// The array can be sparse (it's sized by the row size, not by the number of selections),
+						// ORM never reads the missing positions, so we skip them
+						if ( sqlSelection != null ) {
+							final int valueIndex = sqlSelection.getValuesArrayPosition();
+							try {
+								currentRowJdbcValues[valueIndex] = sqlSelection
+										.getJdbcValueExtractor()
+										.extract( resultSet, sqlSelection.getJdbcResultSetIndex(), session );
+								initializedIndexes.set( valueIndex );
+							}
+							catch (Exception e) {
+								throw new HibernateException( "Unable to extract JDBC value for position `" + sqlSelection.getJdbcResultSetIndex() + "`", e );
+							}
 						}
 					}
 					return true;
