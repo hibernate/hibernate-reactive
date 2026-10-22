@@ -43,6 +43,7 @@ import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 import org.hibernate.sql.results.internal.RowTransformerTupleTransformerAdapter;
 import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;
+import org.hibernate.sql.results.jdbc.internal.JdbcValuesCacheHit;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMetadata;
@@ -55,6 +56,9 @@ import org.hibernate.type.spi.TypeConfiguration;
 
 import static org.hibernate.internal.util.NullnessHelper.coalesceSuppliedValues;
 import static org.hibernate.internal.util.collections.ArrayHelper.indexOf;
+import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.rethrow;
 import static org.hibernate.sql.exec.SqlExecLogger.SQL_EXEC_LOGGER;
 
 /**
@@ -320,6 +324,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 		final QueryKey queryResultsCacheKey;
 		final List<?> cachedResults;
+		final String queryCacheRegionName;
 		if ( cacheable && cacheMode.isGetEnabled() ) {
 			SQL_EXEC_LOGGER.readingQueryResultCacheData( cacheMode.name() );
 			final Set<String> querySpaces = jdbcSelect.getAffectedTableNames();
@@ -332,6 +337,7 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 
 			final QueryResultsCache queryCache = factory.getCache()
 					.getQueryResultsCache( queryOptions.getResultCacheRegionName() );
+			queryCacheRegionName = queryCache.getRegion().getName();
 
 			queryResultsCacheKey = QueryKey
 					.from( jdbcSelect.getSqlString(), queryOptions.getLimit(), executionContext.getQueryParameterBindings(), session );
@@ -351,21 +357,12 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			//
 			// todo (6.0) : if we go this route (^^), still beneficial to have an abstraction over different UpdateTimestampsCache-based
 			//		invalidation strategies - QueryCacheInvalidationStrategy
-
-			final StatisticsImplementor statistics = factory.getStatistics();
-			if ( statistics.isStatisticsEnabled() ) {
-				if ( cachedResults == null ) {
-					statistics.queryCacheMiss( queryIdentifier, queryCache.getRegion().getName() );
-				}
-				else {
-					statistics.queryCacheHit( queryIdentifier, queryCache.getRegion().getName() );
-				}
-			}
 		}
 		else {
 			SQL_EXEC_LOGGER
 					.skippingReadingQueryResultCacheData( queryCacheEnabled ? "enabled" : "disabled", cacheMode.name() );
 			cachedResults = null;
+			queryCacheRegionName = null;
 			if ( cacheable && cacheMode.isPutEnabled() ) {
 				queryResultsCacheKey = QueryKey.from(
 						jdbcSelect.getSqlString(),
@@ -379,61 +376,112 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 			}
 		}
 
-		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
-
 		final ReactiveValuesMappingProducer mappingProducer = (ReactiveValuesMappingProducer) jdbcSelect.getJdbcValuesMappingProducer();
+		return resolveJdbcValues( queryIdentifier, executionContext, resultSetAccess, cachedResults, queryResultsCacheKey, mappingProducer )
+				.thenApply( jdbcValues -> {
+					if ( queryCacheRegionName != null ) {
+						final StatisticsImplementor statistics = factory.getStatistics();
+						if ( statistics.isStatisticsEnabled() ) {
+							if ( jdbcValues.isQueryCacheHit() ) {
+								statistics.queryCacheHit( queryIdentifier, queryCacheRegionName );
+							}
+							else {
+								statistics.queryCacheMiss( queryIdentifier, queryCacheRegionName );
+							}
+						}
+					}
+					return jdbcValues;
+				} );
+	}
+
+	private static CompletionStage<ReactiveValuesResultSet> resolveJdbcValues(
+			String queryIdentifier,
+			ExecutionContext executionContext,
+			ReactiveDeferredResultSetAccess resultSetAccess,
+			List<?> cachedResults,
+			QueryKey queryResultsCacheKey,
+			ReactiveValuesMappingProducer mappingProducer) {
+		final SharedSessionContractImplementor session = executionContext.getSession();
+		final SessionFactoryImplementor factory = session.getFactory();
+		final LoadQueryInfluencers loadQueryInfluencers = session.getLoadQueryInfluencers();
+		final QueryOptions queryOptions = executionContext.getQueryOptions();
+
+		// Try to use the cached results if available
+		return resolveCacheHit( cachedResults, resultSetAccess, mappingProducer, loadQueryInfluencers, factory )
+				.thenCompose( cacheHit -> {
+					if ( cacheHit != null ) {
+						return completedFuture( new ReactiveValuesResultSet( cacheHit, executionContext ) );
+					}
+					// Execute the query (cache miss or insufficient cached data)
+					if ( queryResultsCacheKey == null ) {
+						return mappingProducer
+								.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
+								.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+										resultSetAccess,
+										null,
+										queryIdentifier,
+										queryOptions,
+										false,
+										jdbcValuesMapping,
+										null,
+										executionContext
+								) );
+					}
+					// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
+					final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
+					return resultSetAccess.getReactiveResultSet()
+							.thenCompose( resultSet -> mappingProducer
+									.reactiveResolve( capturingMetadata, loadQueryInfluencers, factory ) )
+							.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
+									resultSetAccess,
+									queryResultsCacheKey,
+									queryIdentifier,
+									queryOptions,
+									false,
+									jdbcValuesMapping,
+									capturingMetadata.resolveMetadataForCache( jdbcValuesMapping ),
+									executionContext
+							) );
+				} );
+	}
+
+	/**
+	 * @return a stage with the {@link JdbcValuesCacheHit}, or with {@code null} if there are no cached results
+	 * or if they are not compatible with the result mapping of the query.
+	 */
+	private static CompletionStage<JdbcValuesCacheHit> resolveCacheHit(
+			List<?> cachedResults,
+			ReactiveDeferredResultSetAccess resultSetAccess,
+			ReactiveValuesMappingProducer mappingProducer,
+			LoadQueryInfluencers loadQueryInfluencers,
+			SessionFactoryImplementor factory) {
 		if ( cachedResults == null ) {
-			if ( queryResultsCacheKey == null ) {
-				return mappingProducer
-						.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
-								resultSetAccess,
-								null,
-								queryIdentifier,
-								queryOptions,
-								false,
-								jdbcValuesMapping,
-								null,
-								executionContext
-						) );
-			}
-			else {
-				// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
-				final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-				return mappingProducer
-						.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory )
-						.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
-								resultSetAccess,
-								queryResultsCacheKey,
-								queryIdentifier,
-								queryOptions,
-								false,
-								jdbcValuesMapping,
-								capturingMetadata.resolveMetadataForCache( jdbcValuesMapping ),
-								executionContext
-						) );
-			}
+			return nullFuture();
 		}
-		else {
-			// TODO: Implements JdbcValuesCacheHit for reactive, see JdbcSelectExecutorStandardImpl#resolveJdbcValuesSource
-			// If we need to put the values into the cache, we need to be able to capture the JdbcValuesMetadata
-			final CapturingJdbcValuesMetadata capturingMetadata = new CapturingJdbcValuesMetadata( resultSetAccess );
-			final CompletionStage<JdbcValuesMapping> stage =
-					!cachedResults.isEmpty()
-						&& cachedResults.get(0) instanceof JdbcValuesMetadata jdbcValuesMetadata
-							? mappingProducer.reactiveResolve( jdbcValuesMetadata, loadQueryInfluencers, factory )
-							: mappingProducer.reactiveResolve( resultSetAccess, loadQueryInfluencers, factory );
-            return stage.thenApply( jdbcValuesMapping -> new ReactiveValuesResultSet(
-					resultSetAccess,
-					queryResultsCacheKey,
-					queryIdentifier,
-					queryOptions,
-					false,
-					jdbcValuesMapping,
-					capturingMetadata.resolveMetadataForCache( jdbcValuesMapping ),
-					executionContext
-			) );
-        }
+		final JdbcValuesMetadata valuesMetadata =
+				!cachedResults.isEmpty() && cachedResults.get( 0 ) instanceof JdbcValuesMetadata jdbcValuesMetadata
+						? jdbcValuesMetadata
+						: resultSetAccess;
+		try {
+			return mappingProducer
+					.reactiveResolve( valuesMetadata, loadQueryInfluencers, factory )
+					.thenApply( resolvedMapping -> new JdbcValuesCacheHit( cachedResults, resolvedMapping ) )
+					.handle( (cacheHit, throwable) -> {
+						if ( throwable == null ) {
+							return cacheHit.isCacheCompatible() ? cacheHit : null;
+						}
+						// Cached metadata doesn't cover all required columns, the query needs to be re-executed
+						return isCacheMetadataIncomplete( throwable ) ? null : rethrow( throwable );
+					} );
+		}
+		catch (CachedJdbcValuesMetadata.CacheMetadataIncompleteException e) {
+			return nullFuture();
+		}
+	}
+
+	private static boolean isCacheMetadataIncomplete(Throwable throwable) {
+		return throwable instanceof CachedJdbcValuesMetadata.CacheMetadataIncompleteException
+				|| throwable.getCause() instanceof CachedJdbcValuesMetadata.CacheMetadataIncompleteException;
 	}
 
 	/**

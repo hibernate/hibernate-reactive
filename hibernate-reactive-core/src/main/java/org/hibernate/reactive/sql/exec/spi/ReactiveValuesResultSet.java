@@ -28,6 +28,7 @@ import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManager;
 import org.hibernate.sql.results.caching.internal.QueryCachePutManagerEnabledImpl;
 import org.hibernate.sql.results.jdbc.internal.CachedJdbcValuesMetadata;
+import org.hibernate.sql.results.jdbc.internal.JdbcValuesCacheHit;
 import org.hibernate.sql.results.jdbc.spi.JdbcValuesMapping;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 
@@ -41,6 +42,8 @@ import static org.hibernate.reactive.util.internal.CompletionStages.falseFuture;
 public class ReactiveValuesResultSet {
 
 	private final QueryCachePutManager queryCachePutManager;
+	// Only set when the values are read from the query cache
+	private final JdbcValuesCacheHit cacheHit;
 
 	private final ReactiveResultSetAccess resultSetAccess;
 	private final JdbcValuesMapping valuesMapping;
@@ -73,6 +76,7 @@ public class ReactiveValuesResultSet {
 				queryIdentifier,
 				metadataForCache
 		);
+		this.cacheHit = null;
 		this.resultSetAccess = resultSetAccess;
 		this.valuesMapping = valuesMapping;
 		this.executionContext = executionContext;
@@ -107,6 +111,26 @@ public class ReactiveValuesResultSet {
 			}
 			this.rowToCacheSize = cacheIndex;
 		}
+	}
+
+	/**
+	 * Creates a result set that reads the rows from the query cache instead of the database.
+	 *
+	 * @see org.hibernate.sql.results.jdbc.internal.JdbcValuesCacheHit
+	 */
+	public ReactiveValuesResultSet(JdbcValuesCacheHit cacheHit, ExecutionContext executionContext) {
+		this.cacheHit = cacheHit;
+		this.queryCachePutManager = null;
+		this.resultSetAccess = null;
+		this.valuesMapping = cacheHit.getValuesMapping();
+		this.executionContext = executionContext;
+		this.usesFollowOnLocking = cacheHit.usesFollowOnLocking();
+		this.resultCountEstimate = cacheHit.getResultCountEstimate();
+		this.sqlSelections = new SqlSelection[0];
+		this.initializedIndexes = new BitSet();
+		this.currentRowJdbcValues = new Object[0];
+		this.valueIndexesToCacheIndexes = null;
+		this.rowToCacheSize = -1;
 	}
 
 	private int determineResultCountEstimate(
@@ -150,6 +174,9 @@ public class ReactiveValuesResultSet {
 	}
 
 	protected final CompletionStage<Boolean> processNext() {
+		if ( cacheHit != null ) {
+			return completedFuture( cacheHit.next( null ) );
+		}
 		return advance( () -> resultSetAccess
 				.getReactiveResultSet()
 				.thenCompose( this::doNext )
@@ -184,11 +211,21 @@ public class ReactiveValuesResultSet {
 		return valuesMapping;
 	}
 
-	public Object[] getCurrentRowValuesArray() {
-		return currentRowJdbcValues;
+	public Object getCurrentRowValue(int valueIndex) {
+		return cacheHit != null
+				? cacheHit.getCurrentRowValue( valueIndex )
+				: currentRowJdbcValues[valueIndex];
+	}
+
+	public boolean isQueryCacheHit() {
+		return cacheHit != null;
 	}
 
 	public void finishUp(SharedSessionContractImplementor session) {
+		if ( cacheHit != null ) {
+			cacheHit.finishUp( session );
+			return;
+		}
 		if ( queryCachePutManager != null ) {
 			queryCachePutManager.finishUp( resultCount, session );
 		}
