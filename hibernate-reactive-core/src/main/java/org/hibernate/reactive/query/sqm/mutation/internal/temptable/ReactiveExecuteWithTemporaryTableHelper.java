@@ -23,6 +23,7 @@ import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.sqm.mutation.internal.temptable.ExecuteWithTemporaryTableHelper;
 import org.hibernate.query.sqm.mutation.spi.AfterUseAction;
 import org.hibernate.query.sqm.mutation.spi.BeforeUseAction;
+import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -115,10 +116,12 @@ public final class ReactiveExecuteWithTemporaryTableHelper {
 			ExecutionContext executionContext) {
 		final TemporaryTableSessionUidColumn sessionUidColumn = temporaryTable.getSessionUidColumn();
 		final SharedSessionContractImplementor session = executionContext.getSession();
-		Object[] parameters = new Object[1];
-		if ( sessionUidColumn != null ) {
-			parameters[0] = UUID.fromString( sessionUidAccess.apply( session ) );
-		}
+		final Object[] parameters = PreparedStatementAdaptor.bind( statement -> {
+			if ( sessionUidColumn != null ) {
+				sessionUidColumn.getJdbcMapping().getJdbcValueBinder()
+						.bind( statement, UUID.fromString( sessionUidAccess.apply( session ) ), 1, session );
+			}
+		} );
 		final Integer[] rowNumbers = new Integer[rows];
 		return reactiveConnection(session).selectJdbc( sqlSelect, parameters )
 				.thenApply( resultSet -> getRowNumbers( rows, resultSet, rowNumbers ) );
