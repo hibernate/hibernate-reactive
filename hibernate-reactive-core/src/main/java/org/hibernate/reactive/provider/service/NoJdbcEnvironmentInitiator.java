@@ -4,6 +4,13 @@
  */
 package org.hibernate.reactive.provider.service;
 
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.function.Function;
+
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.DatabaseConnectionInfo;
@@ -17,14 +24,13 @@ import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.pool.ReactiveConnectionPool;
 import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import io.vertx.core.Context;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.sqlclient.spi.DatabaseMetadata;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNullElse;
@@ -131,14 +137,49 @@ public class NoJdbcEnvironmentInitiator extends JdbcEnvironmentInitiator
 			);
 		}
 
+		/**
+		 * The connection is bound to the Vert.x context where it has been acquired,
+		 * and it must only be used from that context (see {@link org.hibernate.reactive.common.InternalStateAssertions}).
+		 * <p>
+		 * The factory is usually created from a thread that is not associated with a Vert.x context.
+		 * In that case, we acquire and use the connection on a Vert.x context, otherwise the function would run
+		 * on the calling thread whenever the connection is already available.
+		 * <p>
+		 * The services must be looked up on the calling thread: it holds the lock of the service registry
+		 * while it waits for the result.
+		 */
 		private DialectResolutionInfo dialectResolutionInfo(Function<ReactiveConnection, CompletionStage<ReactiveDialectResolutionInfo>> dialectResolutionFunction) {
-			return registry
-					.getService( ReactiveConnectionPool.class )
+			final ReactiveConnectionPool connectionPool = registry.getService( ReactiveConnectionPool.class );
+			if ( ContextInternal.current() != null ) {
+				return dialectResolutionInfoStage( connectionPool, dialectResolutionFunction, Runnable::run )
+						.toCompletableFuture().join();
+			}
+
+			final Context context = registry.getService( VertxInstance.class ).getVertx().getOrCreateContext();
+			final CompletableFuture<ReactiveDialectResolutionInfo> result = new CompletableFuture<>();
+			context.runOnContext( v -> dialectResolutionInfoStage( connectionPool, dialectResolutionFunction, command -> context.runOnContext( ignored -> command.run() ) )
+					.whenComplete( (info, throwable) -> {
+						if ( throwable != null ) {
+							result.completeExceptionally( throwable );
+						}
+						else {
+							result.complete( info );
+						}
+					} )
+			);
+			return result.join();
+		}
+
+		private static CompletionStage<ReactiveDialectResolutionInfo> dialectResolutionInfoStage(
+				ReactiveConnectionPool connectionPool,
+				Function<ReactiveConnection, CompletionStage<ReactiveDialectResolutionInfo>> dialectResolutionFunction,
+				Executor executor) {
+			return connectionPool
 					// The default SqlExceptionHelper in ORM requires the dialect, but we haven't created a dialect yet,
 					// so we need to override it at this stage, or we will have an exception.
 					.getConnection( new SqlExceptionHelper( true ) )
-					.thenCompose( dialectResolutionFunction )
-					.toCompletableFuture().join();
+					// Use the connection on the context where it has been acquired, even if the stage completes on another thread
+					.thenComposeAsync( dialectResolutionFunction, executor );
 		}
 
 		private static CompletionStage<ReactiveDialectResolutionInfo> buildResolutionInfo(ReactiveConnection connection) {
