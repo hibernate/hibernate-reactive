@@ -177,8 +177,7 @@ apply from: file( 'gradle/gradle-develocity.gradle' )
 
 buildCache {
     local {
-        // do not use local build cache for CI jobs, period!
-        enabled = !settings.ext.isCiEnvironment
+        enabled = true
     }
     remote(develocity.buildCache) {
         enabled = settings.ext.useRemoteCache
