@@ -1,467 +1,205 @@
-name: Hibernate Reactive CI
+# Reusable workflow: compile once, then run test matrix in parallel.
+# Called by ci.yml (push/PR builds) and nightly.yml (scheduled builds).
+#
+# --- Caching strategy ---
+#
+# Two complementary mechanisms transfer state to downstream jobs:
+#
+# 1. GitHub Actions cache (dependency cache):
+#    Stores downloaded dependencies (~/.gradle/caches/, ~/.m2/repository/, wrappers).
+#    Only the initial build *saves* this cache, and only on non-PR events (push,
+#    schedule, workflow_dispatch) to avoid accumulating per-PR cache entries.
+#    All other jobs -- including the initial build on PRs -- restore it read-only.
+#
+# 2. Build cache tarball (artifact):
+#    The initial build uploads ~/.gradle/caches/build-cache-1 as an artifact.
+#    Test and example jobs download and extract it to skip recompilation.
+#    This is ephemeral (retention-days: 1) and scoped to the current workflow run.
+
+name: CI Build
 
 on:
-  push:
-    branches:
-      - 'main'
-      - 'wip/**'
-      - '2.*'
-      - '3.*'
-      - '4.*'
-      - '5.*'
-    tags:
-      - '2.*'
-      - '3.*'
-      - '4.*'
-      - '5.*'
-  pull_request:
-    branches:
-      - 'main'
-      - 'wip/**'
-      - '2.*'
-      - '3.*'
-      - '4.*'
-      - '5.*'
-  # For building snapshots
   workflow_call:
     inputs:
       branch:
-        required: true
+        description: 'Branch to checkout (empty = event ref)'
         type: string
-  # Allow running this workflow against a specific branch/tag
-  workflow_dispatch:
+        required: false
+        default: ''
+      initial-build-runs-on:
+        description: 'Runner label for the initial build job'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+      matrix-json:
+        description: 'JSON array of test matrix entries'
+        type: string
+        required: true
+      run-examples:
+        description: 'Whether to run example project tests'
+        type: boolean
+        required: false
+        default: true
+      run-sonar:
+        description: 'Whether to prepare a Sonar coverage bundle after tests'
+        type: boolean
+        required: false
+        default: false
 
-# See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
-concurrency:
-  # Consider that two builds are in the same concurrency group (cannot run concurrently)
-  # if they use the same workflow and are about the same branch ("ref"), pull request, and branch name input (for scheduled job).
-  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}, branch=${{ inputs.branch }}"
-  # Cancel previous builds in the same concurrency group even if they are in process
-  # for pull requests or pushes to forks (not the upstream repository).
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'hibernate/hibernate-reactive' }}
+defaults:
+  run:
+    shell: bash
 
-permissions:
-  contents: read
+env:
+  GRADLE_JAVA_VERSION: '17'
+
+permissions: { }
 
 jobs:
-  run_examples:
-    name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        example: [ 'session-example', 'native-sql-example' ]
-        db: [ 'MySQL', 'PostgreSQL' ]
-        exclude:
-          # 'native-sql-example' doesn't run on MySQL because it has native queries
-          - example: 'native-sql-example'
-            db: 'MySQL'
-    services:
-      # Label used to access the service container
-      mysql:
-        image: container-registry.oracle.com/mysql/community-server:9.3.0
-        env:
-          MYSQL_ROOT_PASSWORD: hreact
-          MYSQL_DATABASE: hreact
-          MYSQL_USER: hreact
-          MYSQL_PASSWORD: hreact
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 3306:3306
-      postgres:
-        # Docker Hub image
-        image: postgres:17.4
-        env:
-          POSTGRES_DB: hreact
-          POSTGRES_USER: hreact
-          POSTGRES_PASSWORD: hreact
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+  # Compile-only build: compiles all sources and renders documentation,
+  # but does NOT run tests. Shares its local Gradle build cache as a tarball artifact
+  # so that downstream jobs can skip recompilation.
+  build:
+    name: Initial build
+    runs-on: >-
+      ${{
+        github.repository == 'hibernate/hibernate-reactive' && inputs.initial-build-runs-on
+        || !contains(inputs.initial-build-runs-on, 'runs-on') && inputs.initial-build-runs-on
+        || 'ubuntu-latest'
+      }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
     steps:
-      - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up RunsOn
+        if: ${{ contains(inputs.initial-build-runs-on, 'runs-on') && github.repository == 'hibernate/hibernate-reactive' }}
+        uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.branch }}
-      - name: Get year/month for cache key
-        id: get-date
-        run: |
-          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
-        shell: bash
-      - name: Sanitize the branch name
-        # We want to include the branch in artifact names to keep them unique.
-        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
-        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
-        shell: bash
-        id: current-branch-suffix
-        env:
-          BRANCH_NAME: ${{ inputs.branch }}
-        run: |
-         echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
-      - name: Cache Gradle downloads
+      - name: Set up Gradle JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
+
+      - name: Cache local Gradle repository
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: cache-gradle
-        with:
-          path: |
-            .gradle/caches
-            .gradle/jdks
-            .gradle/wrapper
-          # refresh cache every month to avoid unlimited growth
-          key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-      - name: Set up JDK 11
-        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: 11
-      - name: Set up JDK 17
-        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: 17
-      - name: Print the effective ORM version used
-        env:
-          MATRIX_EXAMPLE: ${{ matrix.example }}
-        run: ./gradlew ":$MATRIX_EXAMPLE:dependencyInsight" --dependency org.hibernate.orm:hibernate-core
-      - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
-        env:
-          MATRIX_EXAMPLE: ${{ matrix.example }}
-          MATRIX_DB: ${{ matrix.db }}
-          # For jobs running on 'push', publish build scan and cache immediately.
-          # This won't work for pull requests, since they don't have access to secrets.
-          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
-          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
-        run: ./gradlew ":$MATRIX_EXAMPLE:runAllExamplesOn$MATRIX_DB"
-      - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with:
-          name: reports-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: './**/build/reports/'
-      # Build scans that couldn't be published directly (e.g. pull requests) are published
-      # by a separate workflow (see build-report.yml).
-      # We don't write to the remote cache from there, as that would be unsafe.
-      - name: Upload Develocity build scan data
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: build-scan-data-examples-${{ matrix.db }}-${{ matrix.example }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: ~/.gradle/build-scan-data
-          retention-days: 1
-        continue-on-error: true
-
-  test_dbs:
-    name: Test with ${{ matrix.db }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        db: [ 'MariaDB', 'MySQL', 'PostgreSQL', 'MSSQLServer', 'CockroachDB', 'Db2', 'Oracle' ]
-    steps:
-      - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Get year/month for cache key
-        id: get-date
-        run: |
-          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
-        shell: bash
-      - name: Sanitize the branch name
-        # We want to include the branch in artifact names to keep them unique.
-        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
-        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
-        shell: bash
-        id: current-branch-suffix
-        env:
-          BRANCH_NAME: ${{ inputs.branch }}
-        run: |
-         echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
-      - name: Cache Gradle downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: cache-gradle
-        with:
-          path: |
-            .gradle/caches
-            .gradle/jdks
-            .gradle/wrapper
-          # refresh cache every month to avoid unlimited growth
-          key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
-      - name: Set up JDK 11
-        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: 11
-      - name: Set up JDK 17
-        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-
-        with:
-          distribution: 'temurin'
-          java-version: 17
-      - name: Print the effective ORM version used
-        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
-      - name: Build and Test with ${{ matrix.db }}
-        env:
-          MATRIX_DB: ${{ matrix.db }}
-          # For jobs running on 'push', publish build scan and cache immediately.
-          # This won't work for pull requests, since they don't have access to secrets.
-          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
-          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
-        run: ./gradlew build -Pdb="$MATRIX_DB"
-      - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with:
-          name: reports-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: './**/build/reports/'
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: build-coverage-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: |
-            ./**/build/jacoco/*.exec
-            ./**/build/classes/
-            ./**/build/generated/
-      # Build scans that couldn't be published directly (e.g. pull requests) are published
-      # by a separate workflow (see build-report.yml).
-      # We don't write to the remote cache from there, as that would be unsafe.
-      - name: Upload Develocity build scan data
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: build-scan-data-db-${{ matrix.db }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: ~/.gradle/build-scan-data
-          retention-days: 1
-        continue-on-error: true
-
-      - name: Upload docs preview
-        # we need to limit it to just one job execution:
-        if: matrix.db == 'PostgreSQL'
-        uses: hibernate/.github/actions/build-docs-preview@197125e1a0e9624349ef9e8157dad8ab707f3da0 # main
-        with:
-          dist-path: 'documentation/build/asciidoc'
-          src-paths: |
-            documentation/src
-
-  test_jdks:
-    name: Test with Java ${{ matrix.java.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # To list the available "feature versions" on adoptium.net (ignore "tip_version", it's not relevant):
-        # https://api.adoptium.net/v3/info/available_releases
-        # To list the available releases for a given "feature version" on adoptium.net (example for 16):
-        # https://api.adoptium.net/v3/assets/latest/16/hotspot
-        # To see the available versions and download links on jdk.java.net:
-        # https://github.com/oracle-actions/setup-java/blob/main/jdk.java.net-uri.properties
-        java:
-          - { name: "17", java_version_numeric: 17 }
-          # We want to enable preview features when testing newer builds of OpenJDK:
-          # even if we don't use these features, just enabling them can cause side effects
-          # and it's useful to test that.
-          - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
-          - { name: "25", java_version_numeric: 25, jvm_args: '--enable-preview' }
-          - { name: "26", java_version_numeric: 26, jvm_args: '--enable-preview' }
-          - { name: "27", java_version_numeric: 27, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-          - { name: "28-ea", java_version_numeric: 28, from: 'jdk.java.net', jvm_args: '--enable-preview' }
-    steps:
-      - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Get year/month for cache key
-        id: get-date
-        run: |
-          echo "yearmonth=$(/bin/date -u '+%Y-%m')" >> "$GITHUB_OUTPUT"
-        shell: bash
-      - name: Sanitize the branch name
-        # We want to include the branch in artifact names to keep them unique.
-        #  Branch names may have some symbols that are not "friendly" for file names e.g. we may have a branch `wip/4.0`
-        #  This step replaces any unwanted characters with a dash:`wip/4.0` -> `wip-4.0` or build/test-github-workflow-update123.4
-        shell: bash
-        id: current-branch-suffix
-        env:
-          BRANCH_NAME: ${{ inputs.branch }}
-        run: |
-          echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
-      - name: Generate cache key
-        id: cache-key
-        env:
-          CURRENT_BRANCH: ${{ github.repository != 'hibernate/hibernate-reactive' && 'fork' || github.base_ref || github.ref_name }}
-        run: |
-          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
-          CURRENT_DAY=$(/bin/date -u "+%d")
-          ROOT_CACHE_KEY="buildtool-cache"
-          {
-            echo "buildtool-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}"
-            echo "buildtool-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}"
-            echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" 
-          } >> "$GITHUB_OUTPUT"
-      - name: Cache Maven/Gradle Dependency/Dist Caches
-        id: cache-maven
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        # if it's not a pull request, we restore and save the cache
         if: github.event_name != 'pull_request'
         with:
           path: |
             ~/.m2/repository/
             ~/.m2/wrapper/
-            ~/.gradle/caches/modules-2
+            ~/.gradle/caches/
+            !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper/
-          # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable, but it's not a problem.
-          # The whole cache is dropped monthly to prevent unlimited growth.
-          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
-          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: |
-            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
-            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
-      - name: Restore Maven/Gradle Dependency/Dist Caches
+            gradle-${{ runner.os }}-
+      - name: Restore local Gradle repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        # if it's a pull request, we restore the cache, but we don't save it
         if: github.event_name == 'pull_request'
         with:
           path: |
             ~/.m2/repository/
             ~/.m2/wrapper/
-            ~/.gradle/caches/modules-2
+            ~/.gradle/caches/
+            !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper/
-          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: |
-            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
-            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+            gradle-${{ runner.os }}-
 
-      - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
-        if: matrix.java.from == 'jdk.java.net'
+      - name: Run build script
+        run: ./gradlew assemble compileTestJava :documentation:asciidoctor --build-cache
+        env:
+          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name != 'pull_request' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
+          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
+
+      - name: Create build cache tarball
+        run: tar -czf gradle-build-cache.tgz -C ~ .gradle/caches/build-cache-1
+      - name: Upload build cache
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gradle-build-cache
+          retention-days: 1
+          path: gradle-build-cache.tgz
+
+      - name: Upload GitHub Actions artifact for the Develocity build scan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: "${{ github.event_name == 'pull_request' && !cancelled() }}"
+        with:
+          name: build-scan-data-initial
+          path: ~/.gradle/build-scan-data
+      - name: Upload docs preview
+        uses: hibernate/.github/actions/build-docs-preview@709cd8c0127dfa8918b6845cf476e72d2c2a04a8 # main
+        with:
+          dist-path: 'documentation/build/asciidoc'
+          src-paths: |
+            documentation/src
+
+  # Matrix-driven test jobs. Each entry downloads the build cache tarball from the
+  # initial build and runs the full test suite against a specific database or JDK.
+  test:
+    name: >-
+      ${{ matrix.name
+      }}${{ matrix.java-test-version && format(' {0}', matrix.java-test-version)
+      || '' }}
+    needs: build
+    runs-on: >-
+      ${{
+        github.repository == 'hibernate/hibernate-reactive' && matrix.runs-on
+        || !contains(matrix.runs-on || '', 'runs-on') && matrix.runs-on
+        || 'ubuntu-latest'
+      }}
+    timeout-minutes: ${{ matrix.timeout != '' && matrix.timeout || 60 }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(inputs.matrix-json) }}
+    steps:
+      - name: Set up RunsOn
+        if: ${{ contains(matrix.runs-on || '', 'runs-on') && github.repository == 'hibernate/hibernate-reactive' }}
+        uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.branch }}
+      - name: Compute entry label
+        run: |
+          echo "ENTRY_LABEL=${_LABEL//[\":<>|*?\\\/]/-}" >> "$GITHUB_ENV"
+        env:
+          _LABEL: ${{ matrix.name }}
+
+      # --- JDK setup ---
+      # Install test JDK first (if needed), capture its home,
+      # then install the default JDK (GRADLE_JAVA_VERSION) which becomes JAVA_HOME for the Gradle daemon.
+      - name: Set up test JDK ${{ matrix.java-test-version }}
+        if: ${{ matrix.java-test-version && matrix.java-test-version != env.GRADLE_JAVA_VERSION && matrix.java-test-from != 'jdk.java.net' }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-test-version }}
+      - name: Set up test JDK ${{ matrix.java-test-version }} (EA from jdk.java.net)
+        if: ${{ matrix.java-test-from == 'jdk.java.net' }}
         uses: oracle-actions/setup-java@fff43251af9936a0e6a4d5d0946e14f1680e9b6b # v1.5.0
         with:
           website: jdk.java.net
-          release: ${{ matrix.java.java_version_numeric }}
-      - name: Set up latest JDK ${{ matrix.java.name }} from Adoptium
-        if: matrix.java.from == '' || matrix.java.from == 'adoptium.net'
+          release: ${{ matrix.java-test-version }}
+      - name: Capture test JDK home
+        if: ${{ matrix.java-test-version && matrix.java-test-version != env.GRADLE_JAVA_VERSION }}
+        run: echo "TEST_JDK_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+      - name: Set up Gradle JDK
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
-          java-version: ${{ matrix.java.java_version_numeric }}
-          check-latest: true
-      - name: Export path to JDK ${{ matrix.java.name }}
-        id: testjdk-exportpath
-        run: echo "path=${JAVA_HOME}" >> "$GITHUB_OUTPUT"
-      - name: Set up JDK 11
-        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: 11
-          check-latest: true
-      - name: Set up JDK 17
-        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: 'temurin'
-          java-version: 17
-          check-latest: true
-      - name: Export path to JDK 11
-        id: mainjdk-exportpath
-        run: echo "path=${JAVA_HOME}" >> "$GITHUB_OUTPUT"
-      - name: Display exact version of JDK ${{ matrix.java.name }}
-        env:
-          TEST_JDK_PATH: ${{ steps.testjdk-exportpath.outputs.path }}
-        run: |
-          "$TEST_JDK_PATH/bin/java" -version
-      - name: Print the effective ORM version used
-        run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
-      - name: Build and Test with Java ${{ matrix.java.name }}
-        env:
-          TEST_JDK_VERSION: ${{ matrix.java.java_version_numeric }}
-          MAIN_JDK_PATH: ${{ steps.mainjdk-exportpath.outputs.path }}
-          TEST_JDK_PATH: ${{ steps.testjdk-exportpath.outputs.path }}
-          LAUNCHER_ARGS: "${{ matrix.java.jvm_args && '-Ptest.jdk.launcher.args=' }}${{ matrix.java.jvm_args }}"
-          # For jobs running on 'push', publish build scan and cache immediately.
-          # This won't work for pull requests, since they don't have access to secrets.
-          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name == 'push' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
-          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
-        run: |
-          EXTRA_ARGS=()
-          if [ -n "$LAUNCHER_ARGS" ]; then
-            EXTRA_ARGS+=("$LAUNCHER_ARGS")
-          fi
-          ./gradlew build -Ptest.jdk.version="$TEST_JDK_VERSION" \
-              -Porg.gradle.java.installations.paths="$MAIN_JDK_PATH,$TEST_JDK_PATH" \
-              "${EXTRA_ARGS[@]}"
-      - name: Upload reports (if build failed)
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with:
-          name: reports-java${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: './**/build/reports/'
-      # Build scans that couldn't be published directly (e.g. pull requests) are published
-      # by a separate workflow (see build-report.yml).
-      # We don't write to the remote cache from there, as that would be unsafe.
-      - name: Upload Develocity build scan data
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: build-scan-data-jdk-${{ matrix.java.name }}-${{ steps.current-branch-suffix.outputs.value }}-${{ strategy.job-index }}
-          path: ~/.gradle/build-scan-data
-          retention-days: 1
-        continue-on-error: true
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
 
-  prepare-sonar-bundle:
-    name: Prepare build bundle for Sonar scanner
-    needs:
-      - run_examples
-      - test_dbs
-    if: |
-      always() && !cancelled()
-      && needs.run_examples.result != 'cancelled'
-      && needs.test_dbs.result != 'cancelled'
-      && github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout ${{ inputs.branch }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Sanitize the branch name
-        shell: bash
-        id: current-branch-suffix
-        env:
-          BRANCH_NAME: ${{ inputs.branch }}
-        run: |
-          echo "value=$(echo "$BRANCH_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')" >> "$GITHUB_OUTPUT"
-      - name: Set up JDK 17
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Generate cache key
-        id: cache-key
-        env:
-          CURRENT_BRANCH: ${{ github.repository != 'hibernate/hibernate-reactive' && 'fork' || github.base_ref || github.ref_name }}
-        run: |
-          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
-          CURRENT_DAY=$(/bin/date -u "+%d")
-          ROOT_CACHE_KEY="buildtool-cache"
-          {
-            echo "buildtool-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}"
-            echo "buildtool-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}"
-            echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" 
-          } >> "$GITHUB_OUTPUT"
-      - name: Restore Maven/Gradle Dependency/Dist Caches
+      # --- Caching (restore-only: initial build saves the cache) ---
+      - name: Restore local Gradle repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -470,25 +208,243 @@ jobs:
             ~/.gradle/caches/
             !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper/
-          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: |
-            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
-            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+            gradle-${{ runner.os }}-
+      - name: Download build cache
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        with:
+          name: gradle-build-cache
+      - name: Extract build cache
+        run: |
+          tar -xzf gradle-build-cache.tgz -C ~
+          rm gradle-build-cache.tgz
+
+      # --- Build and test ---
+      - name: Run build script
+        run: |
+          gradle_args=(--build-cache)
+
+          # Database selection
+          if [[ -n "$RDBMS" ]]; then
+            gradle_args+=("-Pdb=$RDBMS")
+          fi
+
+          # JDK toolchain args
+          jdk_paths="$JAVA_HOME"
+          if [[ -n "$JAVA_TEST_VERSION" ]]; then
+            gradle_args+=("-Ptest.jdk.version=$JAVA_TEST_VERSION")
+            if [[ -n "$TEST_JDK_HOME" && "$TEST_JDK_HOME" != "$JAVA_HOME" ]]; then
+              jdk_paths="$jdk_paths,$TEST_JDK_HOME"
+            fi
+          fi
+          if [[ -n "$JAVA_LAUNCHER_ARGS" ]]; then
+            gradle_args+=("-Ptest.jdk.launcher.args=$JAVA_LAUNCHER_ARGS")
+          fi
+          if [[ "$jdk_paths" == *","* ]]; then
+            gradle_args+=("-Porg.gradle.java.installations.paths=$jdk_paths")
+          fi
+
+          ./gradlew build "${gradle_args[@]}"
+        env:
+          RDBMS: ${{ matrix.rdbms || '' }}
+          JAVA_TEST_VERSION: ${{ matrix.java-test-version || '' }}
+          JAVA_LAUNCHER_ARGS: ${{ matrix.java-launcher-args || '' }}
+          POPULATE_REMOTE_GRADLE_CACHE: ${{ github.event_name != 'pull_request' && github.repository == 'hibernate/hibernate-reactive' && 'true' || 'false' }}
+          DEVELOCITY_ACCESS_KEY: "${{ secrets.DEVELOCITY_ACCESS_KEY }}"
+
+      # --- Artifacts ---
+      - name: Upload GitHub Actions artifact for the Develocity build scan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: "${{ github.event_name == 'pull_request' && !cancelled() }}"
+        with:
+          name: build-scan-data-${{ env.ENTRY_LABEL }}
+          path: ~/.gradle/build-scan-data
+      - name: Store coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: build-coverage-data-${{ env.ENTRY_LABEL }}
+          retention-days: 1
+          path: |
+            ./**/build/jacoco/*.exec
+      - name: Upload test reports (if build failed)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: test-reports-${{ env.ENTRY_LABEL }}
+          path: |
+            ./**/build/reports/tests/
+
+  # Example project tests. Each entry downloads the build cache tarball from the
+  # initial build and runs the examples against database service containers.
+  run-examples:
+    name: >-
+      Examples - ${{ matrix.example }} on ${{ matrix.db }}
+    needs: build
+    if: ${{ inputs.run-examples }}
+    runs-on: >-
+      ${{
+        github.repository == 'hibernate/hibernate-reactive' && 'runs-on/fleet=linux-standard/env=commonhaus'
+        || 'ubuntu-latest'
+      }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { example: 'session-example', db: 'PostgreSQL' }
+          - { example: 'session-example', db: 'MySQL' }
+          - { example: 'native-sql-example', db: 'PostgreSQL' }
+    services:
+      mysql:
+        image: container-registry.oracle.com/mysql/community-server:9.3.0
+        env:
+          MYSQL_ROOT_PASSWORD: hreact
+          MYSQL_DATABASE: hreact
+          MYSQL_USER: hreact
+          MYSQL_PASSWORD: hreact
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+      postgres:
+        image: postgres:17.4
+        env:
+          POSTGRES_DB: hreact
+          POSTGRES_USER: hreact
+          POSTGRES_PASSWORD: hreact
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Set up RunsOn
+        if: ${{ github.repository == 'hibernate/hibernate-reactive' }}
+        uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.branch }}
+      - name: Set up Gradle JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
+
+      # --- Caching (restore-only: initial build saves the cache) ---
+      - name: Restore local Gradle repository
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/
+            !~/.gradle/caches/build-cache-*
+            ~/.gradle/wrapper/
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+      - name: Download build cache
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        with:
+          name: gradle-build-cache
+      - name: Extract build cache
+        run: |
+          tar -xzf gradle-build-cache.tgz -C ~
+          rm gradle-build-cache.tgz
+
+      - name: Print effective ORM version
+        run: ./gradlew ":$EXAMPLE:dependencyInsight" --dependency org.hibernate.orm:hibernate-core --build-cache
+        env:
+          EXAMPLE: ${{ matrix.example }}
+      - name: Run examples
+        run: ./gradlew ":$EXAMPLE:runAllExamplesOn$DB" --build-cache
+        env:
+          EXAMPLE: ${{ matrix.example }}
+          DB: ${{ matrix.db }}
+
+      - name: Upload test reports (if build failed)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: test-reports-examples-${{ matrix.example }}-${{ matrix.db }}
+          path: './**/build/reports/'
+      - name: Upload GitHub Actions artifact for the Develocity build scan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: "${{ !cancelled() }}"
+        with:
+          name: build-scan-data-examples-${{ matrix.example }}-${{ matrix.db }}
+          path: ~/.gradle/build-scan-data
+          retention-days: 1
+
+  # Merges JaCoCo reports from all test jobs into a single artifact for the Sonar
+  # scanner (run separately by the calling workflow).
+  prepare-sonar-bundle:
+    name: Prepare build bundle for Sonar scanner
+    needs: [test, run-examples]
+    if: >-
+      inputs.run-sonar
+      && always() && !cancelled()
+      && needs.test.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.branch }}
+      - name: Set up Gradle JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Restore local Gradle repository
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/
+            !~/.gradle/caches/build-cache-*
+            ~/.gradle/wrapper/
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Download build cache
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
+        with:
+          name: gradle-build-cache
+      - name: Extract build cache
+        run: |
+          tar -xzf gradle-build-cache.tgz -C ~
+          rm gradle-build-cache.tgz
 
       - name: Download coverage reports
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # 8.0.2
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # 8.0.1
         with:
-          pattern: build-coverage-data*${{ steps.current-branch-suffix.outputs.value }}*
+          pattern: build-coverage-data*
           path: .
           merge-multiple: 'true'
-        # Don't fail the build if there are no matching artifacts
         continue-on-error: true
 
       - name: Merge Jacoco Reports
-        run: ./gradlew mergeCodeCoverageReport copyDependenciesSonar --no-parallel
+        run: ./gradlew mergeCodeCoverageReport copyDependenciesSonar --no-parallel --build-cache
 
       - name: Store build info for Sonar scanning
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-results-data
           retention-days: 1

@@ -1,5 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright Red Hat Inc. and Hibernate Authors
+# Nightly CI: runs the same databases as ci.yml plus EA JDK versions,
+# and builds older (non-main) branches with the standard matrix.
+# Uses the same reusable workflow as ci.yml for the build + test pattern.
 
 name: Nightly
 
@@ -8,24 +9,77 @@ on:
     - cron: '25 3 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: { }
 
 jobs:
-  # A scheduler can only run on the default branch.
-  # With workflow_call, we can pass the branch we want to test as parameter so that we can check it out instead of the
-  # default branch
+  build:
+    if: github.repository == 'hibernate/hibernate-reactive' || github.event_name != 'schedule'
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+    with:
+      # Nightly jobs run on free runners (queue times don't matter).
+      #
+      # --- JDKs ---
+      # We enable preview features when testing newer builds of OpenJDK:
+      # even if we don't use these features, just enabling them can cause
+      # side effects and it's useful to test that.
+      # JDKs that aren't supported by Hibernate Reactive out of the box yet
+      # require the use of -Dnet.bytebuddy.experimental=true.
+      # Make sure to remove that argument as soon as possible
+      # -- generally that requires upgrading bytebuddy after the JDK goes GA.
+      matrix-json: >-
+        [
+          { "name": "MariaDB", "rdbms": "MariaDB" },
+          { "name": "MySQL", "rdbms": "MySQL" },
+          { "name": "PostgreSQL", "rdbms": "PostgreSQL" },
+          { "name": "MSSQLServer", "rdbms": "MSSQLServer" },
+          { "name": "CockroachDB", "rdbms": "CockroachDB" },
+          { "name": "Db2", "rdbms": "Db2" },
+          { "name": "Oracle", "rdbms": "Oracle" },
+          { "name": "JDK", "java-test-version": "27",
+            "java-test-from": "jdk.java.net",
+            "java-launcher-args": "--enable-preview" },
+          { "name": "JDK", "java-test-version": "28",
+            "java-test-from": "jdk.java.net",
+            "java-launcher-args": "--enable-preview" }
+        ]
+    secrets: inherit
+
+  # Older branches: call build.yml with the standard CI matrix.
+  # A scheduler can only run on the default branch; workflow_call lets us
+  # pass the branch to check out.
   build-snapshots:
+    if: github.repository == 'hibernate/hibernate-reactive' || github.event_name != 'schedule'
     strategy:
       fail-fast: false
       matrix:
-        # main is wip/5.1
         branch: [ 'wip/3.4', 'wip/4.5', 'wip/5.0', 'wip/main' ]
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
     with:
       branch: ${{ matrix.branch }}
+      matrix-json: >-
+        [
+          { "name": "MariaDB", "rdbms": "MariaDB" },
+          { "name": "MySQL", "rdbms": "MySQL" },
+          { "name": "PostgreSQL", "rdbms": "PostgreSQL" },
+          { "name": "MSSQLServer", "rdbms": "MSSQLServer" },
+          { "name": "CockroachDB", "rdbms": "CockroachDB" },
+          { "name": "Db2", "rdbms": "Db2" },
+          { "name": "Oracle", "rdbms": "Oracle" },
+          { "name": "JDK", "java-test-version": "21",
+            "java-launcher-args": "--enable-preview" },
+          { "name": "JDK", "java-test-version": "25",
+            "java-launcher-args": "--enable-preview" },
+          { "name": "JDK", "java-test-version": "26",
+            "java-launcher-args": "--enable-preview" }
+        ]
+    secrets: inherit
 
   reproducible-build-check:
+    if: github.repository == 'hibernate/hibernate-reactive' || github.event_name != 'schedule'
     strategy:
       fail-fast: false
       matrix:
