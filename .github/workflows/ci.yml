@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      # We don't want to run CI on branches for dependabot, just on the PR.
+      - 'dependabot/**'
+    tags:
+      - '[2-9]*.[0-9]*'
+  pull_request:
+    branches:
+      - 'main'
+      # Ignore dependabot PRs that are not just about build dependencies or workflows;
+      # we'll reject such PRs and send one ourselves.
+      - '!dependabot/**'
+      - 'dependabot/maven/build-dependencies-**'
+      - 'dependabot/github_actions/workflow-actions-**'
+  workflow_dispatch:
+
+permissions: { }
+
+# See https://github.com/hibernate/hibernate-orm/pull/4615 for a description of the behavior we're getting.
+concurrency:
+  # Consider that two builds are in the same concurrency group (cannot run concurrently)
+  # if they use the same workflow and are about the same branch ("ref") or pull request.
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  # Cancel previous builds in the same concurrency group even if they are in progress
+  # for pull requests or pushes to forks (not the upstream repository).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'hibernate/hibernate-reactive' }}
+
+jobs:
+
+  # --- Main build + test matrix (reusable workflow) ---
+  # Initial build compiles sources and renders docs; test matrix entries run in parallel after.
+
+  build:
+    # Skip push builds on forks for the main branch;
+    # this avoids duplicate CI when syncing the fork, since the upstream repo already runs CI on push to main.
+    if: github.repository == 'hibernate/hibernate-reactive' || !endsWith(github.ref, '/main')
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+    with:
+      initial-build-runs-on: "runs-on/fleet=linux-standard/env=commonhaus"
+      # --- Databases ---
+      # MSSQLServer, Db2, and Oracle run on the IBM fleet (heavier containers).
+      #
+      # --- JDKs ---
+      # We build with JDK 17, but test with LTS versions (21, 25) and the latest
+      # GA release (26) to catch compatibility issues early.
+      # We want to enable preview features when testing newer builds of OpenJDK:
+      # even if we don't use these features, just enabling them can cause
+      # side effects and it's useful to test that.
+      matrix-json: >-
+        [
+          { "name": "MariaDB", "rdbms": "MariaDB" },
+          { "name": "MySQL", "rdbms": "MySQL" },
+          { "name": "PostgreSQL", "rdbms": "PostgreSQL" },
+          { "name": "MSSQLServer", "rdbms": "MSSQLServer",
+            "runs-on": "runs-on/fleet=linux-standard/env=ibm" },
+          { "name": "CockroachDB", "rdbms": "CockroachDB" },
+          { "name": "Db2", "rdbms": "Db2",
+            "runs-on": "runs-on/fleet=linux-standard/env=ibm" },
+          { "name": "Oracle", "rdbms": "Oracle",
+            "runs-on": "runs-on/fleet=linux-standard/env=ibm" },
+          { "name": "JDK", "java-test-version": "21",
+            "java-launcher-args": "--enable-preview",
+            "runs-on": "runs-on/fleet=linux-standard/env=commonhaus" },
+          { "name": "JDK", "java-test-version": "25",
+            "java-launcher-args": "--enable-preview",
+            "runs-on": "runs-on/fleet=linux-standard/env=commonhaus" },
+          { "name": "JDK", "java-test-version": "26",
+            "java-launcher-args": "--enable-preview",
+            "runs-on": "runs-on/fleet=linux-standard/env=commonhaus" }
+        ]
+      run-sonar: true
+    secrets: inherit

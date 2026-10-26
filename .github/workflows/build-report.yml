@@ -1,8 +1,8 @@
-name: Hibernate Reactive CI reporting
+name: CI Reporting
 
 on:
   workflow_run:
-    workflows: [ "Hibernate Reactive CI" ]
+    workflows: [ "CI", "Nightly", "Hibernate Reactive CI" ]
     types: [ completed ]
 
 permissions: { }
