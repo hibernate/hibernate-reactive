@@ -15,11 +15,11 @@ jbossLoggingVersion = "3.6.3.Final"
 junitVersion = "6.1.3"
 log4jVersion = "2.26.1"
 testcontainersVersion = "2.0.5"
-vertxSqlClientVersion = "5.2.1"
+vertxSqlClientVersion = "5.2.2"
 vertxSqlClientMinimumVersion = "5.1.8"
-vertxWebVersion= "5.2.1"
-vertxWebClientVersion = "5.2.1"
-vertxMicrometerMetricsVersion = "5.2.1"
+vertxWebVersion= "5.2.2"
+vertxWebClientVersion = "5.2.2"
+vertxMicrometerMetricsVersion = "5.2.2"
 
 [libraries]
 com-fasterxml-jackson-core-jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonDatabindVersion" }
