@@ -37,6 +37,13 @@ publishing {
     publications {
         named( "publishedArtifacts", MavenPublication ) {
             from components.java
+            // Publish the versions we resolved, not the declared ones:
+            // the wip branches use dynamic versions (e.g. 8.0.+) that Maven doesn't understand
+            versionMapping {
+                allVariants {
+                    fromResolutionResult()
+                }
+            }
         }
     }
 }
