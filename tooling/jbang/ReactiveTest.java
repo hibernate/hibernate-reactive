@@ -6,11 +6,11 @@
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS io.vertx:vertx-pg-client:${vertx.version:5.1.10}
-//DEPS com.ongres.scram:scram-client:3.3
+//DEPS com.ongres.scram:scram-client:3.4
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.1.10}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.1.10}
 //DEPS io.vertx:vertx-unit:${vertx.version:5.1.10}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:4.5.0.CR1}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.0.0.Beta3}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:testcontainers-postgresql:2.0.5
@@ -21,9 +21,9 @@
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
-//DEPS org.postgresql:postgresql:42.7.11
-//DEPS com.mysql:mysql-connector-j:9.7.0
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.8
+//DEPS org.postgresql:postgresql:42.7.14
+//DEPS com.mysql:mysql-connector-j:26.10.0
+//DEPS org.mariadb.jdbc:mariadb-java-client:4.0.0
 //
 
 import java.util.function.Supplier;
@@ -228,11 +228,11 @@ public class ReactiveTest {
 	 * It's a wrapper around the testcontainers classes.
 	 */
 	enum Database {
-		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:18.4" ) ),
-		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:9.7.0" ) ),
-		DB2( () -> new Db2Container( "icr.io/db2_community/db2:12.1.4.0" ).acceptLicense() ),
-		MARIADB( () -> new MariaDBContainer( "mariadb:12.3.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.2.1" ) );
+		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:18.6" ) ),
+		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:26.7.1" ) ),
+		DB2( () -> new Db2Container( "icr.io/db2_community/db2:12.1.5.0" ).acceptLicense() ),
+		MARIADB( () -> new MariaDBContainer( "mariadb:13.0.2" ) ),
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.3.3" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 

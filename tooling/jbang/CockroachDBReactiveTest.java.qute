@@ -7,7 +7,7 @@
 
 //DEPS io.vertx:vertx-pg-client:$\{vertx.version:5.1.10}
 //DEPS io.vertx:vertx-unit:$\{vertx.version:5.1.10}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:4.5.0.CR1}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:5.0.0.Beta3}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:testcontainers-cockroachdb:2.0.5
@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS org.postgresql:postgresql:42.7.11
+//DEPS org.postgresql:postgresql:42.7.14
 
 import java.io.IOException;
 import jakarta.persistence.Entity;
@@ -69,7 +69,7 @@ public class {baseName} {
 				.asCompatibleSubstituteFor( image );
 	}
 
-    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v26.2.1" ) );
+    public final static CockroachContainer database = new CockroachContainer( imageName( "cockroachdb", "cockroach", "v26.3.3" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 

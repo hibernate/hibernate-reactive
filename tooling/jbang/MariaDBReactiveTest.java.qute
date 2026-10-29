@@ -7,7 +7,7 @@
 
 //DEPS io.vertx:vertx-mysql-client:$\{vertx.version:5.1.10}
 //DEPS io.vertx:vertx-unit:$\{vertx.version:5.1.10}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:4.5.0.CR1}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:5.0.0.Beta3}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:testcontainers-mariadb:2.0.5
@@ -15,7 +15,7 @@
 
 //// Testcontainer needs the JDBC drivers to start the container
 //// Hibernate Reactive doesn't need it
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.8
+//DEPS org.mariadb.jdbc:mariadb-java-client:4.0.0
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -68,7 +68,7 @@ public class {baseName} {
 				.asCompatibleSubstituteFor( image );
 	}
 
-    public final static MariaDBContainer database = new MariaDBContainer( imageName( "docker.io", "mariadb", "12.3.2" ) );
+    public final static MariaDBContainer database = new MariaDBContainer( imageName( "docker.io", "mariadb", "13.0.2" ) );
 
 	private Mutiny.SessionFactory sessionFactory;
 
