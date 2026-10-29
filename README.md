@@ -79,13 +79,13 @@ Hibernate Reactive in Vert.x.
 The [Hibernate Reactive with Panache Guide][reactive-panache] introduces
 Panache Reactive, an active record-style API based on Hibernate Reactive.
 
-[introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc
+[introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_introduction.adoc
 
-[build]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
-[config]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#basic-configuration
-[model]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#mapping-entity-classes
-[session]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
-[performance]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
+[build]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_setting-up.adoc#including-hibernate-reactive-in-your-project-build
+[config]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_setting-up.adoc#basic-configuration
+[model]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_writing-code.adoc#mapping-entity-classes
+[session]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_writing-code.adoc#using-the-reactive-session
+[performance]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_tuning-performance.adoc
 
 [vertx-hr]: https://how-to.vertx.io/hibernate-reactive-howto/
 [reactive-panache]: https://quarkus.io/guides/hibernate-reactive-panache
@@ -288,5 +288,5 @@ At present several minor limitations remain.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
   supported.
 - With Db2:
-  * [Automatic schema](http://hibernate.org/reactive/documentation/1.1/reference/html_single/#_automatic_schema_export) update and validation is not supported.
+  * [Automatic schema](https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/_setting-up.adoc#automatic-schema-export) update and validation is not supported.
   * `@Lob` annotation is not supported - See [this issue on the vertx-db2-client](https://github.com/eclipse-vertx/vertx-sql-client/issues/496)
