@@ -31,5 +31,5 @@ or `withTransaction()`.
 
 TIP: You don't need a custom pool if you're using _discriminator_-based multitenancy.
 In that case, all you need is to declare the `@TenantId` properties of your entities,
-just like in Hibernate ORM 6.
+just like in Hibernate ORM.
 
