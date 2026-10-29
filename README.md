@@ -30,10 +30,10 @@ Learn more at <http://hibernate.org/reactive>.
 
 Hibernate Reactive has been tested with:
 
-- Java 17, 21, 26
+- Java 17, 21, 25, 26
 - PostgreSQL 18
-- MySQL 9
-- MariaDB 12
+- MySQL 26
+- MariaDB 13
 - Db2 12
 - CockroachDB v26
 - MS SQL Server 2025
@@ -223,17 +223,7 @@ databases manually. Just type:
 
 The above command will start an instance of PostgreSQL in a Docker
 container. You may specify a different database using one of the
-commands show in the table below.
-
-| Database   | Command                      | Dedicated task                   |
-|------------|------------------------------|----------------------------------|
-| PostgreSQL | `./gradlew test -Pdb=pg`     | `./gradlew testDbPostgreSQL`     |
-| MySQL      | `./gradlew test -Pdb=mysql`  | `./gradlew testDbMySQL`          |
-| MariaDB    | `./gradlew test -Pdb=maria`  | `./gradlew testDbMariaDB`        |
-| DB2        | `./gradlew test -Pdb=db2`    | `./gradlew testDbDB2`            |
-| SQL Server | `./gradlew test -Pdb=mssql`  | `./gradlew testDbMSSQLServer`    |
-| Oracle     | `./gradlew test -Pdb=oracle` | `./gradlew testDbOracle`         |
-| CockroachDB| `./gradlew test -Pdb=cockroachdb` | `./gradlew testDbCockroachDB` |
+commands shown in the table above.
 
 The tests will run faster if you reuse the same containers across
 multiple test runs. To do this, edit the testcontainers configuration
@@ -283,8 +273,6 @@ database by following the instructions in [podman.md](podman.md).
 We're working hard to support the full feature set of Hibernate ORM. 
 At present several minor limitations remain.
 
-- The annotation `@org.hibernate.annotations.Source` for 
-  database-generated `@Version` properties is not yet supported.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
   supported.
 - With Db2:
