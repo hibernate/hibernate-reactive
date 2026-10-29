@@ -16,22 +16,31 @@ see also the https://docs.hibernate.org/orm/8.0/migration-guide/migration-guide.
 [[dependency-changes]]
 == Dependency changes
 
-[cols="1,1,1,1", options="header"]
+[cols="1,1,1", options="header"]
 |===
-| Dependency
-| 4.x
+| Hibernate Reactive
+| Hibernate ORM
+| Vert.x SQL Client
+
+| 5.1
+| 8.0
+| 5.2
+
 | 5.0
+| 8.0
 | 5.1
 
-| Hibernate ORM
-| 7.0.x
-| 8.0.x
-| 8.0.x (8.0.0.Beta4 or later)
+| 4.5
+| 7.4
+| 5.1
 
-| Vert.x SQL Client
-| 5.0.x
-| 5.1.x
-| 5.2.x
+| 4.x
+| 7.x
+| 5.0
+
+| 3.4
+| 7.4
+| 4.5
 |===
 
 [[version-check]]
