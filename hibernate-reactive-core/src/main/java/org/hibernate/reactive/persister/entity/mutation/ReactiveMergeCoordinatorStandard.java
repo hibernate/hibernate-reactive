@@ -5,6 +5,7 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
+import org.hibernate.engine.internal.FilteredAssociationMutation;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.AttributeMapping;
@@ -127,7 +128,8 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 			Object rowId,
 			boolean forceDynamicUpdate,
 			boolean databaseDirtinessCheck,
-			SharedSessionContractImplementor session) {
+			SharedSessionContractImplementor session,
+			FilteredAssociationMutation filteredAssociations) {
 		final var updateValuesAnalysis = super.analyzeUpdateValues(
 				entity,
 				values,
@@ -141,7 +143,8 @@ public class ReactiveMergeCoordinatorStandard extends ReactiveUpdateCoordinatorS
 				rowId,
 				forceDynamicUpdate,
 				databaseDirtinessCheck,
-				session
+				session,
+				filteredAssociations
 		);
 		if ( oldValues == null ) {
 			final TableSet tablesNeedingUpdate = updateValuesAnalysis.getTablesNeedingUpdate();

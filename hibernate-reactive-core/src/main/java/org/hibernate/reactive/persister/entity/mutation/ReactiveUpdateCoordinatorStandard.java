@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import org.hibernate.engine.jdbc.batch.spi.BatchKey;
 import org.hibernate.engine.jdbc.mutation.ParameterUsage;
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
+import org.hibernate.engine.internal.FilteredAssociationMutation;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -159,13 +160,16 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						forceDynamicUpdate = entityPersister().hasUninitializedLazyProperties( entity );
 					}
 
+					final var filteredAssociations = FilteredAssociationMutation.forUpdate( entry, values );
+					forceDynamicUpdate |= filteredAssociations.isActive();
+
 					performUpdate(
 							entity,
 							id,
 							rowId,
-							values,
+							filteredAssociations.physicalState( values ),
 							oldVersion,
-							incomingOldValues,
+							filteredAssociations.physicalState( incomingOldValues ),
 							hasDirtyCollection,
 							session,
 							versionMapping,
@@ -173,7 +177,10 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 							attributeUpdateability,
 							forceDynamicUpdate,
 							false,
-							entityPersister().excludedFromTemporalVersioning( dirtyAttributeIndexes, hasDirtyCollection )
+							temporalExcludedUpdate,
+							filteredAssociations,
+							// The cache of filtered update groups is only used by UpdateCoordinatorStandard itself
+							false
 					);
 
 					// doDynamicUpdate, doVersionUpdate, or doStaticUpdate will initialize the stage,
