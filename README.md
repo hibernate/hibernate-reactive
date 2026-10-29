@@ -47,8 +47,8 @@ Hibernate Reactive has been tested with:
 - [Quarkus][Quarkus] via the Hibernate Reactive extension
 
 The exact version of the libraries and images are in the
-[catalog](https://github.com/hibernate/hibernate-reactive/blob/main/gradle/libs.versions.toml)
-and in the [tooling/docker](https://github.com/hibernate/hibernate-reactive/tree/main/tooling/docker) folder.
+[catalog](https://github.com/hibernate/hibernate-reactive/blob/5.0/gradle/libs.versions.toml)
+and in the [tooling/docker](https://github.com/hibernate/hibernate-reactive/tree/5.0/tooling/docker) folder.
 
 [PostgreSQL]: https://www.postgresql.org
 [MySQL]: https://www.mysql.com
@@ -79,13 +79,13 @@ Hibernate Reactive in Vert.x.
 The [Hibernate Reactive with Panache Guide][reactive-panache] introduces
 Panache Reactive, an active record-style API based on Hibernate Reactive.
 
-[introduction]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc
+[introduction]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_introduction.adoc
 
-[build]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#including-hibernate-reactive-in-your-project-build
-[config]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#basic-configuration
-[model]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#mapping-entity-classes
-[session]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#using-the-reactive-session
-[performance]: https://github.com/hibernate/hibernate-reactive/blob/main/documentation/src/main/asciidoc/reference/introduction.adoc#tuning-and-performance
+[build]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_setting-up.adoc#including-hibernate-reactive-in-your-project-build
+[config]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_setting-up.adoc#basic-configuration
+[model]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_writing-code.adoc#mapping-entity-classes
+[session]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_writing-code.adoc#using-the-reactive-session
+[performance]: https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_tuning-performance.adoc
 
 [vertx-hr]: https://how-to.vertx.io/hibernate-reactive-howto/
 [reactive-panache]: https://quarkus.io/guides/hibernate-reactive-panache
@@ -95,10 +95,10 @@ Panache Reactive, an active record-style API based on Hibernate Reactive.
 The directory [`examples`][examples] contains several small projects showing
 different features of Hibernate Reactive:
 
-  - [CRUD operations using the session](https://github.com/hibernate/hibernate-reactive/tree/main/examples/session-example)
-  - [Native queries and stateless session](https://github.com/hibernate/hibernate-reactive/tree/main/examples/native-sql-example)
+  - [CRUD operations using the session](https://github.com/hibernate/hibernate-reactive/tree/5.0/examples/session-example)
+  - [Native queries and stateless session](https://github.com/hibernate/hibernate-reactive/tree/5.0/examples/native-sql-example)
 
-[examples]: https://github.com/hibernate/hibernate-reactive/tree/main/examples
+[examples]: https://github.com/hibernate/hibernate-reactive/tree/5.0/examples
 
 ## Quarkus quickstarts
 
@@ -288,5 +288,5 @@ At present several minor limitations remain.
 - The annotation `@org.hibernate.annotations.CollectionId` is not yet 
   supported.
 - With Db2:
-  * [Automatic schema](http://hibernate.org/reactive/documentation/1.1/reference/html_single/#_automatic_schema_export) update and validation is not supported.
+  * [Automatic schema](https://github.com/hibernate/hibernate-reactive/blob/5.0/documentation/src/main/asciidoc/reference/_setting-up.adoc#automatic-schema-export) update and validation is not supported.
   * `@Lob` annotation is not supported - See [this issue on the vertx-db2-client](https://github.com/eclipse-vertx/vertx-sql-client/issues/496)
