@@ -49,6 +49,12 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
 			from documentationDir.dir("asciidoc/reference/html_single")
 			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/reference/html_single")
 		}
+
+		// Migration Guide
+		copy {
+			from documentationDir.dir("asciidoc/migration-guide")
+			into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/migration-guide")
+		}
     }
 }
 
@@ -92,6 +98,10 @@ links:
     html: https://docs.hibernate.org/reactive/{series.version}/reference/html_single/
   whats_new:
     html: /reactive/releases/{series.version}/#whats-new
+  migration:
+    - name: Migration Guide
+      description: Guide for migrating from the previous version
+      html: https://docs.hibernate.org/reactive/{series.version}/migration-guide/
   introduction:
     - name: Getting Started
       description: A quickstart-style tutorial
