@@ -166,11 +166,78 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Migration Guide
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def migrationGuideSourceStagingDir = layout.buildDirectory.dir( "tmp/asciidoc/migration-guide" )
+
+def copyMigrationGuideTask = tasks.register( "copyMigrationGuide", Copy ) {
+	group = "Documentation"
+	description = "Copies migration-guide.adoc in preparation for rendering."
+
+	from rootProject.layout.projectDirectory.file( "migration-guide.adoc" )
+	into migrationGuideSourceStagingDir
+
+	rename { fileName ->
+		if (fileName == 'migration-guide.adoc') {
+			return 'index.adoc'
+		}
+		return fileName
+	}
+}
+
+def renderMigrationGuideTask = tasks.register( "renderMigrationGuide", AsciidoctorTask ) {
+	group = "Documentation"
+	description = "Renders the Migration Guide in HTML format using Asciidoctor."
+	notCompatibleWithConfigurationCache( "AsciidoctorGradlePlugin does not support configuration cache yet" )
+
+	dependsOn copyMigrationGuideTask
+
+	asciidoctorj {
+		version = libs.versions.asciidoctorJVersion.get()
+	}
+
+	sourceDir = migrationGuideSourceStagingDir
+
+	outputDir = layout.buildDirectory.dir( 'asciidoc/migration-guide' )
+
+	resources {
+		from( layout.buildDirectory.dir( "unpacked-theme/hibernate-asciidoctor-theme/asciidoc" ) ) {
+			include 'css/**'
+			include 'images/**'
+			include 'script/**'
+		}
+	}
+
+	// The same theme as the reference documentation
+	def versionFamily = providers.provider { project.projectVersion.family }
+	def docInfoHibernate = layout.buildDirectory.dir( "unpacked-theme/hibernate-asciidoctor-theme/asciidoc/docinfo/hibernate" )
+	attributes(
+			icons: "font",
+			"source-highlighter": "rouge",
+			stylesdir: "css",
+			"iconfont-remote": false,
+			"iconfont-name": "font-awesome/css/solid",
+			docinfo: "shared,private",
+			docinfodir: docInfoHibernate.get(),
+			"html.meta.project-key": "reactive",
+			"html.outdated-content.project-key": "reactive",
+			"html-meta-description": "Hibernate Reactive, reactive API for Hibernate ORM - Migration Guide",
+			"html-meta-keywords": "hibernate, reactive, hibernate reactive, database, db, vert.x, migration",
+			"html-meta-version-family": versionFamily.get(),
+	)
+
+	executionMode = ExecutionMode.JAVA_EXEC
+
+	dependsOn( tasks.named( "unpackTheme" ) )
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // All
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
-	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
+	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask, renderMigrationGuideTask
 	group = 'Documentation'
 	description = 'Grouping task for performing all documentation building tasks'
 }
