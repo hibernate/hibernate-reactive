@@ -166,11 +166,56 @@ def renderReferenceDocumentationTask = tasks.register( "renderReferenceDocumenta
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Migration Guide
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def migrationGuideSourceStagingDir = layout.buildDirectory.dir( "tmp/asciidoc/migration-guide" )
+
+def copyMigrationGuideTask = tasks.register( "copyMigrationGuide", Copy ) {
+	group = "Documentation"
+	description = "Copies migration-guide.adoc in preparation for rendering."
+
+	from rootProject.layout.projectDirectory.file( "migration-guide.adoc" )
+	into migrationGuideSourceStagingDir
+
+	rename { fileName ->
+		if (fileName == 'migration-guide.adoc') {
+			return 'index.adoc'
+		}
+		return fileName
+	}
+}
+
+def renderMigrationGuideTask = tasks.register( "renderMigrationGuide", AsciidoctorTask ) {
+	group = "Documentation"
+	description = "Renders the Migration Guide in HTML format using Asciidoctor."
+	notCompatibleWithConfigurationCache( "AsciidoctorGradlePlugin does not support configuration cache yet" )
+
+	dependsOn copyMigrationGuideTask
+
+	sourceDir = migrationGuideSourceStagingDir
+
+	outputDir = layout.buildDirectory.dir( 'asciidoc/migration-guide' )
+
+	resources {
+		from( layout.buildDirectory.dir( "unpacked-theme/hibernate-asciidoctor-theme/asciidoc" ) ) {
+			include 'css/**'
+			include 'images/**'
+			include 'script/**'
+		}
+	}
+
+	executionMode = ExecutionMode.JAVA_EXEC
+
+	dependsOn( tasks.named( "unpackTheme" ) )
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // All
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def assembleDocumentationTask = tasks.register( 'assembleDocumentation' ) {
-	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask
+	dependsOn aggregateJavadocsTask, renderReferenceDocumentationTask, renderMigrationGuideTask
 	group = 'Documentation'
 	description = 'Grouping task for performing all documentation building tasks'
 }
