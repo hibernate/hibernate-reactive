@@ -52,12 +52,80 @@ def updateDocumentationTask = tasks.register( 'updateDocumentation' ) {
     }
 }
 
+/**
+ * Generates the series.yml describing the series of the release on hibernate.org, in build/hibernate.org:
+ * the release scripts copy it to the series of the release in https://github.com/hibernate/hibernate.org.
+ * <p>
+ * It contains the major and minor versions of Hibernate ORM and Vert.x, because the website uses them
+ * to match the series of the integrations.
+ */
+def websiteSeriesFileTask = tasks.register( 'websiteSeriesFile' ) {
+	description = "Generates the description of the series of the release on hibernate.org"
+	group = "Release"
+
+	def family = { String version -> ( version =~ /^\d+\.\d+/ )[0] }
+	// We support the oldest versions accepted by the version check during bootstrap
+	def ormSeries = family( libs.versions.hibernateOrmMinimumVersion.get() )
+	def vertxSeries = family( libs.versions.vertxSqlClientMinimumVersion.get() )
+	// The JDKs we test with in CI, excluding the early-access builds (e.g. "28-ea")
+	def ciWorkflow = rootProject.file( '.github/workflows/build.yml' )
+	def javaVersions = ( ciWorkflow.text =~ /(?m)^\s*- \{ name: "(\d+)"/ ).collect { it[1] }
+	if ( javaVersions.isEmpty() ) {
+		throw new GradleException( "No JDK versions found in ${ciWorkflow}" )
+	}
+	def seriesFile = rootProject.layout.buildDirectory.file( "hibernate.org/series.yml" )
+
+	inputs.properties( [
+			ormSeries: ormSeries,
+			vertxSeries: vertxSeries,
+			javaVersions: javaVersions
+	] )
+	outputs.file( seriesFile )
+
+	doLast {
+		def file = seriesFile.get().asFile
+		file.parentFile.mkdirs()
+		file.text = """\
+summary: Release compatible with Hibernate ORM ${ormSeries} and Vert.x ${vertxSeries}
+links:
+  reference_doc:
+    html: https://docs.hibernate.org/reactive/{series.version}/reference/html_single/
+  whats_new:
+    html: /reactive/releases/{series.version}/#whats-new
+  introduction:
+    - name: Getting Started
+      description: A quickstart-style tutorial
+      html: https://docs.hibernate.org/reactive/{series.version}/reference/html_single/#getting-started
+  api:
+    - name: Javadoc
+      description: API documentation
+      html: https://docs.hibernate.org/reactive/{series.version}/javadocs/
+maven:
+  artifacts:
+    - artifact_id: hibernate-reactive-core
+      summary: Core implementation
+    - artifact_id: hibernate-reactive-platform
+      summary: Platform (BOM) for Hibernate Reactive dependencies
+integration_constraints:
+  java:
+    version:
+${javaVersions.collect { "      - '${it}'" }.join( '\n' )}
+  orm:
+    version: '${ormSeries}'
+  vertx:
+    version: '${vertxSeries}'
+"""
+	}
+}
+
 tasks.register( "releasePrepare" ) {
     description = "Prepares all the artifacts and documentation for a JReleaser release."
     group = "Release"
 
 	// Render the Documentation/Javadocs and move them to the staging directory (for JReleaser):
 	dependsOn updateDocumentationTask
+	// Generate the description of the series on hibernate.org (for the release scripts):
+	dependsOn websiteSeriesFileTask
 	// Create all the published artifacts (i.e. jars) and move them to the staging directory (for JReleaser):
 	// this one is defined in the publish.gradle
 	// dependsOn project.getTasksByName(publishAllPublicationsToStagingRepository, false)
