@@ -193,6 +193,10 @@ def renderMigrationGuideTask = tasks.register( "renderMigrationGuide", Asciidoct
 
 	dependsOn copyMigrationGuideTask
 
+	asciidoctorj {
+		version = libs.versions.asciidoctorJVersion.get()
+	}
+
 	sourceDir = migrationGuideSourceStagingDir
 
 	outputDir = layout.buildDirectory.dir( 'asciidoc/migration-guide' )
