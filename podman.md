@@ -54,7 +54,7 @@ using this one-liner:
 podman exec -e PGPASSWORD=hreact -it HibernateTestingPGSQL psql -U hreact -d hreact
 ```
 
-[psql]:https://www.postgresql.org/docs/14/app-psql.html
+[psql]:https://www.postgresql.org/docs/current/app-psql.html
 
 ## MariaDB
 
@@ -73,12 +73,12 @@ When the database has started, you can run the tests on MariaDB with:
 ./gradlew testDbMariaDB -PskipTestcontainers
 ```
 
-Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
+Optionally, you can connect to the database with the [MariaDB Command-Line Client][mariadb-cli](`mariadb`) using:
 
-[mysql-cli]:https://www.mysql.com/
+[mariadb-cli]:https://mariadb.com/kb/en/mariadb-command-line-client/
 
 ```
-podman exec -it HibernateTestingMariaDB mysql -U hreact -phreact
+podman exec -it HibernateTestingMariaDB mariadb -u hreact -phreact hreact
 ```
 
 ## MySQL
@@ -100,8 +100,10 @@ When the database has started, you can run the tests on MySQL with:
 
 Optionally, you can connect to the database with the [MySQL Command-Line Client][mysql-cli](`mysql`) using:
 
+[mysql-cli]:https://dev.mysql.com/doc/refman/en/mysql.html
+
 ```
-podman exec -it HibernateTestingMySQL mysql -U hreact -phreact
+podman exec -it HibernateTestingMySQL mysql -u hreact -phreact hreact
 ```
 
 ## CockroachDB
@@ -189,8 +191,11 @@ When the database has started, you can run the tests on MS SQL Server with:
 Optionally, you can connect to the database with the [sqlcmd utility][sqlcmd-cli] using:
 
 ```
-podman exec -it HibernateTestingMSSQL /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '~!HReact!~'
+podman exec -it HibernateTestingMSSQL /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U SA -P '~!HReact!~'
 ```
+
+The option `-C` trusts the self-signed certificate of the server: without it, `sqlcmd` fails
+with `certificate verify failed`.
 
 [sqlcmd-cli]:https://docs.microsoft.com/en-us/sql/tools/sqlcmd-utility?view=sql-server-ver15
 
