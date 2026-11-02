@@ -34,6 +34,7 @@ For code contributions, these guidelines include:
   In both cases, be sure to incorporate your tests into the project to protect against possible regressions.
 * If applicable, documentation should be updated to reflect the introduced changes
 * The code compiles and the tests pass (`./gradlew clean build`)
+* If you work with an AI coding agent, follow the additional rules in [AGENTS.md](AGENTS.md)
 
 For documentation contributions, mainly to respect the project code style, especially in regard 
 to the use of tabs - as mentioned above, code style templates are available for both IntelliJ IDEA and Eclipse
