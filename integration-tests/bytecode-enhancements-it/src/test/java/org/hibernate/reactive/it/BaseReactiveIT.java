@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.VertxOptions;
 import io.vertx.junit5.RunTestOnContext;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -178,6 +179,7 @@ public abstract class BaseReactiveIT {
 	}
 
 	@BeforeEach
+	@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 	public void before(VertxTestContext context) {
 		test( context, setupSessionFactory( this::constructConfiguration ) );
 	}
