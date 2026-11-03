@@ -17,10 +17,8 @@ import org.hibernate.reactive.stage.Stage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
@@ -28,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Timeout(value = 10, timeUnit = MINUTES)
 
 public class ReferenceBETest extends BaseReactiveIT {
 

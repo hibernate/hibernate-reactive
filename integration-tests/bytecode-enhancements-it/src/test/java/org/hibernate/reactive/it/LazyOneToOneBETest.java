@@ -6,7 +6,6 @@ package org.hibernate.reactive.it;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.hibernate.reactive.it.lazytoone.Captain;
 import org.hibernate.reactive.it.lazytoone.Ship;
@@ -14,7 +13,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 
 import org.junit.jupiter.api.Test;
 
-import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import jakarta.persistence.metamodel.Attribute;
 
@@ -23,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Test bytecode enhancements on a lazy one-to-one bidirectional association
  */
-@Timeout(value = 10, timeUnit = TimeUnit.MINUTES)
 public class LazyOneToOneBETest extends BaseReactiveIT {
 
 	@Override
