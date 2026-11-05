@@ -28,8 +28,6 @@ import jakarta.persistence.Version;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
-@DisabledFor(value = SQLSERVER, reason = "Unsupported value class: class io.vertx.core.json.JsonObject")
-@DisabledFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: see https://docs.oracle.com/error-help/db/ora-17004/")
 public class UserJsonTypeTest extends BaseReactiveTest {
 
 	@Override
