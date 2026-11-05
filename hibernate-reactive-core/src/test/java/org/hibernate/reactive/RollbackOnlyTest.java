@@ -170,6 +170,42 @@ public class RollbackOnlyTest extends BaseReactiveTest {
 	}
 
 	@Test
+	public void testNoResultExceptionWithNativeQueryDoesNotRollBackWithStage(VertxTestContext context) {
+		// Like testNoResultExceptionDoesNotRollBackWithStage, but native queries convert the exceptions differently
+		Item valid = new Item( "valid" );
+		test( context, getSessionFactory()
+				.withTransaction( (s, tx) -> s
+						.persist( valid )
+						.thenCompose( v -> s
+								.createNativeQuery( "select name from RollbackOnlyItem where name = 'missing'", String.class )
+								.getSingleResult() )
+						.handle( (v, e) -> {
+							assertThat( e ).hasCauseInstanceOf( NoResultException.class );
+							assertThat( tx.isMarkedForRollback() ).isFalse();
+							return null;
+						} ) )
+				.thenCompose( v -> findAllItems() )
+				.thenAccept( items -> assertThat( items ).containsExactly( valid ) )
+		);
+	}
+
+	@Test
+	public void testNoResultExceptionWithNativeQueryDoesNotRollBackWithMutiny(VertxTestContext context) {
+		Item valid = new Item( "valid" );
+		test( context, getMutinySessionFactory()
+				.withTransaction( (s, tx) -> s
+						.persist( valid )
+						.chain( () -> s
+								.createNativeQuery( "select name from RollbackOnlyItem where name = 'missing'", String.class )
+								.getSingleResult() )
+						.onFailure( NoResultException.class ).recoverWithNull()
+						.invoke( () -> assertThat( tx.isMarkedForRollback() ).isFalse() ) )
+				.chain( () -> Uni.createFrom().completionStage( findAllItems() ) )
+				.invoke( items -> assertThat( items ).containsExactly( valid ) )
+		);
+	}
+
+	@Test
 	public void testNextTransactionCommitsWithStage(VertxTestContext context) {
 		// The flag only applies to the transaction that was marked for rollback
 		Item valid = new Item( "valid" );
