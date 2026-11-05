@@ -30,7 +30,6 @@ import jakarta.persistence.Version;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -39,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @Timeout(value = 10, timeUnit = MINUTES)
 @DisabledFor(value = DB2, reason = "java.sql.SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
-@DisabledFor(value = MARIA, reason = "ORM 6 regression, see: https://github.com/hibernate/hibernate-reactive/issues/1529")
 public class JsonTypeTest extends BaseReactiveTest {
 
 	@Override
