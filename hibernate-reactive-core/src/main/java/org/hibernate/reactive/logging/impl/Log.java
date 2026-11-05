@@ -28,6 +28,7 @@ import jakarta.persistence.PersistenceException;
 import static org.jboss.logging.Logger.Level.DEBUG;
 import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
+import static org.jboss.logging.Logger.Level.TRACE;
 import static org.jboss.logging.Logger.Level.WARN;
 
 @MessageLogger(projectCode = "HR")
@@ -349,4 +350,9 @@ public interface Log extends BasicLogger {
 			" This is probably due to an operation failing fast due to the transaction being marked for rollback.",
 			id = 520)
 	void jdbcExceptionThrownWithTransactionRolledBack(@Cause JDBCException e);
+
+	// Same method in ORM (JdbcLogging)
+	@LogMessage(level = TRACE)
+	@Message(value = "On commit, transaction was marked for rollback only, rolling back", id = 100036)
+	void onCommitMarkedRollbackOnlyRollingBack();
 }

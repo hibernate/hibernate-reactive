@@ -133,6 +133,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private final ReactiveStatelessSessionImpl batchingHelperSession;
 	private final PersistenceContext persistenceContext;
 	private final boolean connectionProvided;
+	private boolean markedForRollbackOnly;
 
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, SessionCreationOptions options, ReactiveConnection connection) {
 		super( factory, options );
@@ -1042,6 +1043,29 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	public boolean isTransactionInProgress() {
 		return connectionProvided || ( isOpenOrWaitingForAutoClose()
 				&& reactiveConnection.isTransactionInProgress() );
+	}
+
+	@Override
+	public void markForRollbackOnly() {
+		super.markForRollbackOnly();
+		// Same as Hibernate ORM: only an active transaction can be marked for rollback
+		if ( isTransactionInProgress() ) {
+			markedForRollbackOnly = true;
+		}
+	}
+
+	/**
+	 * @see RollbackOnlyTransactions#isMarkedForRollbackOnly
+	 */
+	boolean isMarkedForRollbackOnly() {
+		return markedForRollbackOnly;
+	}
+
+	/**
+	 * @see RollbackOnlyTransactions#clearMarkedForRollbackOnly
+	 */
+	void clearMarkedForRollbackOnly() {
+		markedForRollbackOnly = false;
 	}
 
 	@Override
