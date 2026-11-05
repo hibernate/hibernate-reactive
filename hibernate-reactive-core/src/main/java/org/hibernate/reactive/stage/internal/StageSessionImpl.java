@@ -46,7 +46,12 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.clearMarkedForRollbackOnly;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.commitFailure;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.isMarkedForRollbackOnly;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.rollbackOnCommit;
 import static org.hibernate.reactive.util.internal.CompletionStages.applyToAll;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.returnOrRethrow;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -421,6 +426,8 @@ public class StageSessionImpl implements Stage.Session {
 
 	private class InternalTransaction<R> implements Stage.Transaction, ExecutableTransaction<Stage.Transaction, CompletionStage<R>> {
 		boolean rollback;
+		// The transaction was rolled back because an operation marked it for rollback only
+		boolean rolledBackOnly;
 		Throwable error;
 
 		@Override
@@ -459,15 +466,32 @@ public class StageSessionImpl implements Stage.Session {
 		}
 
 		CompletionStage<Void> begin() {
+			clearMarkedForRollbackOnly( delegate );
 			return delegate.getReactiveConnection().beginTransaction();
 		}
 
 		CompletionStage<Void> end() {
 			ReactiveActionQueue actionQueue = delegate.getReactiveActionQueue();
 			return actionQueue.beforeTransactionCompletion()
-					.thenApply( v -> delegate.getReactiveConnection() )
+					.thenApply( v -> {
+						checkRollbackOnly();
+						return delegate.getReactiveConnection();
+					} )
 					.thenCompose( c -> rollback ? c.rollbackTransaction() : c.commitTransaction() )
-					.thenCompose( v -> actionQueue.afterTransactionCompletion( !rollback ) );
+					.thenCompose( v -> actionQueue.afterTransactionCompletion( !rollback ) )
+					.thenCompose( v -> failIfRolledBackOnly() );
+		}
+
+		void checkRollbackOnly() {
+			if ( !rollback && rollbackOnCommit( delegate ) ) {
+				rollback = true;
+				rolledBackOnly = true;
+			}
+		}
+
+		CompletionStage<Void> failIfRolledBackOnly() {
+			final RuntimeException failure = rolledBackOnly ? commitFailure( delegate.getFactory() ) : null;
+			return failure == null ? voidFuture() : failedFuture( failure );
 		}
 
 		<E> E processError(E result, Throwable e) {
@@ -490,7 +514,8 @@ public class StageSessionImpl implements Stage.Session {
 
 		@Override
 		public boolean isMarkedForRollback() {
-			return rollback;
+			// Same as Transaction#getRollbackOnly() in Hibernate ORM
+			return rollback || isMarkedForRollbackOnly( delegate );
 		}
 	}
 

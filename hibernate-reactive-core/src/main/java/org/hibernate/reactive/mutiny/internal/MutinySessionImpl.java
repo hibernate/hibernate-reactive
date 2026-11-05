@@ -45,6 +45,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.clearMarkedForRollbackOnly;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.commitFailure;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.isMarkedForRollbackOnly;
+import static org.hibernate.reactive.session.internal.RollbackOnlyTransactions.rollbackOnCommit;
 import static org.hibernate.reactive.util.internal.CompletionStages.applyToAll;
 
 /**
@@ -519,6 +523,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 	private class InternalTransaction<R> implements Mutiny.Transaction, ExecutableTransaction<Mutiny.Transaction, Uni<R>> {
 		boolean markedForRollback;
+		// The transaction was rolled back because an operation marked it for rollback only
+		boolean rolledBackOnly;
 
 		@Override
 		public Uni<R> execute(Function<Mutiny.Transaction, Uni<R>> work, Runnable cleanup) {
@@ -542,8 +548,22 @@ public class MutinySessionImpl implements Mutiny.Session {
 					.onCancellation().call( this::rollback )
 					// finally, when there was no exception,
 					// commit or rollback the transaction
+					.invoke( this::checkRollbackOnly )
 					.call( () -> markedForRollback ? rollback() : commit() )
-					.call( this::afterCompletion );
+					.call( this::afterCompletion )
+					.call( this::failIfRolledBackOnly );
+		}
+
+		void checkRollbackOnly() {
+			if ( !markedForRollback && rollbackOnCommit( delegate ) ) {
+				markedForRollback = true;
+				rolledBackOnly = true;
+			}
+		}
+
+		Uni<Void> failIfRolledBackOnly() {
+			final RuntimeException failure = rolledBackOnly ? commitFailure( delegate.getFactory() ) : null;
+			return failure == null ? Uni.createFrom().voidItem() : Uni.createFrom().failure( failure );
 		}
 
 		Uni<Void> flush() {
@@ -551,6 +571,7 @@ public class MutinySessionImpl implements Mutiny.Session {
 		}
 
 		Uni<Void> begin() {
+			clearMarkedForRollbackOnly( delegate );
 			return Uni.createFrom().completionStage( delegate.getReactiveConnection().beginTransaction() );
 		}
 
@@ -577,7 +598,8 @@ public class MutinySessionImpl implements Mutiny.Session {
 
 		@Override
 		public boolean isMarkedForRollback() {
-			return markedForRollback;
+			// Same as Transaction#getRollbackOnly() in Hibernate ORM
+			return markedForRollback || isMarkedForRollbackOnly( delegate );
 		}
 	}
 
