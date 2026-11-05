@@ -7,6 +7,7 @@ package org.hibernate.reactive.provider.impl;
 import java.lang.reflect.Type;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -43,6 +44,7 @@ import org.hibernate.type.descriptor.java.PrimitiveByteArrayJavaType;
 import org.hibernate.type.descriptor.java.StringJavaType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeRegistry;
 import org.hibernate.type.descriptor.jdbc.BasicBinder;
+import org.hibernate.type.descriptor.jdbc.BasicExtractor;
 import org.hibernate.type.descriptor.jdbc.BlobJdbcType;
 import org.hibernate.type.descriptor.jdbc.ClobJdbcType;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
@@ -253,7 +255,7 @@ public class ReactiveTypeContributor implements TypeContributor {
 			// use Types.JAVA_OBJECT instead of Types.JSON because
 			// the Dialects have the type 'json' registered under
 			// that JDBC type code
-			return ObjectJdbcType.INSTANCE;
+			return JsonObjectJdbcType.INSTANCE;
 		}
 
 		@Override
@@ -273,13 +275,48 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		@Override
 		public <X> JsonObject wrap(X value, WrapperOptions options) {
-			return (JsonObject) value;
+			// MariaDB returns a String, because its json type is an alias for longtext
+			return value instanceof String string ? new JsonObject( string ) : (JsonObject) value;
+		}
+	}
+
+	/**
+	 * Like {@link ObjectJdbcType}, but it {@linkplain JavaType#wrap wraps} the extracted value
+	 * instead of casting it, so that {@link JsonObjectJavaType} can convert a String.
+	 */
+	private static class JsonObjectJdbcType extends ObjectJdbcType {
+
+		public static final JsonObjectJdbcType INSTANCE = new JsonObjectJdbcType();
+
+		public JsonObjectJdbcType() {
+			super( Types.JAVA_OBJECT );
+		}
+
+		@Override
+		public <X> ValueExtractor<X> getExtractor(JavaType<X> javaType) {
+			return new BasicExtractor<>( javaType, this ) {
+				@Override
+				protected X doExtract(ResultSet rs, int paramIndex, WrapperOptions options) throws SQLException {
+					return javaType.wrap( rs.getObject( paramIndex ), options );
+				}
+
+				@Override
+				protected X doExtract(CallableStatement statement, int index, WrapperOptions options) throws SQLException {
+					return javaType.wrap( statement.getObject( index ), options );
+				}
+
+				@Override
+				protected X doExtract(CallableStatement statement, String name, WrapperOptions options)
+						throws SQLException {
+					return javaType.wrap( statement.getObject( name ), options );
+				}
+			};
 		}
 	}
 
 	private static class JsonType extends AbstractSingleColumnStandardBasicType<JsonObject> {
 		public JsonType(Dialect dialect) {
-			super( ObjectJdbcType.INSTANCE, JsonObjectJavaType.INSTANCE );
+			super( JsonObjectJdbcType.INSTANCE, JsonObjectJavaType.INSTANCE );
 		}
 
 		@Override
