@@ -12,6 +12,18 @@ If you delegate work to other agents, pass these guidelines on to them.
 
 When you help with a release, follow the [release checklist](MAINTAINERS.md#releasing).
 
+## Behaviour
+
+- A feature that Hibernate Reactive has in common with Hibernate ORM (a mapping, the DDL of a type, a query, ...)
+  should behave like it does in the version of Hibernate ORM the project uses,
+  unless the issue or the documentation says otherwise.
+  For example, a schema created by Hibernate ORM should pass the schema validation of Hibernate Reactive.
+- That version is `hibernateOrmVersion` in `gradle/libs.versions.toml`. Compare with its tag,
+  or with the branch where Hibernate ORM develops that version: the branch of the same family
+  (`8.0` for `8.0.0.Beta4`), or `main` when that family is still developed on `main`.
+- When the behaviour can't be the same, for example because of a limitation of the Vert.x SQL client,
+  explain why in the pull request.
+
 ## Commits
 
 - Start the title with the GitHub issue key: `[#1234] Fix some kind of problem`.
