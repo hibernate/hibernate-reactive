@@ -94,6 +94,14 @@ public class JsonTypeTest extends BaseReactiveTest {
 		testField( context, basic, found -> assertEquals( basic.jsonObj, found.jsonObj ) );
 	}
 
+	@Test
+	public void testJsonArray(VertxTestContext context) {
+		Basic basic = new Basic();
+		basic.jsonAsList = List.of( new Sport( "Cheese Rolling", 7 ), new Sport( "Chess boxing", 2 ) );
+
+		testField( context, basic, found -> assertThat( found.jsonAsList ).isEqualTo( basic.jsonAsList ) );
+	}
+
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
@@ -125,6 +133,9 @@ public class JsonTypeTest extends BaseReactiveTest {
 
 		@JdbcTypeCode(SqlTypes.JSON)
 		Map<String, Object> jsonAsMap;
+
+		@JdbcTypeCode(SqlTypes.JSON)
+		List<Sport> jsonAsList;
 
 		public Basic() {
 		}
@@ -166,6 +177,41 @@ public class JsonTypeTest extends BaseReactiveTest {
 		@Override
 		public int hashCode() {
 			return Objects.hash( string );
+		}
+	}
+
+	public static class Sport {
+		public String name;
+		public int players;
+
+		public Sport() {
+		}
+
+		public Sport(String name, int players) {
+			this.name = name;
+			this.players = players;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if ( this == o ) {
+				return true;
+			}
+			if ( o == null || getClass() != o.getClass() ) {
+				return false;
+			}
+			Sport sport = (Sport) o;
+			return players == sport.players && Objects.equals( name, sport.name );
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash( name, players );
+		}
+
+		@Override
+		public String toString() {
+			return name + ":" + players;
 		}
 	}
 }
