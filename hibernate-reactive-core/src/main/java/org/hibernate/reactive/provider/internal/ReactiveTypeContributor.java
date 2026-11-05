@@ -23,6 +23,7 @@ import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.OracleDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.reactive.adaptor.internal.PreparedStatementAdaptor;
 import org.hibernate.reactive.type.descriptor.jdbc.ReactiveArrayJdbcTypeConstructor;
@@ -53,6 +54,7 @@ import org.hibernate.type.descriptor.jdbc.TimestampUtcAsJdbcTimestampJdbcType;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 import org.hibernate.type.Type;
 import org.hibernate.type.descriptor.sql.DdlType;
+import org.hibernate.type.descriptor.sql.internal.DdlTypeImpl;
 import org.hibernate.engine.jdbc.Size;
 import org.hibernate.metamodel.mapping.SqlExpressible;
 import org.hibernate.type.descriptor.sql.spi.DdlTypeRegistry;
@@ -83,6 +85,11 @@ public class ReactiveTypeContributor implements TypeContributor {
 
 		DdlTypeRegistry ddlTypeRegistry = typeConfiguration.getDdlTypeRegistry();
 		ddlTypeRegistry.addDescriptor( Types.JAVA_OBJECT, new JavaObjectDdlType() );
+		if ( dialect instanceof SQLServerDialect ) {
+			// ORM stores JSON as nvarchar(max) on SQL Server, also on 2025 that has a json type,
+			// but we replace its JdbcType with ReactiveJsonJdbcType
+			ddlTypeRegistry.addDescriptor( new DdlTypeImpl( SqlTypes.JSON, "nvarchar(max)", dialect ) );
+		}
 
 		JavaTypeRegistry javaTypeRegistry = typeConfiguration.getJavaTypeRegistry();
 		javaTypeRegistry.addDescriptor( JsonObjectJavaType.INSTANCE );
