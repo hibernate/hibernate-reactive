@@ -132,6 +132,11 @@ public class ReactiveAbstractSelectionQuery<R> {
 				.exceptionally( this::convertException );
 	}
 
+	/**
+	 * Same as {@link org.hibernate.query.internal.AbstractQuery#getSingleResult()}:
+	 * only a {@link HibernateException} is converted. Other exceptions, like a
+	 * {@link NoResultException}, don't mark the transaction for rollback.
+	 */
 	private R convertException(Throwable t) {
 		if ( t instanceof CompletionException && t.getCause() != null ) {
 			return convertException( t.getCause() );
@@ -140,7 +145,7 @@ public class ReactiveAbstractSelectionQuery<R> {
 			throw getSession().getExceptionConverter().convert( (HibernateException) t, getLockOptions() );
 		}
 		else if ( t instanceof RuntimeException ) {
-			throw getSession().getExceptionConverter().convert( (RuntimeException) t, getLockOptions() );
+			throw (RuntimeException) t;
 		}
 		else {
 			throw new CompletionException( t );
