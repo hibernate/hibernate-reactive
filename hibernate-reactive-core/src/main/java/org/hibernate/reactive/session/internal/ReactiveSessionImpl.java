@@ -181,6 +181,7 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	private ReactiveConnection reactiveConnection;
 	private final Thread associatedWorkThread;
 	private PersistenceContext reactivePersistenceContext;
+	private boolean markedForRollbackOnly;
 
 	public ReactiveSessionImpl(SessionFactoryImpl delegate, StatefulOptions options, ReactiveConnection connection) {
 		super( delegate, options );
@@ -202,6 +203,29 @@ public class ReactiveSessionImpl extends SessionImpl implements ReactiveSession,
 	public boolean isTransactionInProgress() {
 		return isOpenOrWaitingForAutoClose()
 				&& reactiveConnection.isTransactionInProgress();
+	}
+
+	@Override
+	public void markForRollbackOnly() {
+		super.markForRollbackOnly();
+		// Same as Hibernate ORM: only an active transaction can be marked for rollback
+		if ( isTransactionInProgress() ) {
+			markedForRollbackOnly = true;
+		}
+	}
+
+	/**
+	 * @see RollbackOnlyTransactions#isMarkedForRollbackOnly
+	 */
+	boolean isMarkedForRollbackOnly() {
+		return markedForRollbackOnly;
+	}
+
+	/**
+	 * @see RollbackOnlyTransactions#clearMarkedForRollbackOnly
+	 */
+	void clearMarkedForRollbackOnly() {
+		markedForRollbackOnly = false;
 	}
 
 	@Override
