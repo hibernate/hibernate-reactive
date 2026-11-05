@@ -85,6 +85,7 @@ public class ReactiveJsonJdbcType extends JsonJdbcType {
 		if ( value == null ) {
 			return null;
 		}
-		return ( (JsonObject) value ).encode();
+		// A String when the column is not a native JSON type, like json on MariaDB, an alias for longtext
+		return value instanceof JsonObject json ? json.encode() : value.toString();
 	}
 }
