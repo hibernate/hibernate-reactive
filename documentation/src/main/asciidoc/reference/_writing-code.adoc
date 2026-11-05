@@ -755,6 +755,26 @@ session.withTransaction( tx -> session.persist(book) )
 
 The session is automatically flushed at the end of the transaction.
 
+If the work fails, the transaction is rolled back. You can also roll it back
+explicitly by calling `tx.markForRollback()`.
+
+As in Hibernate ORM, when a persistence operation fails, the transaction is
+marked for rollback, even if you recover from the failure:
+
+[source,java]
+----
+session.withTransaction( tx -> session.persist(book)
+        .handle( (v, e) -> null )   // the transaction will still be rolled back
+        .thenCompose( v -> session.persist(author) ) )
+----
+
+The exceptions to this rule are the same as in JPA: `NoResultException`,
+`NonUniqueResultException`, `LockTimeoutException`, and `QueryTimeoutException`
+don't mark the transaction for rollback.
+By default, the transaction is rolled back silently. If JPA transaction
+compliance is enabled (`hibernate.jpa.compliance.transaction`), the commit
+fails with a `RollbackException`.
+
 For a given `Session` object, nested calls to `withTransaction()` occur
 within the same shared transaction context. However, notice that the
 transaction is a _resource local_ transaction only, delegated to the
