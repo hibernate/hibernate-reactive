@@ -30,7 +30,6 @@ import jakarta.persistence.Version;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.DB2;
-import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.MARIA;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.POSTGRESQL;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
@@ -43,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @DisabledFor(value = DB2, reason = "java.sql.SQLException: The object 'HREACT.JSONENTITY' provided is not defined, SQLCODE=-204  SQLSTATE=42704")
 @DisabledFor(value = SQLSERVER, reason = "java.lang.IllegalArgumentException: Unsupported value class: class io.vertx.core.json.JsonObject")
 @DisabledFor(value = ORACLE, reason = "java.sql.SQLException: ORA-17004: Invalid column type: https://docs.oracle.com/error-help/db/ora-17004/")
-@DisabledFor(value = MARIA, reason = "ORM 6 regression, see: https://github.com/hibernate/hibernate-reactive/issues/1529")
 public class JsonTypeTest extends BaseReactiveTest {
 
 	@Override
