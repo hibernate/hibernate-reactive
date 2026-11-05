@@ -20,6 +20,8 @@ import org.hibernate.type.descriptor.jdbc.BasicBinder;
 import org.hibernate.type.descriptor.jdbc.BasicExtractor;
 import org.hibernate.type.descriptor.jdbc.JsonJdbcType;
 
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -45,19 +47,22 @@ public class ReactiveJsonJdbcType extends JsonJdbcType {
 			@Override
 			protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options)
 					throws SQLException {
-				st.setObject( index, toJsonObject( value, javaType, options ) );
+				st.setObject( index, toJsonValue( value, javaType, options ) );
 			}
 
 			@Override
 			protected void doBind(CallableStatement st, X value, String name, WrapperOptions options)
 					throws SQLException {
-				st.setObject( name, toJsonObject( value, javaType, options ) );
+				st.setObject( name, toJsonValue( value, javaType, options ) );
 			}
 		};
 	}
 
-	protected <X> JsonObject toJsonObject(X value, JavaType<X> javaType, WrapperOptions options) {
-		return new JsonObject( this.toString( value, javaType, options ) );
+	/**
+	 * @return a {@link JsonObject}, or a {@link JsonArray} when the value is a collection or an array
+	 */
+	protected <X> Object toJsonValue(X value, JavaType<X> javaType, WrapperOptions options) {
+		return Json.decodeValue( this.toString( value, javaType, options ) );
 	}
 
 	@Override
@@ -85,7 +90,8 @@ public class ReactiveJsonJdbcType extends JsonJdbcType {
 		if ( value == null ) {
 			return null;
 		}
-		// A String when the column is not a native JSON type, like nvarchar on SQL Server
+		// A JsonObject, a JsonArray (its toString() encodes it),
+		// or a String when the column is not a native JSON type, like nvarchar on SQL Server
 		return value instanceof JsonObject json ? json.encode() : value.toString();
 	}
 }
