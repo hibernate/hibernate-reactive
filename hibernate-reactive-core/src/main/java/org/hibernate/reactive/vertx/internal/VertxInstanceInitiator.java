@@ -5,6 +5,9 @@
 package org.hibernate.reactive.vertx.internal;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.boot.registry.selector.spi.StrategySelector;
+import org.hibernate.reactive.provider.Settings;
+import org.hibernate.reactive.vertx.VertxFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
@@ -19,7 +22,14 @@ public final class VertxInstanceInitiator implements StandardServiceInitiator<Ve
 
     @Override
     public VertxInstance initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new DefaultVertxInstance();
+        final Object setting = configurationValues.get( Settings.VERTX_FACTORY );
+        if ( setting == null ) {
+            return new DefaultVertxInstance();
+        }
+        // A VertxFactory, its class, or the name of its class
+        final VertxFactory vertxFactory = registry.requireService( StrategySelector.class )
+                .resolveStrategy( VertxFactory.class, setting );
+        return new DefaultVertxInstance( vertxFactory );
     }
 
     @Override
