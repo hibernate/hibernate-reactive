@@ -104,11 +104,13 @@ There are two ways to avoid this problem:
 
 If your program requires control over how the Vert.x instance is created, or
 how it's obtained, you can override the default implementation and provide your
-own `VertxInstance`. Let's consider this example:
+own `VertxInstance`. If you only need to create it with other options, implementing
+a `VertxFactory` is simpler, see <<_creating_the_instance_of_vert_x_with_other_options>>.
+Let's consider this example:
 
 [source,java]
 ----
-public class MyVertx implements VertxInstance {
+public class MyVertx implements VertxInstance, Stoppable {
 
   private final Vertx vertx;
 
@@ -121,8 +123,21 @@ public class MyVertx implements VertxInstance {
     return vertx;
   }
 
+  @Override
+  public void stop() {
+    vertx.close();
+  }
+
 }
 ----
+
+Hibernate Reactive calls `stop()` when the session factory is closed, because
+`MyVertx` implements `org.hibernate.service.spi.Stoppable`. An implementation
+that returns an instance of `Vertx` managed by your program shouldn't close it.
+
+NOTE: Hibernate ORM doesn't call `start()` on a service registered with `addService()`.
+If your `VertxInstance` implements `org.hibernate.service.spi.Startable`, register it with
+`addInitiator()` instead, or create the instance of `Vertx` in its constructor, as `MyVertx` does.
 
 One way to register this implementation is to configure Hibernate programmatically,
 for example:
@@ -134,7 +149,8 @@ StandardServiceRegistryBuilder builder = new ReactiveServiceRegistryBuilder()
         .addService( VertxInstance.class, new MyVertx() )
         .applySettings( configuration.getProperties() );
 StandardServiceRegistry registry = builder.build();
-SessionFactory sessionFactory = configuration.buildSessionFactory( registry );
+Mutiny.SessionFactory sessionFactory = configuration.buildSessionFactory( registry )
+        .unwrap( Mutiny.SessionFactory.class );
 ----
 
 Alternatively, you could implement the `ServiceContributor` interface.
@@ -144,7 +160,7 @@ Alternatively, you could implement the `ServiceContributor` interface.
 public class MyServiceContributor implements ServiceContributor {
   @Override
   public void contribute(StandardServiceRegistryBuilder serviceRegistryBuilder) {
-    serviceRegistryBuilder.addService( VertxInstance.class, new MyVertxProvider() );
+    serviceRegistryBuilder.addService( VertxInstance.class, new MyVertx() );
   }
 }
 ----
