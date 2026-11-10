@@ -67,6 +67,13 @@ public interface Settings extends AvailableSettings {
 	String SQL_CLIENT_POOL = "hibernate.vertx.pool.class";
 
 	/**
+	 * Specifies a {@link org.hibernate.reactive.vertx.VertxFactory}: an instance, its class, or the name of its class.
+	 * The default {@link org.hibernate.reactive.vertx.VertxInstance} calls it to create the instance of Vert.x,
+	 * when Hibernate Reactive doesn't start in a Vert.x context.
+	 */
+	String VERTX_FACTORY = "hibernate.vertx.factory";
+
+	/**
 	 * When {@code true}, Hibernate Reactive won't check during bootstrap that
 	 * the versions of Hibernate ORM and the Vert.x SQL client on the classpath are not older
 	 * than the minimum versions it requires.
