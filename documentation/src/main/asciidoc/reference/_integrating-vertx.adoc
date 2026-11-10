@@ -140,6 +140,37 @@ To register this `ServiceContributor`, add a text file named
 org.myproject.MyServiceContributor
 ----
 
+=== Creating the instance of Vert.x with other options
+
+If you only need to choose how Hibernate Reactive creates its instance of Vert.x,
+for example to enable metrics, implement `VertxFactory` instead of `VertxInstance`:
+
+[source,java]
+----
+public class MetricsVertxFactory implements VertxFactory {
+
+  @Override
+  public Vertx createVertx() {
+    return Vertx.vertx( new VertxOptions()
+            .setMetricsOptions( new MicrometerMetricsOptions().setEnabled( true ) ) );
+  }
+}
+----
+
+Then set the configuration property `hibernate.vertx.factory` to the name of the class,
+for example in `persistence.xml`:
+
+[source,xml]
+----
+<property name="hibernate.vertx.factory" value="org.myproject.MetricsVertxFactory"/>
+----
+
+When you configure Hibernate programmatically, the property also accepts an instance of `VertxFactory`.
+
+The default `VertxInstance` calls the factory only when Hibernate Reactive doesn't start in a
+Vert.x context, and closes the instance it returns when the session factory is closed.
+In a Vert.x context, it uses the instance of `Vertx` that owns the context, as usual.
+
 //If you need to, you can access the `ServiceRegistry` from the `Stage.SessionFactory`
 //or `Mutiny.SessionFactory` using the `org.hibernate.reactive.common.spi.Implementor`
 //interface:
