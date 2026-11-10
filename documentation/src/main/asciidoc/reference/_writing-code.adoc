@@ -331,6 +331,26 @@ It uses Jackson or, if Jackson isn't available, a JSON-B implementation
 Add one of them to the classpath, for example `com.fasterxml.jackson.core:jackson-databind`.
 Mapping a `JsonObject` doesn't need it.
 
+=== Column types
+
+The type of the column depends on the database. Hibernate ORM chooses it for `@JdbcTypeCode(SqlTypes.JSON)`,
+Hibernate Reactive for `JsonObject`:
+
+[cols="2,2,2"]
+|===
+|Database |`JsonObject` |`@JdbcTypeCode(SqlTypes.JSON)`
+
+|PostgreSQL |`json` |`jsonb`
+|CockroachDB |`jsonb` |`jsonb`
+|MySQL |`json` |`json`
+|MariaDB |`longtext` |`longtext`
+|SQL Server |`json` |`nvarchar(max)`
+|Oracle |`json` |`json`
+|===
+
+NOTE: CockroachDB stores `json` as `jsonb`, and MariaDB defines `json` as an alias of `longtext`.
+SQL Server has a `json` type only since SQL Server 2025.
+
 === Mapping a string
 
 A `String` can be mapped to a JSON column with an `AttributeConverter` to `JsonObject`.
