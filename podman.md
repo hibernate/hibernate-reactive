@@ -30,6 +30,34 @@ e.g. `-t hreact-postgresql:18.3`. Without it, the image defaults to `:latest`.
 [podman]:https://podman.io/
 [docker]:https://www.docker.com/
 
+## Running the tests with Testcontainers and Podman
+
+By default, the tests start the database with [Testcontainers][testcontainers], which expects Docker.
+To use rootless Podman instead, start the Podman socket and tell Testcontainers where to find it,
+in the shell that runs the build:
+
+```
+systemctl --user start podman.socket
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+```
+
+`podman info --format '{{.Host.RemoteSocket.Path}}'` prints the path of the socket.
+
+The first container that Testcontainers starts is Ryuk, which removes the other containers at the end of the build.
+So when Podman cannot start containers at all, the tests fail with an error about Ryuk.
+To tell the two apart, check that Podman can start a container on its own,
+for example with `podman run --rm docker.io/library/postgres:18 true`.
+If only Ryuk fails, you can run the tests without it:
+
+```
+export TESTCONTAINERS_RYUK_DISABLED=true
+```
+
+Without Ryuk, the database containers of an interrupted build stay around: `podman ps -a` lists them,
+and `podman rm -f <container>` removes them.
+
+[testcontainers]:https://java.testcontainers.org/
+
 ## PostgreSQL
 
 Build and start a [PostgreSQL][postgresql] database:

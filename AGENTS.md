@@ -64,5 +64,9 @@ When you help with a release, follow the [release checklist](https://github.com/
 - Select the database with `-Pdb`, for example `./gradlew :hibernate-reactive-core:test -Pdb=pg --tests "*SessionTest*"`.
   The supported values and the dedicated tasks are listed in the [README](README.md).
   The tests start the database with Testcontainers; see [podman.md](podman.md) to start it yourself.
+- With rootless Podman instead of Docker, start the Podman socket and set `DOCKER_HOST` for Testcontainers:
+  see [Running the tests with Testcontainers and Podman](podman.md#running-the-tests-with-testcontainers-and-podman).
+  An error about Ryuk usually means that Podman cannot start containers at all:
+  check with `podman run` before disabling Ryuk.
 - Changes in shared code (the connection pool, the session, the query execution) should be tested
   on more than one database, at least PostgreSQL and MySQL or MariaDB.
