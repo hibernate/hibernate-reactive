@@ -284,13 +284,12 @@ custom reactive identifier generator.
 
 :orm-json-basic-mapping: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#basic-mapping-json
 :orm-json-embeddable-mapping: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#_jsonxml_aggregate_embeddable_mapping
-:string-to-json-converter: https://github.com/hibernate/hibernate-reactive/blob/main/hibernate-reactive-core/src/test/java/org/hibernate/reactive/types/StringToJsonConverter.java
 
 Like in Hibernate ORM, it's possible to map a JSON field using the {orm-json-basic-mapping}[SqlTypes.JSON]
 or {orm-json-embeddable-mapping}[an embeddable].
 
-IMPORTANT: Supports for JSON is limited to PostgreSQL and MySQL.
-Only PostgreSQL supports mapping a JSON using an embeddable
+JSON is supported with PostgreSQL, CockroachDB, MySQL and MariaDB.
+It is not supported with Db2, Oracle and SQL Server.
 
 Hibernate Reactive will recognize fields of type `io.vertx.core.json.JsonObject`
 as JSON columns:
@@ -304,8 +303,55 @@ class Example {
 }
 ----
 
-Finally, the {string-to-json-converter}[org.hibernate.reactive.StringToJsonConverter] converter is available
-for mapping a string to a JSON column:
+This doesn't require any additional library.
+
+=== Mapping objects, maps and lists
+
+Fields of any other type, such as a `Map`, a list, or a class of your own,
+can be mapped as JSON with `@JdbcTypeCode(SqlTypes.JSON)`:
+
+[source,java]
+----
+@Entity
+class Example {
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    Map<String, Object> jsonMap;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    List<Sport> jsonList;
+}
+----
+
+A list or an array of objects is stored as a JSON array.
+
+IMPORTANT: Hibernate needs a JSON library to convert these values to and from JSON.
+It uses Jackson or, if Jackson isn't available, a JSON-B implementation
+(see the {orm-json-basic-mapping}[Hibernate ORM documentation]).
+Add one of them to the classpath, for example `com.fasterxml.jackson.core:jackson-databind`.
+Mapping a `JsonObject` doesn't need it.
+
+=== Mapping a string
+
+A `String` can be mapped to a JSON column with an `AttributeConverter` to `JsonObject`.
+Hibernate Reactive doesn't provide it, but it's a few lines of code:
+
+[source,java]
+----
+@Converter
+public class StringToJsonConverter implements AttributeConverter<String, JsonObject> {
+
+    @Override
+    public JsonObject convertToDatabaseColumn(String string) {
+        return string == null ? null : new JsonObject( string );
+    }
+
+    @Override
+    public String convertToEntityAttribute(JsonObject json) {
+        return json == null ? null : json.encode();
+    }
+}
+----
 
 [source,java]
 ----
@@ -317,6 +363,13 @@ class Example {
 
 }
 ----
+
+=== Limitations
+
+* Mapping JSON with an {orm-json-embeddable-mapping}[embeddable] is only tested with PostgreSQL.
+* Native queries returning an entity with a JSON embeddable don't work yet,
+  see https://github.com/hibernate/hibernate-reactive/issues/1999[#1999].
+  Use an HQL or a criteria query instead.
 
 == Custom types
 
