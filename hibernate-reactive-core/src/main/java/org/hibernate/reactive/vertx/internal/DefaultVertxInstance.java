@@ -11,6 +11,7 @@ import io.vertx.core.Vertx;
 
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
+import org.hibernate.reactive.vertx.VertxFactory;
 import org.hibernate.reactive.vertx.VertxInstance;
 import org.hibernate.service.spi.Startable;
 import org.hibernate.service.spi.Stoppable;
@@ -22,13 +23,23 @@ import org.hibernate.service.spi.Stoppable;
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  * @see ProvidedVertxInstance if you need to a different instance
+ * @see VertxFactory to create the instance with other options
  */
 public final class DefaultVertxInstance implements VertxInstance, Stoppable, Startable {
 
 	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
+	private final VertxFactory vertxFactory;
 	private Vertx vertx;
 	private boolean vertxCreator;
+
+	public DefaultVertxInstance() {
+		this( Vertx::vertx );
+	}
+
+	public DefaultVertxInstance(VertxFactory vertxFactory) {
+		this.vertxFactory = vertxFactory;
+	}
 
 	@Override
 	public Vertx getVertx() {
@@ -53,7 +64,7 @@ public final class DefaultVertxInstance implements VertxInstance, Stoppable, Sta
 		vertxCreator = context == null || context.owner() == null;
 		if ( vertxCreator ) {
 			LOG.creatingVertxInstance();
-			vertx = Vertx.vertx();
+			vertx = vertxFactory.createVertx();
 		}
 		else {
 			LOG.debugf( "Vert.x instance detected" );
