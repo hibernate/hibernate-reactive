@@ -106,6 +106,28 @@ public class JsonTypeTest extends BaseReactiveTest {
 		testField( context, basic, found -> assertThat( found.jsonAsList ).isEqualTo( basic.jsonAsList ) );
 	}
 
+	@Test
+	public void nativeSelectEntity(VertxTestContext context) {
+		Basic basic = new Basic();
+		basic.jsonObj = new JsonObject().put( "int", 123 ).put( "str", "hello" );
+		basic.jsonAsMap = Map.of( "sport", "Cheese Rolling" );
+		basic.jsonAsList = List.of( new Sport( "Cheese Rolling", 7 ), new Sport( "Chess boxing", 2 ) );
+
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persist( basic ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createNativeQuery( "select * from JsonEntity", Basic.class )
+						.getSingleResult() )
+				)
+				.invoke( found -> {
+					assertThat( found ).isEqualTo( basic );
+					assertThat( found.jsonObj ).isEqualTo( basic.jsonObj );
+					assertThat( found.jsonAsMap ).isEqualTo( basic.jsonAsMap );
+					assertThat( found.jsonAsList ).isEqualTo( basic.jsonAsList );
+				} )
+		);
+	}
+
 	/**
 	 * Persist the entity, find it and execute the assertions
 	 */
