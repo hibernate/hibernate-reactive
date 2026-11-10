@@ -65,4 +65,11 @@ public interface Settings extends AvailableSettings {
 	 * Specifies a {@link org.hibernate.reactive.pool.ReactiveConnectionPool} class.
 	 */
 	String SQL_CLIENT_POOL = "hibernate.vertx.pool.class";
+
+	/**
+	 * Specifies a {@link org.hibernate.reactive.vertx.VertxFactory}: an instance, its class, or the name of its class.
+	 * The default {@link org.hibernate.reactive.vertx.VertxInstance} calls it to create the instance of Vert.x,
+	 * when Hibernate Reactive doesn't start in a Vert.x context.
+	 */
+	String VERTX_FACTORY = "hibernate.vertx.factory";
 }
