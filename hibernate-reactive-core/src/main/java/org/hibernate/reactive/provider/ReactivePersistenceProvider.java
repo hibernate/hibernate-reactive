@@ -198,7 +198,14 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 
 	@Override
 	public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
-		// Hibernate Reactive does not perform bytecode enhancement
+		// Hibernate Reactive doesn't support bytecode enhancement at runtime:
+		// enhance the entities at build time, for example with the Hibernate ORM Gradle or Maven plugin
+		return null;
+	}
+
+	@Override
+	public ClassTransformer getClientClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+		// Like getClassTransformer(): no client class enhancement at runtime
 		return null;
 	}
 
