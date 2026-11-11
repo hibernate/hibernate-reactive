@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
+import org.hibernate.jpa.boot.spi.PersistenceConfigurationDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
@@ -41,10 +42,29 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 
 	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * Returns {@code null} if the configuration doesn't ask for Hibernate Reactive as the provider,
+	 * so that another provider can create the factory.
+	 */
 	@Override
 	public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration persistenceConfiguration) {
-		// Same as ORM
-		throw log.notYetImplemented();
+		log.tracef( "Starting createEntityManagerFactory for persistence configuration %s", persistenceConfiguration.name() );
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceConfiguration );
+		if ( builder == null ) {
+			log.trace( "Hibernate Reactive is not the provider of the persistence configuration, returning null" );
+			return null;
+		}
+		return builder.build();
+	}
+
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(PersistenceConfiguration persistenceConfiguration) {
+		final PersistenceUnitDescriptor persistenceUnit = new PersistenceConfigurationDescriptor( persistenceConfiguration );
+		// See if we (Hibernate Reactive) are the persistence provider
+		return ReactiveProviderChecker.isProvider( persistenceUnit, persistenceConfiguration.properties() )
+				? getEntityManagerFactoryBuilder( persistenceUnit, Collections.emptyMap() )
+				: null;
 	}
 
 	/**
@@ -192,8 +212,14 @@ public class ReactivePersistenceProvider implements PersistenceProvider {
 
 	@Override
 	public boolean generateSchema(PersistenceConfiguration persistenceConfiguration) {
-		// Not yet implemented for Hibernate Reactive
-		throw log.notYetImplemented();
+		log.tracef( "Starting generateSchema for persistence configuration %s", persistenceConfiguration.name() );
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceConfiguration );
+		if ( builder == null ) {
+			log.trace( "Hibernate Reactive is not the provider of the persistence configuration, returning false" );
+			return false;
+		}
+		builder.generateSchema();
+		return true;
 	}
 
 	@Override
