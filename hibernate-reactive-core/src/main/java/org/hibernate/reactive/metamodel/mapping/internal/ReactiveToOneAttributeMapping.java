@@ -4,10 +4,15 @@
  */
 package org.hibernate.reactive.metamodel.mapping.internal;
 
+import java.lang.invoke.MethodHandles;
+
 import org.hibernate.engine.FetchTiming;
 import org.hibernate.metamodel.mapping.AttributeMetadata;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
+import org.hibernate.proxy.LazyInitializer;
+import org.hibernate.reactive.logging.internal.Log;
+import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.sql.results.graph.embeddable.internal.ReactiveEmbeddableForeignKeyResultImpl;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchJoinedImpl;
 import org.hibernate.reactive.sql.results.graph.entity.internal.ReactiveEntityFetchSelectImpl;
@@ -27,8 +32,11 @@ import org.hibernate.sql.results.graph.entity.internal.EntityFetchSelectImpl;
 import org.hibernate.sql.results.internal.domain.CircularFetchImpl;
 
 import static java.util.Objects.requireNonNull;
+import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
 
 public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
+
+	private static final Log LOG = LoggerFactory.make( Log.class, MethodHandles.lookup() );
 
 	public ReactiveToOneAttributeMapping(ToOneAttributeMapping delegate) {
 		super( requireNonNull( delegate ) );
@@ -136,8 +144,21 @@ public class ReactiveToOneAttributeMapping extends ToOneAttributeMapping {
 		return new ReactiveToOneAttributeMapping( super.copy( declaringType, declaringTableGroupProducer ) );
 	}
 
+	/**
+	 * Hibernate ORM initializes the proxy, because it needs the value of the referenced
+	 * unique key. We can't do that here, so we expect the proxy to be already fetched.
+	 *
+	 * @see org.hibernate.reactive.engine.internal.UniqueKeyAssociations
+	 */
 	@Override
 	protected Object lazyInitialize(Object domainValue) {
-		return domainValue;
+		final LazyInitializer lazyInitializer = extractLazyInitializer( domainValue );
+		if ( lazyInitializer == null ) {
+			return domainValue;
+		}
+		if ( lazyInitializer.isUninitialized() ) {
+			throw LOG.lazyInitializationException( lazyInitializer.getEntityName(), lazyInitializer.getInternalIdentifier() );
+		}
+		return lazyInitializer.getImplementation();
 	}
 }

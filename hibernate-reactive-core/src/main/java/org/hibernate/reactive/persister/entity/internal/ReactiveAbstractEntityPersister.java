@@ -131,6 +131,14 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 		return ReactiveGeneratedValuesHelper.getGeneratedValuesDelegate( this, UPDATE );
 	}
 
+	/**
+	 * Whether the entity has associations referencing a unique key, instead of the primary key,
+	 * directly or in its embeddables and collections.
+	 *
+	 * @see org.hibernate.reactive.engine.internal.UniqueKeyAssociations
+	 */
+	boolean hasUniqueKeyAssociations();
+
 	default ReactiveConnection getReactiveConnection(SharedSessionContractImplementor session) {
 		return ReactiveQueryExecutorLookup.extract( session ).getReactiveConnection();
 	}
