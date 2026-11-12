@@ -15,6 +15,7 @@ import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
+import org.hibernate.engine.spi.FetchOptions;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -110,6 +111,10 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			return allRevisions;
 		}
 
+		public EntityPersister getDefaultConcreteDescriptor() {
+			return super.defaultConcreteDescriptor;
+		}
+
 		public LockMode getLockMode() {
 			return super.lockMode;
 		}
@@ -117,6 +122,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 	// Hibernate ORM keeps the same values in private fields
 	private final int[][] filteredAssociationIndexes;
+	private final FetchOptions fetchOptions;
+	private final Initializer<?>[] allInitializers;
+	private final Type keyTypeForEqualsHashCode;
 
 	public ReactiveEntityInitializerImpl(
 			EntityResultGraphNode resultDescriptor,
@@ -146,6 +154,30 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				creationState
 		);
 		this.filteredAssociationIndexes = FilteredAssociationHydration.assemblerIndexes( getAssemblers() );
+		this.fetchOptions = resultDescriptor.getFetchOptions();
+		this.allInitializers = allInitializers();
+		this.keyTypeForEqualsHashCode = getEntityDescriptor().getIdentifierType().getTypeForEqualsHashCode();
+	}
+
+	/**
+	 * The sub-initializer of each fetchable, like {@code EntityInitializerImpl#allInitializers}.
+	 * The sub-initializers of a subtype are indexed by state array position,
+	 * so subtypes of the same entity might use the same position for different attributes.
+	 */
+	private Initializer<?>[] allInitializers() {
+		final EntityPersister entityDescriptor = getEntityDescriptor();
+		final Initializer<?>[][] subInitializers = getSubInitializers();
+		final Initializer<?>[] allInitializers = new Initializer<?>[entityDescriptor.getNumberOfFetchables()];
+		for ( int i = 0; i < allInitializers.length; i++ ) {
+			final var attributeMapping = entityDescriptor.getFetchable( i ).asAttributeMapping();
+			final int subclassId = attributeMapping.getDeclaringType().asEntityMappingType().getSubclassId();
+			final Initializer<?>[] initializers = subInitializers[subclassId];
+			final int stateArrayPosition = attributeMapping.getStateArrayPosition();
+			if ( initializers != null && stateArrayPosition < initializers.length ) {
+				allInitializers[i] = initializers[stateArrayPosition];
+			}
+		}
+		return allInitializers;
 	}
 
 	@Override
@@ -665,7 +697,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			return completedFuture( resolved );
 		}
 		else {
-			if ( rowProcessingState.isQueryCacheHit() && getEntityDescriptor().useShallowQueryCacheLayout() ) {
+			if ( data.getShallowCached() ) {
 				// We must load the entity this way, because the query cache entry contains only the primary key
 				data.setState( State.INITIALIZED );
 				final SharedSessionContractImplementor session = rowProcessingState.getSession();
@@ -681,7 +713,8 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				);
 			}
 			// We have to query the second level cache if reference cache entries are used
-			else if ( getEntityDescriptor().canUseReferenceCacheEntries() ) {
+			// or if this fetch has an explicit graph cache retrieve mode
+			else if ( getEntityDescriptor().canUseReferenceCacheEntries() || fetchOptions.cacheRetrieveMode() != null ) {
 				final Object cached = resolveInstanceFromCache( data );
 				if ( cached != null ) {
 					// EARLY EXIT!!!
@@ -714,8 +747,12 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		}
 		data.setState( State.KEY_RESOLVED );
 
+		final EntityKey oldEntityKey = data.getEntityKey();
+		final Object oldEntityInstance = data.getInstance();
+		final Object oldEntityInstanceForNotify = data.getEntityInstanceForNotify();
+		final EntityHolder oldEntityHolder = data.getEntityHolder();
 		// reset row state
-		data.setConcreteDescriptor( null );
+		data.setConcreteDescriptor( data.getDefaultConcreteDescriptor() );
 		data.setEntityKey( null );
 		data.setInstance( null );
 		data.setEntityInstanceForNotify( null );
@@ -725,6 +762,23 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		return initializeId( data, id, entityKeyOnly )
 				.thenCompose( initialized -> {
 					if ( initialized ) {
+						if ( oldEntityKey != null
+								&& isPreviousRowReuse()
+								&& oldEntityInstance != null
+								&& !data.isAllRevisions()
+								&& areKeysEqual( oldEntityKey.getIdentifier(), id[0] )
+								&& !oldEntityHolder.isDetached() ) {
+							data.setState( State.INITIALIZED );
+							data.setEntityKey( oldEntityKey );
+							data.setInstance( oldEntityInstance );
+							data.setEntityInstanceForNotify( oldEntityInstanceForNotify );
+							data.setConcreteDescriptor( oldEntityKey.getPersister() );
+							data.setEntityHolder( oldEntityHolder );
+							if ( !entityKeyOnly ) {
+								notifySubInitializersToReusePreviousRowInstance( data );
+							}
+							return voidFuture();
+						}
 						resolveEntityKey( data, id[0] );
 						if ( !entityKeyOnly ) {
 							// Resolve the entity instance early as we have no key many-to-one
@@ -758,6 +812,45 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				} );
 	}
 
+
+	// Copied from Hibernate ORM, where it's private
+	private boolean areKeysEqual(Object key1, Object key2) {
+		return keyTypeForEqualsHashCode == null
+				? key1.equals( key2 )
+				: keyTypeForEqualsHashCode.isEqual( key1, key2 );
+	}
+
+	// Copied from Hibernate ORM, where it's private
+	private void notifySubInitializersToReusePreviousRowInstance(ReactiveEntityInitializerData data) {
+		final EntityEntry entityEntry = data.getEntityHolder().getEntityEntry();
+		final Initializer<?>[] subInitializer;
+		final ImmutableBitSet maybeLazySet;
+		final int subclassId = data.getConcreteDescriptor().getSubclassId();
+		if ( data.getEntityHolder().getEntityInitializer() == this ) {
+			// When a previous row initialized this entity already, we only need to process collections
+			subInitializer = getCollectionContainingSubInitializers()[subclassId];
+			maybeLazySet = null;
+		}
+		else {
+			// The entity is already initialized, and we saw it in the previous row,
+			// so the only sensible thing to do is to notify all eager sub-initializers about this.
+			// The eager sub-initializers can then potentially initialize already set proxies or
+			// continue resolving data for collections that ought to be loaded through this initializer
+			subInitializer = getEagerSubInitializers()[subclassId];
+			maybeLazySet = entityEntry == null || isRefreshing( data )
+					? null
+					: entityEntry.getMaybeLazySet();
+		}
+		final RowProcessingState rowProcessingState = data.getRowProcessingState();
+		for ( int i = 0; i < subInitializer.length; i++ ) {
+			final Initializer<?> initializer = subInitializer[i];
+			// It is vital to only resolveFromPreviousRow only for the initializers where the state is maybe lazy,
+			// as the initialization process for the previous row also only called those initializers
+			if ( initializer != null && ( maybeLazySet == null || maybeLazySet.get( i ) ) ) {
+				initializer.resolveFromPreviousRow( rowProcessingState );
+			}
+		}
+	}
 
 	protected CompletionStage<Void> reactiveResolveInstanceSubInitializers(ReactiveEntityInitializerData data) {
 		final int subclassId = data.getConcreteDescriptor().getSubclassId();
@@ -911,15 +1004,17 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 								return falseFuture();
 							}
 							else {
-								data.setConcreteDescriptor( determineConcreteEntityDescriptor(
-										rowProcessingState,
-										getDiscriminatorAssembler(),
-										getEntityDescriptor()
-								) );
-								assert data.getConcreteDescriptor() != null;
+								if ( data.getConcreteDescriptor() == null ) {
+									data.setConcreteDescriptor( determineConcreteEntityDescriptor(
+											rowProcessingState,
+											getDiscriminatorAssembler(),
+											getEntityDescriptor()
+									) );
+									assert data.getConcreteDescriptor() != null;
+								}
 								if ( isKeyManyToOne() ) {
 									if ( !data.getShallowCached() && !entityKeyOnly ) {
-										resolveKeySubInitializers( data );
+										return reactiveResolveKeySubInitializers( data ).thenCompose( unused -> falseFuture() );
 									}
 									return falseFuture();
 								}
@@ -974,13 +1069,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					final ReactiveEntityInitializerDataAdaptor entityInitializerData = new ReactiveEntityInitializerDataAdaptor(
 							(EntityInitializerData) data );
 					if ( entityInitializerData.getConcreteDescriptor() == null ) {
-						return loop( getSubInitializers(), initializers ->
-						 	loop( initializers, initializer -> {
-								if ( initializer != null ) {
-									return consumer.apply( (ReactiveInitializer<?>) initializer, rowProcessingState );
-								}
-								return voidFuture();
-							} )
+						return loop( allInitializers, initializer -> initializer != null
+								? consumer.apply( (ReactiveInitializer<?>) initializer, rowProcessingState )
+								: voidFuture()
 						);
 					}
 					else {
