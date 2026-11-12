@@ -108,6 +108,11 @@ public class ReactiveUnionSubclassEntityPersister extends UnionSubclassEntityPer
 	}
 
 	@Override
+	public boolean hasUniqueKeyAssociations() {
+		return reactiveDelegate.hasUniqueKeyAssociations();
+	}
+
+	@Override
 	protected AttributeMapping buildSingularAssociationAttributeMapping(
 			String attrName,
 			NavigableRole navigableRole,
