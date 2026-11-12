@@ -34,6 +34,9 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.pgclient.PgException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JDBC_PASSWORD;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JDBC_URL;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JDBC_USER;
 import static org.hibernate.cfg.AvailableSettings.PASS;
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
@@ -82,6 +85,28 @@ public class ReactiveConnectionPoolTest {
 	public void configureWithJdbcUrl(VertxTestContext context) {
 		Map<String, Object> config = new HashMap<>();
 		config.put( URL, getJdbcUrl() );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
+		test( context, verifyConnectivity( reactivePool ) );
+	}
+
+	@Test
+	public void configureWithJakartaJdbcUrl(VertxTestContext context) {
+		Map<String, Object> config = new HashMap<>();
+		config.put( JAKARTA_JDBC_URL, getJdbcUrl() );
+		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
+		test( context, verifyConnectivity( reactivePool ) );
+	}
+
+	@Test
+	public void configureWithJakartaCredentials(VertxTestContext context) {
+		String url = getJdbcUrl();
+		url = url.replace( "user=" + DatabaseConfiguration.USERNAME, "user=bogus" );
+		url = url.replace( "password=" + DatabaseConfiguration.PASSWORD, "password=bogus" );
+
+		Map<String, Object> config = new HashMap<>();
+		config.put( JAKARTA_JDBC_URL, url );
+		config.put( JAKARTA_JDBC_USER, DatabaseConfiguration.USERNAME );
+		config.put( JAKARTA_JDBC_PASSWORD, DatabaseConfiguration.PASSWORD );
 		ReactiveConnectionPool reactivePool = configureAndStartPool( config );
 		test( context, verifyConnectivity( reactivePool ) );
 	}

@@ -236,6 +236,45 @@ and the statistics report the hits and misses.
 
 If your application enables the query cache and relied on always reading the latest data, review the cacheable queries.
 
+[[jakarta-settings]]
+== Jakarta Persistence settings are recognized
+
+Hibernate Reactive now accepts the same names for the connection and provider settings as Hibernate ORM.
+
+The persistence provider can be selected with `jakarta.persistence.provider`,
+when passed to `Persistence.createEntityManagerFactory(String, Map)` or as a property of a `PersistenceConfiguration`.
+Before, only the deprecated `javax.persistence.provider` was read, and Hibernate Reactive logs a deprecation warning when you use it.
+If both settings are present, `jakarta.persistence.provider` wins.
+If your application, or a framework, passes `jakarta.persistence.provider` with a provider other than
+`org.hibernate.reactive.provider.ReactivePersistenceProvider`,
+Hibernate Reactive no longer creates the factory, even if the persistence unit names it as the provider.
+
+The default pool, `DefaultSqlClientPool`, and `DefaultSqlClientPoolConfiguration` read the URL and the credentials from:
+
+[cols="1,1,1", options="header"]
+|===
+| Hibernate
+| Jakarta Persistence
+| Legacy (deprecated)
+
+| `hibernate.connection.url`
+| `jakarta.persistence.jdbc.url`
+| `javax.persistence.jdbc.url`
+
+| `hibernate.connection.username`
+| `jakarta.persistence.jdbc.user`
+| `javax.persistence.jdbc.user`
+
+| `hibernate.connection.password`
+| `jakarta.persistence.jdbc.password`
+| `javax.persistence.jdbc.password`
+|===
+
+When more than one of them is set, the precedence is the same as in Hibernate ORM: Hibernate, then Jakarta Persistence, then legacy.
+This also applies when a custom pool calls `configure()` on these classes directly.
+
+The error `HR000079`, reported when the URL is missing, now refers to `jakarta.persistence.jdbc.url`.
+
 [[reactive-access-callback]]
 == `ReactiveAccessCallback.getNextReactiveValue()` return type
 
