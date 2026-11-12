@@ -50,8 +50,11 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 
 	@Override
 	public void configure(Map configuration) {
-		user = getString( Settings.USER, configuration );
-		pass = getString( Settings.PASS, configuration );
+		// Same precedence used by Hibernate ORM when normalizing the connection settings
+		user = getString( Settings.USER, configuration,
+				() -> getString( Settings.JAKARTA_JDBC_USER, Settings.JPA_JDBC_USER, configuration ) );
+		pass = getString( Settings.PASS, configuration,
+				() -> getString( Settings.JAKARTA_JDBC_PASSWORD, Settings.JPA_JDBC_PASSWORD, configuration ) );
 		poolSize = getInt( Settings.POOL_SIZE, configuration, DEFAULT_POOL_SIZE );
 		maxWaitQueueSize = getInteger( Settings.POOL_MAX_WAIT_QUEUE_SIZE, configuration );
 		cacheMaxSize = getInteger( Settings.PREPARED_STATEMENT_CACHE_MAX_SIZE, configuration );

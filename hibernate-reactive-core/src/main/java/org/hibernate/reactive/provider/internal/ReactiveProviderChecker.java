@@ -9,6 +9,8 @@ import org.hibernate.reactive.provider.Settings;
 import org.hibernate.reactive.provider.ReactivePersistenceProvider;
 import org.jboss.logging.Logger;
 
+import static org.hibernate.internal.log.DeprecationLogger.DEPRECATION_LOGGER;
+
 import java.util.Map;
 
 /**
@@ -57,7 +59,7 @@ public final class ReactiveProviderChecker {
 
     /**
      * Extract the requested persistence provider name using the algorithm Hibernate uses.  Namely, a provider named
-     * in the 'integration' map (under the key '{@value Settings#JPA_PERSISTENCE_PROVIDER}') is preferred, as per-spec,
+     * in the 'integration' map (under the key '{@value Settings#JAKARTA_PERSISTENCE_PROVIDER}') is preferred, as per-spec,
      * over value specified in persistence unit.
      *
      * @param persistenceUnit The {@code <persistence-unit/>} descriptor.
@@ -92,7 +94,13 @@ public final class ReactiveProviderChecker {
         if ( integration == null ) {
             return null;
         }
-        final String setting = (String) integration.get( Settings.JPA_PERSISTENCE_PROVIDER );
+        String setting = (String) integration.get( Settings.JAKARTA_PERSISTENCE_PROVIDER );
+        if ( setting == null ) {
+            setting = (String) integration.get( Settings.JPA_PERSISTENCE_PROVIDER );
+            if ( setting != null ) {
+                DEPRECATION_LOGGER.deprecatedSetting( Settings.JPA_PERSISTENCE_PROVIDER, Settings.JAKARTA_PERSISTENCE_PROVIDER );
+            }
+        }
         return setting == null ? null : setting.trim();
     }
 
