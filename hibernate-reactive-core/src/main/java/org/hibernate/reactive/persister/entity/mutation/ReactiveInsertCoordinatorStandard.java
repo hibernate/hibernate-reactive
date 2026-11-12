@@ -45,6 +45,7 @@ import org.hibernate.sql.model.ast.builder.TableMutationBuilder;
 import org.hibernate.tuple.entity.EntityMetamodel;
 
 import static org.hibernate.generator.EventType.INSERT;
+import static org.hibernate.reactive.engine.impl.UniqueKeyAssociations.fetchUnfetchedProxies;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
 import static org.hibernate.reactive.util.impl.CompletionStages.falseFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.voidFuture;
@@ -121,7 +122,9 @@ public class ReactiveInsertCoordinatorStandard extends AbstractMutationCoordinat
 			Object[] values,
 			SharedSessionContractImplementor session,
 			boolean isIdentityInsert) {
-		return reactivePreInsertInMemoryValueGeneration( values, entity, session )
+		// Identity inserts and inserts in a stateless session don't happen during a flush
+		return fetchUnfetchedProxies( entityPersister(), values, session )
+				.thenCompose( v -> reactivePreInsertInMemoryValueGeneration( values, entity, session ) )
 				.thenCompose( needsDynamicInsert -> {
 					final boolean forceIdentifierBinding = entityPersister().getGenerator().generatedOnExecution() && id != null;
 					return entityPersister().getEntityMetamodel().isDynamicInsert() || needsDynamicInsert || forceIdentifierBinding

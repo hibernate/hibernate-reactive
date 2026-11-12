@@ -45,6 +45,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.pretty.MessageHelper;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.named.NamedQueryMemento;
+import org.hibernate.reactive.engine.impl.UniqueKeyAssociations;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderArrayParam;
 import org.hibernate.reactive.loader.ast.internal.ReactiveMultiIdEntityLoaderStandard;
 import org.hibernate.reactive.loader.ast.internal.ReactiveSingleIdArrayLoadPlan;
@@ -92,6 +93,8 @@ public class ReactiveAbstractPersisterDelegate {
 	private Map<SingularAttributeMapping, ReactiveSingleUniqueKeyEntityLoader<Object>> uniqueKeyLoadersNew;
 	private ConcurrentHashMap<String, ReactiveSingleIdArrayLoadPlan> nonLazyPropertyLoadPlansByName;
 
+	private Boolean hasUniqueKeyAssociations;
+
 	public ReactiveAbstractPersisterDelegate(
 			final EntityPersister entityPersister,
 			final PersistentClass persistentClass,
@@ -100,6 +103,17 @@ public class ReactiveAbstractPersisterDelegate {
 		singleIdEntityLoaderSupplier = () -> buildSingleIdEntityLoader( entityPersister, persistentClass, creationContext, factory, entityPersister.getEntityName() );
 		multiIdEntityLoaderSupplier = () -> buildMultiIdEntityLoader( entityPersister, persistentClass, factory );
 		entityDescriptor = entityPersister;
+	}
+
+	/**
+	 * @see UniqueKeyAssociations
+	 */
+	public boolean hasUniqueKeyAssociations() {
+		// The attribute mappings aren't ready when the persister is created
+		if ( hasUniqueKeyAssociations == null ) {
+			hasUniqueKeyAssociations = UniqueKeyAssociations.hasUniqueKeyAssociations( entityDescriptor.getAttributeMappings() );
+		}
+		return hasUniqueKeyAssociations;
 	}
 
 	public ReactiveSingleIdEntityLoader<?> buildSingleIdEntityLoader() {
