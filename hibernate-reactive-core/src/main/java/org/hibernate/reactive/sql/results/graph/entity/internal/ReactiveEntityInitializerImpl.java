@@ -38,6 +38,7 @@ import org.hibernate.sql.results.graph.UnfetchedResultAssembler;
 import org.hibernate.sql.results.graph.collection.internal.UnfetchedCollectionAssembler;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
 import org.hibernate.sql.results.graph.entity.internal.EntityInitializerImpl;
+import org.hibernate.sql.results.graph.entity.internal.FilteredAssociationHydration;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
@@ -114,6 +115,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		}
 	}
 
+	// Hibernate ORM keeps the same values in private fields
+	private final int[][] filteredAssociationIndexes;
+
 	public ReactiveEntityInitializerImpl(
 			EntityResultGraphNode resultDescriptor,
 			String sourceAlias,
@@ -141,6 +145,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				isResultInitializer,
 				creationState
 		);
+		this.filteredAssociationIndexes = FilteredAssociationHydration.assemblerIndexes( getAssemblers() );
 	}
 
 	@Override
@@ -442,7 +447,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					preLoad( data, resolvedEntityState );
 
 					injectInterceptorIfNeeded( data, entityIdentifier, session );
-					data.getConcreteDescriptor().setPropertyValues( data.getEntityInstanceForNotify(), resolvedEntityState );
+					data.getConcreteDescriptor().setValues( data.getEntityInstanceForNotify(), resolvedEntityState );
 
 					persistenceContext.addEntity( data.getEntityKey(), data.getEntityInstanceForNotify() );
 
@@ -463,6 +468,16 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 							true,
 							data.getConcreteDescriptor()
 					);
+					if ( filteredAssociationIndexes != null ) {
+						final int subclassId = data.getConcreteDescriptor().getSubclassId();
+						FilteredAssociationHydration.register(
+								entityEntry,
+								getAssemblers()[subclassId],
+								filteredAssociationIndexes[subclassId],
+								resolvedEntityState,
+								rowProcessingState
+						);
+					}
 					data.getEntityHolder().setEntityEntry( entityEntry );
 
 					registerNaturalIdResolution( data, persistenceContext, resolvedEntityState );
@@ -470,6 +485,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					takeSnapshot( data, session, persistenceContext, entityEntry, previousEntityEntry, resolvedEntityState );
 
 					data.getConcreteDescriptor().afterInitialize( data.getEntityInstanceForNotify(), session );
+					entityEntry.postLoad( data.getEntityInstanceForNotify() );
 
 					assert data.getConcreteDescriptor().getIdentifier( data.getEntityInstanceForNotify(), session ) != null;
 
@@ -509,6 +525,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 	private static LockMode lockModeToAcquire(ReactiveEntityInitializerData data) {
 		return data.getLockMode() == LockMode.NONE ? LockMode.READ : data.getLockMode();
 	}
+
 
 	protected CompletionStage<Object[]> reactiveExtractConcreteTypeStateValues(ReactiveEntityInitializerData data) {
 		final RowProcessingState rowProcessingState = data.getRowProcessingState();
