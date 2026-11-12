@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.it;
 
+import org.hibernate.Hibernate;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
@@ -16,6 +17,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import jakarta.persistence.EntityGraph;
 
 import io.vertx.junit5.VertxTestContext;
 
@@ -103,6 +106,39 @@ public class LazyBasicFieldTest extends BaseReactiveIT {
 											assertThat( role ).isEqualTo( emily.getRole() );
 										} )
 								) ) )
+		);
+	}
+
+	@Test
+	public void testQueryFetchesBasicFieldOfManagedEntity(VertxTestContext context) {
+		final Crew emily = new Crew();
+		emily.setId( 21L );
+		emily.setName( "Emily Jackson" );
+		emily.setRole( "Passenger" );
+		emily.setFate( "Unknown" );
+
+		// Unlike the other tests, the lazy field is loaded by a query
+		// that finds the entity already in the persistence context
+		test( context, getMutinySessionFactory()
+				.withTransaction( session -> session.persist( emily ) )
+				.chain( () -> getMutinySessionFactory()
+						.withSession( session -> session
+								.find( Crew.class, emily.getId() )
+								.invoke( crew -> assertThat( Hibernate.isPropertyInitialized( crew, "role" ) ).isFalse() )
+								.chain( crew -> {
+									final EntityGraph<Crew> graph = session.createEntityGraph( Crew.class );
+									graph.addAttributeNodes( "role" );
+									return session.createSelectionQuery( "from Crew where id = :id", Crew.class )
+											.setParameter( "id", emily.getId() )
+											.setPlan( graph )
+											.getSingleResult()
+											.invoke( result -> {
+												assertThat( result ).isSameAs( crew );
+												assertThat( Hibernate.isPropertyInitialized( result, "role" ) ).isTrue();
+												assertThat( result.getRole() ).isEqualTo( emily.getRole() );
+												assertThat( Hibernate.isPropertyInitialized( result, "fate" ) ).isFalse();
+											} );
+								} ) ) )
 		);
 	}
 
