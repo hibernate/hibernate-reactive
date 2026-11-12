@@ -18,6 +18,8 @@ When you help with a release, follow the [release checklist](https://github.com/
 - Keep the title at most 72 characters, ideally about 60, including the issue key.
   GitHub truncates longer titles when it uses them as the pull request title.
 - Put the fix and the tests in separate commits, the fix first and the tests after it.
+- Put the changes that don't affect the compilation or the build, like the documentation or the migration guide,
+  in separate commits from the code changes.
 - **Always** make every commit compile and pass the build on its own, so that the history stays bisectable.
 - When you take over a contributor's pull request, reorder or squash its commits as needed
   to keep every commit building, for example by folding a compilation fix into the commit that broke it.
