@@ -29,6 +29,7 @@ import org.hibernate.reactive.engine.ReactiveActionQueue;
 import org.hibernate.reactive.engine.internal.Cascade;
 import org.hibernate.reactive.engine.internal.CascadingActions;
 import org.hibernate.reactive.engine.internal.QueuedOperationCollectionAction;
+import org.hibernate.reactive.engine.internal.UniqueKeyAssociations;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.session.ReactiveSession;
@@ -190,7 +191,28 @@ public abstract class AbstractReactiveFlushingEventListener {
 								entries[index].getKey(),
 								null
 						)
-				) );
+				) )
+				.thenCompose( v -> fetchUniqueKeyAssociations( session, persistenceContext ) );
+	}
+
+	/**
+	 * Dirty checking and writing an association that references a unique key, instead of the
+	 * primary key, requires the value of the key: we need to fetch the unfetched proxies first.
+	 * We get the entries again, so that we include the entities persisted by the cascades.
+	 *
+	 * @see UniqueKeyAssociations
+	 */
+	private CompletionStage<Void> fetchUniqueKeyAssociations(EventSource session, PersistenceContext persistenceContext) {
+		final Map.Entry<Object, EntityEntry>[] entries = persistenceContext.reentrantSafeEntityEntries();
+		return loop(
+				entries,
+				index -> flushable( entries[index].getValue() ),
+				index -> UniqueKeyAssociations.fetchUnfetchedProxies(
+						entries[index].getValue().getPersister(),
+						entries[index].getKey(),
+						session
+				)
+		);
 	}
 
 	private CompletionStage<Void> cascadeOnFlush(

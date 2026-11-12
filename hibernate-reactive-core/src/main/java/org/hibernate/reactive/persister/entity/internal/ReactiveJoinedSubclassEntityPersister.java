@@ -106,6 +106,11 @@ public class ReactiveJoinedSubclassEntityPersister extends JoinedSubclassEntityP
 	}
 
 	@Override
+	public boolean hasUniqueKeyAssociations() {
+		return reactiveDelegate.hasUniqueKeyAssociations();
+	}
+
+	@Override
 	protected AttributeMapping buildSingularAssociationAttributeMapping(
 			String attrName,
 			NavigableRole navigableRole,
