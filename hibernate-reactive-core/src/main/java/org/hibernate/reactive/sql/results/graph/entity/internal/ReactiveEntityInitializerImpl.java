@@ -19,6 +19,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
+import org.hibernate.internal.util.ImmutableBitSet;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.LazyInitializer;
@@ -33,9 +34,10 @@ import org.hibernate.sql.results.graph.Fetch;
 import org.hibernate.sql.results.graph.Initializer;
 import org.hibernate.sql.results.graph.InitializerData;
 import org.hibernate.sql.results.graph.InitializerParent;
+import org.hibernate.sql.results.graph.UnfetchedResultAssembler;
+import org.hibernate.sql.results.graph.collection.internal.UnfetchedCollectionAssembler;
 import org.hibernate.sql.results.graph.entity.EntityResultGraphNode;
 import org.hibernate.sql.results.graph.entity.internal.EntityInitializerImpl;
-import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingOptions;
 import org.hibernate.sql.results.jdbc.spi.RowProcessingState;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.Type;
@@ -103,6 +105,10 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 			return super.shallowCached;
 		}
 
+		public boolean isAllRevisions() {
+			return allRevisions;
+		}
+
 		public LockMode getLockMode() {
 			return super.lockMode;
 		}
@@ -135,16 +141,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				isResultInitializer,
 				creationState
 		);
-	}
-
-	@Override
-	protected void resolveEntityKey(EntityInitializerData original, Object id) {
-		ReactiveEntityInitializerData data = (ReactiveEntityInitializerData) original;
-		if ( data.getConcreteDescriptor() == null ) {
-			data.setConcreteDescriptor( determineConcreteEntityDescriptor( data.getRowProcessingState(), getDiscriminatorAssembler(), getEntityDescriptor() ) );
-			assert data.getConcreteDescriptor() != null;
-		}
-		data.setEntityKey( new EntityKey( id, data.getConcreteDescriptor() ) );
 	}
 
 	@Override
@@ -199,16 +195,10 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					final Object entity = data.getEntityHolder().getEntity();
 					final var entityKey = data.getEntityHolder().getEntityKey();
 					if ( entity == null ) {
-						final Object proxy = data.getEntityHolder().getProxy();
-						if ( proxy == instance ) {
-							throw new IllegalStateException( "Proxy should not be the same as instance" );
-						}
+						assert data.getEntityHolder().getProxy() != instance;
 						return reactiveResolveEntityInstance( data )
 								.thenCompose( resolvedInstance -> {
 									data.setEntityKey( entityKey );
-									if ( proxy != null ) {
-										extractLazyInitializer( proxy ).setImplementation( resolvedInstance );
-									}
 									resolveEntityHolderState( resolvedInstance, data, persistenceContext, rowProcessingState );
 									return finishResolveInstance( data, rowProcessingState );
 								} );
@@ -246,7 +236,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				final Object proxy = data.getEntityHolder().getProxy();
 				if ( proxy == instance ) {
 					data.setEntityInstanceForNotify( resolveEntityInstance( data ) );
-					lazyInitializer.setImplementation( data.getEntityInstanceForNotify() );
 				}
 				else {
 					resolveEntity( data, proxy );
@@ -348,6 +337,13 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				this
 		) );
 
+		if ( data.isAllRevisions() && data.getEntityKey().isTemporal() ) {
+			// Set the per-row temporal identifier so that association loads use the correct revision
+			rowProcessingState.getSession()
+					.getLoadQueryInfluencers()
+					.setTemporalIdentifier( data.getEntityKey().getChangesetId() );
+		}
+
 		if ( useEmbeddedIdentifierInstanceAsEntity( data ) ) {
 			data.setEntityInstanceForNotify( rowProcessingState.getEntityId() );
 			data.setInstance( data.getEntityInstanceForNotify() );
@@ -403,9 +399,11 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		if ( data.getState() != State.RESOLVED ) {
 			return voidFuture();
 		}
+		final ReactiveEntityInitializerData reactiveData = (ReactiveEntityInitializerData) data;
 		if ( !skipInitialization( data ) ) {
-			assert consistentInstance( data );
-			return reactiveInitializeEntityInstance( (ReactiveEntityInitializerData) data );
+			assert reactiveData.isAllRevisions() || consistentInstance( data );
+			return reactiveInitializeEntityInstance( reactiveData )
+					.thenAccept( v -> data.setState( State.INITIALIZED ) );
 		}
 		else {
 			if ( data.getRowProcessingState().needsResolveState() ) {
@@ -413,8 +411,7 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 				// but we still need to resolve the state to correctly populate a query cache
 				resolveState( data );
 			}
-			final ReactiveEntityInitializerData reactiveData = (ReactiveEntityInitializerData) data;
-			if ( getEntityDescriptor().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
+			if ( getRootEntityDescriptor().getBytecodeEnhancementMetadata().isEnhancedForLazyLoading()
 					&& reactiveData.getEntityHolder().getEntityInitializer() != this
 					&& reactiveData.getEntityHolder().isInitialized() ) {
 				updateInitializedEntityInstance( data );
@@ -552,12 +549,10 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					data.setEntityInstanceForNotify( Hibernate.unproxy( data.getInstance() ) );
 				}
 				else {
-					final LazyInitializer lazyInitializer = extractLazyInitializer( data.getInstance() );
-					assert lazyInitializer != null;
+					assert extractLazyInitializer( data.getInstance() ) != null;
 					return reactiveResolveEntityInstance2( data )
 							.thenAccept( entityInstance -> {
 								data.setEntityInstanceForNotify( entityInstance );
-								lazyInitializer.setImplementation( data.getEntityInstanceForNotify() );
 								ensureEntityIsInitialized( data );
 							} );
 				}
@@ -684,19 +679,6 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		}
 	}
 
-	// FIXME: I could change the scope of this method in ORM
-	private Object resolveToOptionalInstance(ReactiveEntityInitializerData data) {
-		if ( isResultInitializer() ) {
-			// this isEntityReturn bit is just for entity loaders, not hql/criteria
-			final JdbcValuesSourceProcessingOptions processingOptions =
-					data.getRowProcessingState().getJdbcValuesSourceProcessingState().getProcessingOptions();
-			return matchesOptionalInstance( data, processingOptions ) ? processingOptions.getEffectiveOptionalObject() : null;
-		}
-		else {
-			return null;
-		}
-	}
-
 	private boolean isExistingEntityInitialized(Object existingEntity) {
 		return Hibernate.isInitialized( existingEntity );
 	}
@@ -761,11 +743,35 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 
 	protected CompletionStage<Void> reactiveResolveInstanceSubInitializers(ReactiveEntityInitializerData data) {
-		final Initializer<?>[] initializers = getSubInitializers()[data.getConcreteDescriptor().getSubclassId()];
-		if ( initializers.length == 0 ) {
-			return voidFuture();
-		}
+		final int subclassId = data.getConcreteDescriptor().getSubclassId();
 		final EntityEntry entityEntry = data.getEntityHolder().getEntityEntry();
+		assert entityEntry != null : "This method should only be called if the entity is already initialized";
+
+		final Initializer<?>[] initializers;
+		final ImmutableBitSet maybeLazySet;
+		if ( data.getEntityHolder().getEntityInitializer() == this ) {
+			// When this entity is already initialized, but this initializer runs anyway,
+			// we only need to process collection containing initializers
+			initializers = getCollectionContainingSubInitializers()[subclassId];
+			maybeLazySet = null;
+		}
+		else {
+			// If an entity has unfetched attributes, we should probably also invoke non-eager initializers.
+			// Non-eager initializers only set proxies, but since that contains the FK information,
+			// it would be wasteful not to set that information on the bytecode enhanced entity
+			final Initializer<?>[][] subInitializersToUse = getRootEntityDescriptor().getBytecodeEnhancementMetadata()
+					.hasUnFetchedAttributes( data.getEntityInstanceForNotify() )
+					? getSubInitializers()
+					: getEagerSubInitializers();
+			initializers = subInitializersToUse[subclassId];
+			maybeLazySet = entityEntry.getMaybeLazySet();
+			// Skip resolving if this initializer has no sub-initializers
+			// or the lazy set of this initializer is a superset/contains the entity entry maybeLazySet
+			if ( initializers.length == 0 && !isHasLazyInitializingSubAssemblers()
+					|| maybeLazySet != null && getLazySets()[subclassId].contains( maybeLazySet ) ) {
+				return voidFuture();
+			}
+		}
 		final RowProcessingState rowProcessingState = data.getRowProcessingState();
 		assert entityEntry == rowProcessingState.getSession()
 				.getPersistenceContextInternal()
@@ -787,32 +793,66 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 		else {
 			state = loadedState;
 		}
-		return loop( 0, initializers.length, i -> {
-			final Initializer<?> initializer = initializers[i];
-			if ( initializer != null ) {
-				final Object subInstance = state[i];
-				if ( subInstance == UNFETCHED_PROPERTY ) {
-					if ( initializer instanceof ReactiveInitializer ) {
-						return ( (ReactiveInitializer<?>) initializer )
-								.reactiveResolveKey( rowProcessingState );
-					}
-					else {
-						// Go through the normal initializer process
-						initializer.resolveKey( rowProcessingState );
-					}
-				}
-				else {
-					if ( initializer instanceof ReactiveInitializer ) {
-						return ( (ReactiveInitializer<?>) initializer )
-								.reactiveResolveInstance( subInstance, rowProcessingState );
-					}
-					else {
-						initializer.resolveInstance( subInstance, rowProcessingState );
-					}
+		final DomainResultAssembler<?>[] subAssemblers = getAssemblers()[subclassId];
+		if ( initializers.length == 0 ) {
+			if ( !isHasLazyInitializingSubAssemblers() ) {
+				return voidFuture();
+			}
+			for ( int i = 0; i < state.length; i++ ) {
+				if ( state[i] == UNFETCHED_PROPERTY && isLazyInitializingAssembler( subAssemblers[i] ) ) {
+					// This assembler will produce a value when the underlying entity property is still lazy
+					// Mark as resolved to update the state of the entity during initialization phase
+					data.setState( State.RESOLVED );
+					break;
 				}
 			}
 			return voidFuture();
+		}
+
+		final Initializer<?>[] eagerInitializers = getEagerSubInitializers()[subclassId];
+		final boolean[] needsLoadedValuesUpdate = { false };
+		return loop( 0, state.length, i -> {
+			if ( maybeLazySet == null || maybeLazySet.get( i ) ) {
+				final Initializer<?> initializer = initializers[i];
+				final Object subInstance = state[i];
+				if ( initializer != null ) {
+					if ( subInstance == UNFETCHED_PROPERTY ) {
+						// Assume that the initializer will produce a proxy or the real value
+						needsLoadedValuesUpdate[0] = true;
+						// Go through the normal initializer process
+						if ( initializer instanceof ReactiveInitializer<?> reactiveInitializer ) {
+							return reactiveInitializer.reactiveResolveKey( rowProcessingState );
+						}
+						initializer.resolveKey( rowProcessingState );
+					}
+					// Avoid resolving initializers that are not lazy when the property isn't unfetched
+					else if ( eagerInitializers.length != 0 && eagerInitializers[i] != null ) {
+						if ( initializer instanceof ReactiveInitializer<?> reactiveInitializer ) {
+							return reactiveInitializer.reactiveResolveInstance( subInstance, rowProcessingState );
+						}
+						initializer.resolveInstance( subInstance, rowProcessingState );
+					}
+				}
+				else if ( !needsLoadedValuesUpdate[0]
+						&& isHasLazyInitializingSubAssemblers()
+						&& subInstance == UNFETCHED_PROPERTY
+						&& isLazyInitializingAssembler( subAssemblers[i] ) ) {
+					// This assembler will produce a value when the underlying entity property is still lazy
+					needsLoadedValuesUpdate[0] = true;
+				}
+			}
+			return voidFuture();
+		} ).thenAccept( v -> {
+			if ( needsLoadedValuesUpdate[0] ) {
+				// Mark as resolved to update the state of the entity during initialization phase
+				data.setState( State.RESOLVED );
+			}
 		} );
+	}
+
+	private static boolean isLazyInitializingAssembler(DomainResultAssembler<?> assembler) {
+		return !( assembler instanceof UnfetchedResultAssembler<?> )
+				&& !( assembler instanceof UnfetchedCollectionAssembler );
 	}
 
 	protected CompletionStage<Void> reactiveResolveKeySubInitializers(ReactiveEntityInitializerData data) {
@@ -929,8 +969,9 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					else {
 						Initializer<?>[] subInitializers = getSubInitializers()[entityInitializerData.getConcreteDescriptor()
 								.getSubclassId()];
-						return loop( subInitializers, initializer -> consumer
-								.apply( (ReactiveInitializer<?>) initializer, rowProcessingState )
+						return loop( subInitializers, initializer -> initializer != null
+								? consumer.apply( (ReactiveInitializer<?>) initializer, rowProcessingState )
+								: voidFuture()
 						);
 					}
 				} );
