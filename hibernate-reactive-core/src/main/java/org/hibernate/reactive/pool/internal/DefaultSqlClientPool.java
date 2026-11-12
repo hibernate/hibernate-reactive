@@ -214,7 +214,9 @@ public class DefaultSqlClientPool extends SqlClientPool
 	 * @return the JDBC URL as a {@link URI}
 	 */
 	protected URI jdbcUrl(Map<?,?> configurationValues) {
-		String url = ConfigurationHelper.getString( Settings.URL, configurationValues );
+		// Same precedence used by Hibernate ORM when normalizing the connection settings
+		String url = ConfigurationHelper.getString( Settings.URL, configurationValues,
+				() -> ConfigurationHelper.getString( Settings.JAKARTA_JDBC_URL, Settings.JPA_JDBC_URL, configurationValues ) );
 		BOOT_INFO_LOGGER.sqlClientUrl( url);
 		return parse( url );
 	}
@@ -275,7 +277,7 @@ public class DefaultSqlClientPool extends SqlClientPool
 
 	public static URI parse(String url) {
 		if ( url == null || url.isBlank() ) {
-			throw LOG.blankConnectionString( Settings.URL );
+			throw LOG.blankConnectionString( Settings.JAKARTA_JDBC_URL );
 		}
 
 		if ( url.startsWith( "jdbc:" ) ) {
