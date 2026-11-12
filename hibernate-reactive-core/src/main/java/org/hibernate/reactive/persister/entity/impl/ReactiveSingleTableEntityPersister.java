@@ -122,6 +122,11 @@ public class ReactiveSingleTableEntityPersister extends SingleTableEntityPersist
 	}
 
 	@Override
+	public boolean hasUniqueKeyAssociations() {
+		return reactiveDelegate.hasUniqueKeyAssociations();
+	}
+
+	@Override
 	public Generator getGenerator() throws HibernateException {
 		return reactiveDelegate.reactive( super.getGenerator() );
 	}
