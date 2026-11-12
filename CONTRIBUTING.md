@@ -99,6 +99,8 @@ Do your thing!
 ## Commit
 
 * Make commits of logical units
+* Keep the changes that don't affect the compilation or the build, like the documentation
+  or the migration guide, in separate commits from the code changes
 * Be sure to start each commit message using the ** GitHub issue key **. For example:
   ```
   [#1234] Fix some kind of problem
