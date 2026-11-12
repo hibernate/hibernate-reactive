@@ -32,6 +32,7 @@ import static org.hibernate.engine.jdbc.mutation.internal.ModelMutationHelper.id
 import static org.hibernate.generator.EventType.UPDATE;
 import static org.hibernate.internal.util.collections.ArrayHelper.EMPTY_INT_ARRAY;
 import static org.hibernate.internal.util.collections.ArrayHelper.trim;
+import static org.hibernate.reactive.engine.impl.UniqueKeyAssociations.fetchUnfetchedProxies;
 import static org.hibernate.reactive.persister.entity.mutation.GeneratorValueUtil.generateValue;
 import static org.hibernate.reactive.util.impl.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.impl.CompletionStages.nullFuture;
@@ -107,7 +108,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 		}
 
 
-		return voidFuture()
+		// Updates in a stateless session don't happen during a flush
+		return fetchUnfetchedProxies( entityPersister(), values, session )
 				.thenCompose( v -> reactivePreUpdateInMemoryValueGeneration( entity, values, session ) )
 				.thenCompose( preUpdateGeneratedAttributeIndexes -> {
 
