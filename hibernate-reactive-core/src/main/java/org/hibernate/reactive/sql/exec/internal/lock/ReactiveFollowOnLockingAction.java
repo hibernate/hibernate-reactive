@@ -6,15 +6,21 @@ package org.hibernate.reactive.sql.exec.internal.lock;
 
 import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
+import org.hibernate.engine.spi.CollectionKey;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.metamodel.mapping.EntityMappingType;
+import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.TableDetails;
+import org.hibernate.query.sqm.mutation.internal.SqmMutationStrategyHelper;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
@@ -23,6 +29,7 @@ import org.hibernate.reactive.sql.exec.spi.ReactivePostAction;
 import org.hibernate.dialect.lock.spi.LockingClauseStrategy;
 import org.hibernate.sql.ast.spi.query.select.QuerySpec;
 import org.hibernate.sql.exec.internal.lock.FollowOnLockingAction;
+import org.hibernate.sql.exec.internal.lock.EntityDetails;
 import org.hibernate.sql.exec.internal.lock.LockingHelper;
 import org.hibernate.sql.exec.internal.lock.TableLock;
 import org.hibernate.sql.exec.spi.ExecutionContext;
@@ -33,7 +40,9 @@ import org.hibernate.sql.exec.spi.StatementAccess;
 import jakarta.persistence.PessimisticLockScope;
 import jakarta.persistence.Timeout;
 
+import static java.util.Collections.emptyMap;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
+import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 /**
  * Reactive version of {@link FollowOnLockingAction}
@@ -49,11 +58,20 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 		throw LOG.nonReactiveMethodCall( "reactivePerformPostAction()" );
 	}
 
+	private final LockMode lockMode;
+	private final Timeout lockTimeout;
+	private final PessimisticLockScope scope;
+
 	protected ReactiveFollowOnLockingAction(
 			LockMode lockMode,
 			Timeout lockTimeout,
 			PessimisticLockScope lockScope) {
-		super( lockMode, lockTimeout, lockScope );
+		// The collection tables are locked by this class because the ORM implementation runs
+		// blocking JDBC statements when the scope is not NORMAL: see lockCollectionTables
+		super( lockMode, lockTimeout, PessimisticLockScope.NORMAL );
+		this.lockMode = lockMode;
+		this.lockTimeout = lockTimeout;
+		this.scope = lockScope;
 	}
 
 	public static void apply(
@@ -119,10 +137,11 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 							executionContext,
 							loadedValuesCollector
 					);
-					return loop( tableLocks.values().iterator(), (tableLock, i) ->
-							( (ReactiveTableLock) tableLock )
-									.reactivePerformActions( entityDetailsMap, lockingOptions, (ReactiveSessionImpl) session )
-					 );
+					return lockCollectionTables( entityMappingType, entityDetailsMap, collectionSegments, loadedValuesCollector, executionContext )
+							.thenCompose( v -> loop( tableLocks.values().iterator(), (tableLock, i) ->
+									( (ReactiveTableLock) tableLock )
+											.reactivePerformActions( entityDetailsMap, lockingOptions, (ReactiveSessionImpl) session )
+							) );
 
 				}
 		).whenComplete( (unused, throwable) -> {
@@ -130,6 +149,47 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 			session.getLoadQueryInfluencers().applyEntityGraph( initialGraph, initialSemantic );
 		} );
 
+	}
+
+	/**
+	 * The reactive version of the part of {@link FollowOnLockingAction#buildLockingOptions} that locks
+	 * the collection tables, according to the lock scope.
+	 */
+	private CompletionStage<Void> lockCollectionTables(
+			EntityMappingType entityMappingType,
+			Map<Object, EntityDetails> entityDetailsMap,
+			Map<EntityMappingType, Map<PluralAttributeMapping, List<CollectionKey>>> collectionSegments,
+			LoadedValuesCollector loadedValuesCollector,
+			ExecutionContext executionContext) {
+		if ( scope == PessimisticLockScope.EXTENDED ) {
+			final var collectionTables = new ArrayList<PluralAttributeMapping>();
+			// we may need to lock the "collection table".
+			// the conditions are a bit unclear as to directionality, etc., so for now lock each.
+			SqmMutationStrategyHelper.visitCollectionTables( entityMappingType, collectionTables::add );
+			return loop( collectionTables, attribute -> ReactiveLockingHelper
+					.lockCollectionTable( attribute, lockMode, lockTimeout, entityDetailsMap, executionContext ) );
+		}
+		if ( scope == PessimisticLockScope.FETCHED
+				&& loadedValuesCollector.getCollectedCollections() != null
+				&& !loadedValuesCollector.getCollectedCollections().isEmpty() ) {
+			final var attributeKeys = collectionSegments.get( entityMappingType );
+			if ( attributeKeys != null ) {
+				return loop( attributeKeys.entrySet().iterator(), (entry, index) -> ReactiveLockingHelper
+						.lockCollectionTable( entry.getKey(), lockMode, lockTimeout, entry.getValue(), executionContext ) );
+			}
+		}
+		return voidFuture();
+	}
+
+	@Override
+	protected Map<EntityMappingType, Map<PluralAttributeMapping, List<CollectionKey>>> segmentLoadedCollections(
+			LoadedValuesCollector loadedValuesCollector) {
+		if ( scope == PessimisticLockScope.NORMAL ) {
+			return emptyMap();
+		}
+		final Map<EntityMappingType, Map<PluralAttributeMapping, List<CollectionKey>>> map = new HashMap<>();
+		LockingHelper.segmentLoadedCollections( loadedValuesCollector.getCollectedCollections(), scope, map );
+		return map;
 	}
 
 	@Override
