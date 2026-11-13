@@ -4,6 +4,8 @@
  */
 package org.hibernate.reactive.id.internal;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -24,13 +26,16 @@ import io.vertx.core.internal.pool.Task;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
+import static org.hibernate.reactive.util.internal.CompletionStages.failedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.supplyStage;
 
 /**
  * A {@link ReactiveIdentifierGenerator} which uses the database to allocate
  * blocks of ids. A block is identified by its "hi" value (the first id in
  * the block). While a new block is being allocated, concurrent streams will
- * defer the operation without blocking.
+ * defer the operation without blocking. A request for a new block serves at most
+ * {@code blockSize} waiting streams; further streams trigger another request, and
+ * the ids of a block that are not needed by its waiters are kept for later use.
  *
  * @author Gavin King
  * @author Davide D'Alto
@@ -73,23 +78,57 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	//to reason about what the current state is and what the CombinerExecutor is
 	//supposed to work on.
 	private static class GeneratorState {
-		private int loValue;
-		private long hiValue;
+		//The block currently being consumed: the ids in [nextId, endId) are still available
+		private long nextId;
+		private long endId;
+		//The fetch new callers can still join, or null if there isn't one.
+		//Invariant: it is in flight, has fewer than blockSize waiters and is not completed.
+		//Only accessed via the CombinerExecutor.
+		private Fetch openFetch;
 	}
 
 	//Critical section: needs to be accessed exclusively via the CombinerExecutor
 	//when there's contention; direct invocation is allowed in the fast path.
 	private synchronized long next() {
-		return state.loValue > 0 && state.loValue < getBlockSize()
-				? state.hiValue + state.loValue++
+		return state.nextId < state.endId
+				? state.nextId++
 				: -1; //flag value indicating that we need to hit db
 	}
 
-	//Critical section: needs to be accessed exclusively via the CombinerExecutor
-	private synchronized long next(long hi) {
-		state.hiValue = hi;
-		state.loValue = 1;
-		return hi;
+	//Critical section: needs to be accessed exclusively via the CombinerExecutor.
+	//Uses the ids of the block [hi, hi + blockSize) that were not handed out to waiters.
+	//Only the fetch that was still open can have unused ids, and a fetch is only opened
+	//when the current block is exhausted: no other fetch can refill it while it's open.
+	private synchronized void useUnusedIds(long hi, int used) {
+		if ( used < getBlockSize() ) {
+			state.nextId = hi + used;
+			state.endId = hi + getBlockSize();
+		}
+	}
+
+	/**
+	 * A request for a new block that is in flight: it serves at most {@code blockSize} waiters,
+	 * so that each of them gets an id after a single round-trip to the database.
+	 */
+	private final class Fetch {
+		//The first waiter started the fetch, and the request uses its connection
+		private final List<GenerateIdAction> waiters = new ArrayList<>();
+
+		private void complete(long hi) {
+			useUnusedIds( hi, waiters.size() );
+			for ( int i = 0; i < waiters.size(); i++ ) {
+				waiters.get( i ).result.complete( hi + i );
+			}
+		}
+
+		private void fail(GeneratorState state, Throwable throwable) {
+			// The failure might come from the connection of the first waiter (an aborted transaction,
+			// for example), so the other waiters try again: one of them starts a new fetch with its own connection
+			waiters.get( 0 ).result.completeExceptionally( throwable );
+			for ( int i = 1; i < waiters.size(); i++ ) {
+				waiters.get( i ).execute( state );
+			}
+		}
 	}
 
 	@Override
@@ -107,7 +146,7 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 		//if it were to happen we should be better off with direct execution rather than using
 		//the co-operative executor:
 		if ( getBlockSize() <= 1 ) {
-			return nextHiValue( connectionSupplier ).thenApply( this::next );
+			return nextHiValue( connectionSupplier );
 		}
 
 		final CompletableFuture<Long> resultForThisEventLoop = new CompletableFuture<>();
@@ -147,38 +186,53 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 		public Task execute(GeneratorState state) {
 			long local = next();
 			if ( local >= 0 ) {
-				// We don't need to update or initialize the hi
-				// value in the table, so just increment the lo
-				// value and return the next id in the block
+				// We don't need to hit the database: the block still has ids
 				result.complete( local );
+				return null;
 			}
-			else {
-				creationContext.runOnContext( this::generateNewHiValue );
+			// Join the open fetch if there is one, otherwise start a new one. A fetch that
+			// reaches blockSize waiters is closed so that the next caller starts another one.
+			if ( state.openFetch == null ) {
+				final Fetch fetch = new Fetch();
+				try {
+					creationContext.runOnContext( v -> fetchHiValue( fetch ) );
+				}
+				catch (Throwable e) {
+					// The fetch didn't start, so no other caller must join it
+					result.completeExceptionally( e );
+					return null;
+				}
+				state.openFetch = fetch;
+			}
+			state.openFetch.waiters.add( this );
+			if ( state.openFetch.waiters.size() >= getBlockSize() ) {
+				state.openFetch = null;
 			}
 			return null;
 		}
 
-		private void generateNewHiValue(Void v) {
+		private void fetchHiValue(Fetch fetch) {
+			CompletionStage<Long> stage;
 			try {
-				nextHiValue( connectionSupplier )
-						.whenComplete( (newlyGeneratedHi, throwable) -> {
-							if ( throwable != null ) {
-								result.completeExceptionally( throwable );
-							}
-							else {
-								//We ignore the state argument as we actually use the field directly
-								//for convenience, but they are the same object.
-								executor.submit( stateIgnored -> {
-									result.complete( next( newlyGeneratedHi ) );
-									return null;
-								} );
-							}
-						} );
+				stage = nextHiValue( connectionSupplier );
 			}
-			catch ( Throwable e ) {
-				// nextHivalue() could throw an exception before returning a completion stage
-				result.completeExceptionally( e );
+			catch (Throwable e) {
+				// nextHiValue() could throw an exception before returning a completion stage
+				stage = failedFuture( e );
 			}
+			stage.whenComplete( (newlyGeneratedHi, throwable) -> executor.submit( generatorState -> {
+				// No new caller can join a fetch once it's completed, even if it failed
+				if ( generatorState.openFetch == fetch ) {
+					generatorState.openFetch = null;
+				}
+				if ( throwable != null ) {
+					fetch.fail( generatorState, throwable );
+				}
+				else {
+					fetch.complete( newlyGeneratedHi );
+				}
+				return null;
+			} ) );
 		}
 	}
 
