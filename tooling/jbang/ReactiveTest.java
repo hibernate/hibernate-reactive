@@ -61,9 +61,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * An example of a JUnit test class for Hibernate Reactive using
- * <a hreaf="https://vertx.io/docs/vertx-unit/java/">Vert.x Unit</a> and
- * <a hreaf="https://www.testcontainers.org/">Testcontainers</a>
- * that you can run using <a hreaf="https://www.jbang.dev/">JBang</a>.
+ * <a href="https://vertx.io/docs/vertx-unit/java/">Vert.x Unit</a> and
+ * <a href="https://www.testcontainers.org/">Testcontainers</a>
+ * that you can run using <a href="https://www.jbang.dev/">JBang</a>.
  * <p>
  * Before running the tests, Testcontainers will start the selected
  * Docker image with the required database created.
@@ -76,7 +76,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Usage example:
  *     <dl>
  *         <dt>1. Download JBang</dt>
- *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
+ *         <dd>See <a href="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
  *         <dt>2. Run the test with JBang</dt>
  *         <dd>
  *             <pre>jbang ReactiveTest.java</pre>
