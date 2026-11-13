@@ -246,6 +246,136 @@ public class ExtendedLockScopeTest extends BaseReactiveTest {
 				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
 	}
 
+	private static CompletionStage<Book> findAndLock(Stage.Session session, LockOptions lockOptions) {
+		return session.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> {
+					sqlTracker.clear();
+					// Stage.Session doesn't expose lock(Object, LockOptions)
+					return ( (StageSessionImpl) session ).lock( book, lockOptions )
+							.thenApply( v -> book );
+				} );
+	}
+
+	@Test
+	public void testLockNormalScopeDoesNotLockCollectionTables(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions( PessimisticLockScope.NORMAL, Locking.FollowOn.ALLOW ) )
+				.thenAccept( book -> {
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).isEmpty();
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).isEmpty();
+				} ) ) );
+	}
+
+	@Test
+	public void testLockExtendedScope(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) )
+				.thenAccept( book -> {
+					assertThat( s.getLockMode( book ) ).isEqualTo( LockMode.PESSIMISTIC_WRITE );
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+				} ) ) );
+	}
+
+	// Covers an entity that is already locked: the extended scope still locks the collection tables
+	@Test
+	public void testLockExtendedScopeAfterNormalScope(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> find( s, lockOptions( PessimisticLockScope.NORMAL, Locking.FollowOn.ALLOW ) )
+				.thenCompose( book -> {
+					sqlTracker.clear();
+					return ( (StageSessionImpl) s ).lock( book, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) );
+				} )
+				.thenAccept( v -> {
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+				} ) ) );
+	}
+
+	@Test
+	public void testLockExtendedScopeLocksCollectionRows(VertxTestContext context) {
+		assumeThat( dbType() ).isIn( POSTGRESQL, MYSQL, MARIA );
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) )
+				.thenCompose( book -> lockedRows( "select tag from lock_scope_book_tags where book_id = ", TALISMAN.id )
+						.thenAccept( rows -> assertThat( rows ).isEmpty() ) )
+				.thenCompose( v -> lockedRows( "select author_id from lock_scope_book_authors where book_id = ", TALISMAN.id )
+						.thenAccept( rows -> assertThat( rows ).isEmpty() ) )
+				.thenCompose( v -> lockedRows( "select tag from lock_scope_book_tags where book_id = ", OTHER.id )
+						.thenAccept( rows -> assertThat( rows ).containsExactly( "Western" ) ) ) ) );
+	}
+
+	@Test
+	public void testLockNormalScopeDoesNotLockCollectionRows(VertxTestContext context) {
+		assumeThat( dbType() ).isIn( POSTGRESQL, MYSQL, MARIA );
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions( PessimisticLockScope.NORMAL, Locking.FollowOn.ALLOW ) )
+				.thenCompose( book -> lockedRows( "select tag from lock_scope_book_tags where book_id = ", TALISMAN.id )
+						.thenAccept( rows -> assertThat( rows ).containsExactlyInAnyOrder( "Dark fantasy", "Adventure" ) ) ) ) );
+	}
+
+	// Covers PESSIMISTIC_FORCE_INCREMENT: the version is incremented after the collection tables are locked
+	@Test
+	public void testLockExtendedScopeForceIncrement(VertxTestContext context) {
+		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT ).setScope( PessimisticLockScope.EXTENDED );
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions )
+				.thenAccept( book -> {
+					assertThat( book.version ).isEqualTo( 1 );
+					assertThat( s.getLockMode( book ) ).isEqualTo( LockMode.PESSIMISTIC_FORCE_INCREMENT );
+					final List<String> queries = sqlTracker.getLoggedQueries();
+					assertThat( queries ).hasSize( 4 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+					assertThat( queries.get( 3 ) ).startsWithIgnoringCase( "update lock_scope_book set version" );
+				} ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id ) ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
+	}
+
+	// Covers an entity whose version has already been incremented: it is not incremented again
+	@Test
+	public void testLockExtendedScopeForceIncrementTwice(VertxTestContext context) {
+		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT );
+		final LockOptions extendedLockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT ).setScope( PessimisticLockScope.EXTENDED );
+		test( context, getSessionFactory().withTransaction( s -> findAndLock( s, lockOptions )
+				.thenCompose( book -> {
+					sqlTracker.clear();
+					return ( (StageSessionImpl) s ).lock( book, extendedLockOptions ).thenApply( v -> book );
+				} )
+				.thenAccept( book -> {
+					assertThat( book.version ).isEqualTo( 1 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+					assertThat( sqlTracker.getLoggedQueries() ).noneMatch( sql -> sql.toLowerCase( Locale.ROOT ).startsWith( "update" ) );
+				} ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id ) ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
+	}
+
+	// Covers find of an entity already in the session with the lock mode: the extended scope still locks the collection tables
+	@Test
+	public void testFindExtendedScopeWhenAlreadyLocked(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> find( s, lockOptions( PessimisticLockScope.NORMAL, Locking.FollowOn.ALLOW ) )
+				.thenCompose( book -> {
+					sqlTracker.clear();
+					return find( s, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) );
+				} )
+				.thenAccept( found -> {
+					assertThat( found ).isEqualTo( TALISMAN );
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+				} ) ) );
+	}
+
+	@Test
+	public void testFindExtendedScopeWhenAlreadyLockedLocksCollectionRows(VertxTestContext context) {
+		assumeThat( dbType() ).isIn( POSTGRESQL, MYSQL, MARIA );
+		test( context, getSessionFactory().withTransaction( s -> find( s, lockOptions( PessimisticLockScope.NORMAL, Locking.FollowOn.ALLOW ) )
+				.thenCompose( book -> find( s, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) ) )
+				.thenCompose( found -> lockedRows( "select tag from lock_scope_book_tags where book_id = ", TALISMAN.id )
+						.thenAccept( rows -> assertThat( rows ).isEmpty() ) )
+				.thenCompose( v -> lockedRows( "select author_id from lock_scope_book_authors where book_id = ", TALISMAN.id )
+						.thenAccept( rows -> assertThat( rows ).isEmpty() ) ) ) );
+	}
+
 	@Test
 	public void testRefreshExtendedScope(VertxTestContext context) {
 		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
