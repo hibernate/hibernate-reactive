@@ -18,6 +18,7 @@ import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.pool.ReactiveConnection;
+import org.hibernate.reactive.sql.exec.internal.lock.ReactiveCollectionLockingAction;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveConnectionLockTimeoutStrategyBuilder;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveFollowOnLockingAction;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveLockTimeoutHandler;
@@ -39,6 +40,8 @@ import org.hibernate.sql.exec.spi.PostAction;
 import org.hibernate.sql.exec.spi.PreAction;
 import org.hibernate.sql.exec.spi.SecondaryAction;
 import org.hibernate.sql.exec.spi.StatementAccess;
+
+import jakarta.persistence.PessimisticLockScope;
 
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
@@ -185,6 +188,9 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 			}
 			if ( isFollowOnLockStrategy ) {
 				ReactiveFollowOnLockingAction.apply( lockOptions, lockingTarget, lockingClauseStrategy, this );
+			}
+			else if ( lockOptions.getScope() == PessimisticLockScope.EXTENDED ) {
+				ReactiveCollectionLockingAction.apply( lockOptions, lockingTarget, this );
 			}
 
 			if ( preActions == null && postActions == null ) {
