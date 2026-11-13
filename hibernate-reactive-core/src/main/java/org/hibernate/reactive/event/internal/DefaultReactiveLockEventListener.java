@@ -16,7 +16,6 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.DefaultLockEventListener;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.LockEvent;
@@ -114,7 +113,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 				&& lockOptions.getScope() == PessimisticLockScope.EXTENDED;
 		if ( modeUpgrade || scopeAcquisition ) {
 
-			if ( entry.getStatus() != Status.MANAGED ) {
+			if ( entry.getStatus().isDeletedOrGone() ) {
 				throw new ObjectDeletedException(
 						"attempted to lock a deleted instance",
 						entry.getId(),
