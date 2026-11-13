@@ -31,6 +31,8 @@ import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
 
+import jakarta.persistence.PessimisticLockScope;
+
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
@@ -105,9 +107,12 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 			LockOptions lockOptions,
 			EventSource source) {
 		final LockMode requestedLockMode = lockOptions.getLockMode();
-		if ( requestedLockMode.greaterThan( entry.getLockMode() ) ) {
-			// The user requested a "greater" (i.e. more restrictive) form of
-			// pessimistic lock
+		final boolean modeUpgrade = requestedLockMode.greaterThan( entry.getLockMode() );
+		// Like in ORM, an extended pessimistic scope also requires acquisition when
+		// the existing mode is equal or stronger, without reducing that mode.
+		final boolean scopeAcquisition = requestedLockMode.isPessimistic()
+				&& lockOptions.getScope() == PessimisticLockScope.EXTENDED;
+		if ( modeUpgrade || scopeAcquisition ) {
 
 			if ( entry.getStatus() != Status.MANAGED ) {
 				throw new ObjectDeletedException(
@@ -136,7 +141,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 					entry.setLockMode( requestedLockMode );
 					return voidFuture();
 				default:
-					return doUpgradeLock( object, entry, lockOptions, source );
+					return doUpgradeLock( object, entry, lockOptions, modeUpgrade, scopeAcquisition, source );
 			}
 		}
 		else {
@@ -147,6 +152,8 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 	private CompletionStage<Void> doUpgradeLock(
 			Object object, EntityEntry entry,
 			LockOptions lockOptions,
+			boolean modeUpgrade,
+			boolean scopeAcquisition,
 			EventSource source) {
 
 		final EntityPersister persister = entry.getPersister();
@@ -170,15 +177,12 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 		}
 
 		try {
-			return ( (ReactiveEntityPersister) persister )
-					.reactiveLock(
-							entry.getId(),
-							entry.getVersion(),
-							object,
-							lockOptions,
-							source
-					)
-					.thenAccept( v -> entry.setLockMode( lockOptions.getLockMode() ) )
+			return acquireLock( object, entry, lockOptions, modeUpgrade, scopeAcquisition, source )
+					.thenAccept( v -> {
+						if ( modeUpgrade ) {
+							entry.setLockMode( lockOptions.getLockMode() );
+						}
+					} )
 					.whenComplete( (r, e) -> {
 						// the database now holds a lock + the object is flushed from the cache,
 						// so release the soft lock
@@ -194,5 +198,32 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 			}
 			throw he;
 		}
+	}
+
+	/**
+	 * The order of the locks and of the version increment is the same as in
+	 * {@link org.hibernate.loader.ast.internal.LoaderHelper#upgradeLock}.
+	 */
+	private static CompletionStage<Void> acquireLock(
+			Object object,
+			EntityEntry entry,
+			LockOptions lockOptions,
+			boolean modeUpgrade,
+			boolean scopeAcquisition,
+			EventSource source) {
+		final ReactiveEntityPersister persister = (ReactiveEntityPersister) entry.getPersister();
+		if ( lockOptions.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
+			final LockOptions writeLockOptions = lockOptions.makeCopy().setLockMode( LockMode.PESSIMISTIC_WRITE );
+			if ( !modeUpgrade ) {
+				// Repeating force increment for scope alone must not increment the version again
+				return persister.reactiveLock( entry.getId(), entry.getVersion(), object, writeLockOptions, source );
+			}
+			if ( scopeAcquisition && entry.isExistsInDatabase() ) {
+				// Complete scope acquisition before changing any version state
+				return persister.reactiveLock( entry.getId(), entry.getVersion(), object, writeLockOptions, source )
+						.thenCompose( v -> persister.reactiveLock( entry.getId(), entry.getVersion(), object, lockOptions, source ) );
+			}
+		}
+		return persister.reactiveLock( entry.getId(), entry.getVersion(), object, lockOptions, source );
 	}
 }

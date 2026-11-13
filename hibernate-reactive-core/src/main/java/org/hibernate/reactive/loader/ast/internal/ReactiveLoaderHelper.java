@@ -36,6 +36,8 @@ import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.results.internal.RowTransformerStandardImpl;
 
+import jakarta.persistence.PessimisticLockScope;
+
 import static java.util.Objects.requireNonNull;
 import static org.hibernate.reactive.util.internal.CompletionStages.supplyStage;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
@@ -116,8 +118,16 @@ public class ReactiveLoaderHelper {
 			LockOptions lockOptions,
 			SharedSessionContractImplementor session) {
 		final LockMode requestedLockMode = lockOptions.getLockMode();
-		if ( requestedLockMode.greaterThan( entry.getLockMode() ) ) {
-			// Request is for a more restrictive lock than the lock already held
+		final boolean modeUpgrade = requestedLockMode.greaterThan( entry.getLockMode() );
+		// Like in ORM, an extended pessimistic scope also requires acquisition when
+		// the existing mode is equal or stronger, without reducing that mode.
+		final boolean scopeAcquisition = requestedLockMode.isPessimistic()
+				&& lockOptions.getScope() == PessimisticLockScope.EXTENDED;
+		if ( modeUpgrade || scopeAcquisition ) {
+			// Repeating force increment for scope alone must not increment the version again.
+			final LockOptions acquisitionOptions = !modeUpgrade && requestedLockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT
+					? lockOptions.makeCopy().setLockMode( LockMode.PESSIMISTIC_WRITE )
+					: lockOptions;
 			final ReactiveEntityPersister persister = (ReactiveEntityPersister) entry.getPersister();
 
 			if ( entry.getStatus().isDeletedOrGone()) {
@@ -162,14 +172,32 @@ public class ReactiveLoaderHelper {
 					}
 				}
 
-				if ( persister.isVersioned() && requestedLockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT  ) {
+				if ( modeUpgrade && persister.isVersioned() && requestedLockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
+					if ( scopeAcquisition && entry.isExistsInDatabase() ) {
+						// Complete scope acquisition before changing any version state.
+						final EntityEntry entryToLock = entry;
+						final EventMonitor eventMonitor = session.getEventMonitor();
+						final DiagnosticEvent entityLockEvent = eventMonitor.beginEntityLockEvent();
+						return reactiveLock( object, entryToLock, lockOptions.makeCopy().setLockMode( LockMode.PESSIMISTIC_WRITE ), session, persister, eventMonitor, entityLockEvent, cachingEnabled, ck, lock )
+								.thenAccept( v -> {
+									// todo : should we check the current isolation mode explicitly?
+									OptimisticLockHelper.forceVersionIncrement( object, entryToLock, session );
+									entryToLock.setLockMode( requestedLockMode );
+								} );
+					}
 					// todo : should we check the current isolation mode explicitly?
 					OptimisticLockHelper.forceVersionIncrement( object, entry, session );
 				}
 				else if ( entry.isExistsInDatabase() ) {
+					final EntityEntry entryToLock = entry;
 					final EventMonitor eventMonitor = session.getEventMonitor();
 					final DiagnosticEvent entityLockEvent = eventMonitor.beginEntityLockEvent();
-					return reactiveLock( object, entry, lockOptions, session, persister, eventMonitor, entityLockEvent, cachingEnabled, ck, lock );
+					return reactiveLock( object, entryToLock, acquisitionOptions, session, persister, eventMonitor, entityLockEvent, cachingEnabled, ck, lock )
+							.thenAccept( v -> {
+								if ( modeUpgrade ) {
+									entryToLock.setLockMode( requestedLockMode );
+								}
+							} );
 				}
 				else {
 					// should only be possible for a stateful session
@@ -177,7 +205,9 @@ public class ReactiveLoaderHelper {
 						eventSource.forceFlush( entry );
 					}
 				}
-				entry.setLockMode(requestedLockMode);
+				if ( modeUpgrade ) {
+					entry.setLockMode( requestedLockMode );
+				}
 			}
 			finally {
 				// the database now holds a lock + the object is flushed from the cache,
