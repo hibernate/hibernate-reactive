@@ -37,7 +37,7 @@ of framework code.
 
 == Mapping entity classes
 
-:mapping-annotations: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#annotations
+:mapping-annotations: https://docs.hibernate.org/orm/{ormMinorVersion}/userguide/html_single/#domain-model
 :bean-validation: https://docs.hibernate.org/stable/validator/reference/en-US/html_single/#chapter-bean-constraints
 
 We won't have much to say about the entity classes here, simply because
@@ -74,7 +74,7 @@ class Author {
 You're quite free to mix and match:
 
 - the regular JPA mapping annotations defined in the package
-  `jakarta.persistence. with
+  `jakarta.persistence`, with
 - the advanced mapping annotations in `org.hibernate.annotations`, and even
 - annotations like `@NotNull` and `@Size` defined by Bean Validation.
 
