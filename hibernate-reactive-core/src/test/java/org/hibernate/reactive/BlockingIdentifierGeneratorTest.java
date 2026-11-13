@@ -82,6 +82,7 @@ public class BlockingIdentifierGeneratorTest {
 		private final AtomicInteger maxInFlight = new AtomicInteger();
 		private final AtomicLong nextHi = new AtomicLong( 1 );
 		private volatile boolean failSynchronously;
+		private volatile boolean shared = true;
 
 		FakeGenerator(int blockSize, boolean autoComplete) {
 			this.blockSize = blockSize;
@@ -91,6 +92,11 @@ public class BlockingIdentifierGeneratorTest {
 		@Override
 		protected int getBlockSize() {
 			return blockSize;
+		}
+
+		@Override
+		protected boolean isNextHiValueShared() {
+			return shared;
 		}
 
 		@Override
@@ -204,6 +210,27 @@ public class BlockingIdentifierGeneratorTest {
 
 		final List<Long> ids = ids( calls );
 		assertEquals( IDS_1_TO_120, ids.stream().sorted().toList() );
+		assertEquals( 3, generator.fetches.size() );
+	}
+
+	// Unlike burstStartsOneFetchEveryBlockSizeCallers, the callers don't join the fetch of another caller
+	@Test
+	public void eachCallerStartsItsOwnFetchWhenFetchesAreNotShared() throws Exception {
+		final FakeGenerator generator = new FakeGenerator( BLOCK_SIZE, false );
+		generator.shared = false;
+		final Context context = newContext();
+		final List<Call> calls = calls( generator, context, 3 );
+
+		generator.awaitFetches( 3 );
+		assertEquals( calls, generator.connections );
+
+		generator.complete( generator.fetches.get( 0 ), 1 );
+		generator.complete( generator.fetches.get( 1 ), 51 );
+		generator.complete( generator.fetches.get( 2 ), 101 );
+		assertEquals( List.of( 1L, 51L, 101L ), ids( calls ) );
+
+		// The ids left in one of the blocks are used before starting a new fetch
+		assertEquals( 2L, call( generator, context ).get() );
 		assertEquals( 3, generator.fetches.size() );
 	}
 
