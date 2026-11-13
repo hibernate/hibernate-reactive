@@ -196,6 +196,19 @@ Code that uses `currentTransaction() == null` to test whether a session-managed
 transaction is active should be aware that it may now return an `ExternalTransaction`
 instance in framework-managed scenarios.
 
+[[rollback-only]]
+== Failed operations roll back the transaction
+
+As in Hibernate ORM, when an operation fails inside `withTransaction()`, the transaction is marked
+for rollback only, even if your code recovers from the failure.
+Hibernate Reactive then rolls it back instead of committing it, and `Transaction.isMarkedForRollback()`
+returns `true`. Before, the transaction was committed.
+
+With `hibernate.jpa.compliance.transaction=true`, `withTransaction()` fails with a `jakarta.persistence.RollbackException`.
+
+As in Jakarta Persistence, `NoResultException`, `NonUniqueResultException`, `LockTimeoutException`
+and `QueryTimeoutException` don't mark the transaction for rollback.
+
 [[persist-transient]]
 == `persist()` and `merge()` check references to transient entities
 
