@@ -228,6 +228,15 @@ Before, Hibernate Reactive reported the error only at flush time, as a `Transien
 When you pass several entities to `persist(Object...)` (`Stage`) or `persistAll(Object...)` (`Mutiny`),
 the check runs after all of them have been persisted, so the order of the entities doesn't matter.
 
+[[unique-key-proxies]]
+== Associations referencing a unique key fetch their proxies
+
+When an association references a unique key, for example a natural id, instead of the primary key,
+and its value is an uninitialized proxy, Hibernate Reactive now fetches the proxy before it writes
+the foreign key, like Hibernate ORM: this causes an extra `select`.
+Before, it wrote `null` in the foreign key column, or failed with `HR000037`.
+Associations referencing the primary key are not affected.
+
 [[mutation-query-flush]]
 == Mutation queries apply the flush mode of the query
 
