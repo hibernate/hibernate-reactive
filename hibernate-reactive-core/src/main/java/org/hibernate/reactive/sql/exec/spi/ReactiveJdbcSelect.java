@@ -4,13 +4,8 @@
  */
 package org.hibernate.reactive.sql.exec.spi;
 
-import java.util.concurrent.CompletionStage;
-
 import org.hibernate.Incubating;
-import org.hibernate.reactive.pool.ReactiveConnection;
-import org.hibernate.sql.exec.spi.ExecutionContext;
 import org.hibernate.sql.exec.spi.JdbcSelect;
-import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 
 /**
  * Reactive version of {@link JdbcSelect}
@@ -18,11 +13,12 @@ import org.hibernate.sql.exec.spi.LoadedValuesCollector;
 @Incubating(since = "5.0")
 public interface ReactiveJdbcSelect extends JdbcSelect {
 
-	CompletionStage<Void> reactivePerformPreActions(ReactiveConnection connection, ExecutionContext executionContext);
-
-	CompletionStage<Void> reactivePerformPostActions(
-			boolean succeeded,
-			ReactiveConnection connection,
-			ExecutionContext executionContext,
-			LoadedValuesCollector loadedValuesCollector);
+	/**
+	 * Creates the actions of one execution, to use for both its pre-actions and its post-actions.
+	 * The actions of a {@code JdbcSelect} can be shared by concurrent executions, for example through the
+	 * query plan cache, so an action that keeps state creates a new instance for each execution.
+	 *
+	 * @see JdbcSelect#createActionExecution()
+	 */
+	ReactiveJdbcActionExecution createReactiveActionExecution();
 }
