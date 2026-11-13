@@ -141,7 +141,10 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 							.thenCompose( v -> loop( tableLocks.values().iterator(), (tableLock, i) ->
 									( (ReactiveTableLock) tableLock )
 											.reactivePerformActions( entityDetailsMap, lockingOptions, (ReactiveSessionImpl) session )
-							) );
+							) )
+							.thenCompose( v -> forceIncrementAfterLocking()
+									? forceIncrement( entityDetailsMap, session )
+									: voidFuture() );
 
 				}
 		).whenComplete( (unused, throwable) -> {
@@ -149,6 +152,27 @@ public class ReactiveFollowOnLockingAction extends FollowOnLockingAction impleme
 			session.getLoadQueryInfluencers().applyEntityGraph( initialGraph, initialSemantic );
 		} );
 
+	}
+
+	/**
+	 * With {@link LockMode#PESSIMISTIC_FORCE_INCREMENT} and {@link PessimisticLockScope#EXTENDED},
+	 * increment the versions after the tables are locked, like {@link FollowOnLockingAction}.
+	 * <p>
+	 * With the other scopes, {@link org.hibernate.reactive.event.internal.DefaultReactiveLoadEventListener}
+	 * increments the version after {@code find}.
+	 * </p>
+	 */
+	private boolean forceIncrementAfterLocking() {
+		return lockMode == LockMode.PESSIMISTIC_FORCE_INCREMENT && scope == PessimisticLockScope.EXTENDED;
+	}
+
+	private static CompletionStage<Void> forceIncrement(Map<Object, EntityDetails> entityDetailsMap, SharedSessionContractImplementor session) {
+		return loop( entityDetailsMap.values(), details -> {
+			// The reread updated the entity: complete the entry before the increment, like ORM
+			final var entry = details.entry();
+			entry.setVersion( entry.getPersister().getVersion( details.instance() ) );
+			return ReactiveDirectLockingCompletion.forceVersionIncrement( details.instance(), entry, session );
+		} );
 	}
 
 	/**
