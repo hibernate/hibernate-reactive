@@ -50,6 +50,7 @@ import org.hibernate.metamodel.mapping.AttributeMappingsList;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.metamodel.mapping.NaturalIdMapping;
+import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.metamodel.mapping.internal.MappingModelCreationProcess;
 import org.hibernate.persister.entity.AbstractEntityPersister;
@@ -66,15 +67,19 @@ import org.hibernate.reactive.metamodel.mapping.internal.ReactiveCompoundNatural
 import org.hibernate.reactive.metamodel.mapping.internal.ReactiveSimpleNaturalIdMapping;
 import org.hibernate.reactive.persister.state.internal.ReactiveSoftDeleteStateManagement;
 import org.hibernate.reactive.persister.state.internal.ReactiveStandardStateManagement;
+import org.hibernate.query.sqm.mutation.internal.SqmMutationStrategyHelper;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
+import org.hibernate.reactive.sql.exec.internal.lock.ReactiveLockingHelper;
 import org.hibernate.sql.SimpleSelect;
 import org.hibernate.sql.Update;
 import org.hibernate.sql.ast.spi.creation.SqlAliasBaseManager;
 import org.hibernate.sql.ast.spi.query.select.SelectStatement;
+import org.hibernate.sql.exec.internal.lock.LockingHelper;
 import org.hibernate.sql.exec.spi.JdbcParametersList;
 import org.hibernate.type.BasicType;
 
+import jakarta.persistence.PessimisticLockScope;
 import jakarta.persistence.metamodel.Attribute;
 
 import static java.lang.invoke.MethodHandles.lookup;
@@ -86,6 +91,7 @@ import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.logSqlException;
+import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -245,7 +251,27 @@ public interface ReactiveAbstractEntityPersister extends ReactiveEntityPersister
 						throw new StaleObjectStateException( getEntityName(), id );
 					}
 				} )
-				.whenComplete( (r, e) -> logSqlException( e, () -> "could not lock: " + infoString( this, id, getFactory() ), sql ) );
+				.whenComplete( (r, e) -> logSqlException( e, () -> "could not lock: " + infoString( this, id, getFactory() ), sql ) )
+				.thenCompose( v -> !writeLock && lockOptions.getScope() == PessimisticLockScope.EXTENDED
+						? lockCollectionTables( object, lockOptions, session )
+						: voidFuture() );
+	}
+
+	/**
+	 * Lock the rows of the collection tables, like {@link org.hibernate.dialect.lock.internal.SqlAstBasedLockingStrategy}
+	 * does with {@link PessimisticLockScope#EXTENDED}.
+	 */
+	private CompletionStage<Void> lockCollectionTables(Object object, LockOptions lockOptions, SharedSessionContractImplementor session) {
+		final List<PluralAttributeMapping> collectionTables = new ArrayList<>();
+		SqmMutationStrategyHelper.visitCollectionTables( getEntityMappingType().getRootEntityDescriptor(), collectionTables::add );
+		return loop( collectionTables, attribute -> ReactiveLockingHelper.lockCollectionTableByKey(
+				attribute,
+				lockOptions.getLockMode(),
+				lockOptions.getTimeout(),
+				// The managed field may have been replaced or cleared before flush
+				LockingHelper.resolveCollectionKey( attribute, object, session ),
+				session
+		) );
 	}
 
 	private CompletionStage<Boolean> writeLock(SharedSessionContractImplementor session, String sql, boolean writeLock, Object[] arguments) {
