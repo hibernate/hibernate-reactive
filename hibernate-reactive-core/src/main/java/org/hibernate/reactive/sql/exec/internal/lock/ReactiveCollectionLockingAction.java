@@ -50,7 +50,10 @@ public class ReactiveCollectionLockingAction extends CollectionLockingAction imp
 
 		// NOTE: we need to set this separately so that it can get incorporated into
 		// the JdbcValuesSourceProcessingState for proper callbacks
-		jdbcSelectBuilder.setLoadedValuesCollectorFactory( resolveLoadedValuesCollectorFactory( lockingTarget ) );
+		jdbcSelectBuilder.setLoadedValuesCollectorFactory(
+				lockOptions.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
+						? new ReactiveLoadedValuesCollector.Factory( lockingTarget.getRootPathsForLocking() )
+						: resolveLoadedValuesCollectorFactory( lockingTarget ) );
 
 		// additionally, add a post-action which uses the collected values.
 		jdbcSelectBuilder.appendPostAction( new ReactiveCollectionLockingAction(
@@ -73,6 +76,13 @@ public class ReactiveCollectionLockingAction extends CollectionLockingAction imp
 			ReactiveConnection jdbcConnection,
 			ExecutionContext executionContext,
 			LoadedValuesCollector loadedValuesCollector) {
+		final var completion = ReactiveDirectLockingCompletion.from( loadedValuesCollector );
+		return completion == null
+				? lockCollections( executionContext, loadedValuesCollector )
+				: completion.complete( () -> lockCollections( executionContext, loadedValuesCollector ), executionContext.getSession() );
+	}
+
+	private CompletionStage<Void> lockCollections(ExecutionContext executionContext, LoadedValuesCollector loadedValuesCollector) {
 		LockingHelper.logLoadedValues( loadedValuesCollector );
 
 		final var session = executionContext.getSession();

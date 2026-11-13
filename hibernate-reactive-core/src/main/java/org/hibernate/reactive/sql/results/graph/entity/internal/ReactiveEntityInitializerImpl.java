@@ -26,6 +26,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.proxy.LazyInitializer;
 import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
+import org.hibernate.reactive.sql.exec.internal.lock.ReactiveDirectLockingCompletion;
 import org.hibernate.reactive.sql.results.graph.ReactiveDomainResultsAssembler;
 import org.hibernate.reactive.sql.results.graph.ReactiveInitializer;
 import org.hibernate.sql.results.graph.AssemblerCreationState;
@@ -515,6 +516,10 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 					registerNaturalIdResolution( data, persistenceContext, resolvedEntityState );
 
 					takeSnapshot( data, session, persistenceContext, entityEntry, previousEntityEntry, resolvedEntityState );
+					final var completion = reactiveDirectLockingCompletion( data );
+					if ( completion != null && data.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
+						completion.register( data.getEntityKey(), data.getEntityInstanceForNotify(), entityEntry );
+					}
 
 					data.getConcreteDescriptor().afterInitialize( data.getEntityInstanceForNotify(), session );
 					entityEntry.postLoad( data.getEntityInstanceForNotify() );
@@ -555,7 +560,44 @@ public class ReactiveEntityInitializerImpl extends EntityInitializerImpl
 
 	// Hibernate ORM has a similar method, but it checks if we are in a transaction first
 	private static LockMode lockModeToAcquire(ReactiveEntityInitializerData data) {
-		return data.getLockMode() == LockMode.NONE ? LockMode.READ : data.getLockMode();
+		return data.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT && reactiveDirectLockingCompletion( data ) != null
+				// the version is incremented after the collection tables are locked
+				? LockMode.PESSIMISTIC_WRITE
+				: data.getLockMode() == LockMode.NONE ? LockMode.READ : data.getLockMode();
+	}
+
+	/**
+	 * Like in ORM, but it also registers the entity with the {@link ReactiveDirectLockingCompletion}.
+	 * <p>
+	 * When there is a {@link ReactiveDirectLockingCompletion}, there is also a
+	 * {@link org.hibernate.sql.exec.internal.lock.DirectLockingCompletion}: ORM checks the version,
+	 * registers the entity with it, and sets the lock mode of the entry to {@link LockMode#PESSIMISTIC_WRITE}.
+	 * But Hibernate Reactive can't access the entities registered with it.
+	 * </p>
+	 */
+	@Override
+	protected void upgradeLockMode(EntityInitializerData initializerData) {
+		if ( !( initializerData instanceof ReactiveEntityInitializerData data ) ) {
+			super.upgradeLockMode( initializerData );
+			return;
+		}
+		final var completion = reactiveDirectLockingCompletion( data );
+		final var entityEntry = data.getEntityHolder() == null ? null : data.getEntityHolder().getEntityEntry();
+		// The same conditions ORM checks before registering the entity
+		final boolean register = completion != null
+				&& data.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
+				&& data.getRowProcessingState().upgradeLocks()
+				&& entityEntry != null
+				&& entityEntry.getLockMode().lessThan( LockMode.PESSIMISTIC_FORCE_INCREMENT );
+		super.upgradeLockMode( data );
+		if ( register ) {
+			completion.register( data.getEntityKey(), data.getEntityInstanceForNotify(), entityEntry );
+		}
+	}
+
+	private static ReactiveDirectLockingCompletion reactiveDirectLockingCompletion(EntityInitializerData data) {
+		return ReactiveDirectLockingCompletion.from(
+				data.getRowProcessingState().getJdbcValuesSourceProcessingState().getLoadedValuesCollector() );
 	}
 
 
