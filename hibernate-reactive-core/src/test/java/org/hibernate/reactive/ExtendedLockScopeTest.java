@@ -448,6 +448,40 @@ public class ExtendedLockScopeTest extends BaseReactiveTest {
 				.thenAccept( rows -> assertThat( rows ).isEmpty() ) ) );
 	}
 
+	// Covers a read-only entity with the extended scope: lock() also locks the collection tables
+	@Test
+	public void testLockReadOnlyEntityExtendedScope(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> {
+					s.setReadOnly( book, true );
+					sqlTracker.clear();
+					return ( (StageSessionImpl) s )
+							.lock( book, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) );
+				} )
+				.thenAccept( v -> {
+					assertThat( sqlTracker.getLoggedQueries() ).hasSize( 3 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+				} ) ) );
+	}
+
+	@Test
+	public void testLockReadOnlyEntityExtendedScopeLocksRows(VertxTestContext context) {
+		assumeThat( dbType() ).isIn( POSTGRESQL, MYSQL, MARIA );
+		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> {
+					s.setReadOnly( book, true );
+					return ( (StageSessionImpl) s )
+							.lock( book, lockOptions( PessimisticLockScope.EXTENDED, Locking.FollowOn.ALLOW ) );
+				} )
+				.thenCompose( v -> lockedRows( "select title from lock_scope_book where id = ", TALISMAN.id ) )
+				.thenAccept( rows -> assertThat( rows ).isEmpty() )
+				.thenCompose( v -> lockedRows( "select tag from lock_scope_book_tags where book_id = ", TALISMAN.id ) )
+				.thenAccept( rows -> assertThat( rows ).isEmpty() )
+				.thenCompose( v -> lockedRows( "select author_id from lock_scope_book_authors where book_id = ", TALISMAN.id ) )
+				.thenAccept( rows -> assertThat( rows ).isEmpty() ) ) );
+	}
+
 	// Covers a removed entity, which is still rejected
 	@Test
 	public void testLockRemovedEntity(VertxTestContext context) {
