@@ -10,8 +10,10 @@ Hibernate Reactive 5.1 targets **Hibernate ORM 8.0** and **Vert.x 5.2**.
 Everything in this guide applies to both 5.0 and 5.1, unless noted otherwise.
 There are no other breaking changes between 5.0 and 5.1.
 
-Hibernate Reactive follows the changes of Hibernate ORM 8.0:
-see also the https://docs.hibernate.org/orm/8.0/migration-guide/migration-guide.html[Hibernate ORM 8.0 migration guide].
+Hibernate Reactive follows the changes of Hibernate ORM 8.0, which implements Jakarta Persistence 4.0:
+see also the https://docs.hibernate.org/orm/8.0/migration-guide/[Hibernate ORM 8.0 migration guide].
+For example, Hibernate ORM 8.0 no longer processes DTDs or external entities in `persistence.xml`, `orm.xml`
+and `hibernate.cfg.xml`: see https://docs.hibernate.org/orm/8.0/migration-guide/#xml-dtd-external-entities[DTD processing and external entities in XML documents].
 
 [[dependency-changes]]
 == Dependency changes
@@ -53,6 +55,8 @@ If they are, the creation of the factory fails with:
 ----
 HR000004: Hibernate Reactive <version> requires <library> <minimum version> or later, but version <version> was found.
 ----
+
+Hibernate Reactive 5.0.0.CR1 and 5.1.0.CR1 require Hibernate ORM 8.0.0.CR1 or later.
 
 This usually means that another platform (BOM) imported before the Hibernate Reactive one manages an older version.
 Hibernate Reactive publishes a platform, `org.hibernate.reactive:hibernate-reactive-platform`,
@@ -488,26 +492,17 @@ The following internal classes have been removed and replaced:
 [[java-time-jdbc]]
 == Java time types and JDBC direct access
 
-ORM 8.0 changes the default for `hibernate.type.java_time_use_direct_jdbc` to `true`.
-When enabled, ORM bypasses `java.sql.Timestamp` / `java.sql.Date` / `java.sql.Time`
-wrappers and calls `ResultSet.getObject(index, LocalDate.class)` (and similar) directly.
+The default of `hibernate.type.java_time_use_direct_jdbc` is `false`, as in Hibernate ORM 7:
+**no application-level changes are required**.
+(Hibernate ORM 8.0.0.Beta4 changed it to `true`, Hibernate ORM 8.0.0.CR1 reverted it.)
 
+When you enable it, ORM bypasses the `java.sql.Timestamp` / `java.sql.Date` / `java.sql.Time`
+wrappers and calls `ResultSet.getObject(index, LocalDate.class)` (and similar) directly.
 Hibernate Reactive intercepts these calls in `ResultSetAdaptor` and routes them through
 the dedicated Vert.x `Row` accessors (`getLocalTime()`, `getLocalDate()`,
 `getLocalDateTime()`, `getOffsetDateTime()`, `getOffsetTime()`) since the generic
 `Row.get(Class, int)` method does not support Java time type classes on all drivers.
 
-This is handled transparently — **no application-level changes are required** for most
-use cases.
-
-However, the `NORMALIZE` timezone storage modes (`NORMALIZE_UTC`, `NORMALIZE`) are
-affected by a known ORM 8.0 issue: when direct JDBC access is enabled, the NORMALIZE
-wrapping is never applied because the baseline JDBC types are already `JavaTimeJdbcType`
-instances. If you use NORMALIZE timezone storage, you should set:
-
-[source,properties]
-----
-hibernate.type.java_time_use_direct_jdbc=false
-----
-
-until this is resolved in a future ORM release.
+Don't enable it together with the `NORMALIZE` or `NORMALIZE_UTC` timezone storage:
+when direct JDBC access is enabled, Hibernate ORM 8.0 doesn't apply the normalization,
+because the baseline JDBC types are already `JavaTimeJdbcType` instances.
