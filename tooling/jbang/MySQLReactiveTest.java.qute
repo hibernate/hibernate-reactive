@@ -163,7 +163,7 @@ public class {baseName} {
 	/**
 	 * Example of a class representing an entity.
 	 * <p>
-	 * If you create new entities, be sure to add them in .
+	 * If you create new entities, be sure to add them in \{@link #createConfiguration()}.
 	 * For example:
 	 * <pre>
 	 * configuration.addAnnotatedClass( MyOtherEntity.class );
