@@ -105,6 +105,15 @@ public class TableReactiveIdentifierGenerator extends BlockingIdentifierGenerato
 		return increment;
 	}
 
+	/**
+	 * The row of the table is locked until the end of the transaction of the session
+	 * that requested the new block, so each session has to request its own.
+	 */
+	@Override
+	protected boolean isNextHiValueShared() {
+		return false;
+	}
+
 	@Override
 	protected CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session) {
 		// We need to read the current hi value from the table
