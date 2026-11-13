@@ -64,6 +64,18 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 	 */
 	protected abstract CompletionStage<Long> nextHiValue(ReactiveConnectionSupplier session);
 
+	/**
+	 * Whether the request for a new block started by a caller can also serve the other callers
+	 * waiting for an id.
+	 * <p>
+	 * It must be {@code false} when {@link #nextHiValue(ReactiveConnectionSupplier)} holds locks until
+	 * the end of the transaction of the caller: a session holding the lock would otherwise wait for
+	 * the request of another session, which in turn waits for the lock to be released.
+	 */
+	protected boolean isNextHiValueShared() {
+		return true;
+	}
+
 	@Override
 	public Object generate(SharedSessionContractImplementor session, Object object) {
 		throw LOG.nonReactiveMethodCall( "generate(ReactiveConnectionSupplier, Object)" );
@@ -97,10 +109,11 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 
 	//Critical section: needs to be accessed exclusively via the CombinerExecutor.
 	//Uses the ids of the block [hi, hi + blockSize) that were not handed out to waiters.
-	//Only the fetch that was still open can have unused ids, and a fetch is only opened
-	//when the current block is exhausted: no other fetch can refill it while it's open.
+	//When fetches are shared, only the fetch that was still open can have unused ids, and a fetch
+	//is only opened when the current block is exhausted: no other fetch can refill it while it's open.
+	//When they are not shared, several fetches can have unused ids: we keep the block with more ids left.
 	private synchronized void useUnusedIds(long hi, int used) {
-		if ( used < getBlockSize() ) {
+		if ( getBlockSize() - used > state.endId - state.nextId ) {
 			state.nextId = hi + used;
 			state.endId = hi + getBlockSize();
 		}
@@ -192,20 +205,25 @@ public abstract class BlockingIdentifierGenerator implements ReactiveIdentifierG
 			}
 			// Join the open fetch if there is one, otherwise start a new one. A fetch that
 			// reaches blockSize waiters is closed so that the next caller starts another one.
-			if ( state.openFetch == null ) {
-				final Fetch fetch = new Fetch();
+			Fetch fetch = state.openFetch;
+			if ( fetch == null ) {
+				fetch = new Fetch();
+				final Fetch newFetch = fetch;
 				try {
-					creationContext.runOnContext( v -> fetchHiValue( fetch ) );
+					creationContext.runOnContext( v -> fetchHiValue( newFetch ) );
 				}
 				catch (Throwable e) {
 					// The fetch didn't start, so no other caller must join it
 					result.completeExceptionally( e );
 					return null;
 				}
-				state.openFetch = fetch;
+				// A fetch that is not shared is never open: this caller is its only waiter
+				if ( isNextHiValueShared() ) {
+					state.openFetch = fetch;
+				}
 			}
-			state.openFetch.waiters.add( this );
-			if ( state.openFetch.waiters.size() >= getBlockSize() ) {
+			fetch.waiters.add( this );
+			if ( fetch.waiters.size() >= getBlockSize() ) {
 				state.openFetch = null;
 			}
 			return null;
