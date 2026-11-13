@@ -13,6 +13,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.internal.BytecodeProviderInitiator;
 import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
 import org.hibernate.cache.internal.RegionFactoryInitiator;
+import org.hibernate.context.internal.MultiTenancyInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
@@ -83,6 +84,9 @@ public final class ReactiveServiceInitiators {
 
 		// [standard] ConfigurationService
 		serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
+
+		// [standard] MultiTenancy
+		serviceInitiators.add( MultiTenancyInitiator.INSTANCE );
 
 		// [standard] PropertyAccessStrategyResolver
 		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
