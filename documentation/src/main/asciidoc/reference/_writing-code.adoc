@@ -498,6 +498,19 @@ for example, by calling:
 EntityManagerFactory emf = Persistence.createEntityManagerFactory("example");
 ----
 
+Or, without a `persistence.xml`, with a Jakarta Persistence `PersistenceConfiguration`:
+
+[source,java]
+----
+PersistenceConfiguration configuration = new PersistenceConfiguration("example")
+        .provider(ReactivePersistenceProvider.class.getName())
+        .managedClass(Book.class)
+        .property("jakarta.persistence.jdbc.url", "jdbc:postgresql://localhost/hreact")
+        .property("jakarta.persistence.jdbc.user", "hreact")
+        .property("jakarta.persistence.jdbc.password", "hreact");
+EntityManagerFactory emf = Persistence.createEntityManagerFactory(configuration);
+----
+
 Now, `unwrap()` the reactive `SessionFactory`. If you want to use
 ``CompletionStage``s for chaining reactive operations, ask for a
 `Stage.SessionFactory`:
