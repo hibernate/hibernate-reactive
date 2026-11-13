@@ -43,6 +43,8 @@ import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
 import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import jakarta.persistence.PessimisticLockScope;
+
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSecondLevelCache;
@@ -138,35 +140,52 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 		}
 
 		return checkId( event, loadType, persister )
-				.thenCompose( vd -> doOnLoad( persister, event, loadType )
-						.thenAccept( event::setResult )
-						.handle( (v, x) -> {
-							if ( event.getResult() instanceof CompletionStage ) {
-								throw new AssertionFailure( "Unexpected CompletionStage" );
-							}
-							if ( x instanceof HibernateException ) {
-								LOG.unableToLoadCommand( (HibernateException) x );
-							}
-							return returnNullorRethrow( x );
-						} ) )
-				.thenCompose( v -> {
-					// if a pessimistic version increment was requested, we need
-					// to go back to the database immediately and update the row
-					// we handle this here instead of in DefaultReactivePostLoadEventListener
-					if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT ) {
-						// TODO: should we call CachedDomainDataAccess.lockItem() ?
-						return persister.reactiveLock(
-								event.getEntityId(),
-								persister.getVersion( event.getResult() ),
-								event.getResult(),
-								event.getLockOptions(),
-								event.getSession()
-						);
-					}
-					else {
-						return voidFuture();
-					}
+				.thenCompose( vd -> {
+					final boolean managed = isManaged( event, persister );
+					return doOnLoad( persister, event, loadType )
+							.thenAccept( event::setResult )
+							.handle( (v, x) -> {
+								if ( event.getResult() instanceof CompletionStage ) {
+									throw new AssertionFailure( "Unexpected CompletionStage" );
+								}
+								if ( x instanceof HibernateException ) {
+									LOG.unableToLoadCommand( (HibernateException) x );
+								}
+								return returnNullorRethrow( x );
+							} )
+							.thenCompose( v -> {
+								// if a pessimistic version increment was requested, we need
+								// to go back to the database immediately and update the row
+								// we handle this here instead of in DefaultReactivePostLoadEventListener
+								if ( event.getLockMode() == LockMode.PESSIMISTIC_FORCE_INCREMENT
+										&& !managed
+										&& event.getLockOptions().getScope() != PessimisticLockScope.EXTENDED ) {
+									// TODO: should we call CachedDomainDataAccess.lockItem() ?
+									return persister.reactiveLock(
+											event.getEntityId(),
+											persister.getVersion( event.getResult() ),
+											event.getResult(),
+											event.getLockOptions(),
+											event.getSession()
+									);
+								}
+								else {
+									// Like in ORM:
+									// - an entity already in the session doesn't receive a post-load event,
+									//   ReactiveLoaderHelper#upgradeLock increments its version if needed
+									// - with PessimisticLockScope.EXTENDED, the version is incremented after the
+									//   collection tables are locked, by ReactiveDirectLockingCompletion
+									//   or ReactiveFollowOnLockingAction
+									return voidFuture();
+								}
+							} );
 				} );
+	}
+
+	private static boolean isManaged(LoadEvent event, EntityPersister persister) {
+		final EventSource session = event.getSession();
+		return session.getPersistenceContextInternal()
+				.getEntity( session.generateEntityKey( event.getEntityId(), persister ) ) != null;
 	}
 
 	private CompletionStage<Void> checkId(LoadEvent event, LoadType loadType, EntityPersister persister) {
