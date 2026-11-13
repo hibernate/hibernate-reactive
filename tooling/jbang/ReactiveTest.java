@@ -5,12 +5,12 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:5.2.2}
+//DEPS io.vertx:vertx-pg-client:${vertx.version:5.2.3}
 //DEPS com.ongres.scram:scram-client:3.4
-//DEPS io.vertx:vertx-db2-client:${vertx.version:5.2.2}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.2.2}
-//DEPS io.vertx:vertx-unit:${vertx.version:5.2.2}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.Beta1}
+//DEPS io.vertx:vertx-db2-client:${vertx.version:5.2.3}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:5.2.3}
+//DEPS io.vertx:vertx-unit:${vertx.version:5.2.3}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.CR1}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:testcontainers-postgresql:2.0.5
@@ -232,7 +232,7 @@ public class ReactiveTest {
 		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:26.7.1" ) ),
 		DB2( () -> new Db2Container( "icr.io/db2_community/db2:12.1.5.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:13.0.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.3.3" ) );
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.3.5" ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 
