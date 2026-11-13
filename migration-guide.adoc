@@ -237,6 +237,19 @@ the foreign key, like Hibernate ORM: this causes an extra `select`.
 Before, it wrote `null` in the foreign key column, or failed with `HR000037`.
 Associations referencing the primary key are not affected.
 
+[[extended-lock-scope]]
+== `PessimisticLockScope.EXTENDED` locks the collection tables
+
+With `PessimisticLockScope.EXTENDED`, Hibernate Reactive now also locks the rows of the element collections
+and join tables owned by the locked entities, like Hibernate ORM 8.0.
+This applies to `find()`, queries, `refresh()` and `lock()`, and to follow-on locking.
+Before, Hibernate Reactive treated the extended scope like `PessimisticLockScope.NORMAL`, without any warning,
+and it failed with `HR000084` when follow-on locking was used.
+
+With `LockMode.PESSIMISTIC_FORCE_INCREMENT` and the extended scope, the version is incremented after
+the collection tables are locked, and queries now increment it too.
+`lock()` also accepts read-only entities, like Hibernate ORM.
+
 [[mutation-query-flush]]
 == Mutation queries apply the flush mode of the query
 
