@@ -40,20 +40,20 @@ import static jakarta.persistence.CascadeType.PERSIST;
 import static jakarta.persistence.FetchType.LAZY;
 
 /**
- * <a hreaf="https://www.jbang.dev/">JBang</a> compatible example for Hibernate Reactive.
+ * <a href="https://www.jbang.dev/">JBang</a> compatible example for Hibernate Reactive.
  * <p>
  * The selected database must be available before running the example.
  * </p>
  * <p>
  * Instructions on how to start the containers using Podman or Docker are available
- * in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+ * in the <a href="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
  * file on GitHub.
  * </p>
  * <p>
  * Usage example:
  *     <dl>
  *         <dt>1. Download JBang</dt>
- *         <dd>See <a hreaf="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
+ *         <dd>See <a href="https://www.jbang.dev/download">https://www.jbang.dev/download</a></dd>
  *         <dt>2. Start a database (default is PostgreSQL)</dt>
  *         <dd>
  *             <pre>
@@ -252,7 +252,7 @@ public class Example {
 	 * Show an example of different URL strings for each supported database.
 	 * <p>
 	 * One way to start the selected container is by following the instructions
-	 * in the <a hreaf="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
+	 * in the <a href="https://github.com/hibernate/hibernate-reactive/blob/main/podman.md">podman.md</a>
 	 * file on the Hibernate Reactive repository on GitHub.
 	 * </p>
 	 */

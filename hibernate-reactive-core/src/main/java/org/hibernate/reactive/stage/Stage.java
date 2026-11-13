@@ -1521,14 +1521,14 @@ public interface Stage {
 		 * The resulting {@link Transaction} object may also be obtained via
 		 * {@link #currentTransaction()}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li> If there is already a transaction associated with this session,
 		 * the work is executed in the context of the existing transaction, and
 		 * no new transaction is initiated.
 		 * <li> If there is no transaction associated with this session, a new
 		 * transaction is started, and the work is executed in the context of
 		 * the new transaction.
-		 * </il>
+		 * </ul>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -1937,14 +1937,14 @@ public interface Stage {
 		 * automatically flushing the session. The transaction will be rolled
 		 * back if the work completes with an uncaught exception, or if
 		 * {@link Transaction#markForRollback()} is called.
-		 * <il>
+		 * <ul>
 		 * <li> If there is already a transaction associated with this session,
 		 * the work is executed in the context of the existing transaction, and
 		 * no new transaction is initiated.
 		 * <li> If there is no transaction associated with this session, a new
 		 * transaction is started, and the work is executed in the context of
 		 * the new transaction.
-		 * </il>
+		 * </ul>
 		 *
 		 * @param work a function which accepts {@link Transaction} and returns
 		 *             the result of the work as a {@link CompletionStage}.
@@ -2137,13 +2137,13 @@ public interface Stage {
 		/**
 		 * Perform work using a {@linkplain Session reactive session}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a session associated with the current
 		 * reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no session associated with the
 		 * current stream, a new session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically, but must be flushed
 		 * explicitly if necessary.
@@ -2157,12 +2157,12 @@ public interface Stage {
 		 * Perform work using a {@linkplain Session reactive session} for a
 		 * specified tenant.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a session associated with the current
 		 * reactive stream, and the given tenant, then the work will be
 		 * executed using that session.
 		 * <li>Otherwise, a new session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically, but must be flushed
 		 * explicitly if necessary.
@@ -2177,13 +2177,13 @@ public interface Stage {
 		 * Perform work using a {@linkplain Session reactive session} within an
 		 * associated {@link Transaction transaction}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
@@ -2201,13 +2201,13 @@ public interface Stage {
 		 * Perform work using a {@linkplain Session reactive session} within an
 		 * associated transaction.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
@@ -2227,14 +2227,14 @@ public interface Stage {
 		 * the tenant with the specified tenant id within an associated
 		 * {@link Transaction transaction}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a session associated with the current
 		 * reactive stream and given tenant id, then the work will be
 		 * executed using that session.
 		 * <li>Otherwise, if there is no stateless session associated with
 		 * the current stream and given tenant id, a new stateless session
 		 * will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be {@link Session#flush() flushed} and closed
 		 * automatically, and the transaction committed automatically.
@@ -2252,13 +2252,13 @@ public interface Stage {
 		 * Perform work using a {@linkplain StatelessSession reactive session}
 		 * within an associated {@link Transaction transaction}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically, and the transaction committed
 		 * automatically.
@@ -2277,13 +2277,13 @@ public interface Stage {
 		 * Perform work using a {@linkplain StatelessSession reactive session}
 		 * within an associated {@link Transaction transaction}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically, and the transaction committed
 		 * automatically.
@@ -2301,14 +2301,14 @@ public interface Stage {
 		 * for the tenant with the specified tenant id within an associated
 		 * {@link Transaction transaction}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream and given tenant id, then the work will be
 		 * executed using that session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream and given tenant id, a new stateless session will be
 		 * created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically and the transaction committed
 		 * automatically.
@@ -2325,13 +2325,13 @@ public interface Stage {
 		/**
 		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically.
 		 *
@@ -2343,13 +2343,13 @@ public interface Stage {
 		/**
 		 * Perform work using a {@linkplain StatelessSession stateless session}.
 		 * <p>
-		 * <il>
+		 * <ul>
 		 * <li>If there is already a stateless session associated with the
 		 * current reactive stream, then the work will be executed using that
 		 * session.
 		 * <li>Otherwise, if there is no stateless session associated with the
 		 * current stream, a new stateless session will be created.
-		 * </il>
+		 * </ul>
 		 * <p>
 		 * The session will be closed automatically.
 		 *
