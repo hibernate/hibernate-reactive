@@ -196,6 +196,56 @@ public class ExtendedLockScopeTest extends BaseReactiveTest {
 				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
 	}
 
+	// Covers queries, where the version is incremented after the collection tables are locked
+	@Test
+	public void testQueryExtendedScopeForceIncrement(VertxTestContext context) {
+		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT ).setScope( PessimisticLockScope.EXTENDED );
+		test( context, getSessionFactory().withTransaction( s -> query( s, lockOptions )
+				.thenAccept( found -> {
+					assertThat( found ).isEqualTo( TALISMAN );
+					assertThat( found.version ).isEqualTo( 1 );
+					assertThat( s.getLockMode( found ) ).isEqualTo( LockMode.PESSIMISTIC_FORCE_INCREMENT );
+					final List<String> queries = sqlTracker.getLoggedQueries();
+					assertThat( queries ).hasSize( 4 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+					assertThat( queries.get( 3 ) ).startsWithIgnoringCase( "update lock_scope_book set version" );
+				} ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id ) ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
+	}
+
+	// Covers an entity already in the session: find doesn't increment its version again
+	@Test
+	public void testFindForceIncrementAfterQueryExtendedScope(VertxTestContext context) {
+		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT ).setScope( PessimisticLockScope.EXTENDED );
+		test( context, getSessionFactory().withTransaction( s -> query( s, lockOptions )
+				.thenCompose( v -> s.find( Book.class, TALISMAN.id, LockMode.PESSIMISTIC_FORCE_INCREMENT ) )
+				.thenCompose( v -> s.find( Book.class, TALISMAN.id, LockMode.PESSIMISTIC_FORCE_INCREMENT ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id ) ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
+	}
+
+	// Covers follow-on locking, where the version is incremented once after the entity is loaded
+	@Test
+	public void testFindExtendedScopeForceIncrementWithFollowOnLocking(VertxTestContext context) {
+		final LockOptions lockOptions = new LockOptions( LockMode.PESSIMISTIC_FORCE_INCREMENT )
+				.setScope( PessimisticLockScope.EXTENDED )
+				.setFollowOnStrategy( Locking.FollowOn.FORCE );
+		test( context, getSessionFactory().withTransaction( s -> find( s, lockOptions )
+				.thenAccept( found -> {
+					assertThat( found ).isEqualTo( TALISMAN );
+					assertThat( found.version ).isEqualTo( 1 );
+					assertThat( lockingQueries( "lock_scope_book_tags" ) ).hasSize( 1 );
+					assertThat( lockingQueries( "lock_scope_book_authors" ) ).hasSize( 1 );
+					final List<String> queries = sqlTracker.getLoggedQueries();
+					assertThat( queries.get( queries.size() - 1 ) ).startsWithIgnoringCase( "update lock_scope_book set version" );
+				} ) )
+				.thenCompose( v -> getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id ) ) )
+				.thenAccept( found -> assertThat( found.version ).isEqualTo( 1 ) ) );
+	}
+
 	@Test
 	public void testRefreshExtendedScope(VertxTestContext context) {
 		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
