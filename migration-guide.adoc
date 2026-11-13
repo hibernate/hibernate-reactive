@@ -261,7 +261,7 @@ Hibernate Reactive now accepts the same names for the connection and provider se
 
 The persistence provider can be selected with `jakarta.persistence.provider`,
 when passed to `Persistence.createEntityManagerFactory(String, Map)` or as a property of a `PersistenceConfiguration`.
-Before, only the deprecated `javax.persistence.provider` was read, and Hibernate Reactive logs a deprecation warning when you use it.
+Before, only `javax.persistence.provider` was read: it's still accepted, but it's deprecated and Hibernate Reactive logs a warning when you use it.
 If both settings are present, `jakarta.persistence.provider` wins.
 If your application, or a framework, passes `jakarta.persistence.provider` with a provider other than
 `org.hibernate.reactive.provider.ReactivePersistenceProvider`,
