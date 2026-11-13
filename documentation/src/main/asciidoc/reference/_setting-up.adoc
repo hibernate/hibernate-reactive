@@ -155,6 +155,9 @@ Reactive is the persistence `<provider>` element, which must be explicit:
 <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
 ----
 
+You can also select the provider with the property `jakarta.persistence.provider`,
+for example when you call `Persistence.createEntityManagerFactory(String, Map)`.
+
 Otherwise, configuration is almost completely transparent&mdash;you can
 configure Hibernate Reactive pretty much exactly as you would usually
 configure Hibernate ORM core.
@@ -178,6 +181,9 @@ this stage are these three:
 | `jakarta.persistence.jdbc.url`                                        | JDBC URL of your database
 | `jakarta.persistence.jdbc.user` and `jakarta.persistence.jdbc.password` | Your database credentials
 |===
+
+As in Hibernate ORM, `hibernate.connection.url`, `hibernate.connection.username` and `hibernate.connection.password`,
+and the deprecated `javax.persistence.jdbc` names, are also accepted.
 
 These configuration properties have `jdbc` in their names, but of course
 there's no JDBC in Hibernate Reactive, and these are simply the legacy
