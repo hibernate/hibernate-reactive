@@ -23,10 +23,12 @@ import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.session.ReactiveConnectionSupplier;
+import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcActionExecution;
 import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
 import org.hibernate.reactive.sql.exec.spi.ReactiveRowProcessingState;
 import org.hibernate.reactive.sql.exec.spi.ReactiveSelectExecutor;
 import org.hibernate.reactive.sql.exec.spi.ReactiveValuesResultSet;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.reactive.sql.results.internal.ReactiveDeferredResultSetAccess;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultSetAccess;
 import org.hibernate.reactive.sql.results.internal.ReactiveResultsHelper;
@@ -56,6 +58,7 @@ import org.hibernate.type.spi.TypeConfiguration;
 
 import static org.hibernate.internal.util.NullnessHelper.coalesceSuppliedValues;
 import static org.hibernate.internal.util.collections.ArrayHelper.indexOf;
+import static java.util.function.Function.identity;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.nullFuture;
 import static org.hibernate.reactive.util.internal.CompletionStages.rethrow;
@@ -253,7 +256,9 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 					rowReader.startLoading( rowProcessingState );
 					ReactiveConnection reactiveConnection = ( (ReactiveConnectionSupplier) session ).getReactiveConnection();
 					if ( jdbcSelect instanceof ReactiveJdbcSelect reactiveJdbcSelect ) {
-						return reactiveJdbcSelect.reactivePerformPreActions( reactiveConnection, executionContext )
+						// The same actions for both phases: they keep the state of this execution
+						final ReactiveJdbcActionExecution actions = reactiveJdbcSelect.createReactiveActionExecution();
+						return actions.reactivePerformPreActions( reactiveConnection, executionContext )
 								.thenCompose( unused -> resultsConsumer
 										.consume(
 												jdbcValues,
@@ -263,13 +268,19 @@ public class StandardReactiveSelectExecutor implements ReactiveSelectExecutor {
 												rowProcessingState,
 												rowReader
 										) )
-								.thenCompose( result -> reactiveJdbcSelect
-										.reactivePerformPostActions( true, reactiveConnection, executionContext, loadedValuesCollector )
-										.thenApply( v -> {
-											statistics.end( jdbcSelect, result );
-											return result;
-										} )
-								);
+								.handle( (result, failure) -> failure == null
+										? actions
+											.reactivePerformPostActions( true, reactiveConnection, executionContext, loadedValuesCollector )
+											.thenApply( v -> {
+												statistics.end( jdbcSelect, result );
+												return result;
+											} )
+										// For example, restore the lock timeout of the connection
+										: actions
+											.reactiveCleanupAfterFailure( failure, reactiveConnection, executionContext, loadedValuesCollector )
+											.thenCompose( v -> CompletionStages.<T>failedFuture( failure ) )
+								)
+								.thenCompose( identity() );
 					}
 					else {
 						return resultsConsumer.consume( jdbcValues, session, processingOptions, valuesProcessingState, rowProcessingState, rowReader )

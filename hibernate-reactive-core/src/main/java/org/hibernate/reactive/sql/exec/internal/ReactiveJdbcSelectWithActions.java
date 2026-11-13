@@ -21,6 +21,7 @@ import org.hibernate.reactive.pool.ReactiveConnection;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveConnectionLockTimeoutStrategyBuilder;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveFollowOnLockingAction;
 import org.hibernate.reactive.sql.exec.internal.lock.ReactiveLockTimeoutHandler;
+import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcActionExecution;
 import org.hibernate.reactive.sql.exec.spi.ReactiveJdbcSelect;
 import org.hibernate.reactive.sql.exec.spi.ReactivePostAction;
 import org.hibernate.reactive.sql.exec.spi.ReactivePreAction;
@@ -30,6 +31,7 @@ import org.hibernate.sql.exec.internal.JdbcOperationQuerySelect;
 import org.hibernate.sql.exec.internal.JdbcSelectWithActions;
 import org.hibernate.sql.exec.internal.lock.LoadedValuesCollectorFactory;
 import org.hibernate.sql.exec.spi.ExecutionContext;
+import org.hibernate.sql.exec.spi.JdbcActionExecution;
 import org.hibernate.sql.exec.spi.JdbcSelect;
 import org.hibernate.sql.exec.spi.JdbcSelectWithActionsBuilder;
 import org.hibernate.sql.exec.spi.LoadedValuesCollector;
@@ -74,37 +76,38 @@ public class ReactiveJdbcSelectWithActions extends JdbcSelectWithActions impleme
 	}
 
 	@Override
-	public CompletionStage<Void> reactivePerformPreActions(
-			ReactiveConnection connection,
-			ExecutionContext executionContext) {
-		if ( preActions == null ) {
-			return voidFuture();
-		}
-
-		return loop( preActions, preAction -> ( (ReactivePreAction) preAction )
-				.reactivePerformPreAction( connection, executionContext )
-		);
+	public ReactiveJdbcActionExecution createReactiveActionExecution() {
+		final var actions = JdbcActionExecution.materializeActions( preActions, postActions );
+		return new ActionExecution( actions.preActions(), actions.postActions() );
 	}
 
-	@Override
-	public CompletionStage<Void> reactivePerformPostActions(
-			boolean succeeded,
-			ReactiveConnection connection,
-			ExecutionContext executionContext,
-			LoadedValuesCollector loadedValuesCollector) {
-		if ( postActions != null ) {
-			return loop(
-					postActions, postAction -> {
-						if ( succeeded || postAction.shouldRunAfterFail() ) {
-							return ( (ReactivePostAction) postAction )
-									.reactivePerformReactivePostAction( connection, executionContext, loadedValuesCollector );
-						}
-						return voidFuture();
-					}
+	/**
+	 * The actions of one execution: the same instances are used for the pre-actions and the post-actions
+	 */
+	private record ActionExecution(List<PreAction> preActions, List<PostAction> postActions)
+			implements ReactiveJdbcActionExecution {
+
+		@Override
+		public CompletionStage<Void> reactivePerformPreActions(
+				ReactiveConnection connection,
+				ExecutionContext executionContext) {
+			return loop( preActions, preAction -> ( (ReactivePreAction) preAction )
+					.reactivePerformPreAction( connection, executionContext )
 			);
 		}
-		else {
-			return voidFuture();
+
+		@Override
+		public CompletionStage<Void> reactivePerformPostActions(
+				boolean succeeded,
+				ReactiveConnection connection,
+				ExecutionContext executionContext,
+				LoadedValuesCollector loadedValuesCollector) {
+			return loop(
+					postActions, postAction -> succeeded || postAction.shouldRunAfterFail()
+							? ( (ReactivePostAction) postAction )
+									.reactivePerformReactivePostAction( connection, executionContext, loadedValuesCollector )
+							: voidFuture()
+			);
 		}
 	}
 
