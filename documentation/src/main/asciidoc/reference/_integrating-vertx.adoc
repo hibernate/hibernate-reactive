@@ -72,8 +72,8 @@ context.
 
 [source,java]
 ----
-Context currentContext = Vertx.currentContext();
-currentContext.runOnContext( event -> {
+Context context = vertx.getOrCreateContext();
+context.runOnContext( event -> {
     // Here you will be able to use the session
 });
 ----
