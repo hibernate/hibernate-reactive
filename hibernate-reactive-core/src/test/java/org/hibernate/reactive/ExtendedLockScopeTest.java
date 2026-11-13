@@ -421,6 +421,46 @@ public class ExtendedLockScopeTest extends BaseReactiveTest {
 						.thenAccept( rows -> assertThat( rows ).isEmpty() ) ) ) );
 	}
 
+	// Covers a read-only entity: like in ORM, lock() locks its row
+	@Test
+	public void testLockReadOnlyEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> {
+					s.setReadOnly( book, true );
+					sqlTracker.clear();
+					return s.lock( book, LockMode.PESSIMISTIC_WRITE ).thenApply( v -> book );
+				} )
+				.thenAccept( book -> {
+					assertThat( s.getLockMode( book ) ).isEqualTo( LockMode.PESSIMISTIC_WRITE );
+					assertThat( lockingQueries( "book" ) ).hasSize( 1 );
+				} ) ) );
+	}
+
+	@Test
+	public void testLockReadOnlyEntityLocksRow(VertxTestContext context) {
+		assumeThat( dbType() ).isIn( POSTGRESQL, MYSQL, MARIA );
+		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> {
+					s.setReadOnly( book, true );
+					return s.lock( book, LockMode.PESSIMISTIC_WRITE );
+				} )
+				.thenCompose( v -> lockedRows( "select title from lock_scope_book where id = ", TALISMAN.id ) )
+				.thenAccept( rows -> assertThat( rows ).isEmpty() ) ) );
+	}
+
+	// Covers a removed entity, which is still rejected
+	@Test
+	public void testLockRemovedEntity(VertxTestContext context) {
+		test( context, getSessionFactory().withTransaction( s -> s.find( Book.class, TALISMAN.id )
+				.thenCompose( book -> s.remove( book ).thenApply( v -> book ) )
+				.thenCompose( book -> s.lock( book, LockMode.PESSIMISTIC_WRITE ) )
+				.handle( (v, e) -> {
+					// Hibernate Reactive rejects it before checking the status of the entry, ORM throws ObjectDeletedException
+					assertThat( e ).isNotNull().hasRootCauseInstanceOf( IllegalArgumentException.class );
+					return null;
+				} ) ) );
+	}
+
 	/**
 	 * Tries to lock the rows in another transaction, skipping the ones that are already locked:
 	 * the result contains the rows that aren't locked by the current transaction.
