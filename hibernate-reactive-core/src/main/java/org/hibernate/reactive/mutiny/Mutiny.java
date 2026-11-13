@@ -2049,6 +2049,15 @@ public interface Mutiny {
 	 * Allows code within {@link Session#withTransaction(Function)} to mark a
 	 * transaction for rollback. A transaction marked for rollback will
 	 * never be committed.
+	 * <p>
+	 * As in Hibernate ORM, a failed operation also marks the transaction for
+	 * rollback, even if the work recovers from the failure, except for
+	 * {@link jakarta.persistence.NoResultException},
+	 * {@link jakarta.persistence.NonUniqueResultException},
+	 * {@link jakarta.persistence.LockTimeoutException} and
+	 * {@link jakarta.persistence.QueryTimeoutException}. With JPA transaction
+	 * compliance enabled, committing a transaction marked for rollback fails
+	 * with a {@link jakarta.persistence.RollbackException}.
 	 */
 	interface Transaction {
 		/**
@@ -2057,7 +2066,8 @@ public interface Mutiny {
 		void markForRollback();
 
 		/**
-		 * Is the current transaction marked for rollback.
+		 * Is the current transaction marked for rollback, by
+		 * {@link #markForRollback()} or by a failed operation.
 		 */
 		boolean isMarkedForRollback();
 	}
