@@ -20,15 +20,21 @@ Before the release:
   * Assign the fixed issues to it, and move the open ones to another milestone.
 * If it's the first release of a new major or minor version, check that the
   [migration guide](migration-guide.adoc) is up to date.
-* If you want highlights in the GitHub release notes, add them to
-  [github_release_notes.md](github_release_notes.md) and push it to the branch you want to release:
-  the release job uses it as the body of the "What's new" section of the GitHub release.
+* If you want highlights in the GitHub release notes, prepare them in Markdown,
+  e.g. a `### Highlights` heading and a list: you will paste them in the release job.
+  The job adds them before the content of [github_release_notes.md](github_release_notes.md)
+  in the "What's new" section of the GitHub release.
+  Change github_release_notes.md only for what every release of the branch should include.
 
 ### Performing the release
 
 * Trigger the release job on CI for the branch you want to release.
   Only `RELEASE_VERSION` is mandatory, e.g. `5.1.0.Final`.
+  Paste the highlights, if any, in `RELEASE_HIGHLIGHTS`:
+  they can use the same placeholders as github_release_notes.md, e.g. `{{releaseVersionFamily}}`.
   Use `RELEASE_DRY_RUN` to check the release without publishing anything.
+  Jenkins shows a new parameter of the job only after a build with the Jenkinsfile that adds it:
+  if `RELEASE_HIGHLIGHTS` is missing, run a dry run first.
 * The job updates [hibernate.org](https://github.com/hibernate/hibernate.org):
   it adds the release and, for the first release of a series, the `series.yml` of the series
   that the build generates in `build/hibernate.org` (the task `websiteSeriesFile`).
@@ -38,8 +44,6 @@ Before the release:
 ### After the release
 
 * Check the [GitHub release](https://github.com/hibernate/hibernate-reactive/releases) notes.
-  If you added highlights to [github_release_notes.md](github_release_notes.md), remove them,
-  otherwise they will appear in the notes of the next release too.
 * Update the default versions in the [JBang templates](tooling/jbang) to the new release,
   once the artifacts are on Maven Central: for example,
   `//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.Beta1}`,
