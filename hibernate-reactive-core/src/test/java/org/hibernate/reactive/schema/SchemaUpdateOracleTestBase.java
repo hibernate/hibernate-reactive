@@ -31,6 +31,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.ORACLE;
 import static org.hibernate.tool.schema.JdbcMetadataAccessStrategy.GROUPED;
@@ -190,17 +191,8 @@ public abstract class SchemaUpdateOracleTestBase extends BaseReactiveTest {
 										.thenCompose( v -> s.createNativeQuery( foreignKeyQuery )
 												.setParameter( 1, "ASIMPLE" )
 												.getResultList()
-												.thenAccept( list -> {
-																 assertEquals(
-																		 "FK_ASIMPLE_AOTHER",
-																		 list.get( 0 )
-																 );
-																 assertEquals(
-																		 "FK_ASIMPLE_AANOTHER",
-																		 list.get( 1 )
-																 );
-															 }
-												)
+												.thenAccept( list -> assertThat( list )
+														.containsExactlyInAnyOrder( "FK_ASIMPLE_AOTHER", "FK_ASIMPLE_AANOTHER" ) )
 										)
 								)
 						)
