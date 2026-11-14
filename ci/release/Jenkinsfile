@@ -95,6 +95,11 @@ pipeline {
 				defaultValue: false,
 				description: 'If true, just simulate the release, without pushing any commits or tags, and without uploading any artifacts or documentation.'
 		)
+		text(
+				name: 'RELEASE_HIGHLIGHTS',
+				defaultValue: '',
+				description: 'Optional highlights of the release, in Markdown, e.g. a "### Highlights" heading and a list. They come before the content of github_release_notes.md in the GitHub release notes, and can use the same placeholders, e.g. {{releaseVersionFamily}}.'
+		)
 	}
 	stages {
 		stage('Check') {
@@ -103,6 +108,7 @@ pipeline {
 					print "INFO: params.RELEASE_VERSION = ${params.RELEASE_VERSION}"
 					print "INFO: params.DEVELOPMENT_VERSION = ${params.DEVELOPMENT_VERSION}"
 					print "INFO: params.RELEASE_DRY_RUN? = ${params.RELEASE_DRY_RUN}"
+					print "INFO: params.RELEASE_HIGHLIGHTS = ${params.RELEASE_HIGHLIGHTS}"
 
 					checkoutReleaseScripts()
 
@@ -218,6 +224,15 @@ pipeline {
 										"DISABLE_REMOTE_GRADLE_CACHE=true"
 								]) {
 									def ghReleaseNote = sh(script: 'realpath -e github_release_notes.md 2>/dev/null', returnStdout: true).trim()
+									if ( params.RELEASE_HIGHLIGHTS?.trim() ) {
+										// The highlights come before the content of github_release_notes.md
+										def notes = params.RELEASE_HIGHLIGHTS.trim()
+										if ( ghReleaseNote != '' ) {
+											notes += '\n\n' + readFile( ghReleaseNote )
+										}
+										writeFile( file: 'build/github_release_notes.md', text: notes )
+										ghReleaseNote = sh(script: 'realpath -e build/github_release_notes.md', returnStdout: true).trim()
+									}
 									sh ".release/scripts/publish.sh -j ${ghReleaseNote != '' ? '--notes=' + ghReleaseNote : ''} ${env.SCRIPT_OPTIONS} ${env.PROJECT} ${env.RELEASE_VERSION} ${env.DEVELOPMENT_VERSION} ${env.GIT_BRANCH}"
 								}
 							}
