@@ -10,7 +10,7 @@
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.2.3}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.2.3}
 //DEPS io.vertx:vertx-unit:${vertx.version:5.2.3}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.CR1}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.CR2}
 //DEPS org.assertj:assertj-core:3.27.7
 //DEPS junit:junit:4.13.2
 //DEPS org.testcontainers:testcontainers-postgresql:2.0.5
