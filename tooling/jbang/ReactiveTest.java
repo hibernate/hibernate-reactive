@@ -9,6 +9,7 @@
 //DEPS com.ongres.scram:scram-client:3.4
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.2.3}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.2.3}
+//DEPS io.vertx:vertx-oracle-client:${vertx.version:5.2.3}
 //DEPS io.vertx:vertx-unit:${vertx.version:5.2.3}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.CR2}
 //DEPS org.assertj:assertj-core:3.27.7
@@ -18,9 +19,10 @@
 //DEPS org.testcontainers:testcontainers-db2:2.0.5
 //DEPS org.testcontainers:testcontainers-mariadb:2.0.5
 //DEPS org.testcontainers:testcontainers-cockroachdb:2.0.5
+//DEPS org.testcontainers:testcontainers-oracle-xe:2.0.5
 //
 //// Testcontainer needs the JDBC drivers to start the containers
-//// Hibernate Reactive doesn't use them
+//// Hibernate Reactive doesn't use them (the Vert.x Oracle client already depends on the Oracle one)
 //DEPS org.postgresql:postgresql:42.7.14
 //DEPS com.mysql:mysql-connector-j:26.10.0
 //DEPS org.mariadb.jdbc:mariadb-java-client:4.0.0
@@ -52,9 +54,11 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.testcontainers.cockroachdb.CockroachContainer;
 import org.testcontainers.db2.Db2Container;
 import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.mariadb.MariaDBContainer;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -232,7 +236,15 @@ public class ReactiveTest {
 		MYSQL( () -> new MySQLContainer( "container-registry.oracle.com/mysql/community-server:26.7.1" ) ),
 		DB2( () -> new Db2Container( "icr.io/db2_community/db2:12.1.5.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:13.0.2" ) ),
-		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.3.5" ) );
+		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v26.3.5" ) ),
+		ORACLE( () -> new OracleContainer( DockerImageName
+				.parse( "gvenzl/oracle-free:23-slim-faststart" )
+				.asCompatibleSubstituteFor( "gvenzl/oracle-xe" ) )
+				// The default database name of OracleContainer, xepdb1, doesn't exist in Oracle Database Free
+				.withDatabaseName( "hreact" )
+				// Without a limit, the fixed memory configuration of the database might not be enough to start it
+				// with many CPUs. See https://github.com/gvenzl/oci-oracle-xe/issues/64
+				.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) ) );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 
