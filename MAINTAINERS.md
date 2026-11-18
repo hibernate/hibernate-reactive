@@ -35,6 +35,9 @@ Before the release:
   Use `RELEASE_DRY_RUN` to check the release without publishing anything.
   Jenkins shows a new parameter of the job only after a build with the Jenkinsfile that adds it:
   if `RELEASE_HIGHLIGHTS` is missing, run a dry run first.
+* The job updates the default versions of Hibernate Reactive and Vert.x in the [JBang templates](tooling/jbang)
+  to the release, with `./gradlew :release:updateJBangTemplates -PreleaseVersion=...`, and includes them in the release commit.
+  The templates work once the artifacts are on Maven Central.
 * The job updates [hibernate.org](https://github.com/hibernate/hibernate.org):
   it adds the release and, for the first release of a series, the `series.yml` of the series
   that the build generates in `build/hibernate.org` (the task `websiteSeriesFile`).
@@ -44,10 +47,6 @@ Before the release:
 ### After the release
 
 * Check the [GitHub release](https://github.com/hibernate/hibernate-reactive/releases) notes.
-* Update the default versions in the [JBang templates](tooling/jbang) to the new release,
-  once the artifacts are on Maven Central: for example,
-  `//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.1.0.Beta1}`,
-  and the Vert.x version if it changed.
 * Check the page of the series on hibernate.org, e.g. https://hibernate.org/reactive/releases/5.1/.
 * Check that the artifacts are available on
   [Maven Central](https://central.sonatype.com/artifact/org.hibernate.reactive/hibernate-reactive-core).
