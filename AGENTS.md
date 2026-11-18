@@ -24,6 +24,15 @@ When you help with a release, follow the [release checklist](MAINTAINERS.md#rele
 - When the behaviour can't be the same, for example because of a limitation of the Vert.x SQL client,
   explain why in the pull request.
 
+## Documentation
+
+- The [migration guide](migration-guide.adoc) only contains what helps somebody to migrate:
+  what no longer works the same way, and what to do about it.
+  For example, an API that was removed or renamed, a setting or a default that changed,
+  or a behaviour that an application can notice.
+- Don't add a bug fix that needs no change in the application, even when it makes Hibernate Reactive
+  behave like Hibernate ORM, or a new feature: the release notes and the issue cover them.
+
 ## Commits
 
 - Start the title with the GitHub issue key: `[#1234] Fix some kind of problem`.
