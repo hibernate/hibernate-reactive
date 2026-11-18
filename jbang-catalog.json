@@ -40,6 +40,12 @@
         "{basename}.java": "tooling/jbang/CockroachDBReactiveTest.java.qute"
       },
       "description": "Template for a test with CockroachDB using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "oracle-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/OracleReactiveTest.java.qute"
+      },
+      "description": "Template for a test with Oracle using Junit 4, Vert.x Unit and Testcontainers"
     }
   }
 }
