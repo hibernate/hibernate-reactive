@@ -12,6 +12,15 @@ If you delegate work to other agents, pass these guidelines on to them.
 
 When you help with a release, follow the [release checklist](https://github.com/hibernate/hibernate-reactive/blob/main/MAINTAINERS.md#releasing).
 
+## Documentation
+
+- The [migration guide](migration-guide.adoc) only contains what helps somebody to migrate:
+  what no longer works the same way, and what to do about it.
+  For example, an API that was removed or renamed, a setting or a default that changed,
+  or a behaviour that an application can notice.
+- Don't add a bug fix that needs no change in the application, even when it makes Hibernate Reactive
+  behave like Hibernate ORM, or a new feature: the release notes and the issue cover them.
+
 ## Commits
 
 - Start the title with the GitHub issue key: `[#1234] Fix some kind of problem`.
