@@ -9,7 +9,7 @@ hibernateOrmVersion = "8.0.0.CR1"
 # Update them only when Hibernate Reactive starts relying on a change in the dependency.
 hibernateOrmMinimumVersion = "8.0.0.CR1"
 hibernateOrmGradlePluginVersion = "8.0.0.CR1"
-jacksonDatabindVersion = "2.22.4"
+jacksonDatabindVersion = "2.23.0"
 jbossLoggingAnnotationVersion = "3.0.4.Final"
 jbossLoggingVersion = "3.6.3.Final"
 junitVersion = "6.1.3"
