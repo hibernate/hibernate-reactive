@@ -46,6 +46,12 @@
         "{basename}.java": "tooling/jbang/OracleReactiveTest.java.qute"
       },
       "description": "Template for a test with Oracle using Junit 4, Vert.x Unit and Testcontainers"
+    },
+    "mssql-reproducer": {
+      "file-refs": {
+        "{basename}.java": "tooling/jbang/MSSQLServerReactiveTest.java.qute"
+      },
+      "description": "Template for a test with SQL Server using Junit 4, Vert.x Unit and Testcontainers"
     }
   }
 }
