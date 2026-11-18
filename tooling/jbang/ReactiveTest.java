@@ -10,6 +10,7 @@
 //DEPS io.vertx:vertx-db2-client:${vertx.version:5.1.10}
 //DEPS io.vertx:vertx-mysql-client:${vertx.version:5.1.10}
 //DEPS io.vertx:vertx-oracle-client:${vertx.version:5.1.10}
+//DEPS io.vertx:vertx-mssql-client:${vertx.version:5.1.10}
 //DEPS io.vertx:vertx-unit:${vertx.version:5.1.10}
 //DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:5.0.0.CR2}
 //DEPS org.assertj:assertj-core:3.27.7
@@ -20,12 +21,14 @@
 //DEPS org.testcontainers:testcontainers-mariadb:2.0.5
 //DEPS org.testcontainers:testcontainers-cockroachdb:2.0.5
 //DEPS org.testcontainers:testcontainers-oracle-xe:2.0.5
+//DEPS org.testcontainers:testcontainers-mssqlserver:2.0.5
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them (the Vert.x Oracle client already depends on the Oracle one)
 //DEPS org.postgresql:postgresql:42.7.14
 //DEPS com.mysql:mysql-connector-j:26.10.0
 //DEPS org.mariadb.jdbc:mariadb-java-client:4.0.0
+//DEPS com.microsoft.sqlserver:mssql-jdbc:13.6.2.jre11
 //
 
 import java.util.function.Supplier;
@@ -56,6 +59,7 @@ import org.testcontainers.db2.Db2Container;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.mariadb.MariaDBContainer;
+import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -244,7 +248,8 @@ public class ReactiveTest {
 				.withDatabaseName( "hreact" )
 				// Without a limit, the fixed memory configuration of the database might not be enough to start it
 				// with many CPUs. See https://github.com/gvenzl/oci-oracle-xe/issues/64
-				.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) ) );
+				.withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withCpuCount( 2L ) ) ),
+		MSSQLSERVER( () -> new MSSQLServerContainer( "mcr.microsoft.com/mssql/server:2025-latest" ).acceptLicense() );
 
 		private final Supplier<JdbcDatabaseContainer<?>> containerSupplier;
 
