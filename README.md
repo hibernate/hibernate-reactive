@@ -136,6 +136,7 @@ You can also generate and run a db-specific test. See available templates using:
 cockroachdb-reproducer = Template for a test with CockroachDB using Junit 4, Vert.x Unit and Testcontainers
 db2-reproducer = Template for a test with Db2 using Junit 4, Vert.x Unit and Testcontainers
 mariadb-reproducer = Template for a test with MariaDB using Junit 4, Vert.x Unit and Testcontainers
+mssql-reproducer = Template for a test with SQL Server using Junit 4, Vert.x Unit and Testcontainers
 mysql-reproducer = Template for a test with MySQL using Junit 4, Vert.x Unit and Testcontainers
 oracle-reproducer = Template for a test with Oracle using Junit 4, Vert.x Unit and Testcontainers
 pg-reproducer = Template for a test with PostgreSQL using Junit 4, Vert.x Unit and Testcontainers
