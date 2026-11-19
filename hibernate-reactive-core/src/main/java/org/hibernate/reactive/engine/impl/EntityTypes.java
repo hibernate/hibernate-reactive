@@ -31,6 +31,7 @@ import org.hibernate.type.OneToOneType;
 import org.hibernate.type.Type;
 
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
+import static org.hibernate.engine.internal.ForeignKeys.getEntityIdentifier;
 import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl.UNKNOWN;
@@ -320,18 +321,42 @@ public class EntityTypes {
 				( (EnhancementAsProxyLazinessInterceptor) interceptor ).forceInitialize( value, null );
 			}
 		}
+		return getUniqueKey( entityType, value, session );
+	}
+
+	/**
+	 * @see EntityType#getIdentifierEvenIfTransient(Object, SharedSessionContractImplementor)
+	 */
+	private static CompletionStage<Object> getIdentifierEvenIfTransient(
+			EntityType entityType,
+			Object value,
+			SharedSessionContractImplementor session) {
+		if ( entityType.isReferenceToIdentifierProperty() ) {
+			// tolerates nulls and transients
+			return completedFuture( getEntityIdentifier( entityType.getAssociatedEntityName(), value, session ) );
+		}
+		return getIdentifier( entityType, value, session );
+	}
+
+	/**
+	 * The value of the unique key that the association references.
+	 *
+	 * @see EntityType#getUniqueKey(Object, SharedSessionContractImplementor)
+	 */
+	private static CompletionStage<Object> getUniqueKey(
+			EntityType entityType,
+			Object entity,
+			SharedSessionContractImplementor session) {
 		final EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
-		String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
-		Object propertyValue = entityPersister.getPropertyValue( value, uniqueKeyPropertyName );
+		final String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
+		final Object propertyValue = entityPersister.getPropertyValue( entity, uniqueKeyPropertyName );
 		// We now have the value of the property-ref we reference. However,
 		// we need to dig a little deeper, as that property might also be
 		// an entity type, in which case we need to resolve its identifier
-		final AttributeMapping type = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
-		if ( type.isEntityIdentifierMapping() ) {
-			propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
-		}
-		return completedFuture( propertyValue );
-
+		final AttributeMapping attribute = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
+		return entityPersister.getPropertyTypes()[attribute.getStateArrayPosition()] instanceof EntityType propertyType
+				? getIdentifierEvenIfTransient( propertyType, propertyValue, session )
+				: completedFuture( propertyValue );
 	}
 
 	private static CompletionStage<Object> getIdentifierFromHibernateProxy(
@@ -343,24 +368,11 @@ public class EntityTypes {
 		final Object identifier = initializer.getIdentifier();
 		return ( (ReactiveSharedSessionContractImplementor) session )
 				.reactiveImmediateLoad( entityName, identifier )
-				.thenApply( entity -> {
+				.thenCompose( entity -> {
 					checkEntityFound( session, entityName, identifier, entity );
 					initializer.setSession( session );
 					initializer.setImplementation( entity );
-					if ( entity != null ) {
-						final EntityPersister entityPersister = entityType.getAssociatedEntityPersister( session.getFactory() );
-						String uniqueKeyPropertyName = entityType.getRHSUniqueKeyPropertyName();
-						Object propertyValue = entityPersister.getPropertyValue( entity, uniqueKeyPropertyName );
-						// We now have the value of the property-ref we reference. However,
-						// we need to dig a little deeper, as that property might also be
-						// an entity type, in which case we need to resolve its identifier
-						final AttributeMapping type = entityPersister.findAttributeMapping( uniqueKeyPropertyName );
-						if ( type.isEntityIdentifierMapping() ) {
-							propertyValue = getIdentifier( (EntityType) type, propertyValue, session );
-						}
-						return propertyValue;
-					}
-					return null;
+					return entity == null ? nullFuture() : getUniqueKey( entityType, entity, session );
 				} );
 	}
 
