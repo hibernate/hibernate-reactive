@@ -305,7 +305,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Time getTime(int columnIndex, Calendar cal) {
 		LocalTime localTime = row.getLocalTime( columnIndex - 1 );
-		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
+		return ( wasNull = localTime == null ) ? null : toTime( localTime, cal );
 	}
 
 
@@ -433,6 +433,14 @@ public class ResultSetAdaptor implements ResultSet {
 		return ( wasNull = localDate == null ) ? null : Date.valueOf( localDate );
 	}
 
+	// Like a JDBC driver, interpret the time of day in the time zone of the calendar
+	private static Time toTime(LocalTime localTime, Calendar cal) {
+		return new Time( localTime.atDate( LocalDate.EPOCH )
+				.atZone( cal.getTimeZone().toZoneId() )
+				.toInstant()
+				.toEpochMilli() );
+	}
+
 	@Override
 	public Time getTime(String columnLabel) {
 		LocalTime localTime = row.getLocalTime( columnLabel );
@@ -442,7 +450,7 @@ public class ResultSetAdaptor implements ResultSet {
 	@Override
 	public Time getTime(String columnLabel, Calendar cal) {
 		LocalTime localTime = row.getLocalTime( columnLabel );
-		return ( wasNull = localTime == null ) ? null : Time.valueOf( localTime );
+		return ( wasNull = localTime == null ) ? null : toTime( localTime, cal );
 	}
 
 	@Override
