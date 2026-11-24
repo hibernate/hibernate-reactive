@@ -194,9 +194,17 @@ pipeline {
 									// Increase the amount of memory for this part since asciidoctor doc rendering consumes a lot of metaspace
 									"GRADLE_OPTS=-Dorg.gradle.jvmargs='-Dlog4j2.disableJmx -Xmx4g -XX:MaxMetaspaceSize=768m -XX:+HeapDumpOnOutOfMemoryError -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8'"
 							]) {
-								// Update the JBang templates to the release version, without committing:
-								// the release commit of prepare-release.sh (git commit -a) includes them
+								// Update the JBang templates to the release version and commit them on the release branch:
+								// the scripts of prepare-release.sh expect no other change in the working tree.
+								// prepare-release.sh checks out the same branch, and the release pushes the commit with the others.
+								sh "git checkout ${env.GIT_BRANCH}"
 								sh "./gradlew :release:updateJBangTemplates -PreleaseVersion=${env.RELEASE_VERSION} --no-scan --no-daemon --no-build-cache"
+								sh """
+									if ! git diff --quiet -- tooling/jbang; then
+										git -c user.name='Hibernate CI' -c user.email='ci@hibernate.org' \\
+											commit -m '[Jenkins release job] JBang templates updated by release build ${env.RELEASE_VERSION}' -- tooling/jbang
+									fi
+								"""
 								sh "bash -xe .release/scripts/prepare-release.sh -j -b ${env.GIT_BRANCH} -v ${env.DEVELOPMENT_VERSION} ${env.PROJECT} ${env.RELEASE_VERSION}"
 							}
 						}
