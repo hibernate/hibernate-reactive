@@ -48,7 +48,7 @@ If they are, the creation of the factory fails with:
 HR000004: Hibernate Reactive <version> requires <library> <minimum version> or later, but version <version> was found.
 ----
 
-Hibernate Reactive 5.0.0.CR1 and 5.1.0.CR1 require Hibernate ORM 8.0.0.CR1 or later.
+Hibernate Reactive 5.0.0.Final and 5.1.0.CR3 require Hibernate ORM 8.0.0.CR2 or later.
 
 This usually means that another platform (BOM) imported before the Hibernate Reactive one manages an older version.
 Hibernate Reactive publishes a platform, `org.hibernate.reactive:hibernate-reactive-platform`,
