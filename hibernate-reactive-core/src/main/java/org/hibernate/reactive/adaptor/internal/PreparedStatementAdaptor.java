@@ -27,6 +27,7 @@ import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.util.Arrays;
@@ -166,7 +167,8 @@ public class PreparedStatementAdaptor implements PreparedStatement {
 
 	@Override
 	public void setTime(int parameterIndex, Time x, Calendar cal) {
-		put( parameterIndex, x.toLocalTime() );
+		// Like a JDBC driver, bind the time of day of the instant in the time zone of the calendar
+		put( parameterIndex, Instant.ofEpochMilli( x.getTime() ).atZone( cal.getTimeZone().toZoneId() ).toLocalTime() );
 	}
 
 	@Override
