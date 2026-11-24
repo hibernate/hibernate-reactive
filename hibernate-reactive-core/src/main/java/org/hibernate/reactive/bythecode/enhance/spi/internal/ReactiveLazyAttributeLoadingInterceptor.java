@@ -14,9 +14,9 @@ import java.lang.invoke.MethodHandles;
 /**
  * Reactive version of {@link LazyAttributeLoadingInterceptor}.
  *
- * It throws a {@link org.hibernate.LazyInitializationException} when a lazy attribute
- * is not fetched using {@link org.hibernate.reactive.mutiny.Mutiny#fetch(Object)}
- * or {@link org.hibernate.reactive.stage.Stage#fetch(Object)} but transparently
+ * It throws a {@link org.hibernate.LazyInitializationException} when the application reads
+ * a lazy attribute that it didn't fetch with {@link org.hibernate.reactive.mutiny.Mutiny#fetch(Object)}
+ * or {@link org.hibernate.reactive.stage.Stage#fetch(Object)}.
  */
 public class ReactiveLazyAttributeLoadingInterceptor extends LazyAttributeLoadingInterceptor {
 
@@ -29,6 +29,13 @@ public class ReactiveLazyAttributeLoadingInterceptor extends LazyAttributeLoadin
 		super( entityMeta, identifier, session );
 	}
 
+	/**
+	 * Hibernate ORM loads an attribute that is not loaded yet when the application reads it,
+	 * with a blocking query. A reactive session can't run it: there is no JDBC connection,
+	 * and a getter can't return a {@link java.util.concurrent.CompletionStage}.
+	 * So we fail with an error that tells the application to fetch the attribute explicitly,
+	 * instead of a less clear error from inside the blocking load.
+	 */
 	@Override
 	protected Object handleRead(Object target, String attributeName, Object value) {
 		if ( !isAttributeLoaded( attributeName ) ) {
