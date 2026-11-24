@@ -36,7 +36,7 @@ Before the release:
   Jenkins shows a new parameter of the job only after a build with the Jenkinsfile that adds it:
   if `RELEASE_HIGHLIGHTS` is missing, run a dry run first.
 * The job updates the default versions of Hibernate Reactive and Vert.x in the [JBang templates](tooling/jbang)
-  to the release, with `./gradlew :release:updateJBangTemplates -PreleaseVersion=...`, and includes them in the release commit.
+  to the release, with `./gradlew :release:updateJBangTemplates -PreleaseVersion=...`, and commits them before the release commit.
   The templates work once the artifacts are on Maven Central.
 * The job updates [hibernate.org](https://github.com/hibernate/hibernate.org):
   it adds the release and, for the first release of a series, the `series.yml` of the series
