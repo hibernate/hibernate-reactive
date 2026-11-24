@@ -239,6 +239,17 @@ If you use the extended scope, expect more locked rows, and more waits on them, 
 
 With `LockMode.PESSIMISTIC_FORCE_INCREMENT` and the extended scope, queries now increment the version too.
 
+[[jdbc-time-zone-times]]
+== `hibernate.jdbc.time_zone` applies to times
+
+Hibernate Reactive now applies `hibernate.jdbc.time_zone` to the values stored in a time column,
+like Hibernate ORM: `LocalTime`, `java.sql.Time`, and `Date` mapped with `@Temporal(TemporalType.TIME)`.
+Before, it stored the time of day in the default time zone of the JVM, and applied the setting only to timestamps.
+
+If you set `hibernate.jdbc.time_zone` to a time zone that differs from the one of the JVM,
+the times written by an earlier version are now read shifted by the difference between the two time zones:
+convert the existing values to the time zone of `hibernate.jdbc.time_zone`.
+
 [[jakarta-settings]]
 == Jakarta Persistence settings
 
