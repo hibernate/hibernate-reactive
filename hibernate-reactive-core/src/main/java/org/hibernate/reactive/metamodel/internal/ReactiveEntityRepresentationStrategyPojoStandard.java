@@ -5,7 +5,6 @@
 package org.hibernate.reactive.metamodel.internal;
 
 import org.hibernate.mapping.PersistentClass;
-import org.hibernate.metamodel.internal.EntityInstantiatorPojoOptimized;
 import org.hibernate.metamodel.internal.EntityRepresentationStrategyPojoStandard;
 import org.hibernate.metamodel.spi.EntityInstantiator;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
@@ -13,7 +12,7 @@ import org.hibernate.persister.entity.EntityPersister;
 
 /**
  * Extends {@link EntityRepresentationStrategyPojoStandard}
- * to create {@link ReactiveEntityInstantiatorPojoOptimized} and {@link ReactiveEntityInstantiatorPojoStandard}
+ * to create a {@link ReactiveEntityInstantiatorPojoStandard}
  */
 public class ReactiveEntityRepresentationStrategyPojoStandard extends EntityRepresentationStrategyPojoStandard {
 
@@ -26,17 +25,11 @@ public class ReactiveEntityRepresentationStrategyPojoStandard extends EntityRepr
 
 	@Override
 	protected EntityInstantiator determineInstantiator(PersistentClass bootDescriptor, EntityPersister persister) {
-		final EntityInstantiator parentInstantiator = super.determineInstantiator( bootDescriptor, persister );
-		if ( parentInstantiator instanceof EntityInstantiatorPojoOptimized ) {
-			return new ReactiveEntityInstantiatorPojoOptimized(
-					persister,
-					bootDescriptor,
-					getMappedJavaType(),
-					parentInstantiator
-			);
-		}
-		else {
-			return new ReactiveEntityInstantiatorPojoStandard( persister, bootDescriptor, getMappedJavaType() );
-		}
+		return new ReactiveEntityInstantiatorPojoStandard(
+				persister,
+				bootDescriptor,
+				getMappedJavaType(),
+				super.determineInstantiator( bootDescriptor, persister )
+		);
 	}
 }
