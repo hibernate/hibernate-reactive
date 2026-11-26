@@ -73,6 +73,7 @@ import org.hibernate.query.sqm.tree.spi.select.SqmQuerySpec;
 import org.hibernate.query.sqm.tree.spi.select.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.spi.update.SqmUpdateStatement;
 import org.hibernate.reactive.common.AffectedEntities;
+import org.hibernate.reactive.common.InternalStateAssertions;
 import org.hibernate.reactive.common.ResultSetMapping;
 import org.hibernate.reactive.engine.internal.ReactivePersistenceContextAdapter;
 import org.hibernate.reactive.id.ReactiveIdentifierGenerator;
@@ -196,10 +197,12 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	private final PersistenceContext persistenceContext;
 	private final boolean connectionProvided;
 	private boolean markedForRollbackOnly;
+	private final Thread associatedWorkThread;
 	private CompletionStage<Void> previousOperation = voidFuture();
 
 	public ReactiveStatelessSessionImpl(SessionFactoryImpl factory, StatelessOptions options, ReactiveConnection connection) {
 		super( factory, options );
+		associatedWorkThread = Thread.currentThread();
 		connectionProvided = options.getConnection() != null;
 		reactiveConnection = connection;
 		persistenceContext = new ReactivePersistenceContextAdapter( super.getPersistenceContext() );
@@ -216,6 +219,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 			ReactiveConnection connection,
 			PersistenceContext persistenceContext) {
 		super( factory, options );
+		associatedWorkThread = Thread.currentThread();
 		connectionProvided = options.getConnection() != null;
 		this.persistenceContext = persistenceContext;
 		// StatelessSession should not allow JDBC batching, because that would change
@@ -247,7 +251,7 @@ public class ReactiveStatelessSessionImpl extends StatelessSessionImpl implement
 	}
 
 	private void threadCheck() {
-		// FIXME: We should check the threads like we do in ReactiveSessionImpl
+		InternalStateAssertions.assertCurrentThreadMatches( associatedWorkThread );
 	}
 
 	public <T> CompletionStage<T> enqueue(Supplier<CompletionStage<T>> operation) {
