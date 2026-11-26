@@ -195,6 +195,23 @@ public class PersistEntityWithProxyAssociationTest extends BaseReactiveTest {
 		);
 	}
 
+	@Test
+	public void testPersistSeveralEntitiesWithProxies(VertxTestContext context) {
+		// Like testPersistEntityWithProxy, but several proxies are fetched during the same flush:
+		// after the first one, the fetches happen after an asynchronous step of the flush
+		final List<Currency> currencies = List.of( new Currency( 1L, "USD" ), new Currency( 2L, "EUR" ), new Currency( 3L, "GBP" ) );
+		test( context, getMutinySessionFactory()
+				.withTransaction( s -> s.persistAll( currencies.toArray() ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s.persistAll( currencies.stream()
+						.map( currency -> new Payment( 100L + currency.id, s.getReference( Currency.class, currency.id ) ) )
+						.toArray() ) ) )
+				.chain( () -> getMutinySessionFactory().withTransaction( s -> s
+						.createSelectionQuery( "select p.currency from Payment p order by p.id", Currency.class )
+						.getResultList() ) )
+				.invoke( found -> assertThat( found ).isEqualTo( currencies ) )
+		);
+	}
+
 	@Entity(name = "Receipt")
 	@Table(name = "RECEIPT_TABLE")
 	public static class Receipt {
