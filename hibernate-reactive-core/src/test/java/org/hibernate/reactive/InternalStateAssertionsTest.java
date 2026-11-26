@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage.Session;
+import org.hibernate.reactive.stage.Stage.StatelessSession;
 import org.hibernate.reactive.annotations.EnabledFor;
 
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,6 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 	 */
 	private static final String ERROR_CODE = "HR000069";
 
-	private Object currentSession;
-
 	@Override
 	protected Collection<Class<?>> annotatedEntities() {
 		return List.of( Competition.class );
@@ -51,8 +50,7 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	@Test
 	public void testPersistWithStage(VertxTestContext testContext) {
-		CompletionStage<Session> sessionStage = getSessionFactory().openSession();
-		currentSession = sessionStage;
+		CompletionStage<Session> sessionStage = openSession();
 
 		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
 
@@ -64,8 +62,7 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	@Test
 	public void testFindWithStage(VertxTestContext testContext) {
-		CompletionStage<Session> sessionStage = getSessionFactory().openSession();
-		currentSession = sessionStage;
+		CompletionStage<Session> sessionStage = openSession();
 
 		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
 
@@ -81,8 +78,7 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	@Test
 	public void testOnPersistWithMutiny(VertxTestContext testContext) {
-		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
-		currentSession = sessionUni;
+		Uni<Mutiny.Session> sessionUni = openMutinySession();
 
 		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
 
@@ -96,8 +92,7 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 
 	@Test
 	public void testFindWithMutiny(VertxTestContext testContext) {
-		Uni<Mutiny.Session> sessionUni = getMutinySessionFactory().openSession();
-		currentSession = sessionUni;
+		Uni<Mutiny.Session> sessionUni = openMutinySession();
 
 		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
 
@@ -105,6 +100,44 @@ public class InternalStateAssertionsTest extends BaseReactiveTest {
 				.chain( session -> session
 						.find( Competition.class, "Chess boxing" )
 						.runSubscriptionOn( executor ) ) )
+				.invoke( InternalStateAssertionsTest::assertException )
+		);
+	}
+
+	@Test
+	public void testInsertWithStatelessStage(VertxTestContext testContext) {
+		CompletionStage<StatelessSession> sessionStage = openStatelessSession();
+
+		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
+
+		test( testContext, assertThrown( IllegalStateException.class, sessionStage
+				.thenComposeAsync( session -> session.insert( new Competition( "Cheese Rolling" ) ), executor ) )
+				.thenAccept( InternalStateAssertionsTest::assertException )
+		);
+	}
+
+	@Test
+	public void testGetWithStatelessStage(VertxTestContext testContext) {
+		CompletionStage<StatelessSession> sessionStage = openStatelessSession();
+
+		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
+
+		test( testContext, assertThrown( IllegalStateException.class, sessionStage
+				.thenComposeAsync( session -> session.get( Competition.class, "Chess boxing" ), executor ) )
+				.thenAccept( InternalStateAssertionsTest::assertException )
+		);
+	}
+
+	@Test
+	public void testInsertWithStatelessMutiny(VertxTestContext testContext) {
+		Uni<Mutiny.StatelessSession> sessionUni = openMutinyStatelessSession();
+
+		ThreadPerCommandExecutor executor = new ThreadPerCommandExecutor();
+
+		test( testContext, assertThrown( IllegalStateException.class, sessionUni
+				.emitOn( executor )
+				.call( session -> session
+						.insert( new Competition( "Cheese Rolling" ) ) ) )
 				.invoke( InternalStateAssertionsTest::assertException )
 		);
 	}
