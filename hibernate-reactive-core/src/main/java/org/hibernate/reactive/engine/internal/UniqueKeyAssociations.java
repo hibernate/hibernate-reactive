@@ -22,13 +22,13 @@ import org.hibernate.metamodel.mapping.internal.ManyToManyCollectionPart;
 import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.persister.entity.internal.ReactiveAbstractEntityPersister;
-import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.util.internal.CompletionStages;
 
 import static java.util.Collections.emptyIterator;
 import static org.hibernate.Hibernate.isInitialized;
 import static org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer.UNFETCHED_PROPERTY;
 import static org.hibernate.metamodel.mapping.ForeignKeyDescriptor.Nature.KEY;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveFetch;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
@@ -138,7 +138,8 @@ public final class UniqueKeyAssociations {
 		else if ( part instanceof ToOneAttributeMapping || part instanceof ManyToManyCollectionPart ) {
 			return isInitialized( value )
 					? voidFuture()
-					: ( (ReactiveQueryProducer) session ).reactiveFetch( value, false ).thenCompose( CompletionStages::voidFuture );
+					// Already inside a queued operation (flush, insert or update): don't queue the fetch
+					: internalReactiveFetch( session, value, false ).thenCompose( CompletionStages::voidFuture );
 		}
 		else if ( part instanceof EmbeddableValuedModelPart embeddable ) {
 			final EmbeddableMappingType embeddableType = embeddable.getEmbeddableTypeDescriptor();

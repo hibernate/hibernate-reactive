@@ -27,7 +27,6 @@ import org.hibernate.reactive.engine.internal.ReactiveEntityVerifyVersionProcess
 import org.hibernate.reactive.event.ReactiveLockEventListener;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
-import org.hibernate.reactive.session.ReactiveQueryProducer;
 import org.hibernate.reactive.session.ReactiveSession;
 
 import jakarta.persistence.PessimisticLockScope;
@@ -35,6 +34,7 @@ import jakarta.persistence.PessimisticLockScope;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveFetch;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 
 public class DefaultReactiveLockEventListener extends DefaultLockEventListener implements LockEventListener, ReactiveLockEventListener {
@@ -77,7 +77,7 @@ public class DefaultReactiveLockEventListener extends DefaultLockEventListener i
 		//TODO: if object was an uninitialized proxy, this is inefficient,
 		//      resulting in two SQL selects
 
-		return ( (ReactiveQueryProducer) source ).reactiveFetch( instance, true )
+		return internalReactiveFetch( source, instance, true )
 				.thenCompose( entity -> reactiveOnLock( event, entity ) );
 	}
 

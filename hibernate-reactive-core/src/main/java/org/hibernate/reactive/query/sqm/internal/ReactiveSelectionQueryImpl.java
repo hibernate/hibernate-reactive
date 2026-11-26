@@ -63,6 +63,7 @@ import java.util.Date;
 import java.util.Map;
 
 import static org.hibernate.query.internal.SqlOmittingQueryOptions.omitSqlQueryOptions;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.enqueue;
 
 /**
  * A reactive {@link SelectionQueryImpl}
@@ -238,6 +239,10 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 
 	@Override
 	public CompletionStage<List<R>> reactiveList() {
+		return enqueue( getSession(), this::executeReactiveList );
+	}
+
+	private CompletionStage<List<R>> executeReactiveList() {
 		final HashSet<String> fetchProfiles = reactiveBeforeQuery();
 		final boolean[] success = {false};
 		return doReactiveList()
@@ -288,6 +293,10 @@ public class ReactiveSelectionQueryImpl<R> extends SelectionQueryImpl<R> impleme
 
 	@Override
 	public CompletionStage<Long> getReactiveResultCount() {
+		return enqueue( getSession(), this::executeReactiveResultCount );
+	}
+
+	private CompletionStage<Long> executeReactiveResultCount() {
 		final DelegatingDomainQueryExecutionContext context = new DelegatingDomainQueryExecutionContext( this ) {
 			@Override
 			public QueryOptions getQueryOptions() {
