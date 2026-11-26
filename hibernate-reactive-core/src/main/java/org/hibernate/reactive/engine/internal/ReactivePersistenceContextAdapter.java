@@ -673,6 +673,16 @@ public class ReactivePersistenceContextAdapter implements PersistenceContext {
 	}
 
 	@Override
+	public void registerUpdatedTemporalRevision(EntityKey key) {
+		delegate.registerUpdatedTemporalRevision( key );
+	}
+
+	@Override
+	public boolean wasTemporalRevisionUpdated(EntityKey key) {
+		return delegate.wasTemporalRevisionUpdated( key );
+	}
+
+	@Override
 	public boolean containsNullifiableEntityKey(Supplier<EntityKey> sek) {
 		return delegate.containsNullifiableEntityKey( sek );
 	}

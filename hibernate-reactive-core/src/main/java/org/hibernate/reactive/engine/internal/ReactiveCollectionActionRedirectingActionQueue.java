@@ -21,7 +21,10 @@ import org.hibernate.action.queue.spi.ActionQueue;
 import org.hibernate.action.queue.spi.ActionQueueCheckpoint;
 import org.hibernate.action.queue.spi.CollectionMutationInput;
 import org.hibernate.action.queue.spi.CollectionTransition;
+import org.hibernate.audit.ModificationType;
+import org.hibernate.audit.spi.AuditWriter;
 import org.hibernate.engine.spi.EntityEntry;
+import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.TransactionCompletionCallbacksImplementor;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.reactive.engine.ReactiveActionQueue;
@@ -275,6 +278,16 @@ public class ReactiveCollectionActionRedirectingActionQueue implements ActionQue
 	@Override
 	public void setAuditChangesetContext(Object context, Session session) {
 		delegate.setAuditChangesetContext( context, session );
+	}
+
+	@Override
+	public void addAuditEntry(
+			EntityKey entityKey,
+			Object entity,
+			Object[] values,
+			ModificationType modificationType,
+			AuditWriter writer) {
+		delegate.addAuditEntry( entityKey, entity, values, modificationType, writer );
 	}
 
 	@Override
