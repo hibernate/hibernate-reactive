@@ -5,6 +5,7 @@
 package org.hibernate.reactive.persister.entity.mutation;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -15,6 +16,7 @@ import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.PartitionKeyValue;
 import org.hibernate.persister.entity.mutation.DeleteCoordinatorSoft;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
 import org.hibernate.reactive.adaptor.internal.PrepareStatementDetailsAdaptor;
@@ -66,9 +68,16 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 	}
 
 	@Override
-	protected void doDynamicDelete(Object entity, Object id, Object rowId, Object[] loadedState, SharedSessionContractImplementor session) {
+	protected void doDynamicDelete(
+			Object entity,
+			Object id,
+			Object rowId,
+			Object[] loadedState,
+			List<PartitionKeyValue> partitionKeys,
+			Object version,
+			SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
-		final MutationOperationGroup operationGroup = generateOperationGroup( null, loadedState, true, session );
+		final MutationOperationGroup operationGroup = generateOperationGroup( null, loadedState, partitionKeys, true, session );
 		final ReactiveMutationExecutor mutationExecutor = mutationExecutor( session, operationGroup );
 
 		for ( int i = 0; i < operationGroup.getNumberOfOperations(); i++ ) {
@@ -78,7 +87,7 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 				mutationExecutor.getPreparedStatementDetails( tableName );
 			}
 		}
-		applyDynamicDeleteTableDetails( id, rowId, loadedState, mutationExecutor, operationGroup, session );
+		applyDynamicDeleteTableDetails( id, rowId, loadedState, partitionKeys, version, mutationExecutor, operationGroup, session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,
@@ -127,7 +136,13 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 	}
 
 	@Override
-	protected void doStaticDelete(Object entity, Object id, Object rowId, Object[] loadedState, Object version, SharedSessionContractImplementor session) {
+	protected void doStaticDelete(
+			Object entity,
+			Object id,
+			Object rowId,
+			List<PartitionKeyValue> partitionKeys,
+			Object version,
+			SharedSessionContractImplementor session) {
 		stage = new CompletableFuture<>();
 		final boolean applyVersion = entity != null;
 		final MutationOperationGroup operationGroupToUse = entity == null
@@ -142,12 +157,7 @@ public class ReactiveDeleteCoordinatorSoft extends DeleteCoordinatorSoft impleme
 			}
 		}
 
-		if ( applyVersion ) {
-			applyLocking( version, null, mutationExecutor, session );
-		}
-		final JdbcValueBindings jdbcValueBindings = mutationExecutor.getJdbcValueBindings();
-		bindPartitionColumnValueBindings( loadedState, session, jdbcValueBindings );
-		applyId( id, rowId, mutationExecutor, getStaticMutationOperationGroup(), session );
+		applyStaticDeleteTableDetails( id, rowId, partitionKeys, version, applyVersion, mutationExecutor, session );
 		mutationExecutor.executeReactive(
 						entity,
 						null,

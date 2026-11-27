@@ -4,6 +4,7 @@
  */
 package org.hibernate.reactive.persister.entity.mutation;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +23,7 @@ import org.hibernate.generator.values.GeneratedValues;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.SingularAttributeMapping;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.entity.mutation.PartitionKeyValue;
 import org.hibernate.persister.entity.mutation.AttributeAnalysis;
 import org.hibernate.persister.entity.mutation.AttributeInclusionChecker;
 import org.hibernate.persister.entity.mutation.EntityTableMapping;
@@ -261,7 +263,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				ParameterUsage.SET
 		);
 
-		bindPartitionColumnValueBindings( loadedState, session, mutationExecutor.getJdbcValueBindings() );
+		PartitionKeyValue.bindRestrictions( PartitionKeyValue.fromState( entityPersister(), loadedState, session ),
+				mutationExecutor.getJdbcValueBindings(), getVersionUpdateGroup()::getOperation );
 
 		// restrict the key
 		mutatingTableDetails.getKeyMapping().breakDownKeyJdbcValues(
@@ -347,7 +350,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 						: AttributeAnalysis.DirtynessStatus.NOT_DIRTY,
 				session
 		);
-		bindPartitionColumnValueBindings( oldValues, session, mutationExecutor.getJdbcValueBindings() );
+		PartitionKeyValue.bindRestrictions( partitionKeys( values, oldValues, session ),
+				mutationExecutor.getJdbcValueBindings(), dynamicUpdateGroup::getOperation );
 
 		mutationExecutor.executeReactive(
 						entity,
@@ -407,7 +411,8 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				(position, attribute) -> AttributeAnalysis.DirtynessStatus.CONSIDER_LIKE_DIRTY,
 				session
 		);
-		bindPartitionColumnValueBindings( oldValues, session, mutationExecutor.getJdbcValueBindings() );
+		PartitionKeyValue.bindRestrictions( partitionKeys( values, oldValues, session ),
+				mutationExecutor.getJdbcValueBindings(), staticUpdateGroup::getOperation );
 
 		mutationExecutor.executeReactive(
 						entity,
@@ -420,5 +425,14 @@ public class ReactiveUpdateCoordinatorStandard extends UpdateCoordinatorStandard
 				.whenComplete( (o, throwable) -> mutationExecutor.release() )
 				.whenComplete( this::complete );
 		return null;
+	}
+
+	/**
+	 * The partition key of the row which is updated. There is no snapshot
+	 * when called from {@code StatelessSession.update()}.
+	 */
+	private List<PartitionKeyValue> partitionKeys(Object[] values, Object[] oldValues, SharedSessionContractImplementor session) {
+		return PartitionKeyValue.fromState( entityPersister(), oldValues == null ? values : oldValues,
+				this::isRestrictedByPartitionKey, session );
 	}
 }
