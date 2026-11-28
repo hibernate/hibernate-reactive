@@ -44,6 +44,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.reactive.logging.internal.LoggerFactory.make;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveFetch;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.type.ForeignKeyDirection.TO_PARENT;
@@ -78,9 +79,8 @@ public final class Cascade {
 				if ( cascadeStyles[i].doCascade( action.delegate() ) ) {
 					Object fetchable = state[i];
 					if ( !Hibernate.isInitialized( fetchable ) ) {
-						beforeDelete = beforeDelete.thenCompose( v -> session
-								.unwrap( ReactiveSession.class )
-								.reactiveFetch( fetchable, true )
+						beforeDelete = beforeDelete.thenCompose( v ->
+								internalReactiveFetch( session, fetchable, true )
 						);
 					}
 				}

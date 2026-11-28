@@ -64,6 +64,7 @@ import jakarta.persistence.metamodel.Type;
 
 import static org.hibernate.query.hql.internal.QuerySplitter.split;
 import static org.hibernate.reactive.query.internal.ReactiveMutationExecution.executeReactiveMutation;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.enqueue;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
 
 /**
@@ -130,6 +131,10 @@ public class ReactiveMutationQueryImpl<R> extends MutationQueryImpl<R> implement
 	 */
 	@Override
 	public CompletionStage<Integer> reactiveExecute() {
+		return enqueue( getSession(), this::doReactiveExecute );
+	}
+
+	private CompletionStage<Integer> doReactiveExecute() {
 		getSession().checkTransactionNeededForUpdateOperation( "Executing an update/delete query" );
 		return executeReactiveMutation(
 				// applies the flush mode (and cache mode) of the query to the session while executing it

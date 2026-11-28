@@ -539,8 +539,8 @@ configuration based on Hibernate's `ServiceRegistry` architecture, by using a
 Persistence operations are exposed via a reactive `Session` object. It's very
 important to understand that most operations of this interface are non-blocking,
 and execution of SQL against the database is never performed synchronously.
-Persistence operations that belong to a single unit of work must be chained by
-composition within a single reactive stream.
+Persistence operations that belong to a single unit of work should be performed
+within a single reactive stream.
 
 Also remember that a Hibernate session is a lightweight object that should be
 created, used, and then discarded within a single logical unit of work.
@@ -651,10 +651,33 @@ if&mdash;and _only_ if&mdash;you use a transaction, as described below in
 session explicitly, your persistence operations might never be sent to the
 database!
 
-An _extremely_ common mistake when using reactive streams is to forget to
-chain the return value of a "void-like" method. For example, in the following
-code, the `flush()` operation is never executed, because `invoke()` doesn't
-chain its return value to the tip of the stream.
+Hibernate Reactive automatically enqueues session operations so that each
+one completes before the next begins. This means that with the `Stage` API,
+"fire-and-forget" code is safe&mdash;you can call a session method without
+chaining the returned `CompletionStage`, and the operation will still be
+executed in the correct order:
+
+[source,java]
+----
+session.find(Book.class, id)
+       .thenAccept( book -> session.remove(book) )   //OK with Stage API
+       .thenCompose( v -> session.flush() )
+----
+
+Two things to keep in mind, though:
+
+- The stream you return must still end with an operation on the session,
+  like the `flush()` above: it waits for the operations you didn't chain,
+  so that the session isn't closed while they're still running.
+- If an operation you didn't chain fails, the exception is only reported in
+  the `CompletionStage` you discarded, but the transaction is still marked
+  for rollback, as explained in <<transactions>>.
+
+However, this is _not_ the case with the Mutiny API!
+Since Mutiny ``Uni``s are lazy, an operation that isn't subscribed to will
+never execute at all. For example, in the following code the `flush()`
+operation is never executed, because `invoke()` doesn't chain its return
+value to the tip of the stream:
 
 [source,java]
 ----
@@ -663,12 +686,8 @@ session.find(Book.class, id)
        .invoke( () -> session.flush() )   //OOPS, WRONG!!
 ----
 
-So remember:
-
-- You must use `thenCompose()`, not `thenAccept()`, when calling "void-like"
-  methods that return `CompletionStage`.
-- In Mutiny, you must use `call()`, not `invoke()`, when calling "void-like"
-  methods that return `Uni`.
+So remember: in Mutiny, you must use `call()`, not `invoke()`, when calling
+"void-like" methods that return `Uni`.
 
 The same problem occurs in the following code, but this time it's `remove()`
 that never gets called:
@@ -682,9 +701,8 @@ session.find(Book.class, id)
        } )
 ----
 
-If you already have some experience with reactive programming, there's nothing
-new to learn here. But if you _are_ new to reactive programming, just be aware
-that you're going to make this mistake, in some form, _at least_ once!
+If you're new to Mutiny, just be aware that you're going to make this
+mistake, in some form, _at least_ once!
 
 == Queries
 
@@ -829,6 +847,7 @@ have very specific requirements. It's almost always more efficient to fetch
 all the fields of an entity at once. Field-level lazy fetching is every bit
 as vulnerable to N+1 selects as lazy association fetching.
 
+[[transactions]]
 == Transactions
 
 The `withTransaction()` method performs work within the scope of a database

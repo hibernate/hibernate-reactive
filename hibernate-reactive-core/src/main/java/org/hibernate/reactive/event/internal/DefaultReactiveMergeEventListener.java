@@ -45,7 +45,6 @@ import org.hibernate.reactive.engine.internal.EntityTypes;
 import org.hibernate.reactive.event.ReactiveMergeEventListener;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
-import org.hibernate.reactive.session.ReactiveSession;
 import org.hibernate.stat.spi.StatisticsImplementor;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.ForeignKeyDirection;
@@ -57,6 +56,8 @@ import static org.hibernate.engine.internal.ManagedTypeHelper.isHibernateProxy;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
 import static org.hibernate.engine.internal.ManagedTypeHelper.isSelfDirtinessTracker;
 import static org.hibernate.event.internal.EntityState.getEntityState;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveFetch;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveGet;
 import static org.hibernate.reactive.util.internal.CompletionStages.loop;
 import static org.hibernate.reactive.util.internal.CompletionStages.voidFuture;
 import static org.hibernate.type.ForeignKeyDirection.FROM_PARENT;
@@ -328,8 +329,8 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 		// we must clone embedded composite identifiers, or we will get back the same instance that we pass in
 		final Object clonedIdentifier = persister.getIdentifierType().deepCopy( id, source.getFactory() );
 		return source.getLoadQueryInfluencers()
-				.fromInternalFetchProfile( CascadingFetchProfile.MERGE, () -> source.unwrap( ReactiveSession.class )
-						.reactiveGet( (Class<?>) persister.getMappedClass(), clonedIdentifier )
+				.fromInternalFetchProfile( CascadingFetchProfile.MERGE, () ->
+						internalReactiveGet( source, (Class<?>) persister.getMappedClass(), clonedIdentifier )
 				)
 				.thenCompose( result -> {
 					if ( result == null ) {
@@ -504,7 +505,6 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			return copyValues( persister, entity, target, source, mergeContext );
 		}
 		else {
-			ReactiveSession session = source.unwrap( ReactiveSession.class );
 			final Object[] mergeState = persister.getValues( entity );
 			final Object[] managedState = persister.getValues( target );
 
@@ -514,7 +514,7 @@ public class DefaultReactiveMergeEventListener extends AbstractReactiveSaveEvent
 			// Initialization must be done before copyValues() executes.
 			return loop( 0, mergeState.length,
 						  i -> Hibernate.isInitialized( mergeState[i] ) && !Hibernate.isInitialized( managedState[i] ),
-						  i -> session.reactiveFetch( managedState[i], true ) )
+						  i -> internalReactiveFetch( source, managedState[i], true ) )
 					.thenCompose( v -> copyValues( persister, entity, target, source, mergeContext ) );
 		}
 	}

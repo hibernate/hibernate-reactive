@@ -45,6 +45,8 @@ import org.hibernate.sql.results.internal.TupleMetadata;
 
 import jakarta.persistence.NoResultException;
 
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.enqueue;
+
 
 /**
  * Emulate {@link org.hibernate.query.spi.AbstractSelectionQuery}.
@@ -157,6 +159,10 @@ public class ReactiveAbstractSelectionQuery<R> {
 	}
 
 	public CompletionStage<List<R>> reactiveList() {
+		return enqueue( session, this::executeReactiveList );
+	}
+
+	private CompletionStage<List<R>> executeReactiveList() {
 		final var profiles = applyProfiles();
 		return beforeQuery.get()
 				.thenCompose( v -> doReactiveList() )

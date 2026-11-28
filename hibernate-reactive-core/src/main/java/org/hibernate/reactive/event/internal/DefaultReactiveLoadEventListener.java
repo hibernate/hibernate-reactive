@@ -40,7 +40,6 @@ import org.hibernate.reactive.event.ReactiveLoadEventListener;
 import org.hibernate.reactive.logging.internal.Log;
 import org.hibernate.reactive.logging.internal.LoggerFactory;
 import org.hibernate.reactive.persister.entity.internal.ReactiveEntityPersister;
-import org.hibernate.reactive.session.internal.ReactiveQueryExecutorLookup;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
 import jakarta.persistence.PessimisticLockScope;
@@ -51,6 +50,7 @@ import static org.hibernate.loader.internal.CacheLoadHelper.loadFromSecondLevelC
 import static org.hibernate.reactive.loader.internal.ReactiveCacheLoadHelper.loadFromSessionCache;
 import static org.hibernate.pretty.MessageHelper.infoString;
 import static org.hibernate.proxy.HibernateProxy.extractLazyInitializer;
+import static org.hibernate.reactive.session.internal.ReactiveSessionInternals.internalReactiveFetch;
 import static org.hibernate.reactive.session.internal.SessionUtil.checkEntityFound;
 import static org.hibernate.reactive.session.internal.SessionUtil.throwEntityNotFound;
 import static org.hibernate.reactive.util.internal.CompletionStages.completedFuture;
@@ -693,7 +693,7 @@ public class DefaultReactiveLoadEventListener implements LoadEventListener, Reac
 				if ( session == null ) {
 					throw LOG.sessionClosedLazyInitializationException();
 				}
-				return ReactiveQueryExecutorLookup.extract( session ).reactiveFetch( entity, false );
+				return internalReactiveFetch( session, entity, false );
 			}
 			else {
 				return completedFuture( entity );
